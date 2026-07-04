@@ -9,6 +9,9 @@ import {
   releaseReservationsForTempOrder,
   restoreCheckoutLineStock,
 } from "@/services/inventory-reservation";
+import { buildCoreEmailTemplateSeeds } from "@/lib/email-template-catalog";
+import { logMailer } from "@/lib/mailer-log";
+import { EmailTemplateService } from "@/services/email-template";
 import { InvoicingSzamlazzService } from "@/services/invoicing-szamlazz";
 import { MailerService } from "@/services/mailer";
 import { getStripeClient } from "@/services/stripe";
@@ -67,14 +70,68 @@ function getStatusLabel(status: string) {
   return labels[status] || status;
 }
 
+const CANCELLATION_EMAIL_TEMPLATE_TYPES = ["order_status_change", "order_cancelled"] as const;
+
+async function ensureCancellationEmailTemplates() {
+  const seeds = await buildCoreEmailTemplateSeeds();
+  for (const type of CANCELLATION_EMAIL_TEMPLATE_TYPES) {
+    const seed = seeds.find((entry) => entry.type === type);
+    if (seed) {
+      await EmailTemplateService.createMissing(type, seed);
+    }
+  }
+}
+
+async function buildReversalInvoiceAttachment(
+  order: InstanceType<typeof Order>,
+  reversalInvoiceId?: string
+) {
+  if (!reversalInvoiceId?.trim()) return undefined;
+
+  const orderId = order._id.toString();
+  const pdf = await InvoicingSzamlazzService.downloadInvoicePdf({
+    invoiceId: reversalInvoiceId,
+    orderNumber: formatOrderNumber(order._id),
+    legacyOrderNumber: orderId,
+  });
+  if (!pdf) return undefined;
+
+  return [
+    {
+      filename: `${reversalInvoiceId}.pdf`,
+      content: pdf,
+      contentType: "application/pdf",
+    },
+  ];
+}
+
 async function notifyOrderCancelled(
   order: InstanceType<typeof Order>,
   oldStatus: string,
-  cancellationReason?: string
+  cancellationReason?: string,
+  reversalInvoiceId?: string
 ) {
   const customerEmail = (order as { user?: { email?: string } }).user?.email || order.billingInfo?.email;
   const customerName = (order as { user?: { name?: string } }).user?.name || order.shippingAddress?.name;
-  if (!customerEmail) return;
+  const orderId = order._id.toString();
+  const logBase = { flow: "order_cancellation_email", orderId };
+
+  if (!customerEmail) {
+    logMailer("warn", "cancellation_email_skipped", {
+      ...logBase,
+      reason: "no_customer_email",
+    });
+    return;
+  }
+
+  try {
+    await ensureCancellationEmailTemplates();
+  } catch (error) {
+    logMailer("error", "cancellation_email_template_seed_failed", {
+      ...logBase,
+      error: error instanceof Error ? { message: error.message, name: error.name } : { message: String(error) },
+    });
+  }
 
   const emailData = {
     orderNumber: formatOrderNumber(order._id),
@@ -82,6 +139,7 @@ async function notifyOrderCancelled(
     oldStatus: getStatusLabel(oldStatus),
     newStatus: getStatusLabel(ADMIN_ORDER_DELETED_STATUS),
     cancellationReason,
+    reversalInvoiceId,
   };
 
   try {
@@ -89,19 +147,36 @@ async function notifyOrderCancelled(
       to: customerEmail,
       templateType: "order_status_change",
       data: emailData,
+      logContext: logBase,
     });
   } catch (error) {
-    console.error("Failed to send order status change email:", error);
+    logMailer("error", "cancellation_status_email_failed", {
+      ...logBase,
+      templateType: "order_status_change",
+      error: error instanceof Error ? { message: error.message, name: error.name } : { message: String(error) },
+    });
   }
 
   try {
+    const attachments = await buildReversalInvoiceAttachment(order, reversalInvoiceId);
     await MailerService.sendEmail({
       to: customerEmail,
       templateType: "order_cancelled",
       data: emailData,
+      attachments,
+      logContext: {
+        ...logBase,
+        reversalInvoiceId,
+        attachmentCount: attachments?.length ?? 0,
+      },
     });
   } catch (error) {
-    console.error("Failed to send order cancellation email:", error);
+    logMailer("error", "cancellation_email_failed", {
+      ...logBase,
+      templateType: "order_cancelled",
+      reversalInvoiceId,
+      error: error instanceof Error ? { message: error.message, name: error.name } : { message: String(error) },
+    });
   }
 }
 
@@ -186,7 +261,7 @@ export class OrderCancellationService {
     order.cancellationReason = cancellationReason;
     await order.save();
 
-    await notifyOrderCancelled(order, oldStatus, cancellationReason);
+    await notifyOrderCancelled(order, oldStatus, cancellationReason, reversalInvoiceId);
 
     return {
       success: true,

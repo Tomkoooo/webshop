@@ -5,11 +5,14 @@ const orderFindByIdMock = vi.fn();
 const orderSaveMock = vi.fn();
 const tempOrderFindOneMock = vi.fn();
 const reverseInvoiceMock = vi.fn();
+const downloadInvoicePdfMock = vi.fn();
 const releaseReservationsMock = vi.fn();
 const restoreCheckoutLineStockMock = vi.fn();
 const stripeRefundsListMock = vi.fn();
 const stripeRefundsCreateMock = vi.fn();
 const mailerSendMock = vi.fn();
+const createMissingTemplateMock = vi.fn();
+const buildCoreEmailTemplateSeedsMock = vi.fn();
 
 vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
 vi.mock("@/models/Order", () => ({
@@ -21,7 +24,16 @@ vi.mock("@/models/TempOrder", () => ({
 vi.mock("@/services/invoicing-szamlazz", () => ({
   InvoicingSzamlazzService: {
     reverseInvoice: (...args: unknown[]) => reverseInvoiceMock(...args),
+    downloadInvoicePdf: (...args: unknown[]) => downloadInvoicePdfMock(...args),
   },
+}));
+vi.mock("@/services/email-template", () => ({
+  EmailTemplateService: {
+    createMissing: (...args: unknown[]) => createMissingTemplateMock(...args),
+  },
+}));
+vi.mock("@/lib/email-template-catalog", () => ({
+  buildCoreEmailTemplateSeeds: (...args: unknown[]) => buildCoreEmailTemplateSeedsMock(...args),
 }));
 vi.mock("@/services/inventory-reservation", () => ({
   releaseReservationsForTempOrder: (...args: unknown[]) => releaseReservationsMock(...args),
@@ -69,7 +81,13 @@ describe("OrderCancellationService", () => {
     stripeRefundsListMock.mockResolvedValue({ data: [] });
     stripeRefundsCreateMock.mockResolvedValue({ id: "re_123" });
     reverseInvoiceMock.mockResolvedValue({ invoiceId: "STORNO-001" });
+    downloadInvoicePdfMock.mockResolvedValue(Buffer.from("pdf"));
     releaseReservationsMock.mockResolvedValue(2);
+    createMissingTemplateMock.mockResolvedValue(undefined);
+    buildCoreEmailTemplateSeedsMock.mockResolvedValue([
+      { type: "order_status_change", subject: "status", body: "status" },
+      { type: "order_cancelled", subject: "cancelled", body: "cancelled" },
+    ]);
   });
 
   it("refunds stripe, reverses invoice, restores stock, and cancels order", async () => {
@@ -104,6 +122,21 @@ describe("OrderCancellationService", () => {
     expect(mailerSendMock).toHaveBeenCalledWith(
       expect.objectContaining({ templateType: "order_cancelled" })
     );
+    expect(downloadInvoicePdfMock).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceId: "STORNO-001" })
+    );
+    expect(mailerSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateType: "order_cancelled",
+        attachments: [
+          expect.objectContaining({
+            filename: "STORNO-001.pdf",
+            contentType: "application/pdf",
+          }),
+        ],
+      })
+    );
+    expect(createMissingTemplateMock).toHaveBeenCalledTimes(2);
   });
 
   it("stores optional cancellation reason and includes it in emails", async () => {

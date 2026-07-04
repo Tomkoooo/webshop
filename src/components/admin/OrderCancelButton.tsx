@@ -103,7 +103,7 @@ export function OrderCancelButton({
               A művelet visszatéríti a Stripe fizetést (ha kártyás volt), sztornózza a kiállított
               számlát (ha van), visszaállítja a készletet — beleértve a sorszámos példányokat is —
               és a rendelés állapotát „Törölve”-re állítja. A vásárló két emailt kap: állapotváltozás
-              és törlési értesítés.
+              és törlési értesítés (sztornó számla PDF-fel, ha volt kiállított számla).
             </DialogDescription>
           </DialogHeader>
 

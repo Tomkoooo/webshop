@@ -86,7 +86,7 @@ export const EMAIL_TEMPLATE_RELATIONS: Record<string, EmailTemplateRelation> = {
   },
   order_cancelled: {
     relatedTypes: ["order_status_change"],
-    note: "Admin rendelés törlés — opcionális indoklással. Az állapotváltozás email a párja.",
+    note: "Admin rendelés törlés — opcionális indoklással, sztornó számla PDF csatolmánnyal (ha van). Az állapotváltozás email a párja.",
   },
   invoice_sent: {
     relatedTypes: ["invoice_issue"],

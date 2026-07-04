@@ -131,13 +131,16 @@ export async function buildCoreEmailTemplateSeeds(): Promise<EmailTemplateSeed[]
             <p style="margin:0;white-space:pre-wrap;line-height:1.6;">{{cancellationReason}}</p>
           </div>
           {{/if}}
+          {{#if reversalInvoiceId}}
+          <p>A sztornó számla azonosítója: <strong>{{reversalInvoiceId}}</strong>. A PDF csatolmányként is megkapod.</p>
+          {{/if}}
           <p>Ha kártyás fizetéssel rendeltél, a visszatérítés a bankod szabályai szerint jelenik meg.</p>
           ${footer}
         </div>
       `,
       description:
         "Admin rendelés törlés — a vásárló kapja meg az állapotváltozás mellett (opcionális indoklással). Pár: order_status_change.",
-      variables: ["orderNumber", "customerName", "oldStatus", "newStatus", "cancellationReason"],
+      variables: ["orderNumber", "customerName", "oldStatus", "newStatus", "cancellationReason", "reversalInvoiceId"],
     },
     {
       type: "invoice_sent",
