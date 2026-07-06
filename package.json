@@ -13,6 +13,7 @@
     "deployments:validate": "node scripts/deployments/validate.mjs",
     "seed:minecraft-camp": "node scripts/seed/minecraft-camp-demo.mjs",
     "seed:keramia-dental": "npx tsx scripts/seed/keramia-dental-demo.ts",
+    "seed:nagyarcu": "npx tsx scripts/seed.ts",
     "auth:reset-oauth": "node scripts/auth/reset-oauth-collections.mjs",
     "cms:inspect": "npx tsx scripts/cms/inspect.ts",
     "cms:apply-import": "npx tsx scripts/cms/apply-import.ts",

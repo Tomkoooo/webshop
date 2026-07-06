@@ -1,8 +1,16 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import ShopContent from "../src/models/ShopContent";
+import TemplateContent from "../src/models/TemplateContent";
+import { getDefaultHomepageSnapshot } from "../src/features/homepage-cms/utils/default-snapshot";
+import { nagyarcuPressTestimonialsBlock } from "./seed/lib/nagyarcu-press-quotes";
+import type { HomepageSnapshot } from "../src/features/homepage-cms/types/block-types";
 
-const MONGODB_URI = process.env.DATABASE_URL;
+const MONGODB_URI = process.env.SEED_DB_URL || process.env.DATABASE_URL;
+const HOMEPAGE_CMS_SECTION = "homepage_cms";
+const HOMEPAGE_SNAPSHOT_PUBLISHED = "homepage_snapshot_published";
+const HOMEPAGE_SNAPSHOT_DRAFT = "homepage_snapshot_draft";
+const DEFAULT_MODERN_TEMPLATE_ID = "default-modern";
 
 const creatorFeatureCards = [
   {
@@ -155,12 +163,12 @@ const initialContent = [
   },
   {
     key: "reviews_title",
-    value: "CUSTOMER REVIEWS",
+    value: "Rólunk mondták",
     section: "reviews",
   },
   {
     key: "reviews_subtitle",
-    value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    value: "A sajtó reagálása az Én, a nagyarcú kiadványra",
     section: "reviews",
   },
   {
@@ -230,9 +238,75 @@ const initialContent = [
   },
 ];
 
+function upsertTestimonialsBlock(snapshot: HomepageSnapshot): HomepageSnapshot {
+  const blocks = [...snapshot.blocks];
+  const existingIndex = blocks.findIndex((block) => block.type === "testimonials");
+  const nextBlock = {
+    ...nagyarcuPressTestimonialsBlock,
+    id:
+      existingIndex >= 0
+        ? blocks[existingIndex]!.id
+        : nagyarcuPressTestimonialsBlock.id,
+  };
+
+  if (existingIndex >= 0) {
+    blocks[existingIndex] = nextBlock;
+    return { ...snapshot, blocks };
+  }
+
+  const aboutIndex = blocks.findIndex((block) => block.type === "about");
+  const insertAt = aboutIndex >= 0 ? aboutIndex + 1 : blocks.length;
+  blocks.splice(insertAt, 0, nextBlock);
+  return { ...snapshot, blocks };
+}
+
+function parseHomepageSnapshot(raw: string | undefined | null): HomepageSnapshot | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as HomepageSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+async function seedHomepageTestimonials() {
+  const publishedDoc = await ShopContent.findOne({ key: HOMEPAGE_SNAPSHOT_PUBLISHED }).lean();
+  const baseSnapshot =
+    parseHomepageSnapshot(publishedDoc?.value) ?? getDefaultHomepageSnapshot();
+  const snapshot = upsertTestimonialsBlock(baseSnapshot);
+  const json = JSON.stringify(snapshot);
+  const now = new Date();
+
+  await ShopContent.findOneAndUpdate(
+    { key: HOMEPAGE_SNAPSHOT_PUBLISHED },
+    { key: HOMEPAGE_SNAPSHOT_PUBLISHED, value: json, section: HOMEPAGE_CMS_SECTION },
+    { upsert: true }
+  );
+  await ShopContent.findOneAndUpdate(
+    { key: HOMEPAGE_SNAPSHOT_DRAFT },
+    { key: HOMEPAGE_SNAPSHOT_DRAFT, value: json, section: HOMEPAGE_CMS_SECTION },
+    { upsert: true }
+  );
+
+  await TemplateContent.findOneAndUpdate(
+    { templateId: DEFAULT_MODERN_TEMPLATE_ID, pageKey: "page:home" },
+    {
+      templateId: DEFAULT_MODERN_TEMPLATE_ID,
+      pageKey: "page:home",
+      value: json,
+      draftValue: json,
+      publishedAt: now,
+      publishedBy: "seed:nagyarcu",
+    },
+    { upsert: true }
+  );
+
+  console.log(`  Homepage CMS: testimonials block seeded (${snapshot.blocks.find((b) => b.type === "testimonials")?.data.items?.length ?? 0} items)`);
+}
+
 async function seed() {
   if (!MONGODB_URI) {
-    throw new Error("DATABASE_URL is not defined");
+    throw new Error("SEED_DB_URL or DATABASE_URL is not defined");
   }
 
   console.log("Connecting to MongoDB...");
@@ -248,6 +322,8 @@ async function seed() {
       { upsert: true, returnDocument: "after" }
     );
   }
+
+  await seedHomepageTestimonials();
 
   console.log("Seeding finished.");
   await mongoose.connection.close();

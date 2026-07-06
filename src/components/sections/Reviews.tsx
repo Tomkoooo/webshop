@@ -14,6 +14,7 @@ import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-c
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { FallbackImage } from "@/components/common/FallbackImage"
 import { PlainTextWithLinks } from "@/lib/linkify-plain-text"
+import { TestimonialSourceLink } from "@/lib/testimonial-source-link"
 import {
   CmsListAddButton,
   CmsListItemToolbar,
@@ -26,12 +27,14 @@ type ReviewItem = {
   content: string
   rating: number
   avatar: string
+  sourceUrl?: string
 }
 
 type TestimonialItem = {
   quote: string
   name: string
   role: string
+  sourceUrl?: string
   rating: number
 }
 
@@ -126,7 +129,7 @@ export function Reviews({
             onClick={() =>
               setTestimonialItems(cms, blockId, [
                 ...cmsItems,
-                { quote: "Vásárlói idézet", name: "Vásárló", role: "Szerepkör", rating: 5 },
+                { quote: "Vásárlói idézet", name: "Vásárló", role: "Szerepkör", sourceUrl: "", rating: 5 },
               ])
             }
           />
@@ -218,24 +221,26 @@ export function Reviews({
                                 }
                               />
                             ) : (
-                              review.name
+                              <TestimonialSourceLink name={review.name} sourceUrl={review.sourceUrl} />
                             )}
                           </h4>
-                          <p className="text-primary-foreground text-sm font-black uppercase tracking-[0.2em]">
-                            {cms.enabled && isCmsBlock && blockId ? (
-                              <EditableTextInline
-                                blockType="testimonials"
-                                blockId={blockId}
-                                field={`items.${idx}.role`}
-                                value={review.role}
-                                onCommit={(value) =>
-                                  patchTestimonialItems(cms, blockId, cmsItems, idx, { role: value })
-                                }
-                              />
-                            ) : (
-                              <PlainTextWithLinks text={review.role} />
-                            )}
-                          </p>
+                          {(review.role || (cms.enabled && isCmsBlock)) ? (
+                            <p className="text-primary-foreground text-sm font-black uppercase tracking-[0.2em]">
+                              {cms.enabled && isCmsBlock && blockId ? (
+                                <EditableTextInline
+                                  blockType="testimonials"
+                                  blockId={blockId}
+                                  field={`items.${idx}.role`}
+                                  value={review.role}
+                                  onCommit={(value) =>
+                                    patchTestimonialItems(cms, blockId, cmsItems, idx, { role: value })
+                                  }
+                                />
+                              ) : review.role ? (
+                                <PlainTextWithLinks text={review.role} />
+                              ) : null}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </div>

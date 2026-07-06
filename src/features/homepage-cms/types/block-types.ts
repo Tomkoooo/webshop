@@ -133,6 +133,7 @@ export type TestimonialsBlock = HomepageBlockBase<
       quote: string
       name: string
       role: string
+      sourceUrl?: string
       rating: number
     }>
     visibility?: FieldVisibility

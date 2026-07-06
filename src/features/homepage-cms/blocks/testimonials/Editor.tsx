@@ -43,6 +43,19 @@ export function TestimonialsBlockEditor({ block, onPatch }: Props) {
                 placeholder="Szerepkör"
               />
               <input
+                value={item.sourceUrl ?? ""}
+                onChange={(event) =>
+                  onPatch(
+                    "items",
+                    items.map((current, idx) =>
+                      idx === index ? { ...current, sourceUrl: event.target.value } : current
+                    )
+                  )
+                }
+                className="h-9 px-2 bg-black border border-white/20 text-sm text-white md:col-span-2"
+                placeholder="Forrás URL (opcionális)"
+              />
+              <input
                 value={item.quote}
                 onChange={(event) =>
                   onPatch(
@@ -50,7 +63,7 @@ export function TestimonialsBlockEditor({ block, onPatch }: Props) {
                     items.map((current, idx) => (idx === index ? { ...current, quote: event.target.value } : current))
                   )
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white md:col-span-2"
+                className="h-9 px-2 bg-black border border-white/20 text-sm text-white md:col-span-4"
                 placeholder="Idézet"
               />
               <div className="flex gap-2 md:col-span-4">
@@ -81,7 +94,7 @@ export function TestimonialsBlockEditor({ block, onPatch }: Props) {
           ))}
           <button
             type="button"
-            onClick={() => onPatch("items", [...items, { quote: "Vásárlói idézet", name: "Vásárló", role: "Szerepkör", rating: 5 }])}
+            onClick={() => onPatch("items", [...items, { quote: "Vásárlói idézet", name: "Vásárló", role: "Szerepkör", sourceUrl: "", rating: 5 }])}
             className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
           >
             Vélemény hozzáadása

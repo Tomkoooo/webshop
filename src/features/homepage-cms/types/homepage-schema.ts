@@ -115,6 +115,7 @@ const testimonialsDataSchema = z.object({
       quote: z.string(),
       name: z.string(),
       role: z.string(),
+      sourceUrl: z.string().optional(),
       rating: z.number().min(1).max(5),
     })
   ),

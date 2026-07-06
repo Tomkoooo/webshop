@@ -172,13 +172,20 @@ export function RealHomepageSections({
         const testimonials = block.data as {
           title?: string
           subtitle?: string
-          items?: Array<{ quote: string; name: string; role: string; rating: number }>
+          items?: Array<{
+            quote: string
+            name: string
+            role: string
+            sourceUrl?: string
+            rating: number
+          }>
         }
         const items = testimonials.items ?? []
         const testimonialReviews = items.map((item, index) => ({
           id: `cms-review-${block.id}-${index}`,
           name: item.name,
           role: item.role,
+          sourceUrl: item.sourceUrl,
           content: item.quote,
           rating: item.rating,
           avatar: "/generic-logo.svg",
