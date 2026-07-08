@@ -1,0 +1,19 @@
+{
+  "name": "@wse/cms-bridge",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine CMS bridge: unified Cms* primitives for instrumenting JSX templates.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  }
+}
