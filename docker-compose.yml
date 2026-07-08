@@ -215,14 +215,12 @@ networks:
 # =============================================================================
 # Same DATABASE_URL on both containers. Different public URL per host.
 #
-# Container 1 — v2 tBook site (apps/tbook, no DEPLOYMENT_KEY):
+# Container 1 — tBook admin (apps/tbook, API + Stripe + számlázás):
+#   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2
+#   NEXT_PUBLIC_APP_URL=https://admin.tbook.example.com
+#
+# Container 2 — API tester UI (/tbook-test, calls admin API):
 #   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2
 #   NEXT_PUBLIC_APP_URL=https://tbook.example.com
-#
-# Container 2 — reference matrix (DEPLOYMENT_KEY=default):
-#   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2-reference
-#   DEPLOYMENT_KEY=default
-#   NEXT_PUBLIC_APP_URL=https://tbook-ref.example.com
-#
-# API test page: /tbook-test on either host (default-modern theme, not minecraft).
-# Use portainer.stack.yml locally (gitignored) for a ready-to-paste stack with secrets.
+#   NEXT_PUBLIC_TBOOK_API_BASE=https://admin.tbook.example.com/api/plugins/t-book
+#   (no STRIPE_* / SZAMLAZZ_* on tester — secrets stay on admin)

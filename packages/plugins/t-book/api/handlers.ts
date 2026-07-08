@@ -73,8 +73,24 @@ function serializeHotel(h: ITBookHotel) {
   }
 }
 
-function json(data: unknown, status = 200) {
-  return NextResponse.json(data, { status })
+function json(data: unknown, status = 200, request?: Request) {
+  const headers = corsHeaders(request)
+  return NextResponse.json(data, { status, headers })
+}
+
+/** Allowed browser origins for the public API (split tester UI vs admin API host). */
+function corsHeaders(request?: Request): HeadersInit | undefined {
+  const raw = process.env.TBOOK_API_CORS_ORIGINS?.trim()
+  if (!raw || !request) return undefined
+  const allowed = raw.split(",").map((s) => s.trim()).filter(Boolean)
+  const origin = request.headers.get("origin")
+  if (!origin || !allowed.includes(origin)) return undefined
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-TBook-Api-Key, Authorization",
+    Vary: "Origin",
+  }
 }
 
 function errorMessage(err: unknown, fallback: string) {
@@ -111,11 +127,16 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
   const method = request.method.toUpperCase()
   const segment = path[0] ?? ""
 
+  if (method === "OPTIONS" && segment !== "admin") {
+    const headers = corsHeaders(request)
+    if (headers) return new NextResponse(null, { status: 204, headers })
+  }
+
   try {
     // ---- Docs (public) ----------------------------------------------------
     if (segment === "openapi" && method === "GET") {
       const { getPublicAppBaseUrl } = await import("@wse/core/lib/app-base-url")
-      return json(buildTBookOpenApiSpec(getPublicAppBaseUrl()))
+      return json(buildTBookOpenApiSpec(getPublicAppBaseUrl()), 200, request)
     }
 
     // ---- Stripe success/cancel landing (no key: it's a browser redirect) ---
@@ -127,14 +148,14 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     if (segment === "events" && method === "GET" && path.length === 1) {
       const { groupId } = await requireApiKeyGroup(request)
       const events = await TBookEventService.listPublicEventsForGroup(groupId)
-      return json({ ok: true, events })
+      return json({ ok: true, events }, 200, request)
     }
 
     if (segment === "events" && path[1] && method === "GET" && path.length === 2) {
       const { groupId } = await requireApiKeyGroup(request)
       const detail = await TBookEventService.getPublicEventDetail(groupId, path[1])
-      if (!detail) return json({ error: "Esemény nem található" }, 404)
-      return json({ ok: true, ...detail })
+      if (!detail) return json({ error: "Esemény nem található" }, 404, request)
+      return json({ ok: true, ...detail }, 200, request)
     }
 
     if (segment === "quote" && method === "POST" && path.length === 1) {
@@ -142,7 +163,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       enforceRateLimit(request, "t-book:quote", 120)
       const body = await request.json()
       const { quote } = await TBookBookingService.quote(body, { groupId })
-      return json({ ok: true, quote })
+      return json({ ok: true, quote }, 200, request)
     }
 
     if (segment === "bookings" && method === "POST" && path.length === 1) {
@@ -150,7 +171,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       enforceRateLimit(request, "t-book:bookings", 20)
       const body = await request.json()
       const result = await TBookCheckoutService.createBookingWithCheckout(body, { groupId })
-      return json({ ok: true, ...result })
+      return json({ ok: true, ...result }, 200, request)
     }
 
     if (segment === "bookings" && path[1] === "status" && method === "GET") {
@@ -159,7 +180,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const bookingId = url.searchParams.get("bookingId") || ""
       const sessionId = url.searchParams.get("session_id")
       const result = await TBookCheckoutService.getCheckoutStatus(bookingId, sessionId)
-      return json({ ok: true, ...result })
+      return json({ ok: true, ...result }, 200, request)
     }
 
     // ---- Admin (session auth) ---------------------------------------------
@@ -169,15 +190,15 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       return handleTBookAdminApi(path.slice(1), request, method)
     }
 
-    return json({ error: "Not found", path }, 404)
+    return json({ error: "Not found", path }, 404, request)
   } catch (err) {
     const statusCode = (err as { statusCode?: number }).statusCode
-    if (statusCode) return json({ error: errorMessage(err, "Hiba történt") }, statusCode)
+    if (statusCode) return json({ error: errorMessage(err, "Hiba történt") }, statusCode, request)
     console.error("[t-book]", err)
     if (err instanceof Error && err.message === "Unauthorized") {
-      return json({ error: "Unauthorized" }, 401)
+      return json({ error: "Unauthorized" }, 401, request)
     }
-    return json({ error: errorMessage(err, "Hiba történt") }, 400)
+    return json({ error: errorMessage(err, "Hiba történt") }, 400, request)
   }
 }
 

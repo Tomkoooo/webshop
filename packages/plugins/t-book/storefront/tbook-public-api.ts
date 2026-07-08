@@ -1,4 +1,6 @@
-const API_BASE = "/api/plugins/t-book"
+/** Override for split deploys: tester UI on one host, API + secrets on admin host. */
+const API_BASE =
+  process.env.NEXT_PUBLIC_TBOOK_API_BASE?.replace(/\/$/, "") || "/api/plugins/t-book"
 
 export type TBookPublicEvent = {
   id: string
