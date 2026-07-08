@@ -18,16 +18,10 @@ jobs:
       - id: set
         run: |
           if [ "${{ github.ref }}" = "refs/heads/engine-v2" ]; then
-            MATRIX='{"include":[
-              {"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},
-              {"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"}
-            ]}'
+            echo 'matrix={"include":[{"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"}]}' >> "$GITHUB_OUTPUT"
           else
-            MATRIX='{"include":[
-              {"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"latest"}
-            ]}'
+            echo 'matrix={"include":[{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"latest"}]}' >> "$GITHUB_OUTPUT"
           fi
-          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
 
   build-and-push:
     needs: resolve-matrix
