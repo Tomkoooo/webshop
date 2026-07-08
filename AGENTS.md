@@ -8,6 +8,7 @@ Use these guides when changing templates, plugins, deployments, or CMS content.
 | **New or edit layout template** | [docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md](docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md) |
 | **New or enable plugin** | [docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md](docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md) (storefront UI: reuse template chrome + `src/lib/plugin-storefront-ui.ts`) |
 | **Import customer copy into CMS** | [docs/cms/AGENT_CONTENT_IMPORT.md](docs/cms/AGENT_CONTENT_IMPORT.md) |
+| **MongoDB seed scripts (customer DBs)** | [.cursor/rules/safe-database-seeding.mdc](.cursor/rules/safe-database-seeding.mdc) |
 | **Minecraft camp reference project** | [docs/projects/MINECRAFT_CAMP.md](docs/projects/MINECRAFT_CAMP.md) |
 
 ## In-code registries (must stay in sync)

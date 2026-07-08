@@ -1,0 +1,52 @@
+---
+description: Safe MongoDB seed scripts — backup first or patch only targeted fields
+globs: scripts/seed/**/*
+alwaysApply: false
+---
+
+# Safe database seeding
+
+When writing or running seed scripts that touch production or customer databases:
+
+## Default: patch only what changed
+
+- Never replace an entire CMS document (`TemplateContent.value`, homepage snapshots) unless the script is explicitly named `*-restore` or `*-bootstrap` and the user asked for a full content restore.
+- Read the **existing** document first (TemplateContent, ShopContent, ThemeSetting).
+- Update **only** the fields or blocks requested (e.g. testimonials block only).
+- If no published document exists, **abort** with a clear error — do not fall back to `getDefaultHomepageSnapshot()` or Lorem ipsum bootstrap data on a live DB.
+
+## Backup before destructive writes
+
+Before any write that replaces whole documents or upserts many ShopContent keys:
+
+1. Call `backupCollectionsBeforeSeed()` from `scripts/seed/lib/safe-seed-backup.ts`.
+2. Write JSON dumps under `scripts/seed/backups/<timestamp>-<label>/`.
+3. Log the backup path in the script output.
+
+## Forbidden patterns
+
+```typescript
+// BAD — wipes live homepage with English defaults
+const base = parseSnapshot(doc?.value) ?? getDefaultHomepageSnapshot()
+await TemplateContent.update({ value: json, draftValue: json })
+
+// BAD — overwrites all legacy shop keys on every run
+for (const item of initialContent) {
+  await ShopContent.findOneAndUpdate({ key: item.key }, item, { upsert: true })
+}
+```
+
+## Allowed patterns
+
+```typescript
+// GOOD — testimonials block only, with backup
+await backupCollectionsBeforeSeed("nagyarcu-testimonials", ["templatecontents"], { templateId, pageKey })
+const published = homepageSnapshotSchema.parse(JSON.parse(doc.value))
+const next = upsertTestimonialsBlock(published)
+await TemplateContent.update({ $set: { value: JSON.stringify(next) } })
+```
+
+## Environment
+
+- Always use `SEED_DB_URL` for customer DBs; never assume `DATABASE_URL` points at the right cluster.
+- Confirm the database name in logs before writing.
