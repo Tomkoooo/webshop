@@ -1,4 +1,6 @@
 export * from "./contracts"
 export * from "./theme/tokens"
+export * from "./theme/rules"
+export * from "./theme/typography"
 export * from "./templates/types"
 export * from "./plugins/types"

@@ -12,8 +12,9 @@ import {
 } from "@wse/core/lib/cached-storefront";
 import { readPreviewTemplateId } from "@wse/core/services/template-preview";
 import { getTemplateByIdAsync, loadTemplateModule } from "@wse/core/templates/registry";
-import { getEffectiveThemeBase } from "@wse/core/services/theme";
+import { getEffectiveThemeBase, ThemeService } from "@wse/core/services/theme";
 import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars";
+import { themeTypographyToCssVars } from "@wse/sdk/theme/typography";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,7 +105,11 @@ export default async function RootLayout({
   const theme = isPreviewingDifferentTemplate
     ? getEffectiveThemeBase(await loadTemplateModule(previewTemplateId))
     : await getCachedThemeForTemplate(dbActiveTemplate);
-  const themeVars = themeTokensToCssVars(theme);
+  const typography = await ThemeService.getTypographyForTemplate(dbActiveTemplate);
+  const themeVars = {
+    ...themeTokensToCssVars(theme),
+    ...themeTypographyToCssVars(typography),
+  };
   const popupCampaigns = await PopupCampaignService.getActiveForStorefront();
 
   return (

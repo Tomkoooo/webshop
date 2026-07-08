@@ -8,7 +8,19 @@ import { revalidateStorefrontTags, STOREFRONT_CACHE_TAGS } from "@wse/core/lib/s
 
 const hex = z.string().regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/)
 
+const typographySchema = z
+  .object({
+    fontHeading: z.string().min(1).optional(),
+    fontBody: z.string().min(1).optional(),
+    weightHeading: z.string().min(1).optional(),
+    sizeHero: z.string().min(1).optional(),
+    sizeHeading: z.string().min(1).optional(),
+    sizeBody: z.string().min(1).optional(),
+  })
+  .optional()
+
 const themeSchema = z.object({
+  typography: typographySchema,
   primary: hex,
   primaryForeground: hex,
   secondary: hex,
@@ -34,14 +46,18 @@ export async function GET() {
   await requireAdmin()
   const template = await TemplateService.getDbActive()
   const merged = await ThemeService.getMergedForTemplate(template)
-  return NextResponse.json(merged)
+  const typography = await ThemeService.getTypographyForTemplate(template)
+  return NextResponse.json({ ...merged, typography })
 }
 
 export async function PUT(request: Request) {
   await requireAdmin()
   const template = await TemplateService.getDbActive()
-  const payload = themeSchema.parse(await request.json())
-  const updated = await ThemeService.saveFullThemeForTemplate(template, payload)
+  const { typography, ...colors } = themeSchema.parse(await request.json())
+  const updated = await ThemeService.saveFullThemeForTemplate(template, colors)
+  if (typography) {
+    await ThemeService.saveTypographyForTemplate(template, typography)
+  }
   revalidatePath("/", "layout")
   revalidateStorefrontTags(STOREFRONT_CACHE_TAGS.theme)
   return NextResponse.json(updated)

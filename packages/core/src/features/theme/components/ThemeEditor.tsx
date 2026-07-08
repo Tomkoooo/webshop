@@ -1,12 +1,25 @@
 "use client"
 
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { THEME_TOKEN_KEYS } from "@wse/sdk/theme/theme-token-keys"
+import { THEME_ROLE_GROUPS, validateThemeContrast } from "@wse/sdk/theme/rules"
+import {
+  DEFAULT_THEME_TYPOGRAPHY,
+  THEME_TYPOGRAPHY_KEYS,
+  type ThemeTypography,
+} from "@wse/sdk/theme/typography"
 import { mergeThemeTokens, parseThemeJsonInput } from "@wse/core/lib/parse-theme-json"
-import { getThemeContrastWarnings } from "@wse/core/lib/theme-sanitize"
 import type { ThemeTokens } from "@wse/core/services/theme"
+
+const TYPOGRAPHY_LABELS: Record<keyof ThemeTypography, string> = {
+  fontHeading: "Heading font stack",
+  fontBody: "Body font stack",
+  weightHeading: "Heading weight",
+  sizeHero: "Hero size",
+  sizeHeading: "Section heading size",
+  sizeBody: "Body size",
+}
 
 type Props = {
   initial: ThemeTokens
@@ -25,11 +38,29 @@ export function ThemeEditor({
   const router = useRouter()
   const fileInputId = useId()
   const [theme, setTheme] = useState<ThemeTokens>(initial)
+  const [typography, setTypography] = useState<Partial<ThemeTypography>>({})
   const [jsonInput, setJsonInput] = useState("")
+
+  const contrastIssues = useMemo(() => validateThemeContrast(theme), [theme])
 
   useEffect(() => {
     setTheme(initial)
   }, [initial])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/admin/theme")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.typography === "object") {
+          setTypography(data.typography ?? {})
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     Object.entries(theme).forEach(([key, value]) => {
@@ -147,29 +178,90 @@ export function ThemeEditor({
         hover/link. <strong className="text-neutral-200">foreground</strong> — fő szöveg és árak.
       </p>
 
-      <div className="grid md:grid-cols-2 gap-3">
-        {THEME_TOKEN_KEYS.map((key) => (
-          <label key={key} className="space-y-1">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">{key}</span>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={theme[key as keyof ThemeTokens]}
-                onChange={(event) =>
-                  setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+      {contrastIssues.length > 0 ? (
+        <section className="border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+          <h3 className="text-xs uppercase tracking-widest text-amber-200">
+            Contrast warnings ({contrastIssues.length})
+          </h3>
+          <ul className="space-y-1">
+            {contrastIssues.map((issue) => (
+              <li
+                key={`${issue.rule.text}-${issue.rule.background}`}
+                className={
+                  issue.rule.severity === "error"
+                    ? "text-[11px] text-red-300"
+                    : "text-[11px] text-amber-200/90"
                 }
-              />
+              >
+                {issue.message}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {THEME_ROLE_GROUPS.map((group) => (
+        <section key={group.id} className="space-y-3">
+          <h3 className="text-xs uppercase tracking-widest text-white border-b border-white/10 pb-1">
+            {group.label}
+          </h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            {group.tokens.map((key) => (
+              <label key={key} className="space-y-1">
+                <span className="text-xs uppercase tracking-widest text-neutral-400">{key}</span>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={theme[key as keyof ThemeTokens]}
+                    onChange={(event) =>
+                      setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+                    }
+                  />
+                  <input
+                    value={theme[key as keyof ThemeTokens]}
+                    onChange={(event) =>
+                      setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+                    }
+                    className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm"
+                  />
+                </div>
+              </label>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section className="space-y-3">
+        <h3 className="text-xs uppercase tracking-widest text-white border-b border-white/10 pb-1">
+          Typography
+        </h3>
+        <p className="text-[11px] text-neutral-400 max-w-2xl">
+          Fonts and heading scale apply as CSS variables next to the colors. Leave a field empty to
+          use the template default.
+        </p>
+        <div className="grid md:grid-cols-2 gap-3">
+          {THEME_TYPOGRAPHY_KEYS.map((key) => (
+            <label key={key} className="space-y-1">
+              <span className="text-xs uppercase tracking-widest text-neutral-400">
+                {TYPOGRAPHY_LABELS[key]}
+              </span>
               <input
-                value={theme[key as keyof ThemeTokens]}
+                value={typography[key] ?? ""}
+                placeholder={DEFAULT_THEME_TYPOGRAPHY[key]}
                 onChange={(event) =>
-                  setTheme((prev) => ({ ...prev, [key]: event.target.value }))
+                  setTypography((prev) => {
+                    const next = { ...prev }
+                    if (event.target.value.trim()) next[key] = event.target.value
+                    else delete next[key]
+                    return next
+                  })
                 }
-                className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm"
+                className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm font-mono"
               />
-            </div>
-          </label>
-        ))}
-      </div>
+            </label>
+          ))}
+        </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -223,7 +315,7 @@ export function ThemeEditor({
             const res = await fetch("/api/admin/theme", {
               method: "PUT",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify(theme),
+              body: JSON.stringify({ ...theme, typography }),
             })
             if (!res.ok) {
               const err = await res.json().catch(() => ({}))
@@ -234,12 +326,10 @@ export function ThemeEditor({
             setTheme(updated)
             onSaved?.(updated)
             router.refresh()
-            const warnings = getThemeContrastWarnings(updated)
-            if (warnings.length > 0) {
-              toast.success("Theme saved")
-              toast.warning(warnings.join(" "))
-            } else {
-              toast.success("Theme saved")
+            const issues = validateThemeContrast(updated)
+            toast.success("Theme saved")
+            if (issues.length > 0) {
+              toast.warning(issues.map((issue) => issue.message).join(" "))
             }
           }}
           className="px-3 h-10 bg-primary text-white text-xs uppercase"

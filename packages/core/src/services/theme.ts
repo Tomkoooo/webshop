@@ -4,8 +4,12 @@ import ThemeSetting from "@wse/core/models/ThemeSetting"
 import type { TemplateModule } from "@wse/sdk/templates/types"
 
 import type { ThemeTokens } from "@wse/sdk/theme/tokens"
+import {
+  normalizeThemeTypography,
+  type ThemeTypography,
+} from "@wse/sdk/theme/typography"
 
-export type { ThemeTokens }
+export type { ThemeTokens, ThemeTypography }
 
 const ENGINE_DEFAULT_THEME: ThemeTokens = {
   primary: "#111827",
@@ -33,6 +37,7 @@ type LeanThemeDoc = {
   _id?: unknown
   key?: string
   colors?: Record<string, unknown>
+  typography?: Record<string, unknown>
   overridesOnly?: boolean
 } & Partial<ThemeTokens>
 
@@ -183,6 +188,31 @@ export class ThemeService {
   static async clearStoredOverrides(template: TemplateModule): Promise<void> {
     await dbConnect()
     await upsertThemeDoc(template.manifest.id, {} as ThemeTokens, true)
+  }
+
+  /** Stored typography overrides for the template (partial; defaults live in @wse/sdk). */
+  static async getTypographyForTemplate(
+    template: TemplateModule
+  ): Promise<Partial<ThemeTypography>> {
+    await dbConnect()
+    const doc = await findStoredThemeDoc(template.manifest.id, Boolean(template.defaultTheme))
+    return normalizeThemeTypography(doc?.typography)
+  }
+
+  /** Persists typography overrides alongside the color palette. */
+  static async saveTypographyForTemplate(
+    template: TemplateModule,
+    typography: Partial<ThemeTypography>
+  ): Promise<Partial<ThemeTypography>> {
+    const normalized = normalizeThemeTypography(typography)
+    await dbConnect()
+    const key = themeKeyForTemplate(template.manifest.id)
+    await ThemeSetting.findOneAndUpdate(
+      { key },
+      { $set: { key, typography: normalized } },
+      { upsert: true, setDefaultsOnInsert: true }
+    )
+    return normalized
   }
 
   /**
