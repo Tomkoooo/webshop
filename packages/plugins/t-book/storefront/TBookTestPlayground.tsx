@@ -117,7 +117,14 @@ function OptionField({
   return null
 }
 
-export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: string }) {
+export function TBookTestPlayground({
+  defaultApiKey = "",
+  apiBase,
+}: {
+  defaultApiKey?: string
+  /** Runtime API root from server env (split tester vs admin deploy). */
+  apiBase?: string
+}) {
   const [apiKey, setApiKey] = useState(defaultApiKey)
   const [events, setEvents] = useState<TBookPublicEvent[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -155,7 +162,7 @@ export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: st
     setError(null)
     try {
       localStorage.setItem(STORAGE_KEY, apiKey.trim())
-      const res = await listEvents(apiKey.trim())
+      const res = await listEvents(apiKey.trim(), apiBase)
       setEvents(res.events)
       setLastResponse(res)
       if (res.events.length === 1) setSelectedEventId(res.events[0].id)
@@ -164,14 +171,14 @@ export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: st
     } finally {
       setLoading(false)
     }
-  }, [apiKey])
+  }, [apiKey, apiBase])
 
   const loadEventDetail = useCallback(
     async (eventId: string) => {
       setLoading(true)
       setError(null)
       try {
-        const res = await getEventDetail(apiKey.trim(), eventId)
+        const res = await getEventDetail(apiKey.trim(), eventId, apiBase)
         setHotels(res.hotels)
         setNights(res.event.nights)
         setLastResponse(res)
@@ -185,7 +192,7 @@ export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: st
         setLoading(false)
       }
     },
-    [apiKey]
+    [apiKey, apiBase]
   )
 
   useEffect(() => {
@@ -218,7 +225,7 @@ export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: st
         nights: selectedHotelId ? nights : null,
         selections: selectedHotelId ? selections : null,
       }
-      const res = await quoteBooking(apiKey.trim(), body)
+      const res = await quoteBooking(apiKey.trim(), body, apiBase)
       setQuote(res.quote)
       setLastResponse(res)
     } catch (err) {
@@ -240,7 +247,7 @@ export function TBookTestPlayground({ defaultApiKey = "" }: { defaultApiKey?: st
         hotelId: selectedHotelId,
         nights: selectedHotelId ? nights : null,
         selections: selectedHotelId ? selections : null,
-      })
+      }, apiBase)
       setLastResponse(res)
       window.location.href = res.checkoutUrl
     } catch (err) {

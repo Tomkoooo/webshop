@@ -1,6 +1,12 @@
-/** Override for split deploys: tester UI on one host, API + secrets on admin host. */
-const API_BASE =
-  process.env.NEXT_PUBLIC_TBOOK_API_BASE?.replace(/\/$/, "") || "/api/plugins/t-book"
+/** Default API root; override per-call for split deploys (tester UI → admin API). */
+export function resolveTBookApiBase(override?: string): string {
+  const trimmed = override?.replace(/\/$/, "")
+  if (trimmed) return trimmed
+  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_TBOOK_API_BASE?.trim()) {
+    return process.env.NEXT_PUBLIC_TBOOK_API_BASE.replace(/\/$/, "")
+  }
+  return "/api/plugins/t-book"
+}
 
 export type TBookPublicEvent = {
   id: string
@@ -66,9 +72,10 @@ export type TBookSelections = Record<string, string | number | boolean | string[
 async function tbookFetch<T>(
   apiKey: string,
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
+  apiBase?: string
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${resolveTBookApiBase(apiBase)}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -83,17 +90,17 @@ async function tbookFetch<T>(
   return data
 }
 
-export function listEvents(apiKey: string) {
-  return tbookFetch<{ ok: true; events: TBookPublicEvent[] }>(apiKey, "/events")
+export function listEvents(apiKey: string, apiBase?: string) {
+  return tbookFetch<{ ok: true; events: TBookPublicEvent[] }>(apiKey, "/events", undefined, apiBase)
 }
 
-export function getEventDetail(apiKey: string, eventId: string) {
+export function getEventDetail(apiKey: string, eventId: string, apiBase?: string) {
   return tbookFetch<{
     ok: true
     event: TBookPublicEvent
     groupBookingOptions: TBookPublicOptionDef[]
     hotels: TBookPublicHotel[]
-  }>(apiKey, `/events/${eventId}`)
+  }>(apiKey, `/events/${eventId}`, undefined, apiBase)
 }
 
 export function quoteBooking(
@@ -104,12 +111,18 @@ export function quoteBooking(
     hotelId?: string | null
     nights?: number | null
     selections?: TBookSelections | null
-  }
+  },
+  apiBase?: string
 ) {
-  return tbookFetch<{ ok: true; quote: TBookPriceQuote }>(apiKey, "/quote", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
+  return tbookFetch<{ ok: true; quote: TBookPriceQuote }>(
+    apiKey,
+    "/quote",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    apiBase
+  )
 }
 
 export function createBooking(
@@ -129,7 +142,8 @@ export function createBooking(
     hotelId?: string | null
     nights?: number | null
     selections?: TBookSelections | null
-  }
+  },
+  apiBase?: string
 ) {
   return tbookFetch<{
     ok: true
@@ -139,10 +153,15 @@ export function createBooking(
     checkoutUrl: string
     stripeSessionId: string
     expiresAt: string
-  }>(apiKey, "/bookings", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
+  }>(
+    apiKey,
+    "/bookings",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    apiBase
+  )
 }
 
 export function formatHuf(amount: number): string {
