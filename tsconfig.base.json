@@ -34,7 +34,8 @@
       "@wse/plugin-shop/*": ["packages/plugins/shop/*"],
       "@wse/plugin-camp-booking/*": ["packages/plugins/camp-booking/*"],
       "@wse/plugin-press-kit/*": ["packages/plugins/press-kit/*"],
-      "@wse/plugin-order-lab/*": ["packages/plugins/order-lab/*"]
+      "@wse/plugin-order-lab/*": ["packages/plugins/order-lab/*"],
+      "@wse/plugin-t-book/*": ["packages/plugins/t-book/*"]
     }
   }
 }

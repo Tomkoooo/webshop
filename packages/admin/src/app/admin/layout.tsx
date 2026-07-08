@@ -8,7 +8,7 @@ import { redirect } from "next/navigation"
 import { BrandingSettingsService } from "@wse/core/services/branding-settings"
 import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
-import { listAllTemplates } from "@wse/core/templates/registry"
+import { ensureDeploymentPluginFeatureFlags } from "@wse/core/actions/admin-flags"
 import { PluginService } from "@wse/core/services/plugin"
 import { pluginAdminHref } from "@wse/sdk/plugins/types"
 import type { PluginNavGroup } from "@wse/core/components/admin/AdminPluginNavSection"
@@ -31,7 +31,8 @@ export default async function AdminLayout({
     redirect("/")
   }
 
-  await listAllTemplates()
+  await ensureDeploymentPluginFeatureFlags()
+
   const [
     branding,
     newsletterEnabled,

@@ -3,15 +3,38 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - '**'
+      - engine-v2
+      - main
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/webshop-engine
 
 jobs:
-  build-and-push:
+  resolve-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/engine-v2" ]; then
+            MATRIX='{"include":[
+              {"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},
+              {"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"}
+            ]}'
+          else
+            MATRIX='{"include":[
+              {"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"latest"}
+            ]}'
+          fi
+          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    needs: resolve-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.resolve-matrix.outputs.matrix) }}
     permissions:
       contents: read
       packages: write
@@ -29,8 +52,6 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      # Unit tests only. Do NOT add test:integration, test:concurrency, or Stripe/webhook suites here — no Mongo,
-      # dev server, or stripe listen in CI. Run `npm run test:predeploy` locally before shipping inventory changes.
       - name: Run env-safe unit tests
         run: npm run test:unit -- --exclude tests/unit/order-and-gls-services.test.ts
 
@@ -43,22 +64,22 @@ jobs:
 
       - name: Lowercase image name
         id: image_name
-        run: echo "value=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(echo '${{ github.repository_owner }}/webshop-engine' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ steps.image_name.outputs.value }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
+      - name: Build and push Docker image (${{ matrix.image_tag }})
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.image_name.outputs.value }}:${{ matrix.image_tag }}
+            ${{ env.REGISTRY }}/${{ steps.image_name.outputs.value }}:sha-${{ github.sha }}-${{ matrix.image_tag }}
+          build-args: |
+            SITE_APP=${{ matrix.site_app }}
+            SITE_APP_SERVER=${{ matrix.site_server }}
+            DATABASE_URL=mongodb://localhost:27017/build
+            AUTH_GOOGLE_ID=build-placeholder
+            AUTH_GOOGLE_SECRET=build-placeholder
+            AUTH_SECRET=build-placeholder
+            NEXTAUTH_URL=https://placeholder.example.com
+            AUTH_TRUST_HOST=true

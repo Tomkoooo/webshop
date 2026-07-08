@@ -1,10 +1,21 @@
 import { PluginService } from "@wse/core/services/plugin"
 import { pluginAdminHref } from "@wse/sdk/plugins/types"
 import type { PluginModule } from "@wse/sdk/plugins/types"
+import {
+  getDeploymentDefinition,
+  isPluginAllowlistedForDeployment,
+} from "@wse/core/config/deployments-registry"
+import { isShopEnabled } from "@wse/core/lib/features/shop"
+import { loadPluginModule } from "@wse/core/plugins/registry"
+import { FeatureFlagService } from "@wse/core/services/feature-flags"
 
 export type ShopDisabledAdminLanding =
   | { kind: "redirect"; href: string }
-  | { kind: "hub"; plugins: Array<{ id: string; name: string; href: string }> }
+  | {
+      kind: "hub"
+      plugins: Array<{ id: string; name: string; href: string }>
+      pendingPlugins: Array<{ id: string; name: string; settingsHref: string }>
+    }
 
 function pickPrimaryPlugin(
   plugins: Awaited<ReturnType<typeof PluginService.listEnabledWithAdmin>>
@@ -21,13 +32,59 @@ export function getPluginStatsHref(pluginId: string, plugin: PluginModule): stri
   return pluginAdminHref(pluginId, segment)
 }
 
+/** Plugins allowlisted on this deployment with admin UI, regardless of DB feature flag. */
+async function listAllowlistedAdminPlugins(host: string | null) {
+  const deployment = getDeploymentDefinition(host)
+  const results: Array<{
+    id: string
+    name: string
+    plugin: PluginModule
+    featureFlagKey: string | null
+  }> = []
+
+  for (const pluginId of deployment.enabledPlugins) {
+    if (!isPluginAllowlistedForDeployment(pluginId, host)) continue
+    let plugin: PluginModule
+    try {
+      plugin = await loadPluginModule(pluginId)
+    } catch {
+      continue
+    }
+    if (!plugin.admin?.Screen) continue
+    if (plugin.manifest.requiresShop && !isShopEnabled()) continue
+    results.push({
+      id: pluginId,
+      name: plugin.manifest.name,
+      plugin,
+      featureFlagKey: plugin.manifest.featureFlagKey ?? null,
+    })
+  }
+  return results
+}
+
 /** Where `/admin` should go when `ENABLE_SHOP=false`. */
 export async function resolveShopDisabledAdminLanding(): Promise<ShopDisabledAdminLanding> {
+  const host = await PluginService.getHost()
   const plugins = await PluginService.listEnabledWithAdmin()
   const primary = pickPrimaryPlugin(plugins)
 
   if (primary) {
     return { kind: "redirect", href: pluginAdminHref(primary.id, "") }
+  }
+
+  const allowlisted = await listAllowlistedAdminPlugins(host)
+  const pendingPlugins: Array<{ id: string; name: string; settingsHref: string }> = []
+
+  for (const entry of allowlisted) {
+    if (!entry.featureFlagKey) continue
+    const enabled = await FeatureFlagService.isEnabled(entry.featureFlagKey, false)
+    if (!enabled) {
+      pendingPlugins.push({
+        id: entry.id,
+        name: entry.name,
+        settingsHref: "/admin/info",
+      })
+    }
   }
 
   return {
@@ -37,6 +94,7 @@ export async function resolveShopDisabledAdminLanding(): Promise<ShopDisabledAdm
       name: p.name,
       href: pluginAdminHref(p.id, ""),
     })),
+    pendingPlugins,
   }
 }
 

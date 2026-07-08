@@ -1,16 +1,25 @@
-version: "3.8"
-
-# PORTAINER STACK (standalone Docker — single VPS, not Swarm)
-# Paste into: Stacks → Add stack → Web editor
+# Portainer / Docker Compose — Engine v2
 #
-# Requires Portainer connected to a **local Docker** environment (not Swarm).
-# If you use nginx-proxy, the external network `nginxproxy_default` must exist
-# on the host (`docker network ls`). Remove that network block if you don't use it.
+# Two deployment patterns:
+#
+# A) v2 site app (production) — identity baked in image via WSE_SITE_CONFIG_JSON.
+#    Build with SITE_APP + SITE_APP_SERVER. Do NOT set DEPLOYMENT_KEY at runtime.
+#
+# B) Legacy reference matrix (dev / multi-tenant on one image) — set DEPLOYMENT_KEY
+#    per container. Multiple containers CAN share one DATABASE_URL (see README).
+#
+# Paste into Portainer: Stacks → Add stack → Web editor.
+# Requires external network `nginxproxy_default` if using nginx-proxy (remove block otherwise).
 
 services:
-  webshop-engine:
-    image: ${WEBSHOP_IMAGE}
-    container_name: webshop-engine
+  # ---------------------------------------------------------------------------
+  # v2 site app (recommended for production)
+  # Build: docker build --build-arg SITE_APP=apps/<site> \
+  #        --build-arg SITE_APP_SERVER=apps/<site>/server.js -t <image> .
+  # ---------------------------------------------------------------------------
+  webshop:
+    image: ${WEBSHOP_IMAGE:?Set WEBSHOP_IMAGE to a v2 site image tag}
+    container_name: ${WEBSHOP_CONTAINER_NAME:-webshop}
     restart: unless-stopped
 
     labels:
@@ -39,7 +48,7 @@ services:
       HOSTNAME: "0.0.0.0"
       TZ: Europe/Budapest
 
-      # --- Core (set in Portainer env) ---
+      # --- Core (set in Portainer / .env) ---
       DATABASE_URL: ${DATABASE_URL}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
@@ -47,23 +56,25 @@ services:
       AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
       AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
       AUTH_URL: ${AUTH_URL}
-      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
 
-      # --- Deployment ---
-      DEPLOYMENT_KEY: ${DEPLOYMENT_KEY}
-      ENABLE_SHOP: ${ENABLE_SHOP}
+      # v2 site apps: leave DEPLOYMENT_KEY unset (identity is in the image).
+      # Legacy apps/reference only:
+      DEPLOYMENT_KEY: ${DEPLOYMENT_KEY:-}
+
+      ENABLE_SHOP: ${ENABLE_SHOP:-true}
 
       # --- Maintenance ---
-      MAINTENANCE_MODE: ${MAINTENANCE_MODE}
-      NEXT_PUBLIC_MAINTENANCE_MODE: ${NEXT_PUBLIC_MAINTENANCE_MODE}
+      MAINTENANCE_MODE: ${MAINTENANCE_MODE:-false}
+      NEXT_PUBLIC_MAINTENANCE_MODE: ${NEXT_PUBLIC_MAINTENANCE_MODE:-false}
 
       # --- Admin bootstrap ---
       BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS}
 
       # --- Analytics ---
-      NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID}
-      NEXT_PUBLIC_META_PIXEL_ID: ${NEXT_PUBLIC_META_PIXEL_ID}
-      NEXT_PUBLIC_ANALYTICS_ENABLED: ${NEXT_PUBLIC_ANALYTICS_ENABLED}
+      NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
+      NEXT_PUBLIC_META_PIXEL_ID: ${NEXT_PUBLIC_META_PIXEL_ID:-}
+      NEXT_PUBLIC_ANALYTICS_ENABLED: ${NEXT_PUBLIC_ANALYTICS_ENABLED:-false}
 
       # --- Email ---
       EMAIL_HOST: ${EMAIL_HOST}
@@ -72,70 +83,89 @@ services:
       EMAIL_PASS: ${EMAIL_PASS}
       EMAIL_FROM: ${EMAIL_FROM}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
-      MAILER_VERIFY_SMTP: ${MAILER_VERIFY_SMTP}
-      MAILER_LOG_STACK: ${MAILER_LOG_STACK}
-      INVOICE_ERROR_ALERT_EMAIL: ${INVOICE_ERROR_ALERT_EMAIL}
+      MAILER_VERIFY_SMTP: ${MAILER_VERIFY_SMTP:-false}
+      MAILER_LOG_STACK: ${MAILER_LOG_STACK:-false}
+      INVOICE_ERROR_ALERT_EMAIL: ${INVOICE_ERROR_ALERT_EMAIL:-}
 
-      # --- Stripe ---
+      # --- Stripe (shop + t-book) ---
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
 
-      # --- Inventory holds ---
-      RESERVATION_TTL_MIN_MS: ${RESERVATION_TTL_MIN_MS}
-      RESERVATION_TTL_MAX_MS: ${RESERVATION_TTL_MAX_MS}
-      RESERVATION_TTL_MAX_MINUTES: ${RESERVATION_TTL_MAX_MINUTES}
-      RESERVATION_STRIPE_SESSION_BUFFER_SEC: ${RESERVATION_STRIPE_SESSION_BUFFER_SEC}
-      CRON_SECRET: ${CRON_SECRET}
+      # --- Számlázz.hu (shop + t-book) ---
+      SZAMLAZZ_AGENT_KEY: ${SZAMLAZZ_AGENT_KEY:-}
+      SZAMLAZZ_USER: ${SZAMLAZZ_USER:-}
+      SZAMLAZZ_PASSWORD: ${SZAMLAZZ_PASSWORD:-}
+      SZAMLAZZ_TIMEOUT_MS: ${SZAMLAZZ_TIMEOUT_MS:-}
+      SZAMLAZZ_SELLER_BANK_NAME: ${SZAMLAZZ_SELLER_BANK_NAME:-}
+      SZAMLAZZ_SELLER_BANK_ACCOUNT: ${SZAMLAZZ_SELLER_BANK_ACCOUNT:-}
+      SZAMLAZZ_ISSUER_NAME: ${SZAMLAZZ_ISSUER_NAME:-}
+      SZAMLAZZ_EMAIL_SUBJECT: ${SZAMLAZZ_EMAIL_SUBJECT:-}
+      SZAMLAZZ_EMAIL_MESSAGE: ${SZAMLAZZ_EMAIL_MESSAGE:-}
 
-      # --- GLS ---
-      GLS_API_USERNAME: ${GLS_API_USERNAME}
-      GLS_API_PASSWORD: ${GLS_API_PASSWORD}
-      GLS_CLIENT_NUMBER: ${GLS_CLIENT_NUMBER}
-      GLS_API_BASE_URL: ${GLS_API_BASE_URL}
-      GLS_WEBSHOP_ENGINE: ${GLS_WEBSHOP_ENGINE}
-      GLS_PRINTER_TYPE: ${GLS_PRINTER_TYPE}
-      GLS_PICKUP_NAME: ${GLS_PICKUP_NAME}
-      GLS_PICKUP_STREET: ${GLS_PICKUP_STREET}
-      GLS_PICKUP_HOUSE_NUMBER: ${GLS_PICKUP_HOUSE_NUMBER}
-      GLS_PICKUP_HOUSE_NUMBER_INFO: ${GLS_PICKUP_HOUSE_NUMBER_INFO}
-      GLS_PICKUP_CITY: ${GLS_PICKUP_CITY}
-      GLS_PICKUP_ZIP: ${GLS_PICKUP_ZIP}
-      GLS_PICKUP_COUNTRY_ISO: ${GLS_PICKUP_COUNTRY_ISO}
-      GLS_PICKUP_CONTACT_NAME: ${GLS_PICKUP_CONTACT_NAME}
-      GLS_PICKUP_CONTACT_PHONE: ${GLS_PICKUP_CONTACT_PHONE}
-      GLS_PICKUP_CONTACT_EMAIL: ${GLS_PICKUP_CONTACT_EMAIL}
-      GLS_SHIPPING_METHOD_NAME: ${GLS_SHIPPING_METHOD_NAME}
+      # --- Inventory holds (shop) ---
+      RESERVATION_TTL_MIN_MS: ${RESERVATION_TTL_MIN_MS:-}
+      RESERVATION_TTL_MAX_MS: ${RESERVATION_TTL_MAX_MS:-}
+      RESERVATION_TTL_MAX_MINUTES: ${RESERVATION_TTL_MAX_MINUTES:-}
+      RESERVATION_STRIPE_SESSION_BUFFER_SEC: ${RESERVATION_STRIPE_SESSION_BUFFER_SEC:-}
+      CRON_SECRET: ${CRON_SECRET:-}
 
-      # --- Foxpost ---
-      FOXPOST_API_USERNAME: ${FOXPOST_API_USERNAME}
-      FOXPOST_API_PASSWORD: ${FOXPOST_API_PASSWORD}
-      FOXPOST_API_KEY: ${FOXPOST_API_KEY}
-      FOXPOST_API_BASE_URL: ${FOXPOST_API_BASE_URL}
-      FOXPOST_SHIPPING_METHOD_NAME: ${FOXPOST_SHIPPING_METHOD_NAME}
-      FOXPOST_PARCEL_SIZE: ${FOXPOST_PARCEL_SIZE}
-      FOXPOST_LABEL_PAGE_SIZE: ${FOXPOST_LABEL_PAGE_SIZE}
-      FOXPOST_IS_WEB: ${FOXPOST_IS_WEB}
-
-      # --- Számlázz.hu ---
-      SZAMLAZZ_AGENT_KEY: ${SZAMLAZZ_AGENT_KEY}
-      SZAMLAZZ_USER: ${SZAMLAZZ_USER}
-      SZAMLAZZ_PASSWORD: ${SZAMLAZZ_PASSWORD}
-      SZAMLAZZ_TIMEOUT_MS: ${SZAMLAZZ_TIMEOUT_MS}
-      SZAMLAZZ_SELLER_BANK_NAME: ${SZAMLAZZ_SELLER_BANK_NAME}
-      SZAMLAZZ_SELLER_BANK_ACCOUNT: ${SZAMLAZZ_SELLER_BANK_ACCOUNT}
-      SZAMLAZZ_ISSUER_NAME: ${SZAMLAZZ_ISSUER_NAME}
-      SZAMLAZZ_EMAIL_SUBJECT: ${SZAMLAZZ_EMAIL_SUBJECT}
-      SZAMLAZZ_EMAIL_MESSAGE: ${SZAMLAZZ_EMAIL_MESSAGE}
+      # --- GLS / Foxpost (shop) ---
+      GLS_API_USERNAME: ${GLS_API_USERNAME:-}
+      GLS_API_PASSWORD: ${GLS_API_PASSWORD:-}
+      GLS_CLIENT_NUMBER: ${GLS_CLIENT_NUMBER:-}
+      GLS_API_BASE_URL: ${GLS_API_BASE_URL:-}
+      GLS_WEBSHOP_ENGINE: ${GLS_WEBSHOP_ENGINE:-}
+      GLS_PRINTER_TYPE: ${GLS_PRINTER_TYPE:-}
+      GLS_PICKUP_NAME: ${GLS_PICKUP_NAME:-}
+      GLS_PICKUP_STREET: ${GLS_PICKUP_STREET:-}
+      GLS_PICKUP_HOUSE_NUMBER: ${GLS_PICKUP_HOUSE_NUMBER:-}
+      GLS_PICKUP_HOUSE_NUMBER_INFO: ${GLS_PICKUP_HOUSE_NUMBER_INFO:-}
+      GLS_PICKUP_CITY: ${GLS_PICKUP_CITY:-}
+      GLS_PICKUP_ZIP: ${GLS_PICKUP_ZIP:-}
+      GLS_PICKUP_COUNTRY_ISO: ${GLS_PICKUP_COUNTRY_ISO:-}
+      GLS_PICKUP_CONTACT_NAME: ${GLS_PICKUP_CONTACT_NAME:-}
+      GLS_PICKUP_CONTACT_PHONE: ${GLS_PICKUP_CONTACT_PHONE:-}
+      GLS_PICKUP_CONTACT_EMAIL: ${GLS_PICKUP_CONTACT_EMAIL:-}
+      GLS_SHIPPING_METHOD_NAME: ${GLS_SHIPPING_METHOD_NAME:-}
+      FOXPOST_API_USERNAME: ${FOXPOST_API_USERNAME:-}
+      FOXPOST_API_PASSWORD: ${FOXPOST_API_PASSWORD:-}
+      FOXPOST_API_KEY: ${FOXPOST_API_KEY:-}
+      FOXPOST_API_BASE_URL: ${FOXPOST_API_BASE_URL:-}
+      FOXPOST_SHIPPING_METHOD_NAME: ${FOXPOST_SHIPPING_METHOD_NAME:-}
+      FOXPOST_PARCEL_SIZE: ${FOXPOST_PARCEL_SIZE:-}
+      FOXPOST_LABEL_PAGE_SIZE: ${FOXPOST_LABEL_PAGE_SIZE:-}
+      FOXPOST_IS_WEB: ${FOXPOST_IS_WEB:-}
 
       # --- Newsletter ---
-      NEWSLETTER_UNSUBSCRIBE_SECRET: ${NEWSLETTER_UNSUBSCRIBE_SECRET}
+      NEWSLETTER_UNSUBSCRIBE_SECRET: ${NEWSLETTER_UNSUBSCRIBE_SECRET:-}
 
       # --- Dev metrics (leave empty in prod) ---
-      DEV_METRICS: ${DEV_METRICS}
-      DEV_METRICS_FILE: ${DEV_METRICS_FILE}
+      DEV_METRICS: ${DEV_METRICS:-}
+      DEV_METRICS_FILE: ${DEV_METRICS_FILE:-}
 
     networks:
       - nginxproxy_default
+
+  # ---------------------------------------------------------------------------
+  # Optional: second deployment on the SAME MongoDB (reference image + DEPLOYMENT_KEY).
+  # Uncomment and set WEBSHOP_IMAGE_REFERENCE + public URLs for a second host.
+  # ---------------------------------------------------------------------------
+  # webshop-reference:
+  #   image: ${WEBSHOP_IMAGE_REFERENCE:-ghcr.io/your-org/webshop-engine:engine-v2-reference}
+  #   container_name: webshop-reference
+  #   restart: unless-stopped
+  #   volumes:
+  #     - webshop-reference-uploads:/app/uploads
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     DEPLOYMENT_KEY: ${DEPLOYMENT_KEY_REFERENCE:-default}
+  #     NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL_REFERENCE}
+  #     NEXTAUTH_URL: ${NEXTAUTH_URL_REFERENCE}
+  #     AUTH_URL: ${AUTH_URL_REFERENCE}
+  #     AUTH_SECRET: ${AUTH_SECRET}
+  #     # ...duplicate other secrets from webshop service...
+  #   networks:
+  #     - nginxproxy_default
 
   wud:
     image: ghcr.io/getwud/wud:latest
@@ -154,32 +184,45 @@ services:
 
 volumes:
   webshop-uploads:
+  # webshop-uploads-second:
 
 networks:
   nginxproxy_default:
     external: true
 
 # =============================================================================
-# PORTAINER ENVIRONMENT VARIABLES — copy keys you need into the box below the
-# web editor (one KEY=value per line). Example for minecraft-camp:
-#
-# WEBSHOP_IMAGE=ghcr.io/your-user/webshop-engine:main
+# EXAMPLE — v2 site app (sakkmed)
+# =============================================================================
+# WEBSHOP_IMAGE=ghcr.io/your-org/sakkmed:latest
+# WEBSHOP_CONTAINER_NAME=sakkmed
 # DATABASE_URL=mongodb+srv://...
-# NEXT_PUBLIC_APP_URL=https://mineshow.example.com
-# NEXTAUTH_URL=https://mineshow.example.com
-# AUTH_URL=https://mineshow.example.com
+# NEXT_PUBLIC_APP_URL=https://sakkmed.example.com
+# NEXTAUTH_URL=https://sakkmed.example.com
+# AUTH_URL=https://sakkmed.example.com
 # AUTH_SECRET=...
 # AUTH_GOOGLE_ID=...
 # AUTH_GOOGLE_SECRET=...
-# AUTH_TRUST_HOST=true
-# DEPLOYMENT_KEY=minecraft-camp
 # ENABLE_SHOP=false
-# STRIPE_SECRET_KEY=sk_live_...
-# STRIPE_WEBHOOK_SECRET=whsec_...
-# EMAIL_HOST=...
-# EMAIL_PORT=465
-# EMAIL_USER=...
-# EMAIL_PASS=...
-# EMAIL_FROM=...
-# EMAIL_FROM_NAME=...
+# (no DEPLOYMENT_KEY)
+#
+# Build image:
+#   docker build --build-arg SITE_APP=apps/sakkmed \
+#     --build-arg SITE_APP_SERVER=apps/sakkmed/server.js \
+#     -t ghcr.io/your-org/sakkmed:latest .
+#
 # =============================================================================
+# EXAMPLE — two deployments, ONE database (engine-v2 branch images)
+# =============================================================================
+# Same DATABASE_URL on both containers. Different public URL per host.
+#
+# Container 1 — v2 tBook site (apps/tbook, no DEPLOYMENT_KEY):
+#   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2
+#   NEXT_PUBLIC_APP_URL=https://tbook.example.com
+#
+# Container 2 — reference matrix (DEPLOYMENT_KEY=default):
+#   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2-reference
+#   DEPLOYMENT_KEY=default
+#   NEXT_PUBLIC_APP_URL=https://tbook-ref.example.com
+#
+# API test page: /tbook-test on either host (default-modern theme, not minecraft).
+# Use portainer.stack.yml locally (gitignored) for a ready-to-paste stack with secrets.

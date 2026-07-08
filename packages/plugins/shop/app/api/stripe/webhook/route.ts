@@ -47,6 +47,14 @@ export async function POST(req: NextRequest) {
               "@wse/plugin-camp-booking/services/checkout-service"
             );
             await CampCheckoutService.finalizeHoldFromStripeSession(checkoutSession);
+          } else if (
+            checkoutSession.metadata?.checkoutKind === "t_book" ||
+            checkoutSession.metadata?.tBookBookingId
+          ) {
+            const { TBookCheckoutService } = await import(
+              "@wse/plugin-t-book/services/checkout-service"
+            );
+            await TBookCheckoutService.finalizeBookingFromStripeSession(checkoutSession);
           } else {
             await handleCheckoutSessionCompletedLike(checkoutSession);
           }
@@ -54,7 +62,19 @@ export async function POST(req: NextRequest) {
         }
         case "checkout.session.expired": {
           const checkoutSession = event.data.object as any;
-          await handleCheckoutSessionExpired(checkoutSession);
+          if (
+            checkoutSession.metadata?.checkoutKind === "t_book" ||
+            checkoutSession.metadata?.tBookBookingId
+          ) {
+            const { TBookCheckoutService } = await import(
+              "@wse/plugin-t-book/services/checkout-service"
+            );
+            await TBookCheckoutService.expireBooking(
+              checkoutSession.metadata?.tBookBookingId || checkoutSession.client_reference_id || ""
+            );
+          } else {
+            await handleCheckoutSessionExpired(checkoutSession);
+          }
           break;
         }
         case "checkout.session.async_payment_failed": {

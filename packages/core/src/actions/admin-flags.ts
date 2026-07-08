@@ -13,6 +13,7 @@ import {
 } from "@wse/core/lib/admin-settings-access";
 import { isShopEnabled } from "@wse/core/lib/features/shop";
 import { PluginService } from "@wse/core/services/plugin";
+import { loadPluginModule } from "@wse/core/plugins/registry";
 
 type FlagSeed = {
   key: string;
@@ -94,6 +95,12 @@ const DEFAULT_FLAGS: FlagSeed[] = [
     description: "Foxpost sandbox rendeléskezelés és csomag/címke teszt külön gyűjteményben.",
     defaultEnabled: false,
   },
+  {
+    key: "pluginTBook",
+    label: "tBook plugin",
+    description: "Esemény + szállás foglalás, dinamikus árazás, Stripe fizetés, szamlazz.hu számlázás.",
+    defaultEnabled: true,
+  },
 ];
 
 async function migrateLegacyCombinedParcelFlag() {
@@ -155,6 +162,58 @@ export async function getAdminFeatureFlags() {
 
   const flags = await FeatureFlag.find({}).sort({ key: 1 }).lean();
   return JSON.parse(JSON.stringify(flags));
+}
+
+/**
+ * Upserts feature-flag rows for plugins allowlisted on this deployment.
+ * Called from the admin shell so `/admin` can resolve plugin landing without visiting /admin/info first.
+ */
+export async function ensureDeploymentPluginFeatureFlags() {
+  await dbConnect();
+  const host = await PluginService.getHost();
+  const deployment = getDeploymentForAdmin(host);
+
+  for (const pluginId of deployment.enabledPlugins) {
+    let plugin;
+    try {
+      plugin = await loadPluginModule(pluginId);
+    } catch {
+      continue;
+    }
+    const flagKey = plugin.manifest.featureFlagKey;
+    if (!flagKey) continue;
+    const seed = DEFAULT_FLAGS.find((f) => f.key === flagKey);
+    if (!seed) continue;
+
+    const existing = await FeatureFlag.findOne({ key: flagKey }).lean();
+    const existingTimestamps = existing as (typeof existing & {
+      createdAt?: Date
+      updatedAt?: Date
+    }) | null
+    const neverToggled =
+      existingTimestamps?.createdAt &&
+      existingTimestamps?.updatedAt &&
+      new Date(existingTimestamps.createdAt).getTime() ===
+        new Date(existingTimestamps.updatedAt).getTime();
+
+    await FeatureFlag.findOneAndUpdate(
+      { key: flagKey },
+      {
+        $setOnInsert: {
+          key: flagKey,
+          enabled: seed.defaultEnabled,
+        },
+        $set: {
+          label: seed.label,
+          description: seed.description,
+          ...(seed.defaultEnabled && existing && !existing.enabled && neverToggled
+            ? { enabled: true }
+            : {}),
+        },
+      },
+      { upsert: true }
+    );
+  }
 }
 
 export async function updateFeatureFlag(flagKey: string, enabled: boolean) {

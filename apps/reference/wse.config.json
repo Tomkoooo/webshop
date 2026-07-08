@@ -20,6 +20,10 @@
     {
       "specifier": "@wse/plugin-press-kit/app",
       "dir": "../../packages/plugins/press-kit/app"
+    },
+    {
+      "specifier": "@wse/plugin-t-book/app",
+      "dir": "../../packages/plugins/t-book/app"
     }
   ]
 }

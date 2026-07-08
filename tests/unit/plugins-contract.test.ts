@@ -14,6 +14,10 @@ describe("plugin registry contract", () => {
     expect(pluginIds).toContain("order-lab")
   })
 
+  it("registers t-book plugin", () => {
+    expect(pluginIds).toContain("t-book")
+  })
+
   for (const id of pluginIds) {
     describe(`plugin '${id}'`, () => {
       it("manifest id matches registry key", async () => {

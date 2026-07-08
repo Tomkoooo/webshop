@@ -19,6 +19,7 @@ export type AdminFeatureFlagKey =
   | "pluginCampBooking"
   | "pluginPressKit"
   | "pluginOrderLab"
+  | "pluginTBook"
 
 const SHOP_ONLY_FLAGS: AdminFeatureFlagKey[] = [
   "shopPage",
@@ -43,8 +44,10 @@ export function getAccessibleAdminFlagKeys(
     keys.push("shopPage", ...SHOP_ONLY_FLAGS)
   }
 
-  const hasCampPlugin = deployment.enabledPlugins.includes("camp-booking")
-  if (shopEnabled || hasCampPlugin) {
+  const hasPaymentPlugin =
+    deployment.enabledPlugins.includes("camp-booking") ||
+    deployment.enabledPlugins.includes("t-book")
+  if (shopEnabled || hasPaymentPlugin) {
     keys.push("stripePayments", "szamlazzInvoicing")
   }
 
@@ -94,6 +97,11 @@ const PLUGIN_LABELS: Record<string, { name: string; description: string; feature
       name: "Order Lab",
       description: "Foxpost sandbox rendeléskezelés és csomag/címke teszt külön gyűjteményben.",
       featureFlagKey: "pluginOrderLab",
+    },
+    "t-book": {
+      name: "tBook — esemény & szállás foglalás",
+      description: "Események, hotelek dinamikus árazással, foglalások, Stripe + szamlazz.hu.",
+      featureFlagKey: "pluginTBook",
     },
   }
 

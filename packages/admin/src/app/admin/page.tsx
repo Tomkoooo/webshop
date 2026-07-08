@@ -13,9 +13,6 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { resolveShopDisabledAdminLanding } from "@wse/core/lib/admin-plugin-navigation"
-import { TemplateService } from "@wse/core/services/template"
-import { PluginService } from "@wse/core/services/plugin"
-import { listEditablePages } from "@wse/core/templates/cms-pages"
 import { AdminContentModeHub } from "@wse/core/components/admin/AdminContentModeHub"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
@@ -80,14 +77,12 @@ export default async function AdminDashboard({
     if (landing.kind === "redirect") {
       redirect(landing.href)
     }
-    if (landing.plugins.length === 0) {
-      const template = await TemplateService.getActive()
-      const campBookingEnabled = await PluginService.isEnabled("camp-booking")
-      const editablePages = listEditablePages(template, false, campBookingEnabled)
-      const firstCms = editablePages[0]
-      redirect(firstCms ? `/admin/cms/${firstCms.adminSegment}` : "/admin/cms")
-    }
-    return <AdminContentModeHub plugins={landing.plugins} />
+    return (
+      <AdminContentModeHub
+        plugins={landing.plugins}
+        pendingPlugins={landing.pendingPlugins}
+      />
+    )
   }
 
   const params = await searchParams

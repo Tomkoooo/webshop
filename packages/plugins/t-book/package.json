@@ -1,0 +1,22 @@
+{
+  "name": "@wse/plugin-t-book",
+  "version": "1.0.0",
+  "description": "Webshop Engine plugin package: t-book (event + lodging bookings).",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/plugins/t-book"
+  }
+}

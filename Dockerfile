@@ -8,6 +8,7 @@ WORKDIR /app
 # Workspace manifests (root + every package) are needed for npm to link workspaces.
 COPY package.json package-lock.json* ./
 COPY apps/reference/package.json ./apps/reference/
+COPY apps/tbook/package.json ./apps/tbook/
 COPY apps/keramia-implant/package.json ./apps/keramia-implant/
 COPY apps/keramia-fogfeherites/package.json ./apps/keramia-fogfeherites/
 COPY apps/nagyarcu-shop/package.json ./apps/nagyarcu-shop/

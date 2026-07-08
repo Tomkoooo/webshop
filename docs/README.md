@@ -17,6 +17,7 @@ Markdown guides are grouped by topic. **Vendor PDFs** (GLS API references) live 
 | --- | --- |
 | [plugins/PLUGINS.md](plugins/PLUGINS.md) | Plugin system overview |
 | [plugins/AI_AGENTS_PLUGIN_GUIDE.md](plugins/AI_AGENTS_PLUGIN_GUIDE.md) | **Agents:** add/register/enable plugins |
+| [plugins/T_BOOK.md](plugins/T_BOOK.md) | tBook event + lodging booking plugin (admin, API, pricing engine) |
 
 ## Authentication
 

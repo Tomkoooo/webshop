@@ -6,7 +6,7 @@ import { syncApp } from "./sync.mjs"
 const VALID_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /** Plugins that ship Next.js routes (an `app/` dir) and can be installed on a site. */
-const ROUTE_PLUGINS = ["shop", "camp-booking", "press-kit"]
+const ROUTE_PLUGINS = ["shop", "camp-booking", "press-kit", "t-book"]
 
 function parseArgs(argv) {
   const out = { plugins: [] }

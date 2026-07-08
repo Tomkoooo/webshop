@@ -11,6 +11,7 @@ const pluginLoaders: Record<string, () => Promise<PluginModule>> = {
   "camp-booking": () => import("@wse/plugin-camp-booking/plugin.config").then((m) => m.campBooking),
   "press-kit": () => import("@wse/plugin-press-kit/plugin.config").then((m) => m.pressKit),
   "order-lab": () => import("@wse/plugin-order-lab/plugin.config").then((m) => m.orderLab),
+  "t-book": () => import("@wse/plugin-t-book/plugin.config").then((m) => m.tBook),
 }
 
 export function listRegisteredPluginIds(): string[] {

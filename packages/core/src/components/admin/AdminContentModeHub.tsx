@@ -2,8 +2,10 @@ import Link from "next/link"
 
 export function AdminContentModeHub({
   plugins,
+  pendingPlugins = [],
 }: {
   plugins: Array<{ id: string; name: string; href: string }>
+  pendingPlugins?: Array<{ id: string; name: string; settingsHref: string }>
 }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-700 max-w-xl">
@@ -12,10 +14,28 @@ export function AdminContentModeHub({
           Admin <span className="admin-headline-accent">tartalom</span>
         </h1>
         <p className="text-white/40 font-medium italic">
-          A webshop ki van kapcsolva. Válassz plugint az üzleti mutatókhoz, vagy a CMS / beállítások
+          A webshop ki van kapcsolva. Válassz plugint az üzleti felülethez, vagy a CMS / beállítások
           menüt a honlaphoz.
         </p>
       </div>
+      {pendingPlugins.length > 0 ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-5 py-4 space-y-2">
+          <p className="text-sm text-amber-200 font-medium">
+            Ezek a pluginek telepítve vannak, de még nincsenek bekapcsolva:
+          </p>
+          <ul className="space-y-1 text-sm text-amber-100/90">
+            {pendingPlugins.map((p) => (
+              <li key={p.id}>
+                <strong>{p.name}</strong> — kapcsold be a{" "}
+                <Link href={p.settingsHref} className="underline font-bold">
+                  Beállítások → Plugin beállítások
+                </Link>{" "}
+                alatt.
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest">
         {plugins.map((p) => (
           <Link

@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Portainer / local stack with secrets (never commit)
+portainer.stack.yml
+portainer.stack.*.yml
+docker-compose.local.yml
+docker-compose.*.local.yml
+
+.v1.env
 
 # vercel
 .vercel

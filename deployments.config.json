@@ -6,8 +6,12 @@
       "label": "Default storefront",
       "allowedTemplates": ["default-modern", "atelier-showcase"],
       "defaultTemplateId": "default-modern",
-      "enabledPlugins": [],
-      "pluginConfig": {}
+      "enabledPlugins": ["t-book"],
+      "pluginConfig": {
+        "t-book": {
+          "currency": "HUF"
+        }
+      }
     },
     {
       "key": "minecraft-camp",

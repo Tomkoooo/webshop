@@ -21,8 +21,14 @@ describe("deployment config", () => {
   it("defaults to default deployment key", () => {
     delete process.env.DEPLOYMENT_KEY
     expect(getDeploymentKey()).toBe("default")
-    expect(getDeploymentDefinition().enabledPlugins).toEqual([])
+    expect(getDeploymentDefinition().enabledPlugins).toEqual(["t-book"])
     expect(listAllowedTemplateIdsForDeployment()).toContain("default-modern")
+  })
+
+  it("allowlists t-book on the default deployment", () => {
+    delete process.env.DEPLOYMENT_KEY
+    expect(isPluginAllowlistedForDeployment("t-book")).toBe(true)
+    expect(getPluginConfigForDeployment("t-book").currency).toBe("HUF")
   })
 
   it("selects minecraft-camp deployment via DEPLOYMENT_KEY", () => {

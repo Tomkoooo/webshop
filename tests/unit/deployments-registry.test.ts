@@ -28,7 +28,7 @@ describe("deployments-registry", () => {
     const ids = listAllowedTemplateIdsForDeployment()
     expect(ids).toContain("default-modern")
     expect(ids).toContain("atelier-showcase")
-    expect(getDeploymentDefinition().enabledPlugins).toEqual([])
+    expect(getDeploymentDefinition().enabledPlugins).toEqual(["t-book"])
   })
 
   it("minecraft-camp allowlists camp-booking plugin and template", () => {
