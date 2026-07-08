@@ -16,7 +16,10 @@
     "lint": "eslint",
     "sync": "node packages/wse-cli/bin/wse.mjs sync",
     "validate-template": "node packages/wse-cli/bin/wse.mjs validate-template",
-    "create-template": "node scripts/create-template.mjs",
+    "create-template": "node packages/wse-cli/bin/wse.mjs create-template",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish",
     "deployments:validate": "node scripts/deployments/validate.mjs",
     "seed:minecraft-camp": "node scripts/seed/minecraft-camp-demo.mjs",
     "seed:keramia-dental": "npx tsx scripts/seed/keramia-dental-demo.ts",
@@ -87,6 +90,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@tailwindcss/postcss": "^4",
     "@types/handlebars": "^4.0.40",
     "@types/node": "^20",

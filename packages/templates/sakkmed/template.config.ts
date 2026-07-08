@@ -40,6 +40,29 @@ const staticPages = Object.fromEntries(
       defaultContent: SAKKMED_STATIC_DEFAULTS[slug],
       Render: SakkmedPageRender,
       EditorPanel: SakkmedPageEditorPanel,
+      listFields: [
+        {
+          path: "sections",
+          label: "Szekciók",
+          titleKey: "heading",
+          maxItems: 24,
+          fields: [
+            { key: "heading", label: "Cím" },
+            { key: "body", label: "Szöveg", type: "multiline" as const },
+            { key: "image", label: "Kép", type: "image" as const },
+          ],
+        },
+        {
+          path: "gallery",
+          label: "Galéria",
+          titleKey: "caption",
+          maxItems: 64,
+          fields: [
+            { key: "image", label: "Kép", type: "image" as const },
+            { key: "caption", label: "Felirat" },
+          ],
+        },
+      ],
     },
   ])
 )

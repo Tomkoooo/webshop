@@ -11,15 +11,29 @@ Use these guides when changing templates, plugins, deployments, or CMS content.
 | **MongoDB seed scripts (customer DBs)** | [.cursor/rules/safe-database-seeding.mdc](.cursor/rules/safe-database-seeding.mdc) |
 | **Minecraft camp reference project** | [docs/projects/MINECRAFT_CAMP.md](docs/projects/MINECRAFT_CAMP.md) |
 
+## Engine v2 layout (monorepo)
+
+The engine is npm-workspace packages consumed by thin per-site apps:
+
+| Piece | Location |
+| --- | --- |
+| Engine packages | `packages/sdk`, `packages/core`, `packages/admin`, `packages/cms-bridge`, `packages/wse-cli` |
+| Templates / plugins | `packages/templates/<id>` (`@wse/template-<id>`), `packages/plugins/<id>` (`@wse/plugin-<id>`) |
+| Site apps (one per deployment) | `apps/<site>` — identity baked via `WSE_SITE_CONFIG_JSON` in `next.config.ts`, route stubs from `wse sync` |
+| Control plane / landing host | `apps/core-admin`, `apps/landing-runtime` |
+
+Common CLI (`node packages/wse-cli/bin/wse.mjs <cmd>` or npm scripts): `create-template`, `create-site`, `sync`, `validate-template`, `cmsify`.
+
 ## In-code registries (must stay in sync)
 
 | Registry | File | Purpose |
 | --- | --- | --- |
-| Templates in build | `src/templates/registry.ts` | All `TemplateModule` ids shipped in this image |
-| Plugins in build | `src/plugins/registry.ts` | All `PluginModule` ids shipped in this image |
-| Per-deployment access | `deployments.config.json` + `src/config/deployments-registry.ts` | Which templates/plugins each `DEPLOYMENT_KEY` may use |
+| Templates in build | `packages/core/src/templates/registry.ts` | All `TemplateModule` ids loadable in this image |
+| Plugins in build | `packages/core/src/plugins/registry.ts` | All `PluginModule` ids loadable in this image |
+| Per-site identity | `apps/<site>/next.config.ts` (`WSE_SITE_CONFIG_JSON`) + `apps/<site>/wse.config.json` | Template, plugins, and routes for that site app |
+| Legacy matrix (reference app fallback only) | `deployments.config.json` + `packages/core/src/config/deployments-registry.ts` | Deprecated; site apps bake their own config |
 
-After editing the deployment matrix or either registry, run:
+After editing the legacy matrix or either registry, run:
 
 ```bash
 npm run deployments:validate

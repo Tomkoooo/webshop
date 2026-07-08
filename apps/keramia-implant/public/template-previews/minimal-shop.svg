@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">
+  <rect width="800" height="500" fill="#FAFAF9"/>
+  <rect x="0" y="0" width="800" height="56" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <text x="32" y="36" font-family="Georgia, serif" font-size="20" font-weight="600" fill="#0F172A">Quiet</text>
+  <rect x="320" y="22" width="40" height="12" fill="#94A3B8"/>
+  <rect x="380" y="22" width="40" height="12" fill="#94A3B8"/>
+  <rect x="440" y="22" width="40" height="12" fill="#94A3B8"/>
+  <text x="80" y="200" font-family="Georgia, serif" font-size="48" font-weight="600" fill="#0F172A">Made to last.</text>
+  <text x="80" y="240" font-family="Inter, sans-serif" font-size="16" fill="#64748B">A small catalog of considered pieces from independent makers.</text>
+  <rect x="80" y="280" width="180" height="44" fill="#0F172A"/>
+  <text x="170" y="307" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">BROWSE THE SHOP</text>
+  <rect x="500" y="120" width="220" height="280" fill="#E5E7EB"/>
+  <rect x="80" y="420" width="160" height="60" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <rect x="260" y="420" width="160" height="60" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <rect x="440" y="420" width="160" height="60" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <rect x="620" y="420" width="100" height="60" fill="#FFFFFF" stroke="#E5E7EB"/>
+</svg>

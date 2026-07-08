@@ -1,7 +1,6 @@
 {
   "name": "@wse/sdk",
   "version": "2.0.0",
-  "private": true,
   "description": "Webshop Engine SDK: template/plugin contracts, theme tokens, shared types.",
   "type": "module",
   "main": "./src/index.ts",
@@ -17,5 +16,14 @@
   "peerDependencies": {
     "react": ">=19",
     "zod": ">=4"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/sdk"
   }
 }

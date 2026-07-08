@@ -1,0 +1,13 @@
+{
+  "routeSources": [
+    {
+      "specifier": "@wse/core/app",
+      "dir": "../../packages/core/src/app",
+      "injectGlobalsCss": true
+    },
+    {
+      "specifier": "@wse/admin/app",
+      "dir": "../../packages/admin/src/app"
+    }
+  ]
+}

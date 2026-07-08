@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -104,6 +105,12 @@ export function HomeVisualSurfaceEditor({
     seoDescription: "",
   }
 
+  const structureSidebar = buildListFieldsSidebar({
+    specs: mod.pages.home.listFields,
+    draft,
+    setPath,
+  })
+
   const toolbar = (
     <div className="space-y-3 border-b border-white/10 bg-black/25 px-4 py-3 text-xs text-neutral-400">
       <p className="text-[10px] uppercase tracking-widest text-neutral-500">
@@ -179,6 +186,7 @@ export function HomeVisualSurfaceEditor({
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
+      structureSidebar={structureSidebar}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

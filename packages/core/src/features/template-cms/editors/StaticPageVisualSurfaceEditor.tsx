@@ -4,6 +4,7 @@ import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -106,6 +107,8 @@ export function StaticPageVisualSurfaceEditor({
     depth: 0,
   }))
 
+  const structureSidebar = buildListFieldsSidebar({ specs: def.listFields, draft, setPath })
+
   const toolbar = (
     <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs text-neutral-400 space-y-2">
       <p className="text-[10px] uppercase tracking-widest text-neutral-500">
@@ -164,6 +167,7 @@ export function StaticPageVisualSurfaceEditor({
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
+      structureSidebar={structureSidebar}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

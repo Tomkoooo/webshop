@@ -30,3 +30,13 @@ export function setAtPath<T>(root: T, path: string, value: unknown): T {
 
   return walk(root, 0) as T
 }
+
+/** Read by dotted path (same syntax as {@link setAtPath}); returns undefined for missing segments. */
+export function getAtPath(root: unknown, path: string): unknown {
+  let node: unknown = root
+  for (const key of path.split(".").filter(Boolean)) {
+    if (node == null || typeof node !== "object") return undefined
+    node = (node as Record<string, unknown>)[key]
+  }
+  return node
+}

@@ -55,6 +55,7 @@ export function DefaultModernVisualCmsChrome({
   contactAddress,
   footerCategories,
   toolbarBelowBranding,
+  structureSidebar,
   renderMain,
 }: {
   templateId: string
@@ -77,6 +78,8 @@ export function DefaultModernVisualCmsChrome({
   contactAddress: string
   footerCategories: FooterCategory[]
   toolbarBelowBranding?: React.ReactNode
+  /** Structured editing panel (e.g. list managers) shown beside the canvas in edit mode. */
+  structureSidebar?: React.ReactNode
   renderMain: (ctx: VisualCmsChromeCtx) => React.ReactNode
 }) {
   const router = useRouter()
@@ -206,14 +209,21 @@ export function DefaultModernVisualCmsChrome({
         {toolbarBelowBranding}
 
         <div className="p-4 space-y-4">
-          <DevicePreview device={device}>
-            <div
-              className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-              style={themeTokensToCssVars(themeSettings)}
-            >
-              {wrapLayout("edit", mainEdit)}
+          <div className={structureSidebar ? "flex items-start gap-4" : undefined}>
+            <div className="min-w-0 flex-1">
+              <DevicePreview device={device}>
+                <div
+                  className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
+                  style={themeTokensToCssVars(themeSettings)}
+                >
+                  {wrapLayout("edit", mainEdit)}
+                </div>
+              </DevicePreview>
             </div>
-          </DevicePreview>
+            {structureSidebar ? (
+              <aside className="sticky top-4 hidden w-80 shrink-0 xl:block">{structureSidebar}</aside>
+            ) : null}
+          </div>
         </div>
       </div>
 

@@ -1,10 +1,18 @@
 {
   "name": "@wse/cli",
   "version": "2.0.0",
-  "private": true,
   "description": "Webshop Engine CLI: route-stub sync, template validation, site scaffolding, cmsify codemod.",
   "type": "module",
   "bin": {
     "wse": "./bin/wse.mjs"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/wse-cli"
   }
 }

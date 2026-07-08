@@ -1,7 +1,6 @@
 {
   "name": "@wse/template-atelier-showcase",
   "version": "2.0.0",
-  "private": true,
   "description": "Webshop Engine template package: atelier-showcase.",
   "type": "module",
   "exports": {
@@ -10,5 +9,14 @@
   "dependencies": {
     "@wse/core": "*",
     "@wse/sdk": "*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/templates/atelier-showcase"
   }
 }

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B0B0C"/>
+      <stop offset="100%" stop-color="#1A1A1A"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <rect x="48" y="48" width="704" height="404" rx="16" fill="#141416" stroke="#C9A227" stroke-width="2"/>
+  <text x="80" y="140" fill="#C9A227" font-family="system-ui,sans-serif" font-size="28" font-weight="700">SAKKMED</text>
+  <text x="80" y="190" fill="#F5F5F5" font-family="system-ui,sans-serif" font-size="42" font-weight="700">A SIKERES</text>
+  <text x="80" y="240" fill="#A3A3AD" font-family="system-ui,sans-serif" font-size="28" letter-spacing="6">RENDEZVÉNY</text>
+  <text x="80" y="280" fill="#E8C547" font-family="system-ui,sans-serif" font-size="28" letter-spacing="6">KIVITELEZPJE</text>
+  <rect x="80" y="320" width="160" height="44" rx="22" fill="#C9A227"/>
+  <text x="112" y="348" fill="#0A0A0A" font-family="system-ui,sans-serif" font-size="14" font-weight="700">Kapcsolat</text>
+  <rect x="500" y="120" width="220" height="280" rx="12" fill="#222226"/>
+  <rect x="540" y="160" width="140" height="200" rx="8" fill="#2A2A2E"/>
+</svg>

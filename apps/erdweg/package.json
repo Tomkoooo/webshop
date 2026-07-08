@@ -1,0 +1,17 @@
+{
+  "name": "erdweg",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "sync": "node ../../packages/wse-cli/bin/wse.mjs sync"
+  },
+  "dependencies": {
+    "@wse/admin": "*",
+    "@wse/core": "*",
+    "@wse/sdk": "*",
+    "@wse/template-erdweg": "*"
+  }
+}

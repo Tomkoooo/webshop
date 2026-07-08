@@ -1,7 +1,6 @@
 {
   "name": "@wse/cms-bridge",
   "version": "2.0.0",
-  "private": true,
   "description": "Webshop Engine CMS bridge: unified Cms* primitives for instrumenting JSX templates.",
   "type": "module",
   "main": "./src/index.ts",
@@ -15,5 +14,14 @@
   },
   "peerDependencies": {
     "react": ">=19"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/cms-bridge"
   }
 }

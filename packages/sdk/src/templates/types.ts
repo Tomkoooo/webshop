@@ -278,11 +278,36 @@ export type RenderProps<TContent, TDeps extends AnyPageDeps = AnyPageDeps> = {
   deps: TDeps
 }
 
+/** Per-item form field in a structured list editor (CMS sidebar). */
+export type CmsListItemFieldSpec = {
+  key: string
+  label: string
+  type?: "text" | "multiline" | "image" | "link"
+  placeholder?: string
+}
+
+/**
+ * Declares an array field for the structured list editor. When a page defines
+ * `listFields`, the visual CMS shows a sidebar list manager (add / reorder /
+ * duplicate / delete + compact item form) next to the canvas.
+ */
+export type CmsListFieldSpec = {
+  /** Array path in the page document, e.g. `testimonials`. */
+  path: string
+  label: string
+  /** Item key used as the card title in the sidebar. */
+  titleKey?: string
+  fields: CmsListItemFieldSpec[]
+  maxItems?: number
+}
+
 export interface PageDefinition<TContent, TDeps extends AnyPageDeps = AnyPageDeps> {
   schema: ZodType<TContent>
   defaultContent: TContent
   Render: ComponentType<RenderProps<TContent, TDeps>>
   EditorPanel: ComponentType<EditorProps<TContent>>
+  /** Array fields managed by the structured sidebar editor (see @wse/cms-bridge CmsListField). */
+  listFields?: CmsListFieldSpec[]
   /**
    * When `cmsPageKind === "homepage-blocks"`, lists which homepage block type keys (`hero`, `about`, …) this template’s
    * home surface uses. Drives CMS section hide/show, inserter filtering, and published snapshot pruning.

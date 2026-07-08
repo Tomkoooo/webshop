@@ -4,7 +4,7 @@ A one-page brief for Cursor, Claude, or any code-generating agent that is asked 
 
 ## What you are building
 
-A `TemplateModule` (typed in [src/templates/types.ts](../../src/templates/types.ts)) that controls **`home` / `shop` / `pdp` / static** page shells and shared **chrome** (navbar/footer—including on **`/cart`**, **`/checkout`**, **`/profile`** via `StorefrontFlowShell`). The engine is **Next.js 16 App Router + React 19 + Tailwind v4 + shadcn/ui**. Templates are TypeScript modules under `src/templates/<id>/`, statically imported. There is no runtime template loading.
+A `TemplateModule` (typed in [packages/sdk/src/templates/types.ts](../../packages/sdk/src/templates/types.ts)) that controls **`home` / `shop` / `pdp` / static** page shells and shared **chrome** (navbar/footer—including on **`/cart`**, **`/checkout`**, **`/profile`** via `StorefrontFlowShell`). The engine is **Next.js 16 App Router + React 19 + Tailwind v4 + shadcn/ui**. Templates are workspace packages under `packages/templates/<id>/` (published as `@wse/template-<id>`), loaded via `packages/core/src/templates/registry.ts`. There is no runtime template loading.
 
 Read [CREATING_A_TEMPLATE.md](./CREATING_A_TEMPLATE.md) before generating code. This guide is the short brief for the LLM; that doc is the human-readable specification.
 
@@ -83,40 +83,58 @@ There is **no** operator-facing CMS for these routes in this repo: [`listEditabl
 
 ## Workflow
 
-1. Run the scaffolder to generate a starting tree:
+1. Run the scaffolder to generate a template package:
 
    ```bash
    npm run create-template -- --id=<your-id> --base=default-modern [--deployment=commerce|landing]
    ```
 
-2. Modify the generated files under `src/templates/<your-id>/` and add `public/template-previews/<your-id>.svg` for manifest screenshots.
-3. Register in `src/templates/registry.ts` and add the id to **`allowedTemplates`** in [`deployments.config.json`](../../deployments.config.json) for each customer deployment that should use it.
-4. Run `npm run deployments:validate`.
-5. Verify with `npm run test:unit -- templates-contract` and `npx eslint src/templates`. Both must pass before declaring the template done.
+   This copies the base template into `packages/templates/<your-id>/`, rewrites `package.json` + manifest, registers a lazy loader in `packages/core/src/templates/registry.ts`, adds the tsconfig path alias, and immediately runs the `validate-template` lint so you see the baseline issue list.
+
+2. Customize the generated files and add `public/template-previews/<your-id>.svg` for manifest screenshots.
+3. Add the id to **`allowedTemplates`** in [`deployments.config.json`](../../deployments.config.json) for each customer deployment that should use it, then run `npm run deployments:validate`.
+4. **Validation gate (mandatory before declaring done):**
+
+   ```bash
+   npm run validate-template -- packages/templates/<your-id>
+   npm run test:unit -- templates-contract
+   npx tsc --noEmit
+   ```
+
+   `validate-template` rejects hardcoded colors (`text-white`, `bg-slate-900`, `bg-[#hex]`, raw palette classes), forbidden token pairings (same token as background and text), pages rendered without CMS primitives, incomplete `defaultTheme`, and theme palettes that fail WCAG contrast rules. Fix every error; do not suppress them.
 
 ## Hard rules (lint-enforced; failures fail CI)
 
-Inside `src/templates/**`:
+Inside `packages/templates/**`:
 
-- ❌ **Do not import** `@/services/*`, `@/models/*`, `@/lib/db`, `@/lib/mongodb`, `@/lib/admin-auth`, `@/actions/*`, `@/app/api/*` at runtime. Type-only imports from `@/services/*` and `@/models/*` are allowed.
+- ❌ **Do not import** `@wse/core/services/*` (runtime), `@wse/core/models/*` (runtime), `@wse/core/lib/db`, `@wse/core/lib/mongodb`, `@wse/core/lib/admin-auth`, `@wse/core/actions/*`, or app API modules. Type-only imports from services and models are allowed.
 - ❌ **Do not access** `process.env`.
 - ❌ **Do not register** API routes, server actions, or middleware.
 - ❌ **Do not** mutate cart, session, or auth state.
+- ❌ **Do not hardcode colors.** `wse validate-template` fails on raw palette classes (`text-neutral-400`, `bg-slate-900`), solid `text-white` / `bg-black`, and arbitrary values (`bg-[#123456]`). Use theme-token utilities only.
 - ✅ **Do** receive all data via props. Renders take exactly `{ content, deps }`. Editor panels take exactly `{ content, templateId, pageKey, onSave }`.
 
 ## Allowed imports
 
-- `@/templates/_shared/*` (block library, editor primitives)
-- `@/features/homepage-cms/*` when implementing **`homepage-blocks`** home (e.g. `homepageSnapshotSchema`, `RealHomepageSections`) — same pattern as `default-modern`
-- `@/templates/types`
-- `@/components/ui/*` (shadcn primitives — Button, Input, Label, Sheet, Card, etc.)
-- `@/components/common/*`, `@/components/sections/*`, `@/components/layout/*` (engine UI primitives)
-- `@/lib/utils`, `@/lib/images`
+- `@wse/cms-bridge` — **preferred CMS primitives** (`CmsText`, `CmsRichText`, `CmsImage`, `CmsLink`, `CmsDiv`, `CmsList`); legacy `EditableDoc*` from `@wse/core/features/template-cms/primitives/*` remain valid in existing templates
+- `@wse/core/features/homepage-cms/*` when implementing **`homepage-blocks`** home (e.g. `homepageSnapshotSchema`, `RealHomepageSections`) — same pattern as `default-modern`
+- `@wse/sdk/templates/types`, `@wse/sdk/theme/*`
+- `@wse/core/components/ui/*` (shadcn primitives — Button, Input, Label, Sheet, Card, etc.)
+- `@wse/core/components/common/*`, `@wse/core/components/sections/*`, `@wse/core/components/layout/*` (engine UI primitives)
+- `@wse/core/lib/utils`, `@wse/core/lib/images`
 - `react`, `react-dom`, `next/*`, `framer-motion`, `lucide-react`, `zod`, `clsx`, `tailwind-merge`
+
+## CMS-readiness (what the lint enforces)
+
+- Every visible string and image in a page `Render` must be behind a CMS primitive (`Cms*` from `@wse/cms-bridge` or legacy `EditableDoc*` / inline homepage primitives). Pages rendered without any CMS primitive fail `validate-template`.
+- Array content (testimonials, features, gallery items) should use `CmsList` on canvas **and** declare `listFields` on the `PageDefinition` so the structured sidebar list editor (add / reorder / duplicate / delete + item form) appears in `/admin/cms`. See `packages/templates/sakkmed/template.config.ts` for a reference declaration.
+- Migrating an existing pure-JSX template? Run `node packages/wse-cli/bin/wse.mjs cmsify packages/templates/<id>` to get a report (or `--write` to wrap literal text/images with `CmsText` automatically), then fix the remaining lint errors by hand.
 
 ## Theme tokens you can use
 
-`defaultTheme` on the `TemplateModule` is **optional**: export a full `ThemeTokens` object from `theme.ts` when the design has a curated palette; omit `defaultTheme` entirely to fall back to engine defaults ([`ThemeService.defaults`](../../src/services/theme.ts)). The storefront uses **baseline + admin overrides** from [`ThemeService.getMergedForTemplate`](../../src/services/theme.ts). **Reset to default & save** on `/admin/theme` clears overrides and reapplies the baseline (template or engine).
+Theme v2 is **semantic roles + rules**, defined in [`@wse/sdk/theme`](../../packages/sdk/src/theme/rules.ts): tokens are grouped by role (Surfaces, Text, Actions, Status), contrast between text/background pairs is validated (WCAG AA), and forbidden pairings (e.g. `bg-primary` with `text-primary` on one element) fail the lint. Typography (heading/body font stacks, sizes, weights) is CMS-editable via [`@wse/sdk/theme/typography`](../../packages/sdk/src/theme/typography.ts) — reference `var(--theme-font-heading)` / `var(--theme-font-body)` through the `font-heading` / `font-sans` utilities instead of hardcoding font families.
+
+`defaultTheme` on the `TemplateModule` is **optional**: export a full `ThemeTokens` object from `theme.ts` when the design has a curated palette; omit `defaultTheme` entirely to fall back to engine defaults (`ThemeService.defaults` in `packages/core/src/services/theme.ts`). The storefront uses **baseline + admin overrides** from `ThemeService.getMergedForTemplate`. **Reset to default & save** on `/admin/theme` clears overrides and reapplies the baseline (template or engine). New templates should ship a complete, contrast-safe `defaultTheme` — `validate-template` checks both completeness and the contrast rules.
 
 **Legacy theme rows:** If Mongo `ThemeSetting` was saved before **`overridesOnly: true`** (a full snapshot), it can mask a new template’s `defaultTheme`. **Activating a different template** clears legacy snapshots automatically; **`ThemeEditor` / `saveFullThemeForTemplate`** always writes **`overridesOnly: true`**. Merchants can still use **Reset** on `/admin/theme` after experiments.
 
@@ -225,9 +243,11 @@ This is the part LLMs typically get wrong. Imitate the rigor of [src/templates/m
 - [ ] **Home CMS (pick one):**
   - **Block home:** **`cmsPageKind: "homepage-blocks"`**, **`homepageSnapshotSchema`**, and a real **`HomeRender`** (`RealHomepageSections` / `HomepageRenderer` — not an empty scaffold). Confirm **`/admin/cms/home`** block editor (device preview + inline fields + publish).
   - **Campaign / JSON home:** Custom `pages.home` schema + **`CampaignLanding`-style** inline `EditableDoc*` on the Render + **`HomeVisualSurfaceEditor`** wired for `page:home`. Confirm **`/admin/cms/home`** click-to-edit + draft/publish (not 404).
+- [ ] `npm run validate-template -- packages/templates/<your-id>` passes with **zero errors** (hardcoded colors, token pairings, CMS wiring, defaultTheme completeness, contrast).
 - [ ] `npm run test:unit -- templates-contract` passes (validates manifest, schemas, defaults, slugs, homepage-blocks policy).
-- [ ] `npx eslint src/templates/<your-id>` passes (no restricted imports, no `any`).
+- [ ] `npx eslint packages/templates/<your-id>` passes (no restricted imports, no `any`).
 - [ ] `npx tsc --noEmit` passes.
+- [ ] List-shaped content declares `listFields` so the structured sidebar editor works in `/admin/cms`.
 - [ ] You manually previewed the template at `/admin/templates/<your-id>` after adding it to the registry.
 - [ ] You manually opened **`/admin/cms/home`** and confirmed the **visual editor** works (block editor *or* surface JSON click-to-edit — see *Definition of done* above).
 - [ ] A screenshot exists at `public/template-previews/<your-id>.svg`.

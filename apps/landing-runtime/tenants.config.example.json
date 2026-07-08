@@ -1,0 +1,8 @@
+[
+  {
+    "id": "example-landing",
+    "hosts": ["example-landing.hu", "www.example-landing.hu"],
+    "databaseUrl": "mongodb://localhost:27017/example-landing",
+    "templateId": "default-modern"
+  }
+]

@@ -1,7 +1,6 @@
 {
   "name": "@wse/admin",
   "version": "2.0.0",
-  "private": true,
   "description": "Webshop Engine admin: /admin UI routes and admin API handlers, re-exported by site apps.",
   "type": "module",
   "exports": {
@@ -15,5 +14,14 @@
     "next": ">=16",
     "react": ">=19",
     "react-dom": ">=19"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/admin"
   }
 }

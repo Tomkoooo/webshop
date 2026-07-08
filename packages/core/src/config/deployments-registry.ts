@@ -40,7 +40,44 @@ type DeploymentsFile = {
   hostTemplateMap?: Record<string, string>
 }
 
-const file = deploymentsFile as unknown as DeploymentsFile
+/**
+ * Engine v2 site apps bake their full deployment definition into the build via
+ * `WSE_SITE_CONFIG_JSON` (see `wse create-site`). When present it is the sole
+ * deployment for the process and `deployments.config.json` is ignored — the
+ * legacy file remains only as the fallback for the reference app.
+ */
+type BakedSiteConfig = {
+  id: string
+  label?: string
+  templateId: string
+  allowedTemplates?: string[]
+  plugins?: string[]
+  pluginConfig?: Record<string, Record<string, unknown>>
+}
+
+function loadBakedSiteConfig(): DeploymentsFile | null {
+  const raw = process.env.WSE_SITE_CONFIG_JSON?.trim()
+  if (!raw) return null
+  const cfg = JSON.parse(raw) as BakedSiteConfig
+  return {
+    defaultDeploymentKey: cfg.id,
+    deployments: [
+      {
+        key: cfg.id,
+        label: cfg.label ?? cfg.id,
+        allowedTemplates:
+          cfg.allowedTemplates && cfg.allowedTemplates.length > 0
+            ? cfg.allowedTemplates
+            : [cfg.templateId],
+        defaultTemplateId: cfg.templateId,
+        enabledPlugins: cfg.plugins ?? [],
+        pluginConfig: cfg.pluginConfig ?? {},
+      },
+    ],
+  }
+}
+
+const file = loadBakedSiteConfig() ?? (deploymentsFile as unknown as DeploymentsFile)
 
 function normalizeDeployment(raw: RawDeployment): DeploymentDefinition {
   const defaultTemplateId = raw.defaultTemplateId ?? raw.templateId

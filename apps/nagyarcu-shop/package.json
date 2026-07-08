@@ -1,0 +1,20 @@
+{
+  "name": "nagyarcu-shop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "sync": "node ../../packages/wse-cli/bin/wse.mjs sync"
+  },
+  "dependencies": {
+    "@wse/admin": "*",
+    "@wse/core": "*",
+    "@wse/plugin-order-lab": "*",
+    "@wse/plugin-press-kit": "*",
+    "@wse/plugin-shop": "*",
+    "@wse/sdk": "*",
+    "@wse/template-default-modern": "*"
+  }
+}
