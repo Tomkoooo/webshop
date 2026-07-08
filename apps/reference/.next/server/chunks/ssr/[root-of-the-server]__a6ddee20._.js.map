@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../../packages/admin/src/app/admin/seo/page.tsx"],"sourcesContent":["import { redirect } from \"next/navigation\"\n\nexport default function AdminSeoRedirect() {\n  redirect(\"/admin/cms/settings?section=seo\")\n}\n"],"names":[],"mappings":"saAAA,EAAA,CAAA,CAAA,QAAA,IAAA,EAAA,EAAA,CAAA,CAAA,QAEe,SAAS,IACtB,CAAA,EAAA,EAAA,QAAA,AAAQ,EAAC,kCACX"}
