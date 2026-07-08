@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapProductionApmEntry } from "@/lib/foxpost-apm-catalog";
+import { mapProductionApmEntry } from "@wse/core/lib/foxpost-apm-catalog";
 
 describe("foxpost-apm-catalog", () => {
   it("maps production APM and filters closed points", () => {

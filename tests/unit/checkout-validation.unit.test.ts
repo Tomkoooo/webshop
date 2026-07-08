@@ -15,17 +15,17 @@ const resolveFoxpostParcelPointForCheckoutMock = vi.fn(
   async (point: { id?: string; name?: string; zip?: string; city?: string; address?: string }) => point
 );
 
-vi.mock("@/lib/foxpost-apm-catalog", () => ({
+vi.mock("@wse/core/lib/foxpost-apm-catalog", () => ({
   resolveFoxpostParcelPointForCheckout: (...args: unknown[]) =>
     resolveFoxpostParcelPointForCheckoutMock(...args),
 }));
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/Product", () => ({ default: { findById: productFindByIdMock } }));
-vi.mock("@/models/ShippingMethod", () => ({ default: { findOne: shippingFindOneMock } }));
-vi.mock("@/models/PaymentMethod", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/Product", () => ({ default: { findById: productFindByIdMock } }));
+vi.mock("@wse/core/models/ShippingMethod", () => ({ default: { findOne: shippingFindOneMock } }));
+vi.mock("@wse/core/models/PaymentMethod", () => ({
   default: { findOne: paymentFindOneMock, create: paymentCreateMock },
 }));
-vi.mock("@/models/Coupon", () => ({
+vi.mock("@wse/core/models/Coupon", () => ({
   default: { findOne: couponFindOneMock },
   DiscountType: {
     FREE_SHIPPING: "free_shipping",
@@ -34,14 +34,14 @@ vi.mock("@/models/Coupon", () => ({
     PRODUCT_PRICE: "product_price",
   },
 }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/models/Order", () => ({
   default: { countDocuments: orderCountDocumentsMock },
 }));
-vi.mock("@/services/gls-shipping", () => ({ resolveConfiguredGlsShippingMethod: resolveGlsMethodMock }));
-vi.mock("@/services/foxpost-shipping", () => ({
+vi.mock("@wse/core/services/gls-shipping", () => ({ resolveConfiguredGlsShippingMethod: resolveGlsMethodMock }));
+vi.mock("@wse/core/services/foxpost-shipping", () => ({
   resolveConfiguredFoxpostShippingMethod: resolveFoxpostMethodMock,
 }));
-vi.mock("@/services/shop-trading-settings", () => ({
+vi.mock("@wse/core/services/shop-trading-settings", () => ({
   ShopTradingSettingsService: {
     get: vi.fn().mockResolvedValue({
       shippingAllowedCountryCodes: [],
@@ -49,7 +49,7 @@ vi.mock("@/services/shop-trading-settings", () => ({
     }),
   },
 }));
-vi.mock("@/services/feature-flags", () => ({ FeatureFlagService: { isEnabled: flagEnabledMock } }));
+vi.mock("@wse/core/services/feature-flags", () => ({ FeatureFlagService: { isEnabled: flagEnabledMock } }));
 
 describe("checkout-validation unit", () => {
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("validates standard payload", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
       billingInfo: {
@@ -111,7 +111,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("defaults saveAddressToProfile on for authenticated checkout", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const uid = "507f1f77bcf86cd799439099";
     const result = await validateAndNormalizeCheckoutInput(
       {
@@ -145,7 +145,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("honours saveAddressToProfile false for authenticated checkout", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput(
       {
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -176,7 +176,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("persists GLS parcel point for admin-configured shipping method (provider gls)", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     shippingFindOneMock.mockReturnValueOnce({
       lean: vi.fn().mockResolvedValue({
         _id: { toString: () => "ship_gls_db" },
@@ -222,7 +222,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("uses Foxpost automata address on order and keeps automata id", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     shippingFindOneMock.mockReturnValueOnce({
       lean: vi.fn().mockResolvedValue({
         _id: { toString: () => "ship_fox_db" },
@@ -272,7 +272,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("validates GLS fixed path and requires parcel point", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -300,7 +300,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("validates Foxpost fixed path and requires parcel point", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -328,7 +328,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("resolves Foxpost fixed shipping with parcel point", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
       billingInfo: {
@@ -365,7 +365,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("supports stripe fixed payment path", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     paymentFindOneMock.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
     const result = await validateAndNormalizeCheckoutInput(
       {
@@ -397,7 +397,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("rejects stripe fixed when allow flag is false", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -425,7 +425,7 @@ describe("checkout-validation unit", () => {
   });
 
   it("rejects invalid shipping and payment method IDs", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -454,7 +454,7 @@ describe("checkout-validation unit", () => {
 
   it("rejects when shipping method is unavailable", async () => {
     shippingFindOneMock.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -483,7 +483,7 @@ describe("checkout-validation unit", () => {
 
   it("rejects when payment method is unavailable", async () => {
     paymentFindOneMock.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -541,7 +541,7 @@ describe("checkout-validation unit", () => {
         },
       ],
     });
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: "507f1f77bcf86cd799439011", quantity: 2 }],
       billingInfo: {
@@ -596,7 +596,7 @@ describe("checkout-validation unit", () => {
       value: 10,
       usedCount: 0,
     });
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: "507f1f77bcf86cd799439011", quantity: 2 }],
       billingInfo: {
@@ -638,7 +638,7 @@ describe("checkout-validation unit", () => {
       usedCount: 0,
     });
     const { validateAndNormalizeCheckoutInput, STRIPE_FIXED_PAYMENT_METHOD_ID } = await import(
-      "@/services/checkout-validation"
+      "@wse/core/services/checkout-validation"
     );
     const result = await validateAndNormalizeCheckoutInput(
       {
@@ -682,7 +682,7 @@ describe("checkout-validation unit", () => {
       value: 0,
       usedCount: 0,
     });
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
       billingInfo: {
@@ -711,7 +711,7 @@ describe("checkout-validation unit", () => {
 
   it("rejects invalid coupon", async () => {
     couponFindOneMock.mockResolvedValueOnce(null);
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -770,7 +770,7 @@ describe("checkout-validation unit", () => {
       }),
     });
 
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [

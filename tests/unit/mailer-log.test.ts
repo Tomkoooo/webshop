@@ -4,7 +4,7 @@ import {
   logMailer,
   serializeMailerError,
   warnIfMailerEnvIncomplete,
-} from "@/lib/mailer-log"
+} from "@wse/core/lib/mailer-log"
 
 describe("mailer-log", () => {
   const envBackup = { ...process.env }

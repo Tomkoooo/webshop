@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { sortFooterLegalLinks } from "@/templates/chrome/FooterLegalLinks"
+import { sortFooterLegalLinks } from "@wse/core/templates/chrome/FooterLegalLinks"
 
 describe("sortFooterLegalLinks", () => {
   it("orders impresszum, terms, then gdpr", () => {

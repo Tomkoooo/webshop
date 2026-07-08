@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   hasContactFieldValue,
   resolveContactDisplayField,
-} from "@/lib/contact-display"
+} from "@wse/core/lib/contact-display"
 
 describe("contact-display", () => {
   it("treats empty and placeholder phone as hidden", () => {

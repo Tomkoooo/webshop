@@ -9,8 +9,8 @@ import {
   resolveEffectiveUnitPriceHuf,
   resolveFamilyDiscountPercent,
   seatsRequiredForBooking,
-} from "@/plugins/camp-booking/lib/pricing"
-import { buildCampRegistrationExportRows } from "@/plugins/camp-booking/lib/camp-registration-export"
+} from "@wse/plugin-camp-booking/lib/pricing"
+import { buildCampRegistrationExportRows } from "@wse/plugin-camp-booking/lib/camp-registration-export"
 
 describe("camp-booking pricing", () => {
   it("per_child multiplies by child count", () => {

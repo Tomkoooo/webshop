@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { listRegisteredPluginIds, loadPluginModule } from "@/plugins/registry"
-import { definePlugin, pluginAdminHref } from "@/plugins/types"
-import { parsePluginAdminPath, parsePluginApiPath } from "@/lib/features/plugins"
+import { listRegisteredPluginIds, loadPluginModule } from "@wse/core/plugins/registry"
+import { definePlugin, pluginAdminHref } from "@wse/sdk/plugins/types"
+import { parsePluginAdminPath, parsePluginApiPath } from "@wse/core/lib/features/plugins"
 
 describe("plugin registry contract", () => {
   const pluginIds = listRegisteredPluginIds()

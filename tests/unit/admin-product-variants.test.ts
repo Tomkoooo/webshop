@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { normalizeAdminVariants } from "@/lib/admin-product-variants"
+import { normalizeAdminVariants } from "@wse/core/lib/admin-product-variants"
 
 describe("normalizeAdminVariants", () => {
   it("drops mongoose subdocument _id and other non-plain fields", () => {

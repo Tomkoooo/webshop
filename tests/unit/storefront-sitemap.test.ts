@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { buildStorefrontSitemapEntries } from "@/lib/sitemap/build-storefront-sitemap"
-import type { TemplateModule } from "@/templates/types"
+import { buildStorefrontSitemapEntries } from "@wse/core/lib/sitemap/build-storefront-sitemap"
+import type { TemplateModule } from "@wse/sdk/templates/types"
 
 function mockTemplate(overrides: Partial<TemplateModule["manifest"]> & { staticSlugs?: string[] }): TemplateModule {
   const staticSlugs = overrides.staticSlugs ?? []

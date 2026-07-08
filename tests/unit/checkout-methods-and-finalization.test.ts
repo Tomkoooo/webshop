@@ -14,30 +14,30 @@ const tempFindByIdAndUpdateMock = vi.fn();
 const orderFindByIdMock = vi.fn();
 const createOrderFromCheckoutDataMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/ShippingMethod", () => ({ default: { find: shippingFindMock } }));
-vi.mock("@/models/PaymentMethod", () => ({ default: { find: paymentFindMock } }));
-vi.mock("@/services/feature-flags", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/ShippingMethod", () => ({ default: { find: shippingFindMock } }));
+vi.mock("@wse/core/models/PaymentMethod", () => ({ default: { find: paymentFindMock } }));
+vi.mock("@wse/core/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: featureFlagMock },
 }));
-vi.mock("@/services/gls-shipping", () => ({
+vi.mock("@wse/core/services/gls-shipping", () => ({
   getGlsShippingMethodName: () => "GLS Csomagpont",
   resolveConfiguredGlsShippingMethod: resolveGlsMethodMock,
 }));
-vi.mock("@/services/foxpost-shipping", () => ({
+vi.mock("@wse/core/services/foxpost-shipping", () => ({
   getFoxpostShippingMethodName: () => "Foxpost Csomagautomata",
   resolveConfiguredFoxpostShippingMethod: resolveFoxpostMethodMock,
 }));
 
-vi.mock("@/models/TempOrder", () => ({
+vi.mock("@wse/core/models/TempOrder", () => ({
   default: {
     findById: tempFindByIdMock,
     findOneAndUpdate: tempFindOneAndUpdateMock,
     findByIdAndUpdate: tempFindByIdAndUpdateMock,
   },
 }));
-vi.mock("@/models/Order", () => ({ default: { findById: orderFindByIdMock } }));
-vi.mock("@/services/order", () => ({
+vi.mock("@wse/core/models/Order", () => ({ default: { findById: orderFindByIdMock } }));
+vi.mock("@wse/core/services/order", () => ({
   OrderService: { createOrderFromCheckoutData: createOrderFromCheckoutDataMock },
 }));
 
@@ -81,7 +81,7 @@ describe("checkout methods and finalization", () => {
   });
 
   it("returns normalized methods with fixed stripe and gls options", async () => {
-    const { GET } = await import("@/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     const body = await res.json();
@@ -110,7 +110,7 @@ describe("checkout methods and finalization", () => {
     });
     createOrderFromCheckoutDataMock.mockResolvedValue({ _id: "order1" });
 
-    const { CheckoutFinalizationService } = await import("@/services/checkout-finalization");
+    const { CheckoutFinalizationService } = await import("@wse/core/services/checkout-finalization");
     const result = await CheckoutFinalizationService.finalizeFromTempOrder(tempId);
 
     expect(result.status).toBe("finalized");
@@ -124,14 +124,14 @@ describe("checkout methods and finalization", () => {
 
   it("returns 503 when shop is disabled in methods route", async () => {
     featureFlagMock.mockImplementation(async (key: string) => key !== "shopPage");
-    const { GET } = await import("@/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     expect(res.status).toBe(503);
   });
 
   it("handles invalid temp order id", async () => {
-    const { CheckoutFinalizationService } = await import("@/services/checkout-finalization");
+    const { CheckoutFinalizationService } = await import("@wse/core/services/checkout-finalization");
     await expect(CheckoutFinalizationService.finalizeFromTempOrder("bad-id")).rejects.toThrow(
       "Érvénytelen ideiglenes rendelés azonosító"
     );
@@ -141,7 +141,7 @@ describe("checkout methods and finalization", () => {
     shippingFindMock.mockImplementationOnce(() => {
       throw new Error("db boom");
     });
-    const { GET } = await import("@/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     expect(res.status).toBe(500);

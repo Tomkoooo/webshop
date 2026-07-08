@@ -6,7 +6,7 @@ import {
   getOrderShippingTypeLabel,
   orderNeedsParcelLabel,
   matchesOrderShippingTypeFilter,
-} from "@/lib/parcel-locker";
+} from "@wse/core/lib/parcel-locker";
 
 describe("parcel-locker helpers", () => {
   it("resolves operator_id over place_id", () => {
@@ -66,7 +66,7 @@ describe("FoxpostService", () => {
       });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { FoxpostService } = await import("@/services/foxpost");
+    const { FoxpostService } = await import("@wse/core/services/foxpost");
     const order = {
       _id: { toString: () => "507f1f77bcf86cd799439011" },
       foxpostParcelPoint: { id: "hu5516", name: "Automata" },

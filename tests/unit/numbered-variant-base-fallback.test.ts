@@ -3,7 +3,7 @@ import {
   hasInStockNumberedVariants,
   productRequiresVariantPurchase,
   shouldShowNumberedVariantPicker,
-} from "@/lib/unique-numbered-variants"
+} from "@wse/core/lib/unique-numbered-variants"
 
 const numberedProduct = {
   uniqueNumberedVariants: { enabled: true, attributeName: "Szám", maxQuantityPerLine: 1 },

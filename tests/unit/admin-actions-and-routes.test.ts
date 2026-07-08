@@ -33,20 +33,20 @@ vi.mock("next/cache", () => ({
   revalidateTag: revalidateTagMock,
   unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
 }));
-vi.mock("@/lib/admin-auth", () => ({ requireAdmin: requireAdminMock }));
-vi.mock("@/auth", () => ({ auth: authMock }));
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/FeatureFlag", () => ({
+vi.mock("@wse/core/lib/admin-auth", () => ({ requireAdmin: requireAdminMock }));
+vi.mock("@wse/core/auth", () => ({ auth: authMock }));
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/FeatureFlag", () => ({
   default: {
     findOneAndUpdate: featureFindOneAndUpdateMock,
     findOne: featureFindOneMock,
     find: featureFindMock,
   },
 }));
-vi.mock("@/services/gls", () => ({
+vi.mock("@wse/core/services/gls", () => ({
   GlsService: { createLabelForOrder: glsCreateLabelMock },
 }));
-vi.mock("@/services/foxpost", () => ({
+vi.mock("@wse/core/services/foxpost", () => ({
   FoxpostService: {
     createParcelForOrder: foxpostCreateParcelMock,
     createShipmentForOrder: foxpostCreateShipmentMock,
@@ -56,25 +56,25 @@ vi.mock("@/services/foxpost", () => ({
     createShipmentForOrder: foxpostCreateShipmentMock,
   },
 }));
-vi.mock("@/services/mailer", () => ({ MailerService: { sendEmail: mailerSendMock } }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/services/mailer", () => ({ MailerService: { sendEmail: mailerSendMock } }));
+vi.mock("@wse/core/models/Order", () => ({
   default: { findById: orderFindByIdMock, find: orderFindMock, updateOne: orderUpdateOneMock },
 }));
-vi.mock("@/models/ShippingMethod", () => ({
+vi.mock("@wse/core/models/ShippingMethod", () => ({
   default: {
     create: shippingCreateMock,
     findByIdAndUpdate: shippingUpdateMock,
     findByIdAndDelete: shippingDeleteMock,
   },
 }));
-vi.mock("@/models/PaymentMethod", () => ({
+vi.mock("@wse/core/models/PaymentMethod", () => ({
   default: {
     create: paymentCreateMock,
     findByIdAndUpdate: paymentUpdateMock,
     findByIdAndDelete: paymentDeleteMock,
   },
 }));
-vi.mock("@/models/Coupon", () => ({
+vi.mock("@wse/core/models/Coupon", () => ({
   default: {
     create: couponCreateMock,
     findByIdAndDelete: couponDeleteMock,
@@ -90,7 +90,7 @@ vi.mock("@/models/Coupon", () => ({
 }));
 const glsManagerEnabledMock = vi.fn();
 const foxpostManagerEnabledMock = vi.fn();
-vi.mock("@/lib/parcel-feature-flags", () => ({
+vi.mock("@wse/core/lib/parcel-feature-flags", () => ({
   isGlsParcelManagerEnabled: glsManagerEnabledMock,
   isFoxpostParcelManagerEnabled: foxpostManagerEnabledMock,
 }));
@@ -135,14 +135,14 @@ describe("admin actions and routes", () => {
   });
 
   it("seeds and returns feature flags", async () => {
-    const { getAdminFeatureFlags } = await import("@/actions/admin-flags");
+    const { getAdminFeatureFlags } = await import("@wse/core/actions/admin-flags");
     const flags = await getAdminFeatureFlags();
     expect(Array.isArray(flags)).toBe(true);
     expect(featureFindOneAndUpdateMock).toHaveBeenCalled();
   });
 
   it("updates one feature flag and revalidates", async () => {
-    const { updateFeatureFlag } = await import("@/actions/admin-flags");
+    const { updateFeatureFlag } = await import("@wse/core/actions/admin-flags");
     await updateFeatureFlag("shopPage", false);
     expect(featureFindOneAndUpdateMock).toHaveBeenCalledWith({ key: "shopPage" }, { enabled: false }, { returnDocument: "after" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/admin/info");
@@ -159,7 +159,7 @@ describe("admin actions and routes", () => {
       createCoupon,
       updateCoupon,
       deleteCoupon,
-    } = await import("@/actions/admin-checkout");
+    } = await import("@wse/core/actions/admin-checkout");
     const fd = new FormData();
     fd.set("name", "X");
     fd.set("grossPrice", "1000");
@@ -214,7 +214,7 @@ describe("admin actions and routes", () => {
       }),
     });
 
-    const { getOrders, getOrderById, updateOrderStatus } = await import("@/actions/admin-orders");
+    const { getOrders, getOrderById, updateOrderStatus } = await import("@wse/core/actions/admin-orders");
     const orders = await getOrders();
     const order = await getOrderById("ord1");
     const updateResult = await updateOrderStatus("ord1", "processing");
@@ -242,7 +242,7 @@ describe("admin actions and routes", () => {
     formData.set("shippingEmail", "ship-new@test.hu");
     formData.set("shippingPhone", "444");
 
-    const { updateOrderContactInfo } = await import("@/actions/admin-orders");
+    const { updateOrderContactInfo } = await import("@wse/core/actions/admin-orders");
     const result = await updateOrderContactInfo("ord1", formData);
 
     expect(result.success).toBe(true);
@@ -252,7 +252,7 @@ describe("admin actions and routes", () => {
   });
 
   it("generates gls label from admin order action", async () => {
-    const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
+    const { generateOrderGlsLabel } = await import("@wse/core/actions/admin-orders");
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");
     expect(result.success).toBe(true);
     expect(glsCreateLabelMock).toHaveBeenCalled();
@@ -260,7 +260,7 @@ describe("admin actions and routes", () => {
 
   it("returns failure payload when gls label generation throws", async () => {
     glsCreateLabelMock.mockRejectedValueOnce(new Error("gls-fail"));
-    const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
+    const { generateOrderGlsLabel } = await import("@wse/core/actions/admin-orders");
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");
     expect(result.success).toBe(false);
     expect(result.error).toContain("gls-fail");
@@ -270,7 +270,7 @@ describe("admin actions and routes", () => {
     orderFindByIdMock.mockReturnValue({
       lean: vi.fn().mockResolvedValue({ glsLabel: { labelDataBase64: "UERG" } }),
     });
-    const { GET } = await import("@/app/api/admin/orders/[id]/gls-label/route");
+    const { GET } = await import("@wse/admin/app/api/admin/orders/[id]/gls-label/route");
     const req = new NextRequest("http://localhost/api/admin/orders/1/gls-label");
     const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
     expect(res.status).toBe(200);
@@ -286,7 +286,7 @@ describe("admin actions and routes", () => {
       save: vi.fn(),
       set: vi.fn(),
     });
-    const { generateOrderFoxpostShipment } = await import("@/actions/admin-orders");
+    const { generateOrderFoxpostShipment } = await import("@wse/core/actions/admin-orders");
     const result = await generateOrderFoxpostShipment("507f1f77bcf86cd799439011");
     expect(result.success).toBe(true);
     expect(foxpostCreateShipmentMock).toHaveBeenCalled();
@@ -296,7 +296,7 @@ describe("admin actions and routes", () => {
     orderFindByIdMock.mockReturnValue({
       lean: vi.fn().mockResolvedValue({ foxpostShipment: { labelDataBase64: "UERG" } }),
     });
-    const { GET } = await import("@/app/api/admin/orders/[id]/foxpost-label/route");
+    const { GET } = await import("@wse/admin/app/api/admin/orders/[id]/foxpost-label/route");
     const req = new NextRequest("http://localhost/api/admin/orders/1/foxpost-label");
     const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
     expect(res.status).toBe(200);
@@ -307,7 +307,7 @@ describe("admin actions and routes", () => {
     orderFindByIdMock.mockReturnValue({
       lean: vi.fn().mockResolvedValue({ glsLabel: {} }),
     });
-    const { GET } = await import("@/app/api/admin/orders/[id]/gls-label/route");
+    const { GET } = await import("@wse/admin/app/api/admin/orders/[id]/gls-label/route");
     const req = new NextRequest("http://localhost/api/admin/orders/1/gls-label");
     const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
     expect(res.status).toBe(404);
@@ -315,7 +315,7 @@ describe("admin actions and routes", () => {
 
   it("returns 401 from gls-label route when unauthorized", async () => {
     requireAdminMock.mockRejectedValue(new Error("Unauthorized"));
-    const { GET } = await import("@/app/api/admin/orders/[id]/gls-label/route");
+    const { GET } = await import("@wse/admin/app/api/admin/orders/[id]/gls-label/route");
     const req = new NextRequest("http://localhost/api/admin/orders/1/gls-label");
     const res = await GET(req, { params: Promise.resolve({ id: "1" }) });
     expect(res.status).toBe(401);
@@ -323,7 +323,7 @@ describe("admin actions and routes", () => {
 
   it("throws unauthorized from admin actions for non-admin users", async () => {
     authMock.mockResolvedValueOnce({ user: { role: "USER" } });
-    const { getOrders } = await import("@/actions/admin-orders");
+    const { getOrders } = await import("@wse/core/actions/admin-orders");
     await expect(getOrders()).rejects.toThrow("Unauthorized");
   });
 
@@ -331,13 +331,13 @@ describe("admin actions and routes", () => {
     orderFindByIdMock.mockReturnValueOnce({
       populate: vi.fn().mockResolvedValue(null),
     });
-    const { updateOrderStatus } = await import("@/actions/admin-orders");
+    const { updateOrderStatus } = await import("@wse/core/actions/admin-orders");
     await expect(updateOrderStatus("missing", "processing")).rejects.toThrow("Order not found");
   });
 
   it("throws when gls order is missing or no parcel point", async () => {
     orderFindByIdMock.mockResolvedValueOnce(null);
-    const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
+    const { generateOrderGlsLabel } = await import("@wse/core/actions/admin-orders");
     await expect(generateOrderGlsLabel("missing")).rejects.toThrow("Order not found");
 
     orderFindByIdMock.mockResolvedValueOnce({
@@ -360,7 +360,7 @@ describe("admin actions and routes", () => {
         save: vi.fn(),
       }),
     });
-    const { updateOrderStatus } = await import("@/actions/admin-orders");
+    const { updateOrderStatus } = await import("@wse/core/actions/admin-orders");
     const result = await updateOrderStatus("ord1", "processing");
     expect(result.success).toBe(true);
   });
@@ -376,7 +376,7 @@ describe("admin actions and routes", () => {
         save: vi.fn(),
       }),
     });
-    const { updateOrderStatus } = await import("@/actions/admin-orders");
+    const { updateOrderStatus } = await import("@wse/core/actions/admin-orders");
     const result = await updateOrderStatus("ord2", "processing");
     expect(result.success).toBe(true);
     expect(mailerSendMock).toHaveBeenCalledWith(
@@ -400,7 +400,7 @@ describe("admin actions and routes", () => {
         save: vi.fn(),
       }),
     });
-    const { updateOrderStatus } = await import("@/actions/admin-orders");
+    const { updateOrderStatus } = await import("@wse/core/actions/admin-orders");
     const result = await updateOrderStatus("ord3", "processing");
     expect(result.success).toBe(true);
     expect(mailerSendMock).not.toHaveBeenCalled();
@@ -408,14 +408,14 @@ describe("admin actions and routes", () => {
 
   it("covers generate label path without session user id", async () => {
     authMock.mockResolvedValueOnce({ user: { role: "ADMIN" } }).mockResolvedValueOnce({ user: { role: "ADMIN" } });
-    const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
+    const { generateOrderGlsLabel } = await import("@wse/core/actions/admin-orders");
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");
     expect(result.success).toBe(true);
   });
 
   it("covers non-Error throw branch in gls generation", async () => {
     glsCreateLabelMock.mockRejectedValueOnce("raw-failure");
-    const { generateOrderGlsLabel } = await import("@/actions/admin-orders");
+    const { generateOrderGlsLabel } = await import("@wse/core/actions/admin-orders");
     const result = await generateOrderGlsLabel("507f1f77bcf86cd799439011");
     expect(result.success).toBe(false);
     expect(result.error).toContain("sikertelen");
@@ -440,7 +440,7 @@ describe("admin actions and routes", () => {
       },
     ]);
 
-    const { bulkGenerateParcelLabels } = await import("@/actions/admin-orders");
+    const { bulkGenerateParcelLabels } = await import("@wse/core/actions/admin-orders");
     const result = await bulkGenerateParcelLabels([
       "507f1f77bcf86cd799439011",
       "507f1f77bcf86cd799439012",
@@ -466,7 +466,7 @@ describe("admin actions and routes", () => {
       },
     ]);
 
-    const { bulkGenerateParcelLabels } = await import("@/actions/admin-orders");
+    const { bulkGenerateParcelLabels } = await import("@wse/core/actions/admin-orders");
     const result = await bulkGenerateParcelLabels(["507f1f77bcf86cd799439011"]);
 
     expect(result.successCount).toBe(0);

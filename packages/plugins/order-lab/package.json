@@ -1,0 +1,14 @@
+{
+  "name": "@wse/plugin-order-lab",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine plugin package: order-lab.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}

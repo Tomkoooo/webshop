@@ -3,7 +3,7 @@ import {
   allocateReservationsForStripeTempOrder,
   InventoryReservationError,
   type CheckoutReserveItem,
-} from "@/services/inventory-reservation";
+} from "@wse/core/services/inventory-reservation";
 
 export type ReservationAttemptResult = "ok" | "sold";
 

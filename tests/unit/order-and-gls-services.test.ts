@@ -17,11 +17,11 @@ const downloadInvoicePdfMock = vi.fn();
 const sendInvoiceErrorShopAlertMock = vi.fn();
 const sendOrderPlacementErrorShopAlertMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/Product", () => ({ default: { findById: productFindByIdMock } }));
-vi.mock("@/models/Cart", () => ({ default: { findOneAndUpdate: cartFindOneAndUpdateMock } }));
-vi.mock("@/models/User", () => ({ default: { findByIdAndUpdate: userFindByIdAndUpdateMock } }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/Product", () => ({ default: { findById: productFindByIdMock } }));
+vi.mock("@wse/core/models/Cart", () => ({ default: { findOneAndUpdate: cartFindOneAndUpdateMock } }));
+vi.mock("@wse/core/models/User", () => ({ default: { findByIdAndUpdate: userFindByIdAndUpdateMock } }));
+vi.mock("@wse/core/models/Order", () => ({
   default: Object.assign(
     function MockOrder(this: Record<string, unknown>, payload: Record<string, unknown>) {
       orderConstructorMock(payload);
@@ -33,37 +33,37 @@ vi.mock("@/models/Order", () => ({
     { findById: orderFindByIdMock }
   ),
 }));
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendEmail: sendEmailMock },
 }));
-vi.mock("@/services/invoicing-szamlazz", () => ({
+vi.mock("@wse/core/services/invoicing-szamlazz", () => ({
   InvoicingSzamlazzService: {
     issueInvoice: (...args: unknown[]) => issueInvoiceMock(...args),
     downloadInvoicePdf: (...args: unknown[]) => downloadInvoicePdfMock(...args),
   },
 }));
-vi.mock("@/services/invoice-error-alert", () => ({
+vi.mock("@wse/core/services/invoice-error-alert", () => ({
   sendInvoiceErrorShopAlert: (...args: unknown[]) => sendInvoiceErrorShopAlertMock(...args),
 }));
-vi.mock("@/services/order-placement-error-alert", () => ({
+vi.mock("@wse/core/services/order-placement-error-alert", () => ({
   sendOrderPlacementErrorShopAlert: (...args: unknown[]) => sendOrderPlacementErrorShopAlertMock(...args),
 }));
-vi.mock("@/services/feature-flags", () => ({
+vi.mock("@wse/core/services/feature-flags", () => ({
   FeatureFlagService: { isEnabled: flagEnabledMock },
 }));
-vi.mock("@/services/order-guest-access", () => ({
+vi.mock("@wse/core/services/order-guest-access", () => ({
   OrderGuestAccessService: {
     createForOrder: vi.fn().mockResolvedValue("abc123guesttoken"),
     buildViewUrl: vi.fn().mockReturnValue("http://localhost/orders/guest/o1?token=abc"),
   },
 }));
-vi.mock("@/lib/app-base-url-server", () => ({
+vi.mock("@wse/core/lib/app-base-url-server", () => ({
   resolvePublicAppBaseUrl: vi.fn().mockResolvedValue("http://localhost:3000"),
 }));
-vi.mock("@/services/new-order-notification", () => ({
+vi.mock("@wse/core/services/new-order-notification", () => ({
   sendNewOrderNotification: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/services/inventory-reservation", () => ({
+vi.mock("@wse/core/services/inventory-reservation", () => ({
   decrementCheckoutLineStock: (...args: unknown[]) => decrementCheckoutLineStockMock(...args),
   InventoryReservationError: class InventoryReservationError extends Error {
     code: string;
@@ -110,7 +110,7 @@ describe("OrderService", () => {
   });
 
   it("creates order and executes side effects", async () => {
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     const order = await OrderService.createOrderFromCheckoutData(
       {
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1, price: 1000, name: "P1" }],
@@ -129,7 +129,7 @@ describe("OrderService", () => {
   });
 
   it("persists profile addresses when saveAddressToProfile is true", async () => {
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     const uid = "507f1f77bcf86cd799439012";
     await OrderService.createOrderFromCheckoutData(
       {
@@ -171,7 +171,7 @@ describe("OrderService", () => {
 
   it("throws when shop is disabled", async () => {
     flagEnabledMock.mockResolvedValue(false);
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     await expect(
       OrderService.createOrder({ items: [] }, "507f1f77bcf86cd799439012")
     ).rejects.toThrow("Jelenleg a rendelés leadás szünetel");
@@ -184,11 +184,11 @@ describe("OrderService", () => {
   });
 
   it("throws when product is missing", async () => {
-    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    const { InventoryReservationError } = await import("@wse/core/services/inventory-reservation");
     decrementCheckoutLineStockMock.mockRejectedValueOnce(
       new InventoryReservationError("A termék nem található", "TRANSACTION_FAILED")
     );
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -200,7 +200,7 @@ describe("OrderService", () => {
   });
 
   it("handles variant stock deduction path", async () => {
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     const order = await OrderService.createOrderFromCheckoutData({
       items: [{ product: "507f1f77bcf86cd799439011", variantId: "v1", quantity: 1 }],
       billingInfo: { email: "u@test.hu" },
@@ -216,7 +216,7 @@ describe("OrderService", () => {
 
   it("alerts shop when invoicing fails", async () => {
     issueInvoiceMock.mockRejectedValueOnce(new Error("Számlázz API timeout"));
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     await OrderService.createOrderFromCheckoutData(
       {
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1, price: 1000, name: "P1" }],
@@ -242,11 +242,11 @@ describe("OrderService", () => {
   });
 
   it("throws for insufficient stock", async () => {
-    const { InventoryReservationError } = await import("@/services/inventory-reservation");
+    const { InventoryReservationError } = await import("@wse/core/services/inventory-reservation");
     decrementCheckoutLineStockMock.mockRejectedValueOnce(
       new InventoryReservationError("Nincs elég készlet", "INSUFFICIENT_STOCK")
     );
-    const { OrderService } = await import("@/services/order");
+    const { OrderService } = await import("@wse/core/services/order");
     await expect(
       OrderService.createOrderFromCheckoutData({
         items: [{ product: "507f1f77bcf86cd799439011", quantity: 1 }],
@@ -280,7 +280,7 @@ describe("GlsService", () => {
   });
 
   it("builds label with parsed response", async () => {
-    const { GlsService } = await import("@/services/gls");
+    const { GlsService } = await import("@wse/core/services/gls");
     const result = await GlsService.createLabelForOrder({
       _id: { toString: () => "order1" },
       shippingAddress: {
@@ -299,7 +299,7 @@ describe("GlsService", () => {
   });
 
   it("throws when gls point is missing", async () => {
-    const { GlsService } = await import("@/services/gls");
+    const { GlsService } = await import("@wse/core/services/gls");
     await expect(
       GlsService.createLabelForOrder({
         shippingAddress: { street: "x", name: "n", city: "c", zip: "1", phone: "2", email: "e" },
@@ -315,7 +315,7 @@ describe("GlsService", () => {
         status: 500,
       })
     );
-    const { GlsService } = await import("@/services/gls");
+    const { GlsService } = await import("@wse/core/services/gls");
     await expect(
       GlsService.createLabelForOrder({
         _id: { toString: () => "order1" },
@@ -343,7 +343,7 @@ describe("GlsService", () => {
         }),
       })
     );
-    const { GlsService } = await import("@/services/gls");
+    const { GlsService } = await import("@wse/core/services/gls");
     await expect(
       GlsService.createLabelForOrder({
         _id: { toString: () => "order1" },

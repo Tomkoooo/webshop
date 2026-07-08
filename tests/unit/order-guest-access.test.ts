@@ -10,15 +10,15 @@ const tokenFindOneMock = vi.fn();
 const tokenFindOneAndUpdateMock = vi.fn();
 const tokenUpdateManyMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/Order", () => ({
   default: {
     updateMany: orderUpdateManyMock,
     findById: orderFindByIdMock,
     findByIdAndUpdate: orderFindByIdAndUpdateMock,
   },
 }));
-vi.mock("@/models/OrderGuestAccessToken", () => ({
+vi.mock("@wse/core/models/OrderGuestAccessToken", () => ({
   default: {
     deleteMany: tokenDeleteManyMock,
     create: tokenCreateMock,
@@ -48,12 +48,12 @@ describe("order guest access", () => {
   });
 
   it("normalizes email for linking", async () => {
-    const { normalizeOrderEmail } = await import("@/lib/order-guest-access");
+    const { normalizeOrderEmail } = await import("@wse/core/lib/order-guest-access");
     expect(normalizeOrderEmail("  Guest@Test.HU ")).toBe("guest@test.hu");
   });
 
   it("creates guest token and stores hash", async () => {
-    const { OrderGuestAccessService } = await import("@/services/order-guest-access");
+    const { OrderGuestAccessService } = await import("@wse/core/services/order-guest-access");
     const raw = await OrderGuestAccessService.createForOrder("507f1f77bcf86cd799439011", "guest@test.hu");
     expect(raw).toHaveLength(64);
     expect(tokenDeleteManyMock).toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe("order guest access", () => {
   });
 
   it("links guest orders on sign-in email match", async () => {
-    const { OrderGuestAccessService } = await import("@/services/order-guest-access");
+    const { OrderGuestAccessService } = await import("@wse/core/services/order-guest-access");
     const count = await OrderGuestAccessService.linkGuestOrdersToUser(
       "507f1f77bcf86cd799439012",
       "guest@test.hu"
@@ -72,7 +72,7 @@ describe("order guest access", () => {
   });
 
   it("claims order when token and email match", async () => {
-    const { OrderGuestAccessService } = await import("@/services/order-guest-access");
+    const { OrderGuestAccessService } = await import("@wse/core/services/order-guest-access");
     const raw = await OrderGuestAccessService.createForOrder("507f1f77bcf86cd799439011", "guest@test.hu");
     const result = await OrderGuestAccessService.claimOrderForUser(
       "507f1f77bcf86cd799439011",

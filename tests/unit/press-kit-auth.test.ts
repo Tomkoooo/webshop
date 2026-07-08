@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { hashPassword } from "@/lib/password"
+import { hashPassword } from "@wse/core/lib/password"
 
 const mockFindOne = vi.fn()
 const mockFindById = vi.fn()
 
-vi.mock("@/lib/db", () => ({ default: vi.fn() }))
-vi.mock("@/plugins/press-kit/models/PressContact", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: vi.fn() }))
+vi.mock("@wse/plugin-press-kit/models/PressContact", () => ({
   default: {
     findOne: (...args: unknown[]) => mockFindOne(...args),
     findById: (...args: unknown[]) => mockFindById(...args),
@@ -15,7 +15,7 @@ vi.mock("@/plugins/press-kit/models/PressContact", () => ({
     deleteMany: vi.fn(),
   },
 }))
-vi.mock("@/plugins/press-kit/models/PressKitSettings", () => ({
+vi.mock("@wse/plugin-press-kit/models/PressKitSettings", () => ({
   default: {
     findOne: vi.fn(),
     findOneAndUpdate: vi.fn(),
@@ -23,16 +23,16 @@ vi.mock("@/plugins/press-kit/models/PressKitSettings", () => ({
     deleteMany: vi.fn(),
   },
 }))
-vi.mock("@/plugins/press-kit/models/PressKitAccessLog", () => ({
+vi.mock("@wse/plugin-press-kit/models/PressKitAccessLog", () => ({
   default: { create: vi.fn(), aggregate: vi.fn(), countDocuments: vi.fn() },
 }))
-vi.mock("@/services/branding-settings", () => ({
+vi.mock("@wse/core/services/branding-settings", () => ({
   BrandingSettingsService: { get: vi.fn() },
 }))
-vi.mock("@/services/mailer", () => ({ MailerService: { sendEmail: vi.fn() } }))
-vi.mock("@/services/media", () => ({ MediaService: { getFilePayload: vi.fn() } }))
+vi.mock("@wse/core/services/mailer", () => ({ MailerService: { sendEmail: vi.fn() } }))
+vi.mock("@wse/core/services/media", () => ({ MediaService: { getFilePayload: vi.fn() } }))
 
-import { PressKitService } from "@/plugins/press-kit/services/press-kit-service"
+import { PressKitService } from "@wse/plugin-press-kit/services/press-kit-service"
 
 describe("PressKitService.authenticate", () => {
   beforeEach(() => {

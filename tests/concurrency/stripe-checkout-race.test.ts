@@ -9,9 +9,9 @@ import mongoose from "mongoose";
 import { NextRequest } from "next/server";
 import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from "../setup/mongo-memory";
 import { createJsonRequest } from "../helpers/next-request";
-import Product from "@/models/Product";
-import Reservation from "@/models/Reservation";
-import ShippingMethod from "@/models/ShippingMethod";
+import Product from "@wse/core/models/Product";
+import Reservation from "@wse/core/models/Reservation";
+import ShippingMethod from "@wse/core/models/ShippingMethod";
 
 function envFlagEnabled(value: string | undefined): boolean {
   const v = (value ?? "").trim().toLowerCase();
@@ -21,13 +21,13 @@ function envFlagEnabled(value: string | undefined): boolean {
 /** Setup file loads `.env`; still need a test Stripe key (sk_test_… or sk_live_…). */
 const runStripeRace = envFlagEnabled(process.env.RUN_STRIPE_RACE_TESTS) && Boolean(process.env.STRIPE_SECRET_KEY?.trim());
 
-vi.mock("@/auth", () => ({
+vi.mock("@wse/core/auth", () => ({
   auth: vi.fn(() =>
     Promise.resolve({ user: { id: new mongoose.Types.ObjectId().toString(), email: "race@test.local" } })
   ),
 }));
 
-vi.mock("@/services/feature-flags", () => ({
+vi.mock("@wse/core/services/feature-flags", () => ({
   FeatureFlagService: {
     isEnabled: vi.fn(async () => true),
   },
@@ -97,7 +97,7 @@ describe.skipIf(!runStripeRace)("stripe checkout session last-unit race (live St
 
   it("allows at most one concurrent POST /api/checkout/stripe/session when stock is 1", async () => {
     const attempts = 12;
-    const { POST } = await import("@/app/api/checkout/stripe/session/route");
+    const { POST } = await import("@wse/core/app/api/checkout/stripe/session/route");
 
     const responses = await Promise.all(
       Array.from({ length: attempts }, () =>

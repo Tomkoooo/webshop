@@ -1,0 +1,23 @@
+{
+  "name": "@wse/core",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine core: services, models, storefront components, app routes, admin-facing services.",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./app/*": "./src/app/*",
+    "./components/*": "./src/components/*",
+    "./features/*": "./src/features/*",
+    "./templates/*": "./src/templates/*",
+    "./plugins/*": "./src/plugins/*"
+  },
+  "dependencies": {
+    "@wse/sdk": "*"
+  },
+  "peerDependencies": {
+    "next": ">=16",
+    "react": ">=19",
+    "react-dom": ">=19"
+  }
+}

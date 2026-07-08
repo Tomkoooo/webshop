@@ -1,4 +1,4 @@
-import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
+import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 import { deepMerge } from "./deep-merge"
 import type { HomepageBlockPatch } from "./payload-schema"
 

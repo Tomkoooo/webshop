@@ -1,6 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import { defineConfig } from "vitest/config";
+import { wseAliases } from "./vitest.aliases";
 
 /** Local / CI: inventory race tests (Mongo memory server). Not part of default `vitest.config.ts` runs. */
 export default defineConfig({
@@ -24,8 +25,6 @@ export default defineConfig({
     hookTimeout: 60_000,
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
+    alias: wseAliases(path.resolve(__dirname)),
   },
 });

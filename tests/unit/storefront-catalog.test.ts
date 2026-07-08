@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   isStorefrontCatalogProduct,
   isStorefrontProductOrderable,
-} from "@/lib/storefront-catalog"
+} from "@wse/core/lib/storefront-catalog"
 
 describe("storefront-catalog", () => {
   it("isStorefrontCatalogProduct respects visibility", () => {

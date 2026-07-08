@@ -8,11 +8,11 @@ const updateReplyStatusMock = vi.fn()
 const sendEmailMock = vi.fn()
 const revalidatePathMock = vi.fn()
 
-vi.mock("@/lib/admin-auth", () => ({
+vi.mock("@wse/core/lib/admin-auth", () => ({
   requireAdmin: requireAdminMock,
 }))
 
-vi.mock("@/services/contact-messages", () => ({
+vi.mock("@wse/core/services/contact-messages", () => ({
   ContactMessageService: {
     getById: getByIdMock,
     updateStatus: updateStatusMock,
@@ -21,7 +21,7 @@ vi.mock("@/services/contact-messages", () => ({
   },
 }))
 
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendEmail: sendEmailMock },
 }))
 
@@ -66,7 +66,7 @@ describe("admin contact message replies", () => {
     })
     updateStatusMock.mockResolvedValueOnce({ _id: "message-1", status: "read" })
 
-    const { getContactMessage } = await import("@/actions/admin-contact-messages")
+    const { getContactMessage } = await import("@wse/core/actions/admin-contact-messages")
     const result = await getContactMessage("message-1")
 
     expect(result?.status).toBe("read")
@@ -75,7 +75,7 @@ describe("admin contact message replies", () => {
   })
 
   it("saves a reply attempt before sending and marks it sent", async () => {
-    const { sendContactReply } = await import("@/actions/admin-contact-messages")
+    const { sendContactReply } = await import("@wse/core/actions/admin-contact-messages")
     const result = await sendContactReply("message-1", undefined, replyFormData())
 
     expect(result.ok).toBe(true)
@@ -104,7 +104,7 @@ describe("admin contact message replies", () => {
       Object.assign(new Error("domain not registered here"), { responseCode: 550 })
     )
 
-    const { sendContactReply } = await import("@/actions/admin-contact-messages")
+    const { sendContactReply } = await import("@wse/core/actions/admin-contact-messages")
     const result = await sendContactReply("message-1", undefined, replyFormData())
 
     expect(result).toEqual({

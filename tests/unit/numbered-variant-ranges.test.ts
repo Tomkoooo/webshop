@@ -12,7 +12,7 @@ import {
   numberRangesToChips,
   resolveNumberRangeChips,
   inferNumberRangesFromIssueNumbers,
-} from "@/lib/numbered-variant-ranges";
+} from "@wse/core/lib/numbered-variant-ranges";
 
 describe("numbered-variant-ranges", () => {
   it("expands inclusive ranges and global excludes", () => {

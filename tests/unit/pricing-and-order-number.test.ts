@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatOrderNumber, formatOrderNumberLabel } from "@/lib/order-number";
+import { formatOrderNumber, formatOrderNumberLabel } from "@wse/core/lib/order-number";
 import {
   customerGrossFromNetWithDiscount,
   customerUnitGross,
@@ -15,7 +15,7 @@ import {
   priceBreakdownFromGross,
   totalsBreakdownForOrderSnapshot,
   totalsBreakdownFromGross,
-} from "@/lib/pricing";
+} from "@wse/core/lib/pricing";
 
 describe("order number helpers", () => {
   it("formats display order numbers from Mongo ids", () => {

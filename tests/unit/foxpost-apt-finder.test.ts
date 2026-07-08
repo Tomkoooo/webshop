@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFoxpostAptFinderUrl } from "@/lib/foxpost";
+import { buildFoxpostAptFinderUrl } from "@wse/core/lib/foxpost";
 
 describe("buildFoxpostAptFinderUrl", () => {
   it("includes cache-bust reload token when provided", () => {

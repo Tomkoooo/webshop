@@ -7,15 +7,15 @@ const productFindByIdMock = vi.fn();
 const decrementCheckoutLineStockMock = vi.fn();
 const restoreCheckoutLineStockMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/Order", () => ({ default: { findById: orderFindByIdMock } }));
-vi.mock("@/models/Product", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/Order", () => ({ default: { findById: orderFindByIdMock } }));
+vi.mock("@wse/core/models/Product", () => ({
   default: {
     find: productFindMock,
     findById: productFindByIdMock,
   },
 }));
-vi.mock("@/services/inventory-reservation", () => ({
+vi.mock("@wse/core/services/inventory-reservation", () => ({
   InventoryReservationError: class InventoryReservationError extends Error {
     code = "INSUFFICIENT_STOCK";
   },
@@ -39,7 +39,7 @@ describe("order-items-edit", () => {
   });
 
   it("allows editing pending and processing orders only", async () => {
-    const { canEditOrderItems } = await import("@/lib/order-items-edit");
+    const { canEditOrderItems } = await import("@wse/core/lib/order-items-edit");
     expect(canEditOrderItems({ status: "pending" })).toBe(true);
     expect(canEditOrderItems({ status: "processing" })).toBe(true);
     expect(canEditOrderItems({ status: "shipped" })).toBe(false);
@@ -62,7 +62,7 @@ describe("order-items-edit", () => {
     };
     orderFindByIdMock.mockResolvedValue(order);
 
-    const { removeOrderItem } = await import("@/services/order-items-edit");
+    const { removeOrderItem } = await import("@wse/core/services/order-items-edit");
     const result = await removeOrderItem("ord1", 1);
 
     expect(result.success).toBe(true);
@@ -86,7 +86,7 @@ describe("order-items-edit", () => {
       save: vi.fn(),
     });
 
-    const { removeOrderItem } = await import("@/services/order-items-edit");
+    const { removeOrderItem } = await import("@wse/core/services/order-items-edit");
     await expect(removeOrderItem("ord1", 0)).rejects.toThrow("legalább egy tétel");
   });
 
@@ -118,7 +118,7 @@ describe("order-items-edit", () => {
       }),
     });
 
-    const { addOrderItem } = await import("@/services/order-items-edit");
+    const { addOrderItem } = await import("@wse/core/services/order-items-edit");
     const result = await addOrderItem("ord1", {
       productId: "507f1f77bcf86cd799439012",
       quantity: 2,

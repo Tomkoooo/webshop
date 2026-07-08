@@ -4,8 +4,8 @@ import {
   mapSandboxApmEntry,
   FOXPOST_SANDBOX_DEFAULT_APM_ID,
   clearSandboxApmCache,
-} from "@/lib/foxpost-sandbox-apms";
-import { clearFoxpostApmCatalogMemoryCache } from "@/lib/foxpost-apm-catalog";
+} from "@wse/core/lib/foxpost-sandbox-apms";
+import { clearFoxpostApmCatalogMemoryCache } from "@wse/core/lib/foxpost-apm-catalog";
 
 describe("foxpost-sandbox-apms", () => {
   beforeEach(() => {
@@ -61,7 +61,7 @@ describe("foxpost-sandbox-apms", () => {
       })
     );
 
-    const { listSandboxApms, getDefaultSandboxApm } = await import("@/lib/foxpost-sandbox-apms");
+    const { listSandboxApms, getDefaultSandboxApm } = await import("@wse/core/lib/foxpost-sandbox-apms");
     const apms = await listSandboxApms({ forceRefresh: true });
     expect(apms.map((a) => a.id)).toEqual(["hu350", "hu404"]);
 

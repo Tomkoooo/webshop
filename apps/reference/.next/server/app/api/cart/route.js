@@ -1,0 +1,13 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/cart/route.js")
+R.c("server/chunks/packages_core_src_180a3311._.js")
+R.c("server/chunks/node_modules_next_dist_esm_build_templates_app-route_486cbc5a.js")
+R.c("server/chunks/node_modules_next_dist_f352324c._.js")
+R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
+R.c("server/chunks/node_modules_next_c5729131._.js")
+R.c("server/chunks/[root-of-the-server]__87176c7e._.js")
+R.c("server/chunks/_1f4f74b1._.js")
+R.c("server/chunks/node_modules_next_92aaecbe._.js")
+R.c("server/chunks/[root-of-the-server]__f550a12a._.js")
+R.c("server/chunks/apps_reference__next-internal_server_app_api_cart_route_actions_297655cd.js")
+R.m(651480)
+module.exports=R.m(651480).exports

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { resolveVisibleGuideSectionDefs } from "@/lib/admin-guide/resolve-sections"
-import type { GuideSectionContext } from "@/lib/admin-guide/types"
-import type { DeploymentDefinition } from "@/config/deployments-registry"
+import { resolveVisibleGuideSectionDefs } from "@wse/core/lib/admin-guide/resolve-sections"
+import type { GuideSectionContext } from "@wse/core/lib/admin-guide/types"
+import type { DeploymentDefinition } from "@wse/core/config/deployments-registry"
 
 const cabinova: DeploymentDefinition = {
   key: "cabinova",

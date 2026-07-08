@@ -1,0 +1,3 @@
+module.exports=[683838,e=>{e.v(s=>Promise.all(["server/chunks/packages_templates_sakkmed_pages_home_EditorPanel_tsx_a9c354f3._.js"].map(s=>e.l(s))).then(()=>s(804433)))},728082,e=>{e.v(s=>Promise.all(["server/chunks/packages_templates_sakkmed_pages_shop_EditorPanel_tsx_74ea725d._.js"].map(s=>e.l(s))).then(()=>s(512052)))},38755,e=>{e.v(s=>Promise.all(["server/chunks/packages_templates_sakkmed_pages_pdp_EditorPanel_tsx_7d96881a._.js"].map(s=>e.l(s))).then(()=>s(995468)))},309957,e=>{e.v(s=>Promise.all(["server/chunks/packages_templates_sakkmed_static-pages_shared_EditorPanel_tsx_f636141a._.js"].map(s=>e.l(s))).then(()=>s(837731)))}];
+
+//# sourceMappingURL=packages_templates_sakkmed_d52fd59b._.js.map

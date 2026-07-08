@@ -1,0 +1,14 @@
+{
+  "name": "@wse/template-erdweg",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine template package: erdweg.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}

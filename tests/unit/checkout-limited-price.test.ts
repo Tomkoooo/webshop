@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyCheckoutPriceAllocations, type ValidatedCheckoutData } from "@/services/checkout-validation";
+import { applyCheckoutPriceAllocations, type ValidatedCheckoutData } from "@wse/core/services/checkout-validation";
 
 function baseCheckoutData(): ValidatedCheckoutData {
   return {

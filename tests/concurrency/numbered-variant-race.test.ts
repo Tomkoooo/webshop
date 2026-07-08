@@ -6,8 +6,8 @@ import {
   countReservationResults,
   runConcurrentReservationAttempts,
 } from "../helpers/inventory-race";
-import Product from "@/models/Product";
-import { expandNumberRanges, ELADHATO_NUMBER_RANGES } from "@/lib/numbered-variant-ranges";
+import Product from "@wse/core/models/Product";
+import { expandNumberRanges, ELADHATO_NUMBER_RANGES } from "@wse/core/lib/numbered-variant-ranges";
 
 function uniqueSlug(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAdminOrdersExportRows } from "@/lib/admin-orders-export";
+import { buildAdminOrdersExportRows } from "@wse/core/lib/admin-orders-export";
 
 describe("admin orders export numbered column", () => {
   it("includes Tétel N sorszám from selectedAttributes", () => {

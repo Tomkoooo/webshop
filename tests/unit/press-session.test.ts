@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest"
 import {
   createPressSessionToken,
   verifyPressSessionToken,
-} from "@/plugins/press-kit/lib/press-session"
+} from "@wse/plugin-press-kit/lib/press-session"
 
 describe("press-session", () => {
   const originalSecret = process.env.AUTH_SECRET

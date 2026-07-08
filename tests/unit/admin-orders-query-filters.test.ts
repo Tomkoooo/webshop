@@ -3,7 +3,7 @@ import {
   adminFiltersToWorkspaceFilters,
   buildAdminOrdersMongoQuery,
   filterAdminOrdersWithWorkspace,
-} from "@/lib/admin-orders-query";
+} from "@wse/core/lib/admin-orders-query";
 
 describe("admin orders query filters", () => {
   it("builds mongo query for updated and status-transition date filters", () => {

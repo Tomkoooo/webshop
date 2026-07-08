@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { toStorefrontProduct } from "@/lib/storefront-product"
+import { toStorefrontProduct } from "@wse/core/lib/storefront-product"
 
 describe("toStorefrontProduct", () => {
   it("removes inactive variants and option values", () => {

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildFoxpostLabelGeneratedQuery,
   buildGlsLabelGeneratedQuery,
-} from "@/lib/admin-order-label-filters";
-import { buildAdminOrdersMongoQuery } from "@/lib/admin-orders-query";
+} from "@wse/core/lib/admin-order-label-filters";
+import { buildAdminOrdersMongoQuery } from "@wse/core/lib/admin-orders-query";
 
 describe("parcel label date filters", () => {
   it("filters Foxpost labels generated on a calendar day", () => {

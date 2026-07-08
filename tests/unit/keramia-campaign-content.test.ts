@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { fogfeheritesDefault } from "@/templates/keramia-shared/static-pages/shared/defaults/fogfeherites"
-import { normalizeCampaignContent } from "@/templates/keramia-shared/lib/normalize-campaign-content"
+import { fogfeheritesDefault } from "@wse/template-keramia-shared/static-pages/shared/defaults/fogfeherites"
+import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
 
 describe("normalizeCampaignContent", () => {
   it("fills missing sections from defaults when stored JSON is partial", () => {

@@ -11,9 +11,9 @@ import "dotenv/config"
 import mongoose from "mongoose"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { fogfeheritesDefault } from "../../src/templates/keramia-shared/static-pages/shared/defaults/fogfeherites"
-import { implantDefault } from "../../src/templates/keramia-shared/static-pages/shared/defaults/implant"
-import type { CampaignPageContent } from "../../src/templates/keramia-shared/static-pages/shared/schema"
+import { fogfeheritesDefault } from "@wse/template-keramia-shared/static-pages/shared/defaults/fogfeherites"
+import { implantDefault } from "@wse/template-keramia-shared/static-pages/shared/defaults/implant"
+import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
 import { seedKeramiaDentalMedia } from "./lib/keramia-media.mjs"
 
 type KeramiaCampaignMedia = {

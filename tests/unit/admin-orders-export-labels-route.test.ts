@@ -5,9 +5,9 @@ const authMock = vi.fn()
 const dbConnectMock = vi.fn()
 const orderFindMock = vi.fn()
 
-vi.mock("@/auth", () => ({ auth: authMock }))
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }))
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/auth", () => ({ auth: authMock }))
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }))
+vi.mock("@wse/core/models/Order", () => ({
   default: { find: orderFindMock },
 }))
 
@@ -20,7 +20,7 @@ describe("admin orders export-labels route", () => {
 
   it("returns 401 for non-admin users", async () => {
     authMock.mockResolvedValueOnce({ user: { role: "USER" } })
-    const { GET } = await import("@/app/api/admin/orders/export-labels/route")
+    const { GET } = await import("@wse/admin/app/api/admin/orders/export-labels/route")
     const req = new NextRequest("http://localhost/api/admin/orders/export-labels")
     const res = await GET(req)
     expect(res.status).toBe(401)
@@ -41,7 +41,7 @@ describe("admin orders export-labels route", () => {
       }),
     })
 
-    const { GET } = await import("@/app/api/admin/orders/export-labels/route")
+    const { GET } = await import("@wse/admin/app/api/admin/orders/export-labels/route")
     const req = new NextRequest("http://localhost/api/admin/orders/export-labels")
     const res = await GET(req)
     expect(res.status).toBe(404)
@@ -62,7 +62,7 @@ describe("admin orders export-labels route", () => {
       }),
     })
 
-    const { GET } = await import("@/app/api/admin/orders/export-labels/route")
+    const { GET } = await import("@wse/admin/app/api/admin/orders/export-labels/route")
     const req = new NextRequest(
       "http://localhost/api/admin/orders/export-labels?ids=507f1f77bcf86cd799439011"
     )

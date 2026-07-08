@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCouponUserUsageFilter,
   normalizeCouponEmail,
-} from "@/lib/coupon-usage";
+} from "@wse/core/lib/coupon-usage";
 
 describe("coupon-usage", () => {
   it("normalizes e-mail addresses", () => {

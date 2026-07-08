@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest"
 import {
   buildAdminLabelAbsoluteUrl,
   buildAdminOrdersExportRows,
-} from "@/lib/admin-orders-export"
-import { buildAdminOrderLabelsZipBuffer } from "@/lib/admin-orders-labels-zip"
+} from "@wse/core/lib/admin-orders-export"
+import { buildAdminOrderLabelsZipBuffer } from "@wse/core/lib/admin-orders-labels-zip"
 
 describe("admin orders export label columns", () => {
   it("includes absolute label links and generated timestamps", () => {

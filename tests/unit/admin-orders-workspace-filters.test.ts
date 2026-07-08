@@ -3,7 +3,7 @@ import {
   applyWorkspaceFilters,
   summarizeOrder,
   type AdminOrderSummary,
-} from "@/lib/admin-orders-workspace"
+} from "@wse/core/lib/admin-orders-workspace"
 
 function baseOrder(overrides: Partial<AdminOrderSummary> = {}): AdminOrderSummary {
   return {

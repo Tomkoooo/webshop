@@ -8,13 +8,13 @@ const findByIdChain = {
 const orderFindByIdMock = vi.fn(() => findByIdChain);
 const sendSystemHtmlEmailMock = vi.fn();
 
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/models/Order", () => ({
   default: { findById: orderFindByIdMock },
 }));
-vi.mock("@/services/shop-ops-alert-email", () => ({
+vi.mock("@wse/core/services/shop-ops-alert-email", () => ({
   resolveInvoiceErrorAlertEmails: () => resolveInvoiceErrorAlertEmailsMock(),
 }));
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendSystemHtmlEmail: sendSystemHtmlEmailMock },
 }));
 
@@ -59,7 +59,7 @@ describe("sendInvoiceErrorShopAlert", () => {
       user: { email: "u@test.hu", name: "User" },
     });
 
-    const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");
+    const { sendInvoiceErrorShopAlert } = await import("@wse/core/services/invoice-error-alert");
     await sendInvoiceErrorShopAlert("507f1f77bcf86cd799439011", new Error("Számlázz timeout"));
 
     expect(sendSystemHtmlEmailMock).toHaveBeenCalledTimes(1);
@@ -85,7 +85,7 @@ describe("sendInvoiceErrorShopAlert", () => {
       items: [],
     });
 
-    const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");
+    const { sendInvoiceErrorShopAlert } = await import("@wse/core/services/invoice-error-alert");
     await sendInvoiceErrorShopAlert("o1", new Error("x"));
 
     expect(sendSystemHtmlEmailMock).toHaveBeenCalledWith(
@@ -102,7 +102,7 @@ describe("sendInvoiceErrorShopAlert", () => {
       items: [],
     });
 
-    const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");
+    const { sendInvoiceErrorShopAlert } = await import("@wse/core/services/invoice-error-alert");
     await sendInvoiceErrorShopAlert("o1", new Error("x"));
 
     expect(sendSystemHtmlEmailMock).toHaveBeenCalledWith(
@@ -114,7 +114,7 @@ describe("sendInvoiceErrorShopAlert", () => {
     resolveInvoiceErrorAlertEmailsMock.mockResolvedValue([]);
     findByIdChain.lean.mockResolvedValue({ _id: "o1", billingInfo: {}, shippingAddress: {}, items: [] });
 
-    const { sendInvoiceErrorShopAlert } = await import("@/services/invoice-error-alert");
+    const { sendInvoiceErrorShopAlert } = await import("@wse/core/services/invoice-error-alert");
     await sendInvoiceErrorShopAlert("o1", new Error("x"));
 
     expect(sendSystemHtmlEmailMock).not.toHaveBeenCalled();

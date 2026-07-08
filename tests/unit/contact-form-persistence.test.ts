@@ -5,18 +5,18 @@ const createContactMessageMock = vi.fn()
 const updateNotificationStatusMock = vi.fn()
 const sendEmailMock = vi.fn()
 
-vi.mock("@/services/contact-emails", () => ({
+vi.mock("@wse/core/services/contact-emails", () => ({
   ContactEmailsService: { list: listContactEmailsMock },
 }))
 
-vi.mock("@/services/contact-messages", () => ({
+vi.mock("@wse/core/services/contact-messages", () => ({
   ContactMessageService: {
     create: createContactMessageMock,
     updateNotificationStatus: updateNotificationStatusMock,
   },
 }))
 
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendEmail: sendEmailMock },
 }))
 
@@ -42,7 +42,7 @@ describe("submitContactForm persistence", () => {
   })
 
   it("saves the contact message before sending notification mail", async () => {
-    const { submitContactForm } = await import("@/actions/contact-form")
+    const { submitContactForm } = await import("@wse/core/actions/contact-form")
     const result = await submitContactForm(undefined, contactFormData())
 
     expect(result.ok).toBe(true)
@@ -71,7 +71,7 @@ describe("submitContactForm persistence", () => {
       Object.assign(new Error("domain not registered here"), { responseCode: 550 })
     )
 
-    const { submitContactForm } = await import("@/actions/contact-form")
+    const { submitContactForm } = await import("@wse/core/actions/contact-form")
     const result = await submitContactForm(undefined, contactFormData())
 
     expect(result).toEqual({
@@ -88,7 +88,7 @@ describe("submitContactForm persistence", () => {
   it("does not attempt email delivery when database persistence fails", async () => {
     createContactMessageMock.mockRejectedValue(new Error("database unavailable"))
 
-    const { submitContactForm } = await import("@/actions/contact-form")
+    const { submitContactForm } = await import("@wse/core/actions/contact-form")
     const result = await submitContactForm(undefined, contactFormData())
 
     expect(result.ok).toBe(false)

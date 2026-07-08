@@ -1,6 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import ShopContent from "../src/models/ShopContent";
+import ShopContent from "@wse/core/models/ShopContent";
 
 const MONGODB_URI = process.env.DATABASE_URL;
 

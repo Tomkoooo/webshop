@@ -3,7 +3,7 @@ import mongoose from "mongoose"
 import {
   buildAdminOrdersMongoQuery,
   filterAdminOrders,
-} from "@/lib/admin-orders-query"
+} from "@wse/core/lib/admin-orders-query"
 
 describe("buildAdminOrdersMongoQuery", () => {
   it("adds product filter when productId is set", () => {

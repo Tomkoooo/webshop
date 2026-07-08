@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { shouldOpenCheckoutSuggestionsModal } from "@/lib/checkout-suggestions-modal"
+import { shouldOpenCheckoutSuggestionsModal } from "@wse/core/lib/checkout-suggestions-modal"
 
 describe("shouldOpenCheckoutSuggestionsModal", () => {
   it("returns false when feature is disabled", () => {

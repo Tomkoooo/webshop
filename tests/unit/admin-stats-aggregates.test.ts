@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildMonthlyRevenueSeries } from "@/lib/admin-stats-aggregates";
-import { summarizeAdminCustomersFromOrderEmails } from "@/lib/admin-customers";
+import { buildMonthlyRevenueSeries } from "@wse/core/lib/admin-stats-aggregates";
+import { summarizeAdminCustomersFromOrderEmails } from "@wse/core/lib/admin-customers";
 
 describe("buildMonthlyRevenueSeries", () => {
   it("fills missing months with zero revenue", () => {

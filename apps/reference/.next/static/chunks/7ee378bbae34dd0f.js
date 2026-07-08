@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,661671,t=>{"use strict";var e=t.i(475254);let c=[["path",{d:"M12 3v6",key:"1holv5"}],["circle",{cx:"12",cy:"12",r:"3",key:"1v7zrd"}],["path",{d:"M12 15v6",key:"a9ows0"}]],o=(0,e.default)("git-commit-vertical",c);t.s(["__iconNode",()=>c,"default",()=>o])}]);

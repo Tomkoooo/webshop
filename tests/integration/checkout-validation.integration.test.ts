@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import mongoose from "mongoose";
 import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from "../setup/mongo-memory";
-import Product from "@/models/Product";
-import ShippingMethod from "@/models/ShippingMethod";
-import PaymentMethod from "@/models/PaymentMethod";
+import Product from "@wse/core/models/Product";
+import ShippingMethod from "@wse/core/models/ShippingMethod";
+import PaymentMethod from "@wse/core/models/PaymentMethod";
 import { vi } from "vitest";
 
 describe("checkout validation integration", () => {
@@ -56,7 +56,7 @@ describe("checkout validation integration", () => {
   });
 
   it("normalizes valid checkout payload and calculates totals", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     const result = await validateAndNormalizeCheckoutInput({
       items: [{ product: productId, quantity: 2 }],
       billingInfo: {
@@ -89,7 +89,7 @@ describe("checkout validation integration", () => {
   });
 
   it("rejects empty cart", async () => {
-    const { validateAndNormalizeCheckoutInput } = await import("@/services/checkout-validation");
+    const { validateAndNormalizeCheckoutInput } = await import("@wse/core/services/checkout-validation");
     await expect(
       validateAndNormalizeCheckoutInput({
         items: [],

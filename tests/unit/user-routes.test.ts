@@ -15,14 +15,14 @@ const reviewUpsertMock = vi.fn();
 const feedbackUpsertMock = vi.fn();
 const linkGuestOrdersToUserMock = vi.fn();
 
-vi.mock("@/auth", () => ({ auth: authMock }));
-vi.mock("@/services/order-guest-access", () => ({
+vi.mock("@wse/core/auth", () => ({ auth: authMock }));
+vi.mock("@wse/core/services/order-guest-access", () => ({
   OrderGuestAccessService: {
     linkGuestOrdersToUser: (...args: unknown[]) => linkGuestOrdersToUserMock(...args),
   },
 }));
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/User", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/User", () => ({
   default: {
     findById: userFindByIdMock,
     findOne: userFindOneMock,
@@ -30,16 +30,16 @@ vi.mock("@/models/User", () => ({
     findByIdAndDelete: userDeleteMock,
   },
 }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/models/Order", () => ({
   default: {
     find: orderFindMock,
     findOne: orderFindOneMock,
     exists: orderExistsMock,
   },
 }));
-vi.mock("@/models/Product", () => ({ default: { exists: productExistsMock } }));
-vi.mock("@/models/Review", () => ({ default: { findOneAndUpdate: reviewUpsertMock } }));
-vi.mock("@/models/ShopFeedback", () => ({ default: { findOneAndUpdate: feedbackUpsertMock } }));
+vi.mock("@wse/core/models/Product", () => ({ default: { exists: productExistsMock } }));
+vi.mock("@wse/core/models/Review", () => ({ default: { findOneAndUpdate: reviewUpsertMock } }));
+vi.mock("@wse/core/models/ShopFeedback", () => ({ default: { findOneAndUpdate: feedbackUpsertMock } }));
 
 describe("user api routes", () => {
   beforeEach(() => {
@@ -67,13 +67,13 @@ describe("user api routes", () => {
   });
 
   it("gets current user profile", async () => {
-    const { GET } = await import("@/app/api/user/profile/route");
+    const { GET } = await import("@wse/core/app/api/user/profile/route");
     const res = await GET(createJsonRequest("http://localhost/api/user/profile", "GET"));
     expect(res.status).toBe(200);
   });
 
   it("updates user profile", async () => {
-    const { PUT } = await import("@/app/api/user/profile/route");
+    const { PUT } = await import("@wse/core/app/api/user/profile/route");
     const res = await PUT(
       createJsonRequest("http://localhost/api/user/profile", "PUT", {
         billingInfo: { name: "A" },
@@ -86,7 +86,7 @@ describe("user api routes", () => {
   });
 
   it("deletes user profile when no ongoing order", async () => {
-    const { DELETE } = await import("@/app/api/user/profile/route");
+    const { DELETE } = await import("@wse/core/app/api/user/profile/route");
     const res = await DELETE(createJsonRequest("http://localhost/api/user/profile", "DELETE"));
     const body = await res.json();
     expect(body.success).toBe(true);
@@ -99,14 +99,14 @@ describe("user api routes", () => {
       sort: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue([{ _id: "o1" }]),
     });
-    const { GET } = await import("@/app/api/user/orders/route");
+    const { GET } = await import("@wse/core/app/api/user/orders/route");
     const res = await GET(createJsonRequest("http://localhost/api/user/orders", "GET"));
     expect(res.status).toBe(200);
     expect(linkGuestOrdersToUserMock).toHaveBeenCalledWith("507f1f77bcf86cd799439011", "u@test.hu");
   });
 
   it("returns one order detail", async () => {
-    const { GET } = await import("@/app/api/user/orders/[id]/route");
+    const { GET } = await import("@wse/core/app/api/user/orders/[id]/route");
     const res = await GET(
       createJsonRequest("http://localhost/api/user/orders/o1", "GET"),
       { params: Promise.resolve({ id: "o1" }) }
@@ -119,7 +119,7 @@ describe("user api routes", () => {
       populate: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue(null),
     });
-    const { GET } = await import("@/app/api/user/orders/[id]/route");
+    const { GET } = await import("@wse/core/app/api/user/orders/[id]/route");
     const res = await GET(
       createJsonRequest("http://localhost/api/user/orders/o1", "GET"),
       { params: Promise.resolve({ id: "o1" }) }
@@ -128,8 +128,8 @@ describe("user api routes", () => {
   });
 
   it("submits product review and shop feedback", async () => {
-    const { POST: postReview } = await import("@/app/api/user/reviews/route");
-    const { POST: postFeedback } = await import("@/app/api/user/feedback/route");
+    const { POST: postReview } = await import("@wse/core/app/api/user/reviews/route");
+    const { POST: postFeedback } = await import("@wse/core/app/api/user/feedback/route");
 
     const reviewRes = await postReview(
       createJsonRequest("http://localhost/api/user/reviews", "POST", {
@@ -153,8 +153,8 @@ describe("user api routes", () => {
 
   it("returns unauthorized for user routes", async () => {
     authMock.mockResolvedValue(null);
-    const { GET: getProfile } = await import("@/app/api/user/profile/route");
-    const { GET: getOrders } = await import("@/app/api/user/orders/route");
+    const { GET: getProfile } = await import("@wse/core/app/api/user/profile/route");
+    const { GET: getOrders } = await import("@wse/core/app/api/user/orders/route");
     const profileRes = await getProfile(createJsonRequest("http://localhost/api/user/profile", "GET"));
     const ordersRes = await getOrders(createJsonRequest("http://localhost/api/user/orders", "GET"));
     expect(profileRes.status).toBe(401);
@@ -163,12 +163,12 @@ describe("user api routes", () => {
 
   it("covers not found and validation branches", async () => {
     userFindByIdMock.mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) });
-    const { GET: getProfile } = await import("@/app/api/user/profile/route");
+    const { GET: getProfile } = await import("@wse/core/app/api/user/profile/route");
     const profileRes = await getProfile(createJsonRequest("http://localhost/api/user/profile", "GET"));
     expect(profileRes.status).toBe(404);
 
     orderExistsMock.mockResolvedValueOnce(false);
-    const { POST: postReview } = await import("@/app/api/user/reviews/route");
+    const { POST: postReview } = await import("@wse/core/app/api/user/reviews/route");
     const reviewRes = await postReview(
       createJsonRequest("http://localhost/api/user/reviews", "POST", {
         productId: "p1",
@@ -177,7 +177,7 @@ describe("user api routes", () => {
     );
     expect(reviewRes.status).toBe(403);
 
-    const { POST: postFeedback } = await import("@/app/api/user/feedback/route");
+    const { POST: postFeedback } = await import("@wse/core/app/api/user/feedback/route");
     const feedbackRes = await postFeedback(
       createJsonRequest("http://localhost/api/user/feedback", "POST", {
         rating: 0,
@@ -188,14 +188,14 @@ describe("user api routes", () => {
 
   it("blocks account deletion when ongoing orders exist", async () => {
     orderFindMock.mockResolvedValue([{ _id: "ongoing" }]);
-    const { DELETE } = await import("@/app/api/user/profile/route");
+    const { DELETE } = await import("@wse/core/app/api/user/profile/route");
     const res = await DELETE(createJsonRequest("http://localhost/api/user/profile", "DELETE"));
     expect(res.status).toBe(400);
   });
 
   it("returns server error on thrown exception branches", async () => {
     dbConnectMock.mockRejectedValueOnce(new Error("db error"));
-    const { GET: getProfile } = await import("@/app/api/user/profile/route");
+    const { GET: getProfile } = await import("@wse/core/app/api/user/profile/route");
     const res = await getProfile(createJsonRequest("http://localhost/api/user/profile", "GET"));
     expect(res.status).toBe(500);
   });

@@ -3,7 +3,7 @@ import {
   shouldUseCompactVariantPickerOnCard,
   initialCardVariantId,
   CARD_VARIANT_PICKER_MAX_CHIPS,
-} from "@/lib/product-card-variants";
+} from "@wse/core/lib/product-card-variants";
 
 describe("product-card-variants", () => {
   it("uses compact picker for unique numbered products", () => {

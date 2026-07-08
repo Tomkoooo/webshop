@@ -14,35 +14,35 @@ const mailerSendMock = vi.fn();
 const createMissingTemplateMock = vi.fn();
 const buildCoreEmailTemplateSeedsMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/Order", () => ({
   default: { findById: (...args: unknown[]) => orderFindByIdMock(...args) },
 }));
-vi.mock("@/models/TempOrder", () => ({
+vi.mock("@wse/core/models/TempOrder", () => ({
   default: { findOne: (...args: unknown[]) => tempOrderFindOneMock(...args) },
 }));
-vi.mock("@/services/invoicing-szamlazz", () => ({
+vi.mock("@wse/core/services/invoicing-szamlazz", () => ({
   InvoicingSzamlazzService: {
     reverseInvoice: (...args: unknown[]) => reverseInvoiceMock(...args),
     downloadInvoicePdf: (...args: unknown[]) => downloadInvoicePdfMock(...args),
   },
 }));
-vi.mock("@/services/email-template", () => ({
+vi.mock("@wse/core/services/email-template", () => ({
   EmailTemplateService: {
     createMissing: (...args: unknown[]) => createMissingTemplateMock(...args),
   },
 }));
-vi.mock("@/lib/email-template-catalog", () => ({
+vi.mock("@wse/core/lib/email-template-catalog", () => ({
   buildCoreEmailTemplateSeeds: (...args: unknown[]) => buildCoreEmailTemplateSeedsMock(...args),
 }));
-vi.mock("@/services/inventory-reservation", () => ({
+vi.mock("@wse/core/services/inventory-reservation", () => ({
   releaseReservationsForTempOrder: (...args: unknown[]) => releaseReservationsMock(...args),
   restoreCheckoutLineStock: (...args: unknown[]) => restoreCheckoutLineStockMock(...args),
 }));
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendEmail: (...args: unknown[]) => mailerSendMock(...args) },
 }));
-vi.mock("@/services/stripe", () => ({
+vi.mock("@wse/core/services/stripe", () => ({
   getStripeClient: () => ({
     refunds: {
       list: (...args: unknown[]) => stripeRefundsListMock(...args),
@@ -96,7 +96,7 @@ describe("OrderCancellationService", () => {
       populate: vi.fn().mockResolvedValue(order),
     });
 
-    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const { OrderCancellationService } = await import("@wse/core/services/order-cancellation");
     const result = await OrderCancellationService.cancel("507f1f77bcf86cd799439011");
 
     expect(result).toEqual({
@@ -145,7 +145,7 @@ describe("OrderCancellationService", () => {
       populate: vi.fn().mockResolvedValue(order),
     });
 
-    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const { OrderCancellationService } = await import("@wse/core/services/order-cancellation");
     await OrderCancellationService.cancel("507f1f77bcf86cd799439011", {
       reason: "  Hibás szállítási cím  ",
     });
@@ -164,7 +164,7 @@ describe("OrderCancellationService", () => {
       populate: vi.fn().mockResolvedValue(makeOrder({ status: "cancelled" })),
     });
 
-    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const { OrderCancellationService } = await import("@wse/core/services/order-cancellation");
     await expect(OrderCancellationService.cancel("507f1f77bcf86cd799439011")).rejects.toThrow(
       "már törölve"
     );
@@ -182,7 +182,7 @@ describe("OrderCancellationService", () => {
       lean: vi.fn().mockResolvedValue(null),
     }));
 
-    const { OrderCancellationService } = await import("@/services/order-cancellation");
+    const { OrderCancellationService } = await import("@wse/core/services/order-cancellation");
     const result = await OrderCancellationService.cancel("507f1f77bcf86cd799439011");
 
     expect(result.refunded).toBe(false);

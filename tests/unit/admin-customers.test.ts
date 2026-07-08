@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAdminCustomerRows,
   summarizeAdminCustomers,
-} from "@/lib/admin-customers";
+} from "@wse/core/lib/admin-customers";
 
 const registeredUsers = [
   { _id: "u1", name: "Registered Buyer", email: "Buyer@Example.com", role: "USER" as const },

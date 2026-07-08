@@ -1,13 +1,13 @@
 import { describe, expect, it, beforeAll } from "vitest"
-import { listAllTemplates, FALLBACK_TEMPLATE_ID } from "@/templates/registry"
-import { listEditablePages } from "@/templates/cms-pages"
+import { listAllTemplates, FALLBACK_TEMPLATE_ID } from "@wse/core/templates/registry"
+import { listEditablePages } from "@wse/core/templates/cms-pages"
 import {
   DEFAULT_TEMPLATE_SURFACES,
   RESERVED_STATIC_PAGE_SLUGS,
   assertValidStaticPageSlug,
   type FlowRouteKey,
-} from "@/templates/types"
-import type { TemplateModule } from "@/templates/types"
+} from "@wse/sdk/templates/types"
+import type { TemplateModule } from "@wse/sdk/templates/types"
 
 const FLOW_ROUTE_KEYS: FlowRouteKey[] = ["cart", "checkout", "profile"]
 

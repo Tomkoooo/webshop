@@ -7,14 +7,14 @@ const findOneAndUpdateMock = vi.fn();
 const retrieveMock = vi.fn();
 const finalizeMock = vi.fn();
 
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/TempOrder", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/TempOrder", () => ({
   default: {
     findById: findByIdMock,
     findOneAndUpdate: findOneAndUpdateMock,
   },
 }));
-vi.mock("@/services/stripe", () => ({
+vi.mock("@wse/core/services/stripe", () => ({
   getStripeClient: () => ({
     checkout: {
       sessions: {
@@ -23,12 +23,12 @@ vi.mock("@/services/stripe", () => ({
     },
   }),
 }));
-vi.mock("@/services/checkout-finalization", () => ({
+vi.mock("@wse/core/services/checkout-finalization", () => ({
   CheckoutFinalizationService: {
     finalizeFromTempOrder: finalizeMock,
   },
 }));
-vi.mock("@/services/inventory-reservation", () => ({
+vi.mock("@wse/core/services/inventory-reservation", () => ({
   confirmPendingReservationsForTempOrder: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -53,7 +53,7 @@ describe("GET /api/checkout/stripe/status", () => {
       }),
     });
 
-    const { GET } = await import("@/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -91,7 +91,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: tempOid,
     });
 
-    const { GET } = await import("@/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -121,7 +121,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: tempOid,
     });
 
-    const { GET } = await import("@/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -148,7 +148,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: "otherid",
     });
 
-    const { GET } = await import("@/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );

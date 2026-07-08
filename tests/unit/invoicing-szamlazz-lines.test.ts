@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeInvoiceLines } from "@/services/invoicing-szamlazz";
+import { describeInvoiceLines } from "@wse/core/services/invoicing-szamlazz";
 
 describe("describeInvoiceLines", () => {
   it("includes product, shipping, and payment fee lines with fee VAT at cart max", () => {

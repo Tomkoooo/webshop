@@ -5,8 +5,8 @@ import {
   cartItemsSyncSignature,
   dbCartItemsToCartItems,
   mergeLocalAndServerCart,
-} from "@/lib/cart-sync"
-import type { CartItem } from "@/store/useCartStore"
+} from "@wse/core/lib/cart-sync"
+import type { CartItem } from "@wse/core/store/useCartStore"
 
 describe("cart-sync helpers", () => {
   it("cartLineProductId prefers productId", () => {

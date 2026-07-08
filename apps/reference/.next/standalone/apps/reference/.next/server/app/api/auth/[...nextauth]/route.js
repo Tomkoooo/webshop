@@ -1,0 +1,11 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/auth/[...nextauth]/route.js")
+R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
+R.c("server/chunks/node_modules_next_c5729131._.js")
+R.c("server/chunks/[root-of-the-server]__2473c116._.js")
+R.c("server/chunks/node_modules_next_92aaecbe._.js")
+R.c("server/chunks/node_modules_next_dist_f352324c._.js")
+R.c("server/chunks/_1f4f74b1._.js")
+R.c("server/chunks/[root-of-the-server]__87176c7e._.js")
+R.c("server/chunks/72ca0__next-internal_server_app_api_auth_[___nextauth]_route_actions_cb4adfd1.js")
+R.m(651140)
+module.exports=R.m(651140).exports

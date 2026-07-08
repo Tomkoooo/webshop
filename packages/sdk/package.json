@@ -1,0 +1,21 @@
+{
+  "name": "@wse/sdk",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine SDK: template/plugin contracts, theme tokens, shared types.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./templates/types": "./src/templates/types.ts",
+    "./plugins/types": "./src/plugins/types.ts",
+    "./theme/theme-token-keys": "./src/theme/theme-token-keys.ts",
+    "./theme/tokens": "./src/theme/tokens.ts",
+    "./theme/*": "./src/theme/*.ts",
+    "./contracts": "./src/contracts.ts"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "zod": ">=4"
+  }
+}

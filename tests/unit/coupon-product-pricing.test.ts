@@ -4,7 +4,7 @@ import {
   computeCouponUnitGross,
   couponProductRuleKey,
   findProductPriceRule,
-} from "@/lib/coupon-product-pricing";
+} from "@wse/core/lib/coupon-product-pricing";
 
 describe("coupon-product-pricing", () => {
   it("builds stable rule keys for product + variant combinations", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recordOrderStatusChange } from "@/lib/order-status-history";
+import { recordOrderStatusChange } from "@wse/core/lib/order-status-history";
 
 describe("order status history", () => {
   it("records transitions and updates statusChangedAt", () => {

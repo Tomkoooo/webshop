@@ -1,0 +1,13 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/admin/contact-emails/route.js")
+R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
+R.c("server/chunks/node_modules_next_92aaecbe._.js")
+R.c("server/chunks/node_modules_next_c5729131._.js")
+R.c("server/chunks/[root-of-the-server]__3971c321._.js")
+R.c("server/chunks/node_modules_next_dist_f352324c._.js")
+R.c("server/chunks/node_modules_next_afec86a9._.js")
+R.c("server/chunks/node_modules_zod_v4_classic_external_fa90cebf.js")
+R.c("server/chunks/_1f4f74b1._.js")
+R.c("server/chunks/[root-of-the-server]__87176c7e._.js")
+R.c("server/chunks/72ca0__next-internal_server_app_api_admin_contact-emails_route_actions_ab7ddf39.js")
+R.m(497497)
+module.exports=R.m(497497).exports

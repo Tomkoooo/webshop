@@ -11,14 +11,14 @@ import {
   countReservationResults,
   runConcurrentReservationAttempts,
 } from "../helpers/inventory-race";
-import Product from "@/models/Product";
-import Reservation from "@/models/Reservation";
-import StripeWebhookEvent from "@/models/StripeWebhookEvent";
+import Product from "@wse/core/models/Product";
+import Reservation from "@wse/core/models/Reservation";
+import StripeWebhookEvent from "@wse/core/models/StripeWebhookEvent";
 import {
   allocateReservationsForStripeTempOrder,
   InventoryReservationError,
   sweepExpiredPendingReservations,
-} from "@/services/inventory-reservation";
+} from "@wse/core/services/inventory-reservation";
 
 function uniqueSlug(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;

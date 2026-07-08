@@ -6,9 +6,9 @@
  */
 import "dotenv/config"
 import mongoose from "mongoose"
-import TemplateContent from "../../src/models/TemplateContent"
-import ThemeSetting from "../../src/models/ThemeSetting"
-import { homepageSnapshotSchema } from "../../src/features/homepage-cms/types/homepage-schema"
+import TemplateContent from "@wse/core/models/TemplateContent"
+import ThemeSetting from "@wse/core/models/ThemeSetting"
+import { homepageSnapshotSchema } from "@wse/core/features/homepage-cms/types/homepage-schema"
 import { buildNagyarcuHomepageSnapshot } from "./lib/nagyarcu-homepage-content"
 import { nagyarcuThemeColors } from "./lib/nagyarcu-theme"
 import { backupCollectionsBeforeSeed } from "./lib/safe-seed-backup"

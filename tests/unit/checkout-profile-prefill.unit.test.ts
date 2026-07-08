@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { checkoutPrefillFromUserProfile } from "@/lib/checkout-profile-prefill"
+import { checkoutPrefillFromUserProfile } from "@wse/core/lib/checkout-profile-prefill"
 
 describe("checkoutPrefillFromUserProfile", () => {
   it("returns null when profile has no address fields", () => {

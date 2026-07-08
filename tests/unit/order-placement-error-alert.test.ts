@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const resolveShopOpsAlertEmailMock = vi.fn();
 const sendSystemHtmlEmailMock = vi.fn();
 
-vi.mock("@/services/shop-ops-alert-email", () => ({
+vi.mock("@wse/core/services/shop-ops-alert-email", () => ({
   resolveShopOpsAlertEmail: () => resolveShopOpsAlertEmailMock(),
 }));
-vi.mock("@/services/mailer", () => ({
+vi.mock("@wse/core/services/mailer", () => ({
   MailerService: { sendSystemHtmlEmail: sendSystemHtmlEmailMock },
 }));
 
@@ -18,7 +18,7 @@ describe("sendOrderPlacementErrorShopAlert", () => {
   });
 
   it("sends ORDER PLACEMENT ERROR with checkout summary", async () => {
-    const { sendOrderPlacementErrorShopAlert } = await import("@/services/order-placement-error-alert");
+    const { sendOrderPlacementErrorShopAlert } = await import("@wse/core/services/order-placement-error-alert");
     await sendOrderPlacementErrorShopAlert({
       error: new Error("save failed"),
       orderData: {
@@ -45,7 +45,7 @@ describe("sendOrderPlacementErrorShopAlert", () => {
 
   it("skips send when no recipient", async () => {
     resolveShopOpsAlertEmailMock.mockResolvedValue("");
-    const { sendOrderPlacementErrorShopAlert } = await import("@/services/order-placement-error-alert");
+    const { sendOrderPlacementErrorShopAlert } = await import("@wse/core/services/order-placement-error-alert");
     await sendOrderPlacementErrorShopAlert({
       error: new Error("x"),
       orderData: {},

@@ -4,7 +4,7 @@ import {
   matchesAnyTargetPath,
   normalizePathname,
   parseTargetPath,
-} from "@/lib/popup-path-match"
+} from "@wse/core/lib/popup-path-match"
 
 describe("normalizePathname", () => {
   it("normalizes root and trailing slashes", () => {

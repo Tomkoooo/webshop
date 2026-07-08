@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import mongoose from "mongoose";
 
-vi.mock("@/lib/db", () => ({
+vi.mock("@wse/core/lib/db", () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -14,7 +14,7 @@ describe("order-lab seed", () => {
     const sandboxCreates: unknown[] = [];
     const orderCreates: unknown[] = [];
 
-    vi.doMock("@/plugins/order-lab/models/SandboxOrder", () => ({
+    vi.doMock("@wse/plugin-order-lab/models/SandboxOrder", () => ({
       default: {
         create: vi.fn(async (doc: unknown) => {
           sandboxCreates.push(doc);
@@ -26,7 +26,7 @@ describe("order-lab seed", () => {
       },
     }));
 
-    vi.doMock("@/models/Order", () => ({
+    vi.doMock("@wse/core/models/Order", () => ({
       default: {
         create: vi.fn(async (doc: unknown) => {
           orderCreates.push(doc);
@@ -34,7 +34,7 @@ describe("order-lab seed", () => {
       },
     }));
 
-    vi.doMock("@/models/Product", () => ({
+    vi.doMock("@wse/core/models/Product", () => ({
       default: {
         find: vi.fn().mockReturnValue({
           sort: vi.fn().mockReturnValue({
@@ -64,7 +64,7 @@ describe("order-lab seed", () => {
       },
     }));
 
-    vi.doMock("@/lib/foxpost-sandbox-apms", () => ({
+    vi.doMock("@wse/core/lib/foxpost-sandbox-apms", () => ({
       resolveSandboxApm: vi.fn().mockResolvedValue({
         id: "hu350",
         name: "Sandbox APM",
@@ -74,7 +74,7 @@ describe("order-lab seed", () => {
       }),
     }));
 
-    const { seedSandboxOrders } = await import("@/plugins/order-lab/services/seed-sandbox-orders");
+    const { seedSandboxOrders } = await import("@wse/plugin-order-lab/services/seed-sandbox-orders");
     const result = await seedSandboxOrders({ count: 2 });
 
     expect(result.createdCount).toBe(2);

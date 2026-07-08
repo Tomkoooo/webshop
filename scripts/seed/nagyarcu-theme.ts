@@ -6,7 +6,7 @@
  */
 import "dotenv/config"
 import mongoose from "mongoose"
-import ThemeSetting from "../../src/models/ThemeSetting"
+import ThemeSetting from "@wse/core/models/ThemeSetting"
 import { nagyarcuThemeColors, NAGYARCU_YELLOW } from "./lib/nagyarcu-theme"
 import { backupCollectionsBeforeSeed } from "./lib/safe-seed-backup"
 

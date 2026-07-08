@@ -1,5 +1,6 @@
 import path from "path";
 import { defineConfig } from "vitest/config";
+import { wseAliases } from "./vitest.aliases";
 
 export default defineConfig({
   test: {
@@ -20,15 +21,13 @@ export default defineConfig({
         lines: 90,
       },
       include: [
-        "src/actions/admin-orders.ts",
-        "src/actions/admin-checkout.ts",
-        "src/actions/admin-flags.ts",
+        "packages/core/src/actions/admin-orders.ts",
+        "packages/core/src/actions/admin-checkout.ts",
+        "packages/core/src/actions/admin-flags.ts",
       ],
     },
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
+    alias: wseAliases(path.resolve(__dirname)),
   },
 });

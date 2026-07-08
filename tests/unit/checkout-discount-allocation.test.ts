@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { distributeCheckoutDiscountToItems } from "@/lib/pricing";
-import { describeInvoiceLines } from "@/services/invoicing-szamlazz";
+import { distributeCheckoutDiscountToItems } from "@wse/core/lib/pricing";
+import { describeInvoiceLines } from "@wse/core/services/invoicing-szamlazz";
 
 describe("distributeCheckoutDiscountToItems", () => {
   it("allocates discount across lines and preserves order total", () => {

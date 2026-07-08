@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/db", () => ({
+vi.mock("@wse/core/lib/db", () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -16,7 +16,7 @@ describe("OrderLabSettingsService", () => {
       foxpostIsWeb: false,
     };
 
-    vi.doMock("@/plugins/order-lab/models/OrderLabSettings", () => ({
+    vi.doMock("@wse/plugin-order-lab/models/OrderLabSettings", () => ({
       default: {
         findOne: vi.fn(async () => ({
           ...stored,
@@ -32,7 +32,7 @@ describe("OrderLabSettingsService", () => {
     }));
 
     const { OrderLabSettingsService } = await import(
-      "@/plugins/order-lab/services/order-lab-settings-service"
+      "@wse/plugin-order-lab/services/order-lab-settings-service"
     );
 
     const saved = await OrderLabSettingsService.saveFoxpostConnection({
@@ -55,7 +55,7 @@ describe("OrderLabSettingsService", () => {
   });
 
   it("throws when sandbox connection is incomplete", async () => {
-    vi.doMock("@/plugins/order-lab/models/OrderLabSettings", () => ({
+    vi.doMock("@wse/plugin-order-lab/models/OrderLabSettings", () => ({
       default: {
         findOne: vi.fn(async () => ({
           singletonKey: "default",
@@ -67,7 +67,7 @@ describe("OrderLabSettingsService", () => {
     }));
 
     const { OrderLabSettingsService } = await import(
-      "@/plugins/order-lab/services/order-lab-settings-service"
+      "@wse/plugin-order-lab/services/order-lab-settings-service"
     );
 
     await expect(OrderLabSettingsService.getFoxpostConfig()).rejects.toThrow(/nincs beállítva/i);

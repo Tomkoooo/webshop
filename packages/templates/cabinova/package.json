@@ -1,0 +1,14 @@
+{
+  "name": "@wse/template-cabinova",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine template package: cabinova.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}

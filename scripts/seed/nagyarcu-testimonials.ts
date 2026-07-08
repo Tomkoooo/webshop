@@ -6,10 +6,10 @@
  */
 import "dotenv/config"
 import mongoose from "mongoose"
-import TemplateContent from "../../src/models/TemplateContent"
-import { homepageSnapshotSchema } from "../../src/features/homepage-cms/types/homepage-schema"
+import TemplateContent from "@wse/core/models/TemplateContent"
+import { homepageSnapshotSchema } from "@wse/core/features/homepage-cms/types/homepage-schema"
 import { nagyarcuPressTestimonialsBlock } from "./lib/nagyarcu-press-quotes"
-import type { HomepageSnapshot } from "../../src/features/homepage-cms/types/block-types"
+import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 import { backupCollectionsBeforeSeed } from "./lib/safe-seed-backup"
 
 const uri = process.env.SEED_DB_URL || process.env.DATABASE_URL

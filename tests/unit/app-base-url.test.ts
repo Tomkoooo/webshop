@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { getPublicAppBaseUrl, isLocalhostBaseUrl } from "@/lib/app-base-url";
+import { getPublicAppBaseUrl, isLocalhostBaseUrl } from "@wse/core/lib/app-base-url";
 
 describe("app-base-url", () => {
   const env = process.env;

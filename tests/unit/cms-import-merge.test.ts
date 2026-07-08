@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { applyHomepageBlockPatches } from "../../scripts/cms/lib/apply-homepage-patches"
 import { deepMerge } from "../../scripts/cms/lib/deep-merge"
-import type { HomepageSnapshot } from "@/features/homepage-cms/types/block-types"
+import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 
 const baseSnapshot: HomepageSnapshot = {
   meta: { seoTitle: "Old", seoDescription: "Old desc" },

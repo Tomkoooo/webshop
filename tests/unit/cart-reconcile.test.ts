@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reconcileCartItemsWithIssues } from "@/lib/cart-reconcile";
-import type { CartItem } from "@/store/useCartStore";
+import { reconcileCartItemsWithIssues } from "@wse/core/lib/cart-reconcile";
+import type { CartItem } from "@wse/core/store/useCartStore";
 
 const line = (id: string, stock: number, qty = 1): CartItem => ({
   id,

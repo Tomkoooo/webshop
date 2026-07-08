@@ -5,7 +5,7 @@ import {
   getPluginConfigForDeployment,
   isPluginAllowlistedForDeployment,
   listAllowedTemplateIdsForDeployment,
-} from "@/config/deployments-registry"
+} from "@wse/core/config/deployments-registry"
 
 describe("deployment config", () => {
   const originalKey = process.env.DEPLOYMENT_KEY

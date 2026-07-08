@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { linkifyPlainText } from "@/lib/linkify-plain-text"
-import { TestimonialSourceLink } from "@/lib/testimonial-source-link"
+import { linkifyPlainText } from "@wse/core/lib/linkify-plain-text"
+import { TestimonialSourceLink } from "@wse/core/lib/testimonial-source-link"
 import { nagyarcuPressQuotes } from "../../scripts/seed/lib/nagyarcu-press-quotes"
 import {
   insertionIndexForHomepageBlockType,
   resolveAllowedHomepageBlockTypes,
-} from "@/features/homepage-cms/utils/homepage-block-allowlist"
-import { defaultModern } from "@/templates/default-modern/template.config"
+} from "@wse/core/features/homepage-cms/utils/homepage-block-allowlist"
+import { defaultModern } from "@wse/template-default-modern/template.config"
 
 describe("linkifyPlainText", () => {
   it("wraps https URLs in external links", () => {

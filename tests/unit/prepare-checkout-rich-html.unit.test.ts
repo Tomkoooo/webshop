@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { decodeHtmlEntities, prepareCheckoutRichHtml } from "@/lib/prepare-checkout-rich-html"
+import { decodeHtmlEntities, prepareCheckoutRichHtml } from "@wse/core/lib/prepare-checkout-rich-html"
 
 describe("prepareCheckoutRichHtml", () => {
   it("returns null for empty input", () => {

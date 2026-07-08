@@ -1,0 +1,320 @@
+{
+  "node": {
+    "60ee6e96d7bc9694d573712569c899344f109c4a29": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "submitContactForm",
+          "filename": "packages/core/src/actions/contact-form.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "submitContactForm",
+      "filename": "packages/core/src/actions/contact-form.ts"
+    },
+    "60b35cef333347c9121f30187bb816cbb9099b99de": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "bulkGenerateSandboxParcelLabels",
+          "filename": "packages/core/src/actions/order-lab-orders.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "bulkGenerateSandboxParcelLabels",
+      "filename": "packages/core/src/actions/order-lab-orders.ts"
+    },
+    "4096f25806c1df4cfc0bb322e411fc4b1ec062c63c": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "updateFoxpostParcelPointOnOrder",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "updateFoxpostParcelPointOnOrder",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40cc49f11a03af16cec83660518b5e322e9db15e88": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "clearFoxpostShipmentError",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "clearFoxpostShipmentError",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40cd211a06cdde4976da4b572d77958fdf43c6c4f7": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "createFoxpostReturn",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "createFoxpostReturn",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "402faca63fe4467ee3ffcbfa2afe143aa300a560d4": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "deleteFoxpostParcel",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "deleteFoxpostParcel",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40b1231083de5bed06644ccc406fa8293ad93fcf56": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "downloadFoxpostDeliveryNote",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "downloadFoxpostDeliveryNote",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40c210de5be9e0469e5c8ff7036ec435b5370c7cf4": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "fetchFoxpostLabelInfo",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "fetchFoxpostLabelInfo",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40b7f4608a545d7045dc770f8c27f1d2fc141650c5": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "generateFoxpostShipment",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "generateFoxpostShipment",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "401076289e494b408e2be141b60cae3329cae27bbf": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "refreshFoxpostTracking",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "refreshFoxpostTracking",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "4064e7c825b0d209fedc73b2961fc7d3da6da52b0d": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "updateFoxpostParcel",
+          "filename": "packages/core/src/actions/foxpost-shipment.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "action-browser"
+      },
+      "exportedName": "updateFoxpostParcel",
+      "filename": "packages/core/src/actions/foxpost-shipment.ts"
+    },
+    "40122889e1e5352b63325f2d36a4e26b2ac1aab10b": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "deleteShippingMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "deleteShippingMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40187432bead7fb9db469734f05d1868a4f04417bf": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "getProductForCouponRule",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "getProductForCouponRule",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40404490e20e41e6de2e9794cdfce9906657867bea": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "deletePaymentMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "deletePaymentMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40656c11c49cf16a7db390267bd0f7a19e7fad8f20": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "createCoupon",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "createCoupon",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40a652cb386f3528e3969f7a76e68c499ff54c1900": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "createShippingMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "createShippingMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40c43f344a8c32a9f525c4b206493ff5c1e162a082": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "createPaymentMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "createPaymentMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "40fc2c2121ff2c0ccc1794c81f758c4e0e47a86816": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "deleteCoupon",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "deleteCoupon",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "6054a3412be96e72beaf1d2c828892ad6ab1ffd526": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "updateCoupon",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "updateCoupon",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "6081733065668316b1cb9cde0fab55f7922eaaf595": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "updatePaymentMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "updatePaymentMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    },
+    "60b3c664e280de35785f2a958d94ffeccd6845090f": {
+      "workers": {
+        "app/admin/payment/page": {
+          "moduleId": 575361,
+          "async": false,
+          "exportedName": "updateShippingMethod",
+          "filename": "packages/core/src/actions/admin-checkout.ts"
+        }
+      },
+      "layer": {
+        "app/admin/payment/page": "rsc"
+      },
+      "exportedName": "updateShippingMethod",
+      "filename": "packages/core/src/actions/admin-checkout.ts"
+    }
+  },
+  "edge": {}
+}

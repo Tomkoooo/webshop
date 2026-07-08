@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { plainTextFromHtml } from "@/lib/plain-text-from-html"
+import { plainTextFromHtml } from "@wse/core/lib/plain-text-from-html"
 
 describe("plainTextFromHtml", () => {
   it("returns empty string for blank input", () => {

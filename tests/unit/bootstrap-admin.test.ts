@@ -3,7 +3,7 @@ import {
   BOOTSTRAP_ADMIN_ENV,
   getBootstrapAdminEmails,
   parseBootstrapAdminEmails,
-} from "@/lib/bootstrap-admin"
+} from "@wse/core/lib/bootstrap-admin"
 
 describe("parseBootstrapAdminEmails", () => {
   it("returns empty list for blank input", () => {

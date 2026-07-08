@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { defaultModern } from "@/templates/default-modern/template.config"
-import { findPageDefinition } from "@/templates/resolve-page-definition"
+import { defaultModern } from "@wse/template-default-modern/template.config"
+import { findPageDefinition } from "@wse/core/templates/resolve-page-definition"
 import {
   mergePdpContent,
   parseProductSlugFromPdpPageKey,
   productPdpPageKey,
   templateSupportsPerProductPdpCms,
-} from "@/lib/product-page-content"
+} from "@wse/core/lib/product-page-content"
 
 describe("product-page-content helpers", () => {
   it("builds and parses scoped PDP page keys", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { withStorefrontPageTitle } from "@/lib/storefront-page-title"
+import { withStorefrontPageTitle } from "@wse/core/lib/storefront-page-title"
 
 describe("withStorefrontPageTitle", () => {
   it("appends shop name", () => {

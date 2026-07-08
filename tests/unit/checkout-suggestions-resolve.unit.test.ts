@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { resolveCheckoutSuggestionItems } from "@/services/checkout-product-suggestions"
-import { ProductService } from "@/services/product"
-import { DEFAULT_PRODUCT_SUGGESTION_SETTINGS } from "@/lib/product-suggestion-settings-schema"
+import { resolveCheckoutSuggestionItems } from "@wse/core/services/checkout-product-suggestions"
+import { ProductService } from "@wse/core/services/product"
+import { DEFAULT_PRODUCT_SUGGESTION_SETTINGS } from "@wse/core/lib/product-suggestion-settings-schema"
 
 const variantProduct = {
   _id: { toString: () => "p-variant" },

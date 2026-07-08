@@ -4,7 +4,7 @@ const processUploadMock = vi.fn();
 const incrementUsageMock = vi.fn();
 const getFilePayloadMock = vi.fn();
 
-vi.mock("@/services/media", () => ({
+vi.mock("@wse/core/services/media", () => ({
   MediaService: {
     processUpload: (...args: unknown[]) => processUploadMock(...args),
     incrementUsage: (...args: unknown[]) => incrementUsageMock(...args),
@@ -20,7 +20,7 @@ describe("invoice PDF storage", () => {
   });
 
   it("persists PDF via MediaService without touching disk", async () => {
-    const { persistInvoicePdf } = await import("@/lib/invoice-pdf-storage");
+    const { persistInvoicePdf } = await import("@wse/core/lib/invoice-pdf-storage");
     const pdf = Buffer.from("%PDF-test");
 
     const filename = await persistInvoicePdf(pdf, "507f1f77bcf86cd799439011");
@@ -41,7 +41,7 @@ describe("invoice PDF storage", () => {
       size: 14,
     });
 
-    const { loadInvoicePdf } = await import("@/lib/invoice-pdf-storage");
+    const { loadInvoicePdf } = await import("@wse/core/lib/invoice-pdf-storage");
     const buf = await loadInvoicePdf("stored.pdf");
 
     expect(getFilePayloadMock).toHaveBeenCalledWith("stored.pdf");

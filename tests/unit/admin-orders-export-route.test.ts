@@ -6,15 +6,15 @@ const dbConnectMock = vi.fn()
 const orderFindMock = vi.fn()
 const buildExcelMock = vi.fn()
 
-vi.mock("@/auth", () => ({ auth: authMock }))
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }))
-vi.mock("@/models/User", () => ({}))
-vi.mock("@/models/ShippingMethod", () => ({}))
-vi.mock("@/models/PaymentMethod", () => ({}))
-vi.mock("@/models/Order", () => ({
+vi.mock("@wse/core/auth", () => ({ auth: authMock }))
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }))
+vi.mock("@wse/core/models/User", () => ({}))
+vi.mock("@wse/core/models/ShippingMethod", () => ({}))
+vi.mock("@wse/core/models/PaymentMethod", () => ({}))
+vi.mock("@wse/core/models/Order", () => ({
   default: { find: orderFindMock },
 }))
-vi.mock("@/lib/admin-orders-export", () => ({
+vi.mock("@wse/core/lib/admin-orders-export", () => ({
   buildAdminOrdersExcelBuffer: (...args: unknown[]) => buildExcelMock(...args),
 }))
 
@@ -39,7 +39,7 @@ describe("admin orders excel export route", () => {
       ]),
     })
 
-    const { GET } = await import("@/app/api/admin/orders/export/route")
+    const { GET } = await import("@wse/admin/app/api/admin/orders/export/route")
     const req = new NextRequest(
       "http://localhost/api/admin/orders/export?ids=507f1f77bcf86cd799439011"
     )

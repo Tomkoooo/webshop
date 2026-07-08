@@ -3,7 +3,7 @@ import {
   applyNumberedDescriptionTemplate,
   isBaseVariantId,
   resolveVariantDescription,
-} from "@/lib/unique-numbered-variants";
+} from "@wse/core/lib/unique-numbered-variants";
 
 describe("numbered variant description", () => {
   it("applyNumberedDescriptionTemplate replaces tokens", () => {

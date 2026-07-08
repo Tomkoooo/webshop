@@ -4,7 +4,7 @@ import {
   parseContactEmailsFromShopContent,
   primaryContactEmail,
   serializeContactEmails,
-} from "@/lib/contact-emails"
+} from "@wse/core/lib/contact-emails"
 
 describe("contact-emails", () => {
   it("parses contact_emails JSON", () => {

@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wse/sdk": ["packages/sdk/src/index.ts"],
+      "@wse/sdk/*": ["packages/sdk/src/*"],
+      "@wse/core/*": ["packages/core/src/*"],
+      "@wse/admin/*": ["packages/admin/src/*"],
+      "@wse/ui/*": ["packages/ui/src/*"],
+      "@wse/cms-bridge": ["packages/cms-bridge/src/index.ts"],
+      "@wse/cms-bridge/*": ["packages/cms-bridge/src/*"],
+      "@wse/template-default-modern/*": ["packages/templates/default-modern/*"],
+      "@wse/template-cabinova/*": ["packages/templates/cabinova/*"],
+      "@wse/template-atelier-showcase/*": ["packages/templates/atelier-showcase/*"],
+      "@wse/template-minecraft-camp/*": ["packages/templates/minecraft-camp/*"],
+      "@wse/template-sakkmed/*": ["packages/templates/sakkmed/*"],
+      "@wse/template-erdweg/*": ["packages/templates/erdweg/*"],
+      "@wse/template-keramia-fogfeherites/*": ["packages/templates/keramia-fogfeherites/*"],
+      "@wse/template-keramia-implant/*": ["packages/templates/keramia-implant/*"],
+      "@wse/template-keramia-shared/*": ["packages/templates/keramia-shared/*"],
+      "@wse/plugin-camp-booking/*": ["packages/plugins/camp-booking/*"],
+      "@wse/plugin-press-kit/*": ["packages/plugins/press-kit/*"],
+      "@wse/plugin-order-lab/*": ["packages/plugins/order-lab/*"]
+    }
+  }
+}

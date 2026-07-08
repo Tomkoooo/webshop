@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { format } from "date-fns"
-import { resolveAdminStatsDateRange } from "@/lib/admin-stats-date-range"
+import { resolveAdminStatsDateRange } from "@wse/core/lib/admin-stats-date-range"
 
 const fixedNow = new Date("2026-06-11T15:30:00")
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveProductView } from "@/lib/product-variants";
+import { resolveProductView } from "@wse/core/lib/product-variants";
 
 describe("resolveProductView", () => {
   it("handles listing products without descriptions", () => {

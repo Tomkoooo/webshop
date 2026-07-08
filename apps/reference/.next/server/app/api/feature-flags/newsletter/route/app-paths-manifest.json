@@ -1,0 +1,3 @@
+{
+  "/api/feature-flags/newsletter/route": "app/api/feature-flags/newsletter/route.js"
+}

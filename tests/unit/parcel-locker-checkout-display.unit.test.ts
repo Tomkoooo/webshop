@@ -7,7 +7,7 @@ import {
   getOrderDeliveryLocationHint,
   buildGlsParcelOrderShippingAddress,
   buildFoxpostParcelOrderShippingAddress,
-} from "@/lib/parcel-locker-checkout-display"
+} from "@wse/core/lib/parcel-locker-checkout-display"
 
 describe("parcel locker checkout display", () => {
   it("formats GLS point lines", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { contactReplyHtmlToText } from "@/lib/contact-replies"
+import { contactReplyHtmlToText } from "@wse/core/lib/contact-replies"
 
 describe("contactReplyHtmlToText", () => {
   it("converts rich text reply HTML to readable plain text", () => {

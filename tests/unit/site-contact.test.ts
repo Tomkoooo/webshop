@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveSiteContactChannels } from "@/lib/site-contact"
+import { resolveSiteContactChannels } from "@wse/core/lib/site-contact"
 
 describe("site-contact", () => {
   it("exposes emails on SiteContact for templates", () => {

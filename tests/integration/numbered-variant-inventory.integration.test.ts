@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import mongoose from "mongoose";
 import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from "../setup/mongo-memory";
-import Product from "@/models/Product";
+import Product from "@wse/core/models/Product";
 import {
   allocateReservationsForStripeTempOrder,
   InventoryReservationError,
-} from "@/services/inventory-reservation";
-import { getCartLineOrderabilityMessage } from "@/lib/cart-line-orderability";
+} from "@wse/core/services/inventory-reservation";
+import { getCartLineOrderabilityMessage } from "@wse/core/lib/cart-line-orderability";
 
 describe("numbered variant inventory integration", () => {
   let productId: string;

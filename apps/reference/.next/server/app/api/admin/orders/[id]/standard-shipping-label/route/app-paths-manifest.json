@@ -1,0 +1,3 @@
+{
+  "/api/admin/orders/[id]/standard-shipping-label/route": "app/api/admin/orders/[id]/standard-shipping-label/route.js"
+}

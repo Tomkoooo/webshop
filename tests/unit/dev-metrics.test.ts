@@ -5,8 +5,8 @@ import {
   isDevMetricsEnabled,
   sanitizeDevMetricPayload,
   sanitizeMetricUrl,
-} from "@/lib/dev-metrics"
-import { normalizeBrowserMetricEvents } from "@/lib/dev-metrics-browser-payload"
+} from "@wse/core/lib/dev-metrics"
+import { normalizeBrowserMetricEvents } from "@wse/core/lib/dev-metrics-browser-payload"
 
 describe("dev metrics", () => {
   const envBackup = { ...process.env }
@@ -91,7 +91,7 @@ describe("dev metrics", () => {
 
   it("hides the browser intake route when disabled", async () => {
     delete process.env.DEV_METRICS
-    const { POST } = await import("@/app/api/dev/metrics/route")
+    const { POST } = await import("@wse/core/app/api/dev/metrics/route")
     const response = await POST(
       new NextRequest("http://localhost/api/dev/metrics", {
         method: "POST",

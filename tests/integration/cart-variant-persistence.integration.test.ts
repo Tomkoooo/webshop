@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import mongoose from "mongoose";
 import { clearTestDatabase, connectTestDatabase, disconnectTestDatabase } from "../setup/mongo-memory";
-import Product from "@/models/Product";
-import User from "@/models/User";
+import Product from "@wse/core/models/Product";
+import User from "@wse/core/models/User";
 
 describe("CartService variant persistence", () => {
   let userId: string;
@@ -49,7 +49,7 @@ describe("CartService variant persistence", () => {
   });
 
   it("keeps two variant lines for the same product", async () => {
-    const { CartService } = await import("@/services/cart");
+    const { CartService } = await import("@wse/core/services/cart");
     await CartService.replaceCart(userId, [
       { id: `${productId}:num-36`, productId, variantId: "num-36", quantity: 1 },
       { id: `${productId}:num-37`, productId, variantId: "num-37", quantity: 1 },
@@ -60,7 +60,7 @@ describe("CartService variant persistence", () => {
   });
 
   it("drops sold-out variant lines", async () => {
-    const { CartService } = await import("@/services/cart");
+    const { CartService } = await import("@wse/core/services/cart");
     await Product.updateOne(
       { _id: productId, "variants.id": "num-36" },
       { $set: { "variants.$.stock": 0 } }
@@ -75,7 +75,7 @@ describe("CartService variant persistence", () => {
   });
 
   it("caps quantity to 1 for unique numbered products", async () => {
-    const { CartService } = await import("@/services/cart");
+    const { CartService } = await import("@wse/core/services/cart");
     await CartService.replaceCart(userId, [
       { id: `${productId}:num-36`, productId, variantId: "num-36", quantity: 5 },
     ]);

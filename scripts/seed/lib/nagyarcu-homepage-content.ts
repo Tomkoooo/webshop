@@ -1,4 +1,4 @@
-import type { HomepageSnapshot } from "../../../src/features/homepage-cms/types/block-types"
+import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 import { nagyarcuPressTestimonialsBlock } from "./nagyarcu-press-quotes"
 
 const HERO_BADGES = [

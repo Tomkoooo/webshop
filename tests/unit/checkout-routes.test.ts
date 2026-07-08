@@ -32,40 +32,40 @@ const allocateReservationsMock = vi.hoisted(() =>
 );
 const releaseReservationsMock = vi.hoisted(() => vi.fn().mockResolvedValue(0));
 
-vi.mock("@/auth", () => ({ auth: authMock }));
-vi.mock("@/services/order", () => ({
+vi.mock("@wse/core/auth", () => ({ auth: authMock }));
+vi.mock("@wse/core/services/order", () => ({
   OrderService: {
     createOrder: createOrderMock,
   },
 }));
-vi.mock("@/services/checkout-validation", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/services/checkout-validation")>();
+vi.mock("@wse/core/services/checkout-validation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@wse/core/services/checkout-validation")>();
   return {
     ...actual,
     STRIPE_FIXED_PAYMENT_METHOD_ID: "stripe_fixed",
     validateAndNormalizeCheckoutInput: validateCheckoutMock,
   };
 });
-vi.mock("@/services/feature-flags", () => ({
+vi.mock("@wse/core/services/feature-flags", () => ({
   FeatureFlagService: {
     isEnabled: featureFlagMock,
   },
 }));
-vi.mock("@/lib/db", () => ({ default: dbConnectMock }));
-vi.mock("@/models/TempOrder", () => ({
+vi.mock("@wse/core/lib/db", () => ({ default: dbConnectMock }));
+vi.mock("@wse/core/models/TempOrder", () => ({
   default: {
     create: tempOrderCreateMock,
     findByIdAndUpdate: tempOrderUpdateMock,
     deleteOne: tempOrderDeleteOneMock,
   },
 }));
-vi.mock("@/services/inventory-reservation", () => ({
+vi.mock("@wse/core/services/inventory-reservation", () => ({
   allocateReservationsForStripeTempOrder: allocateReservationsMock,
   releaseReservationsForTempOrder: releaseReservationsMock,
   InventoryReservationError: class InventoryReservationError extends Error {},
 }));
-vi.mock("@/services/stripe-webhook-handlers", () => webhookHandlers);
-vi.mock("@/services/stripe", () => ({
+vi.mock("@wse/core/services/stripe-webhook-handlers", () => webhookHandlers);
+vi.mock("@wse/core/services/stripe", () => ({
   getStripeClient: () => ({
     checkout: { sessions: { create: stripeSessionCreateMock } },
     webhooks: { constructEvent: constructEventMock },
@@ -73,7 +73,7 @@ vi.mock("@/services/stripe", () => ({
   getAppBaseUrl: () => "http://localhost:3000",
   getStripeWebhookSecret: () => "secret",
 }));
-vi.mock("@/services/reservation-ttl", () => ({
+vi.mock("@wse/core/services/reservation-ttl", () => ({
   resolveReservationTtlMs: vi.fn().mockResolvedValue(30 * 60 * 1000),
   reservationEndsAt: (_now: Date, ttlMs: number) => new Date(Date.now() + ttlMs),
   stripeCheckoutExpiresAtUnix: () => Math.floor(Date.now() / 1000) + 1800,
@@ -113,7 +113,7 @@ describe("checkout and payment routes", () => {
   });
 
   it("creates standard order via checkout/order route", async () => {
-    const { POST } = await import("@/app/api/checkout/order/route");
+    const { POST } = await import("@wse/core/app/api/checkout/order/route");
     const req = createJsonRequest("http://localhost/api/checkout/order", "POST", {
       paymentMethod: "pm1",
     });
@@ -127,7 +127,7 @@ describe("checkout and payment routes", () => {
   });
 
   it("rejects stripe fixed payment on standard order route", async () => {
-    const { POST } = await import("@/app/api/checkout/order/route");
+    const { POST } = await import("@wse/core/app/api/checkout/order/route");
     const req = createJsonRequest("http://localhost/api/checkout/order", "POST", {
       paymentMethod: "stripe_fixed",
     });
@@ -136,7 +136,7 @@ describe("checkout and payment routes", () => {
   });
 
   it("creates stripe checkout session", async () => {
-    const { POST } = await import("@/app/api/checkout/stripe/session/route");
+    const { POST } = await import("@wse/core/app/api/checkout/stripe/session/route");
     const req = createJsonRequest("http://localhost/api/checkout/stripe/session", "POST", {
       paymentMethod: "stripe_fixed",
     });
@@ -170,7 +170,7 @@ describe("checkout and payment routes", () => {
 
   it("returns 503 when stripe feature disabled", async () => {
     featureFlagMock.mockImplementation(async (key: string) => key !== "stripePayments");
-    const { POST } = await import("@/app/api/checkout/stripe/session/route");
+    const { POST } = await import("@wse/core/app/api/checkout/stripe/session/route");
     const req = createJsonRequest("http://localhost/api/checkout/stripe/session", "POST", {});
     const res = await POST(req);
     expect(res.status).toBe(503);
@@ -183,14 +183,14 @@ describe("checkout and payment routes", () => {
       paymentFee: 0,
       paymentProvider: "standard",
     });
-    const { POST } = await import("@/app/api/checkout/stripe/session/route");
+    const { POST } = await import("@wse/core/app/api/checkout/stripe/session/route");
     const req = createJsonRequest("http://localhost/api/checkout/stripe/session", "POST", {});
     const res = await POST(req);
     expect(res.status).toBe(400);
   });
 
   it("handles stripe webhook and triggers finalization", async () => {
-    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const { POST } = await import("@wse/core/app/api/stripe/webhook/route");
     const req = new Request("http://localhost/api/stripe/webhook", {
       method: "POST",
       headers: { "stripe-signature": "sig" },
@@ -206,7 +206,7 @@ describe("checkout and payment routes", () => {
   });
 
   it("handles missing stripe signature", async () => {
-    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const { POST } = await import("@wse/core/app/api/stripe/webhook/route");
     const req = new Request("http://localhost/api/stripe/webhook", {
       method: "POST",
       body: "{}",
@@ -217,7 +217,7 @@ describe("checkout and payment routes", () => {
 
   it("returns 503 when shop is disabled on order route", async () => {
     featureFlagMock.mockImplementation(async (key: string) => key !== "shopPage");
-    const { POST } = await import("@/app/api/checkout/order/route");
+    const { POST } = await import("@wse/core/app/api/checkout/order/route");
     const req = createJsonRequest("http://localhost/api/checkout/order", "POST", {
       paymentMethod: "pm1",
     });
@@ -227,7 +227,7 @@ describe("checkout and payment routes", () => {
 
   it("returns 400 on order route exception", async () => {
     validateCheckoutMock.mockRejectedValue(new Error("bad"));
-    const { POST } = await import("@/app/api/checkout/order/route");
+    const { POST } = await import("@wse/core/app/api/checkout/order/route");
     const req = createJsonRequest("http://localhost/api/checkout/order", "POST", {
       paymentMethod: "pm1",
     });
@@ -241,7 +241,7 @@ describe("checkout and payment routes", () => {
       type: "checkout.session.expired",
       data: { object: { id: "sess-exp" } },
     });
-    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const { POST } = await import("@wse/core/app/api/stripe/webhook/route");
     const req = new Request("http://localhost/api/stripe/webhook", {
       method: "POST",
       headers: { "stripe-signature": "sig" },
@@ -258,7 +258,7 @@ describe("checkout and payment routes", () => {
       type: "payment_intent.canceled",
       data: { object: { id: "pi_1", metadata: { tempOrderId: "tmp1" } } },
     });
-    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const { POST } = await import("@wse/core/app/api/stripe/webhook/route");
     const req = new Request("http://localhost/api/stripe/webhook", {
       method: "POST",
       headers: { "stripe-signature": "sig" },
@@ -274,7 +274,7 @@ describe("checkout and payment routes", () => {
     constructEventMock.mockImplementationOnce(() => {
       throw new Error("invalid signature");
     });
-    const { POST } = await import("@/app/api/stripe/webhook/route");
+    const { POST } = await import("@wse/core/app/api/stripe/webhook/route");
     const req = new Request("http://localhost/api/stripe/webhook", {
       method: "POST",
       headers: { "stripe-signature": "sig" },

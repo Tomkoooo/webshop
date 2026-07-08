@@ -4,8 +4,8 @@ import {
   getAccessiblePluginFeatureFlagKeys,
   getAccessiblePluginSettings,
   shouldShowShopOrderContactEmails,
-} from "@/lib/admin-settings-access"
-import type { DeploymentDefinition } from "@/config/deployments-registry"
+} from "@wse/core/lib/admin-settings-access"
+import type { DeploymentDefinition } from "@wse/core/config/deployments-registry"
 
 const minecraftCamp: DeploymentDefinition = {
   key: "minecraft-camp",

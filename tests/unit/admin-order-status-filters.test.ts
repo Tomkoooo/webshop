@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildStatusTransitionQuery } from "@/lib/admin-order-status-filters";
-import { buildAdminOrdersMongoQuery } from "@/lib/admin-orders-query";
-import { shopDayEndUtc, shopDayStartUtc } from "@/lib/shop-timezone";
+import { buildStatusTransitionQuery } from "@wse/core/lib/admin-order-status-filters";
+import { buildAdminOrdersMongoQuery } from "@wse/core/lib/admin-orders-query";
+import { shopDayEndUtc, shopDayStartUtc } from "@wse/core/lib/shop-timezone";
 
 describe("shop timezone date filters", () => {
   it("builds Budapest midnight bounds for a summer day", () => {

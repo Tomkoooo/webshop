@@ -3,7 +3,7 @@ import {
   mediaAspectVariant,
   mediaFrameClassName,
   mediaAspectVariantFromRatio,
-} from "@/lib/media-aspect";
+} from "@wse/core/lib/media-aspect";
 
 describe("media-aspect", () => {
   it("classifies landscape vs square", () => {

@@ -3,7 +3,7 @@ import {
   allPurchasableVariantsInCart,
   mapProductToCheckoutSuggestion,
   pickCheapestInStockVariantId,
-} from "@/lib/checkout-suggestion-product"
+} from "@wse/core/lib/checkout-suggestion-product"
 
 const baseProduct = {
   _id: "p1",

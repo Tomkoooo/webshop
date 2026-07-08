@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseCmsThemeHints } from "@/lib/cms-theme-hints"
+import { parseCmsThemeHints } from "@wse/core/lib/cms-theme-hints"
 
 describe("parseCmsThemeHints", () => {
   it("maps text and background theme utilities", () => {

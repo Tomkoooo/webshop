@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getCartLineOrderabilityMessage } from "@/lib/cart-line-orderability"
+import { getCartLineOrderabilityMessage } from "@wse/core/lib/cart-line-orderability"
 
 const baseProduct = {
   name: "Kalapács",

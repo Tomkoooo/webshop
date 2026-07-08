@@ -3,7 +3,7 @@ import {
   assertClientCartLinePrice,
   getStaleLimitedPriceCartMessage,
   quoteCheckoutLineForQuantity,
-} from "@/lib/limited-price-checkout";
+} from "@wse/core/lib/limited-price-checkout";
 
 const product = {
   vatPercent: 27,

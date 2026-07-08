@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { FoxpostApiClient } from "@/services/foxpost";
+import { FoxpostApiClient } from "@wse/core/services/foxpost";
 
 describe("FoxpostApiClient", () => {
   beforeEach(() => {

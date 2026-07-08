@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseInvoiceErrorAlertEmailsFromShopContent,
   serializeInvoiceErrorAlertEmails,
-} from "@/lib/invoice-error-alert-emails";
+} from "@wse/core/lib/invoice-error-alert-emails";
 
 describe("invoice error alert emails", () => {
   it("parses JSON array and dedupes", () => {

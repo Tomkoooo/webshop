@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import mongoose from "mongoose";
-import { buildUserOrdersFilter } from "@/lib/user-orders-query";
+import { buildUserOrdersFilter } from "@wse/core/lib/user-orders-query";
 
 describe("buildUserOrdersFilter", () => {
   it("filters by user id only when email is missing", () => {

@@ -3,7 +3,7 @@ import {
   formatEmailFromHeader,
   getEmailFromAddress,
   getEmailFromName,
-} from "@/lib/email-from"
+} from "@wse/core/lib/email-from"
 
 describe("email from header", () => {
   const prevFrom = process.env.EMAIL_FROM

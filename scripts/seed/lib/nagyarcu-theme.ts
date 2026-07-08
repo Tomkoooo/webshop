@@ -1,4 +1,4 @@
-import type { ThemeTokens } from "../../../src/services/theme"
+import type { ThemeTokens } from "@wse/core/services/theme"
 
 /**
  * Nagyarcu brand yellow. The logo is a very bright yellow (~#FFEA00), but the
