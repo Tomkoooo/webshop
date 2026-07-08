@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server"
 
 /**
- * When `ENABLE_SHOP` is set to the string `"false"`, storefront and shop admin
- * surfaces are disabled. Any other value (including unset) keeps the shop on
- * for backward compatibility.
+ * v2: shop availability is primarily decided by route presence — a site app
+ * either includes `@wse/plugin-shop/app` in its `wse.config.json` routeSources
+ * or it has no commerce routes at all. `ENABLE_SHOP="false"` remains as a
+ * legacy override for multi-deployment images (apps/reference) so one build
+ * can still serve both landing and commerce deployments.
  */
 export function isShopEnabled(): boolean {
   return process.env.ENABLE_SHOP !== "false"

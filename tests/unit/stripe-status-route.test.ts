@@ -53,7 +53,7 @@ describe("GET /api/checkout/stripe/status", () => {
       }),
     });
 
-    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -91,7 +91,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: tempOid,
     });
 
-    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -121,7 +121,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: tempOid,
     });
 
-    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );
@@ -148,7 +148,7 @@ describe("GET /api/checkout/stripe/status", () => {
       client_reference_id: "otherid",
     });
 
-    const { GET } = await import("@wse/core/app/api/checkout/stripe/status/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/stripe/status/route");
     const req = new NextRequest(
       `http://localhost/api/checkout/stripe/status?tempOrderId=${tempOid}&session_id=${sessionId}`
     );

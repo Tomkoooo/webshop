@@ -31,6 +31,7 @@
       "@wse/template-keramia-fogfeherites/*": ["packages/templates/keramia-fogfeherites/*"],
       "@wse/template-keramia-implant/*": ["packages/templates/keramia-implant/*"],
       "@wse/template-keramia-shared/*": ["packages/templates/keramia-shared/*"],
+      "@wse/plugin-shop/*": ["packages/plugins/shop/*"],
       "@wse/plugin-camp-booking/*": ["packages/plugins/camp-booking/*"],
       "@wse/plugin-press-kit/*": ["packages/plugins/press-kit/*"],
       "@wse/plugin-order-lab/*": ["packages/plugins/order-lab/*"]

@@ -81,7 +81,7 @@ describe("checkout methods and finalization", () => {
   });
 
   it("returns normalized methods with fixed stripe and gls options", async () => {
-    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     const body = await res.json();
@@ -124,7 +124,7 @@ describe("checkout methods and finalization", () => {
 
   it("returns 503 when shop is disabled in methods route", async () => {
     featureFlagMock.mockImplementation(async (key: string) => key !== "shopPage");
-    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     expect(res.status).toBe(503);
@@ -141,7 +141,7 @@ describe("checkout methods and finalization", () => {
     shippingFindMock.mockImplementationOnce(() => {
       throw new Error("db boom");
     });
-    const { GET } = await import("@wse/core/app/api/checkout/methods/route");
+    const { GET } = await import("@wse/plugin-shop/app/api/checkout/methods/route");
     const req = new NextRequest("http://localhost/api/checkout/methods");
     const res = await GET(req);
     expect(res.status).toBe(500);

@@ -97,7 +97,7 @@ describe.skipIf(!runStripeRace)("stripe checkout session last-unit race (live St
 
   it("allows at most one concurrent POST /api/checkout/stripe/session when stock is 1", async () => {
     const attempts = 12;
-    const { POST } = await import("@wse/core/app/api/checkout/stripe/session/route");
+    const { POST } = await import("@wse/plugin-shop/app/api/checkout/stripe/session/route");
 
     const responses = await Promise.all(
       Array.from({ length: attempts }, () =>

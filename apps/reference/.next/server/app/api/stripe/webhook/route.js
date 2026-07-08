@@ -1,7 +1,7 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/stripe/webhook/route.js")
 R.c("server/chunks/packages_core_src_6fcd56b6._.js")
 R.c("server/chunks/node_modules_next_dist_compiled_@opentelemetry_api_index_b15ce7cb.js")
-R.c("server/chunks/[root-of-the-server]__f1808438._.js")
+R.c("server/chunks/[root-of-the-server]__480c72bc._.js")
 R.c("server/chunks/_9f9f56fb._.js")
 R.c("server/chunks/node_modules_next_c5729131._.js")
 R.c("server/chunks/node_modules_next_afec86a9._.js")

@@ -7,7 +7,7 @@ R.c("server/chunks/[root-of-the-server]__87176c7e._.js")
 R.c("server/chunks/node_modules_next_afec86a9._.js")
 R.c("server/chunks/node_modules_zod_v4_classic_external_fa90cebf.js")
 R.c("server/chunks/node_modules_next_dist_f352324c._.js")
-R.c("server/chunks/[root-of-the-server]__da36187f._.js")
+R.c("server/chunks/[root-of-the-server]__63d7c1cb._.js")
 R.c("server/chunks/72ca0__next-internal_server_app_api_shop_product-suggestions_route_actions_a463d61c.js")
 R.m(186512)
 module.exports=R.m(186512).exports

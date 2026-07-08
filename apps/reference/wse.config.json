@@ -8,6 +8,18 @@
     {
       "specifier": "@wse/admin/app",
       "dir": "../../packages/admin/src/app"
+    },
+    {
+      "specifier": "@wse/plugin-shop/app",
+      "dir": "../../packages/plugins/shop/app"
+    },
+    {
+      "specifier": "@wse/plugin-camp-booking/app",
+      "dir": "../../packages/plugins/camp-booking/app"
+    },
+    {
+      "specifier": "@wse/plugin-press-kit/app",
+      "dir": "../../packages/plugins/press-kit/app"
     }
   ]
 }

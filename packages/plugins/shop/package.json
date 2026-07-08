@@ -1,0 +1,14 @@
+{
+  "name": "@wse/plugin-shop",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Webshop Engine shop plugin: storefront catalog, cart, checkout, profile and commerce API routes.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}
