@@ -19,7 +19,6 @@ COPY apps/sakkmed/package.json ./apps/sakkmed/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/core/package.json ./packages/core/
 COPY packages/admin/package.json ./packages/admin/
-COPY packages/ui/package.json ./packages/ui/
 COPY packages/cms-bridge/package.json ./packages/cms-bridge/
 COPY packages/wse-cli/package.json ./packages/wse-cli/
 COPY packages/templates ./packages/templates
