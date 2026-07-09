@@ -68,7 +68,7 @@ export function CouponRowActions({ coupon }: { coupon: CouponRow }) {
         <Button
           type="button"
           variant="ghost"
-          className="h-10 text-neutral-500 hover:text-white hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest"
+          className="h-10 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md text-xs font-medium text-muted-foreground"
         >
           <Edit2 className="w-4 h-4 mr-2" /> SZERKESZTÉS
         </Button>
@@ -77,7 +77,7 @@ export function CouponRowActions({ coupon }: { coupon: CouponRow }) {
         <Button
           type="submit"
           variant="ghost"
-          className="h-10 text-neutral-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-none text-[10px] font-black uppercase tracking-widest"
+          className="h-10 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-md text-xs font-medium text-muted-foreground"
         >
           <Trash2 className="w-4 h-4 mr-2" /> TÖRLÉS
         </Button>

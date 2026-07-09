@@ -6,6 +6,10 @@ import {
   formatCmsThemeHintState,
   parseCmsThemeHints,
 } from "@wse/core/lib/cms-theme-hints"
+import { Button } from "@wse/core/components/ui/button"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 
 type CmsLinkEditPanelProps = {
   title?: string
@@ -23,7 +27,7 @@ type CmsLinkEditPanelProps = {
 }
 
 export function CmsLinkEditPanel({
-  title = "Button / link",
+  title = "Gomb / link",
   label,
   href,
   onLabelChange,
@@ -40,77 +44,68 @@ export function CmsLinkEditPanel({
 
   return (
     <div
-      className="cms-admin-control fixed z-[500] w-80 rounded-md border border-white/15 bg-neutral-900 p-3 shadow-xl space-y-3"
+      className="cms-admin-control fixed z-[500] w-80 rounded-xl bg-card p-4 text-card-foreground shadow-lg space-y-3"
       style={{ top, left }}
+      role="dialog"
+      aria-label={title}
     >
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400">{title}</p>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
 
-      <div className="space-y-1">
-        <label className="text-[9px] uppercase tracking-widest text-neutral-500">Button text</label>
-        <input
+      <div className="space-y-1.5">
+        <Label className={adminFieldLabel}>Felirat</Label>
+        <Input
           value={label}
           onChange={(event) => onLabelChange(event.target.value)}
           onBlur={() => onLabelCommit(label)}
-          className="w-full h-8 px-2 bg-neutral-800 border border-white/20 text-xs text-white rounded-none"
-          placeholder="Button label"
+          placeholder="Gomb felirat"
+          className="h-9"
         />
       </div>
 
       {showHref ? (
-        <div className="space-y-1">
-          <label className="text-[9px] uppercase tracking-widest text-neutral-500">Link URL</label>
-          <input
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Link URL</Label>
+          <Input
             value={href}
             onChange={(event) => onHrefChange(event.target.value)}
             onBlur={() => onHrefCommit(href)}
-            className="w-full h-8 px-2 bg-neutral-800 border border-white/20 text-xs text-white rounded-none"
             placeholder="/contact"
+            className="h-9"
           />
         </div>
       ) : null}
 
       {themeHints.length > 0 ? (
-        <div className="space-y-2 border-t border-white/10 pt-2">
-          <p className="text-[9px] uppercase tracking-widest text-neutral-500">Theme colors used</p>
-          <ul className="space-y-1.5 max-h-40 overflow-y-auto">
+        <div className="space-y-2 border-t border-border/50 pt-3">
+          <p className="text-xs font-medium text-muted-foreground">Használt téma színek</p>
+          <ul className="max-h-32 space-y-1.5 overflow-y-auto text-xs text-muted-foreground">
             {themeHints.map((hint) => (
-              <li
-                key={`${hint.state}-${hint.role}-${hint.themeToken}-${hint.className}`}
-                className="rounded border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-snug text-neutral-300"
-              >
-                <span className="font-mono text-accent">{hint.themeToken}</span>
-                <span className="text-neutral-500">
+              <li key={`${hint.state}-${hint.role}-${hint.themeToken}-${hint.className}`} className="rounded-md bg-muted/50 px-2 py-1.5">
+                <span className="font-mono text-primary">{hint.themeToken}</span>
+                <span>
                   {" "}
                   — {formatCmsThemeHintRole(hint.role)} · {formatCmsThemeHintState(hint.state)}
                 </span>
-                <div className="mt-0.5 font-mono text-[9px] text-neutral-500">{hint.className}</div>
               </li>
             ))}
           </ul>
-          <Link
-            href="/admin/theme"
-            className="inline-block text-[9px] uppercase tracking-widest text-neutral-400 hover:text-white underline underline-offset-2"
-          >
-            Edit in Theme →
+          <Link href="/admin/cms/settings?section=theme" className="text-xs font-medium text-primary hover:underline">
+            Téma szerkesztése →
           </Link>
         </div>
       ) : (
-        <p className="text-[9px] text-neutral-500 leading-relaxed border-t border-white/10 pt-2">
-          No theme tokens detected on this button. Custom classes may need CSS edits; otherwise set colors under{" "}
-          <Link href="/admin/theme" className="text-neutral-300 underline underline-offset-2">
-            Theme
-          </Link>
-          .
+        <p className="border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
+          Egyedi osztályok esetén a színeket a{" "}
+          <Link href="/admin/cms/settings?section=theme" className="text-primary hover:underline">
+            Téma
+          </Link>{" "}
+          menüben állíthatod.
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="w-full h-8 border border-white/20 text-xs uppercase text-white rounded-none hover:bg-white/5"
-      >
-        Done
-      </button>
+      <Button type="button" size="sm" className="w-full" onClick={onClose}>
+        Kész
+      </Button>
     </div>
   )
 }

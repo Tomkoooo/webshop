@@ -12,7 +12,8 @@ import {
   type EventInput,
   type HotelInput,
 } from "../lib/schemas"
-import { normalizeHotelPricing } from "../lib/hotel-pricing"
+import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
+import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 
 function oid(id: string): mongoose.Types.ObjectId {
@@ -98,6 +99,7 @@ export class TBookEventService {
     await dbConnect()
     return TBookEvent.create({
       ...parsed,
+      attendeeFieldSchema: normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema),
       groupId: parsed.groupId ? oid(parsed.groupId) : null,
     })
   }
@@ -120,6 +122,9 @@ export class TBookEventService {
     const patch: Record<string, unknown> = { ...parsed }
     if (parsed.groupId !== undefined) {
       patch.groupId = parsed.groupId ? oid(parsed.groupId) : null
+    }
+    if (parsed.attendeeFieldSchema !== undefined) {
+      patch.attendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema)
     }
     await TBookEvent.updateOne({ _id: oid(id) }, { $set: patch })
   }
@@ -176,7 +181,7 @@ export class TBookEventService {
       throw new Error("Csoport vagy esemény megadása kötelező.")
     }
 
-    const normalized = normalizeHotelPricing(parsed.pricing)
+    const normalized = assignPricingKeys(normalizeHotelPricing(parsed.pricing))
     const pricing = {
       priceBasis: normalized.priceBasis ?? "net",
       vatPercent: normalized.vatPercent ?? 27,
@@ -214,7 +219,7 @@ export class TBookEventService {
     const patch: Record<string, unknown> = { ...parsed }
     delete patch.eventId
     if (parsed.pricing) {
-      const normalized = normalizeHotelPricing(parsed.pricing)
+      const normalized = assignPricingKeys(normalizeHotelPricing(parsed.pricing))
       patch.pricing = {
         priceBasis: normalized.priceBasis ?? "net",
         vatPercent: normalized.vatPercent ?? 27,
@@ -236,6 +241,49 @@ export class TBookEventService {
       throw new Error("A hotel nem törölhető, mert fizetett foglalások tartoznak hozzá. Archiváld inkább.")
     }
     await TBookHotel.deleteOne({ _id: hotelOid })
+  }
+
+  // ---- Public directory (no API key) --------------------------------------
+
+  static async listPublicDirectory() {
+    await dbConnect()
+    const now = new Date()
+    const groups = await TBookEventGroup.find({
+      status: "active",
+      listOnTBookSite: true,
+    })
+      .sort({ name: 1 })
+      .lean<ITBookEventGroup[]>()
+
+    const listings = await Promise.all(
+      groups.map(async (group) => {
+        const groupOid = group._id as mongoose.Types.ObjectId
+        const [activeEventCount, nextEvent] = await Promise.all([
+          TBookEvent.countDocuments({
+            groupId: groupOid,
+            status: "active",
+            endDate: { $gte: now },
+          }),
+          TBookEvent.findOne({
+            groupId: groupOid,
+            status: "active",
+            endDate: { $gte: now },
+          })
+            .sort({ startDate: 1 })
+            .lean<ITBookEvent>(),
+        ])
+        return {
+          id: String(groupOid),
+          title: group.listingTitle?.trim() || group.name,
+          url: group.listingUrl ?? "",
+          image: group.listingImage ?? "",
+          activeEventCount,
+          nextEventStart: nextEvent?.startDate ?? null,
+        }
+      })
+    )
+
+    return listings.filter((listing) => listing.activeEventCount > 0)
   }
 
   // ---- Public (API-key scoped) reads --------------------------------------
@@ -261,6 +309,7 @@ export class TBookEventService {
       ticketFeeHuf: e.ticketFeeHuf,
       ticketFeeMode: e.ticketFeeMode,
       heroImage: e.heroImage,
+      attendeeFieldSchema: normalizeAttendeeFieldSchema(e.attendeeFieldSchema ?? []),
     }))
   }
 
@@ -288,6 +337,7 @@ export class TBookEventService {
         ticketFeeHuf: event.ticketFeeHuf,
         ticketFeeMode: event.ticketFeeMode,
         heroImage: event.heroImage,
+        attendeeFieldSchema: normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? []),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
       hotels: activeHotels.map((h) => ({

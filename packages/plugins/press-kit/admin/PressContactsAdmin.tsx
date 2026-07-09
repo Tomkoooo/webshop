@@ -8,6 +8,7 @@ import {
   PressAdminPageHeader,
   PressAdminPrimaryButton,
 } from "./press-admin-ui"
+import { adminTableHead, adminTableWrap } from "@wse/core/lib/admin-ui"
 import { Button } from "@wse/core/components/ui/button"
 import {
   Dialog,
@@ -92,7 +93,7 @@ export function PressContactsAdmin() {
           <>
             <Button
               variant="outline"
-              className="rounded-none border-white/10 h-11 uppercase text-[10px] font-black tracking-widest"
+              className="rounded-md h-11 text-sm font-medium"
               onClick={() => setCreateOpen(true)}
             >
               Új kapcsolat
@@ -107,9 +108,9 @@ export function PressContactsAdmin() {
         }
       />
 
-      {error ? <p className="text-red-400 text-sm">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {plainPassword ? (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900">
           Generált jelszó (másold el most): <strong>{plainPassword}</strong>
           <Button variant="ghost" size="sm" className="ml-2" onClick={() => setPlainPassword(null)}>
             Bezár
@@ -117,9 +118,9 @@ export function PressContactsAdmin() {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5">
+      <div className={adminTableWrap}>
           <table className="w-full text-sm text-left">
-            <thead className="bg-white/5 text-white/60 uppercase text-xs">
+            <thead className={`border-b border-border bg-muted/40 ${adminTableHead}`}>
               <tr>
                 <th className="p-3 w-10" />
                 <th className="p-3">Név</th>
@@ -133,7 +134,7 @@ export function PressContactsAdmin() {
             </thead>
             <tbody>
               {contacts.map((c) => (
-                <tr key={c.id} className="border-t border-white/10">
+                <tr key={c.id} className="border-t border-border">
                   <td className="p-3">
                     <input
                       type="checkbox"
@@ -141,18 +142,18 @@ export function PressContactsAdmin() {
                       onChange={() => toggleSelect(c.id)}
                     />
                   </td>
-                  <td className="p-3 text-white">{c.name}</td>
-                  <td className="p-3 text-white/80">{c.outlet}</td>
-                  <td className="p-3 text-white/80">{c.email}</td>
+                  <td className="p-3 text-foreground">{c.name}</td>
+                  <td className="p-3 text-muted-foreground">{c.outlet}</td>
+                  <td className="p-3 text-muted-foreground">{c.email}</td>
                   <td className="p-3">
-                    <code className="text-xs text-white/60 break-all">
+                    <code className="text-xs text-muted-foreground break-all">
                       {origin}/sajto/{c.accessToken}
                     </code>
                   </td>
-                  <td className="p-3 text-white/60">
+                  <td className="p-3 text-muted-foreground">
                     {c.inviteSentAt ? new Date(c.inviteSentAt).toLocaleString("hu-HU") : "—"}
                   </td>
-                  <td className="p-3 text-white/60">
+                  <td className="p-3 text-muted-foreground">
                     {c.lastAccessAt ? new Date(c.lastAccessAt).toLocaleString("hu-HU") : "—"}
                   </td>
                   <td className="p-3">

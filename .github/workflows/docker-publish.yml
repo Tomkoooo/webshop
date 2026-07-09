@@ -18,7 +18,7 @@ jobs:
       - id: set
         run: |
           if [ "${{ github.ref }}" = "refs/heads/engine-v2" ]; then
-            echo 'matrix={"include":[{"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"}]}' >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[{"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"},{"site_app":"apps/world-darts-festival","site_server":"apps/world-darts-festival/server.js","image_tag":"world-darts-festival"},{"site_app":"apps/eventstructure","site_server":"apps/eventstructure/server.js","image_tag":"eventstructure"}]}' >> "$GITHUB_OUTPUT"
           else
             echo 'matrix={"include":[{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"latest"}]}' >> "$GITHUB_OUTPUT"
           fi

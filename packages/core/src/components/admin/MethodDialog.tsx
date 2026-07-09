@@ -10,8 +10,9 @@ import {
 } from "@wse/core/components/ui/dialog"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
-import { Label } from "@wse/core/components/ui/label"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
 import { cn } from "@wse/core/lib/utils"
+import { adminFieldHint, adminInputClass } from "@wse/core/lib/admin-ui"
 import { RichTextEditor } from "@wse/core/components/admin/RichTextEditor"
 
 interface MethodDialogProps {
@@ -54,56 +55,50 @@ export function MethodDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto bg-black border-white/10 text-white rounded-none sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         </DialogHeader>
-        <form action={async (formData) => {
-          await action(formData)
-          setOpen(false)
-        }} className="space-y-8 py-6 pr-1">
+        <form
+          action={async (formData) => {
+            await action(formData)
+            setOpen(false)
+          }}
+          className="space-y-6 py-2 pr-1"
+        >
           {shippingProviderMode ? (
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                Típus (pénztár)
-              </Label>
+            <AdminFormField
+              label="Típus (pénztár)"
+              hint="GLS/Foxpost típusnál a pénztárban megjelenik a választó; az ár itt állítható. A GLS/Foxpost kapcsolókat a Beállítások menüben kapcsold be."
+            >
               <select
                 name="provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="h-12 w-full border border-white/10 bg-black px-3 text-sm font-bold uppercase tracking-widest text-white"
+                className={cn(adminInputClass, "h-10")}
               >
                 <option value="standard">Házhozszállítás / standard</option>
                 <option value="gls">GLS csomagpont (térkép + ár)</option>
                 <option value="foxpost">Foxpost automata (APT + ár)</option>
               </select>
-              <p className="text-[10px] text-neutral-500 leading-relaxed">
-                GLS/Foxpost típusnál a pénztárban megjelenik a választó; az ár itt állítható. A GLS/Foxpost
-                kapcsolókat a Beállítások menüben kapcsold be.
-              </p>
-            </div>
+            </AdminFormField>
           ) : null}
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Megnevezés</Label>
-            <Input 
-              name="name" 
+          <AdminFormField label="Megnevezés">
+            <Input
+              name="name"
               defaultValue={initialData?.name}
-              required 
-              placeholder="PL. HÁZHOZSZÁLLÍTÁS"
-              className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
+              required
+              placeholder="Pl. Házhozszállítás"
+              className={cn(adminInputClass, "h-10")}
             />
-          </div>
+          </AdminFormField>
+
           {showParcelDescription ? (
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                Leírás a pénztárban (HTML)
-              </Label>
-              <p className="text-[10px] text-neutral-500 leading-relaxed">
-                Megjelenik, ha a vásárló ezt a csomagpontos / automatás szállítást választja (összegzés lépésen is).
-              </p>
+            <AdminFormField
+              label="Leírás a pénztárban (HTML)"
+              hint="Megjelenik, ha a vásárló ezt a csomagpontos / automatás szállítást választja (összegzés lépésen is)."
+            >
               <RichTextEditor
                 value={descriptionHtml}
                 onChange={setDescriptionHtml}
@@ -111,49 +106,49 @@ export function MethodDialog({
                 editorClassName="max-h-[38dvh] min-h-[180px] overflow-y-auto break-words"
               />
               <input type="hidden" name="descriptionHtml" value={descriptionHtml} />
-            </div>
+            </AdminFormField>
           ) : (
             <input type="hidden" name="descriptionHtml" value="" />
           )}
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Bruttó Ár (FT)</Label>
-            <Input 
-              name="grossPrice" 
+          <AdminFormField label="Bruttó ár (Ft)">
+            <Input
+              name="grossPrice"
               type="number"
               defaultValue={initialData?.grossPrice}
-              required 
+              required
               placeholder="0"
-              className="bg-black border-white/5 h-12 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+              className={cn(adminInputClass, "h-10")}
             />
-          </div>
+          </AdminFormField>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5">
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 p-4">
             <div>
-              <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">AKTÍV</p>
-              <p className="text-[8px] text-neutral-600 font-black uppercase tracking-widest mt-1">LÁTHATÓ A PÉNZTÁRBAN</p>
+              <p className="text-sm font-medium">Aktív</p>
+              <p className={adminFieldHint}>Látható a pénztárban</p>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => setIsActive(!isActive)}
               className={cn(
-                "w-12 h-6 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                isActive ? "bg-primary" : "bg-neutral-800"
+                "h-6 w-11 rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive ? "bg-primary" : "bg-muted"
               )}
+              aria-pressed={isActive}
             >
-              <div className={cn(
-                "w-4 h-4 bg-white transition-transform duration-200",
-                isActive ? "translate-x-6" : "translate-x-0"
-              )} />
+              <div
+                className={cn(
+                  "size-5 rounded-full bg-background shadow-sm transition-transform",
+                  isActive ? "translate-x-5" : "translate-x-0"
+                )}
+              />
             </button>
             <input type="hidden" name="isActive" value={isActive.toString()} />
           </div>
 
-          <div className="pt-4">
-            <Button type="submit" variant="krausz" className="w-full h-14 tracking-[0.2em]">
-              {initialData ? "MÓDOSÍTÁSOK MENTÉSE" : "LÉTREHOZÁS"}
-            </Button>
-          </div>
+          <Button type="submit" className="w-full">
+            {initialData ? "Módosítások mentése" : "Létrehozás"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

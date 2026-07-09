@@ -4,6 +4,7 @@ import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { Button } from "@wse/core/components/ui/button"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
+import { adminPageTitle } from "@wse/core/lib/admin-ui"
 
 export function AdminAccessDenied({ email }: { email?: string | null }) {
   const shopEnabled = isShopEnabled()
@@ -13,45 +14,38 @@ export function AdminAccessDenied({ email }: { email?: string | null }) {
   }
 
   return (
-    <div className="max-w-lg mx-auto py-16 space-y-8 text-center">
+    <div className="mx-auto max-w-lg space-y-8 py-16 text-center">
       <div className="space-y-3">
-        <h1 className="text-3xl font-heading font-black text-white uppercase italic tracking-wider">
-          Nincs admin jogosultság
-        </h1>
-        <p className="text-neutral-400 text-sm leading-relaxed">
+        <h1 className={adminPageTitle}>Nincs admin jogosultság</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
           {email ? (
             <>
-              A(z) <span className="text-white font-medium">{email}</span> fiókkal vagy bejelentkezve,
+              A(z) <span className="font-medium text-foreground">{email}</span> fiókkal vagy bejelentkezve,
               de ez a felhasználó nem rendelkezik admin hozzáféréssel.
             </>
           ) : (
             <>A bejelentkezett fiók nem rendelkezik admin hozzáféréssel.</>
           )}
         </p>
-        <p className="text-neutral-500 text-xs">
+        <p className="text-xs text-muted-foreground">
           Jelentkezz be egy másik Google-fiókkal, amelyhez admin jog van rendelve.
         </p>
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button
-          type="button"
-          variant="krausz"
-          onClick={switchAccount}
-          className="h-12 w-full uppercase tracking-widest text-[10px] font-black"
-        >
+        <Button type="button" onClick={switchAccount} className="h-12 w-full">
           Bejelentkezés másik Google-fiókkal
         </Button>
         <Link
           href="/"
-          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors"
+          className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           Vissza a weboldalra
         </Link>
         {!shopEnabled ? (
           <Link
             href="/profile"
-            className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors"
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Ügyfélprofil
           </Link>

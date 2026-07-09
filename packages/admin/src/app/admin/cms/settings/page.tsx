@@ -51,7 +51,7 @@ export default async function CmsSiteSettingsPage({
     : "Visszaállítja a motor alapértelmezett palettáját."
 
   return (
-    <Suspense fallback={<div className="text-neutral-400 text-sm">Betöltés…</div>}>
+    <Suspense fallback={<div className="text-muted-foreground text-sm">Betöltés…</div>}>
       {section === "contact" ? <SiteContactChannelsPanel /> : null}
       <CmsSiteSettingsClient
         section={section}

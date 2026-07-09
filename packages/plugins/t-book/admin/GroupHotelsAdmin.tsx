@@ -36,22 +36,22 @@ function ApiKeyRevealDialog({
 }) {
   return (
     <Dialog open={Boolean(apiKey)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-black border-white/10 text-white sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>API kulcs — mentsd el most</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <p className="text-sm text-amber-300">
+          <p className="text-sm text-amber-800">
             A csoport létrehozásakor kapott kulcs csak most látható teljes egészében.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm break-all">
+            <code className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm break-all">
               {apiKey}
             </code>
             <Button
               type="button"
               variant="outline"
-              className="border-white/10 text-white shrink-0"
+              className="shrink-0"
               onClick={() => {
                 if (apiKey) void navigator.clipboard.writeText(apiKey)
                 toast.success("Kulcs vágólapra másolva")
@@ -118,7 +118,7 @@ export function GroupHotelsAdmin({ groupId }: { groupId: string }) {
       <TBookGroupSubnav groupId={groupId} groupName={group?.name} />
       <TBookPageHeader
         title="Szállások"
-        description="A csoport összes eseménye ugyanazokat a szállásokat használja. Minden szálláshoz szobatípusok és felár-csoportok tartoznak."
+        description="A csoport összes eseménye ugyanazokat a szállásokat használja. Minden szálláshoz szobatípusok és foglalási szakaszok tartoznak."
         actions={
           <TBookPrimaryButton asChild>
             <Link href={`/admin/plugins/t-book/groups/${groupId}/hotels/new`}>
@@ -154,11 +154,11 @@ export function GroupHotelsAdmin({ groupId }: { groupId: string }) {
             return (
               <li
                 key={hotel.id}
-                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <p className="font-bold text-white truncate">{hotel.name}</p>
+                    <p className="font-semibold text-foreground truncate">{hotel.name}</p>
                     <TBookStatusBadge status={hotel.status} labels={TBOOK_STATUS_LABELS} />
                   </div>
                   <p className="text-xs text-neutral-500 mt-1">
@@ -169,13 +169,13 @@ export function GroupHotelsAdmin({ groupId }: { groupId: string }) {
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
                     {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                    felár-csoport ({addonCount} mező)
+                    foglalási szakasz ({addonCount} mező)
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Link
                     href={`/admin/plugins/t-book/groups/${groupId}/hotels/${hotel.id}`}
-                    className="inline-flex h-9 items-center px-3 border border-white/10 rounded-lg text-white text-xs font-bold hover:bg-white/5"
+                    className="inline-flex h-9 items-center px-3 border border-border rounded-lg text-foreground text-xs font-medium hover:bg-muted/40"
                   >
                     Szerkesztés
                   </Link>

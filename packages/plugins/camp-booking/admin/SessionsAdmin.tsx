@@ -84,7 +84,7 @@ export function SessionsAdmin({ campId }: { campId: string }) {
     <div className="space-y-8 animate-in fade-in duration-500">
       <Link
         href="/admin/plugins/camp-booking/camps"
-        className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+        className="text-xs font-medium text-muted-foreground admin-link-accent"
       >
         ← Táborok
       </Link>
@@ -111,13 +111,13 @@ export function SessionsAdmin({ campId }: { campId: string }) {
           {sessions.map((s) => (
             <li
               key={s.id}
-              className="border border-white/10 rounded-2xl p-5 bg-white/5 flex justify-between items-center gap-4 hover:border-white/25 transition-colors"
+              className="rounded-xl bg-card shadow-sm p-5 flex justify-between items-center gap-4 hover:shadow-md transition-shadow"
             >
               <div>
-                <p className="font-heading font-black text-white uppercase tracking-wider">
+                <p className="font-semibold text-foreground">
                   {s.label}
                   {!s.isPublished ? (
-                      <span className="ml-2 text-[10px] text-neutral-500 font-black">vázlat</span>
+                      <span className="ml-2 text-xs text-muted-foreground font-medium">vázlat</span>
                     ) : null}
                 </p>
                 <p className="text-xs text-neutral-500 mt-1">
@@ -129,14 +129,14 @@ export function SessionsAdmin({ campId }: { campId: string }) {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+                    className="h-9 text-xs"
                   >
                     Szerkesztés
                   </Button>
                 </EditSessionDialog>
                 <button
                   type="button"
-                  className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                  className="text-xs font-medium text-muted-foreground admin-link-accent"
                   onClick={() => setSelectedSession(s.id)}
                 >
                   Jegyek & export →

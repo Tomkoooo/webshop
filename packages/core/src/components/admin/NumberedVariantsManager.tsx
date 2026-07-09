@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@wse/core/components/ui/button";
 import { Input } from "@wse/core/components/ui/input";
 import { AdminFormField } from "@wse/core/components/admin/AdminFormField";
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel";
 import { deriveNetFromGross, netToGross } from "@wse/core/lib/pricing";
 import {
   countNumberedVariants,
@@ -26,6 +27,8 @@ import {
   getBaseVariant,
 } from "@wse/core/lib/unique-numbered-variants";
 import type { UniqueNumberedVariantsConfig } from "@wse/core/lib/unique-numbered-variants";
+import { adminAlertWarning, adminInputClass } from "@wse/core/lib/admin-ui";
+import { cn } from "@wse/core/lib/utils";
 
 type Props = {
   variants: AdminVariantRow[];
@@ -237,28 +240,26 @@ export function NumberedVariantsManager({
   if (numberedCount === 0) return null;
 
   return (
-    <div className="border border-amber-500/25 bg-amber-500/5 p-4 space-y-6">
+    <div className={cn(adminAlertWarning, "space-y-6")}>
       <div>
-        <p className="text-xs font-black uppercase tracking-widest text-amber-200">
+        <p className="text-sm font-semibold text-amber-900">
           Sorszámos variáns kezelés ({numberedCount} db)
         </p>
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Alap variáns és sorszámok együtt rendelhetők. Egyes variáns (leírás, ár) alul a listában — keresés sorszámra vagy „base”.
         </p>
       </div>
 
-      <div className="border border-white/10 p-4 space-y-3">
-        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-          Leírások — sorszámos variánsok
-        </p>
-        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-          HTML sablon: használd a {`{{number}}`} vagy {`{{szam}}`} helyőrzőt. Alkalmazás után variánsonként szerkeszthető alul.
-        </p>
+      <AdminPanel
+        title="Leírások — sorszámos variánsok"
+        description={`HTML sablon: használd a {{number}} vagy {{szam}} helyőrzőt. Alkalmazás után variánsonként szerkeszthető alul.`}
+        className="bg-card p-4 shadow-sm"
+      >
         <textarea
           value={bulkDescriptionHtml}
           onChange={(e) => setBulkDescriptionHtml(e.target.value)}
           rows={4}
-          className="w-full bg-black border border-white/10 text-white text-xs font-mono p-3 rounded-none resize-y"
+          className={cn(adminInputClass, "resize-y py-2 font-mono text-xs")}
           placeholder="<p>A(z) {{number}}. szám példány…</p>"
           spellCheck={false}
         />
@@ -282,7 +283,6 @@ export function NumberedVariantsManager({
                 descriptionHtml: bulkDescriptionHtml.trim() || undefined,
               });
             }}
-            className="rounded-none bg-primary text-white font-black uppercase tracking-widest text-[10px]"
           >
             Leírás alkalmazása mindre
           </Button>
@@ -291,23 +291,18 @@ export function NumberedVariantsManager({
               type="button"
               variant="outline"
               onClick={() => onActiveVariantChange?.(baseVariant.id)}
-              className="rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
             >
               Alap variáns szerkesztése
             </Button>
           ) : null}
         </div>
-      </div>
+      </AdminPanel>
 
-      <div className="border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-        <p className="text-[10px] font-black text-emerald-200 uppercase tracking-[0.2em]">
-          Alap variáns (nem sorszámozott)
-        </p>
-        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest leading-relaxed">
-          Nem sorszámozott példány — a boltban az egyedi sorszámok mellett is választható; ha minden sorszám elfogyott, csak ez marad.
-          Id: <span className="text-white">{baseVariantId}</span>
-          {baseVariant ? ` · jelenleg ${baseVariant.stock ?? 0} db` : " · még nincs hozzáadva"}
-        </p>
+      <AdminPanel
+        title="Alap variáns (nem sorszámozott)"
+        description={`Nem sorszámozott példány — a boltban az egyedi sorszámok mellett is választható. Id: ${baseVariantId}${baseVariant ? ` · jelenleg ${baseVariant.stock ?? 0} db` : " · még nincs hozzáadva"}`}
+        className="bg-emerald-500/5 p-4 shadow-sm"
+      >
         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3">
           <AdminFormField label="Készlet (db)">
             <Input
@@ -315,23 +310,16 @@ export function NumberedVariantsManager({
               min={0}
               value={baseStockInput}
               onChange={(e) => setBaseStockInput(e.target.value)}
-              className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+              className={adminInputClass}
             />
           </AdminFormField>
-          <Button
-            type="button"
-            onClick={addOrUpdateBaseVariant}
-            className="h-11 rounded-none bg-primary text-white font-black uppercase tracking-widest text-[10px]"
-          >
+          <Button type="button" onClick={addOrUpdateBaseVariant}>
             {baseVariant ? "Alap variáns mentése" : "Alap variáns hozzáadása"}
           </Button>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div className="border border-white/10 p-4 space-y-3">
-        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-          Árak — összes sorszámos variáns
-        </p>
+      <AdminPanel title="Árak — összes sorszámos variáns" className="bg-card p-4 shadow-sm">
         <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <AdminFormField label="Nettó ár (Ft)">
             <Input
@@ -339,7 +327,7 @@ export function NumberedVariantsManager({
               value={bulkNetPrice}
               onChange={(e) => setBulkNetPrice(e.target.value)}
               placeholder="Pl. 5000"
-              className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+              className={adminInputClass}
             />
           </AdminFormField>
           <AdminFormField label="Bruttó ár (Ft)">
@@ -348,109 +336,64 @@ export function NumberedVariantsManager({
               value={bulkGrossPrice}
               onChange={(e) => setBulkGrossPrice(e.target.value)}
               placeholder="Pl. 6350"
-              className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+              className={adminInputClass}
             />
           </AdminFormField>
-          <Button
-            type="button"
-            onClick={applyNumberedPricing}
-            className="h-11 rounded-none bg-primary text-white font-black uppercase tracking-widest text-[10px]"
-          >
+          <Button type="button" onClick={applyNumberedPricing}>
             Ár alkalmazása
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={resetNumberedPricing}
-            className="h-11 rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
-          >
+          <Button type="button" variant="outline" onClick={resetNumberedPricing}>
             Alapár
           </Button>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div className="border border-white/10 p-4 space-y-3">
-        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-          Aktív státusz — összes sorszámos variáns
-        </p>
-        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-          Inaktív variáns nem rendelhető a boltban. Tartomány szerint a törlésnél használt JSON mezővel.
-        </p>
+      <AdminPanel
+        title="Aktív státusz — összes sorszámos variáns"
+        description="Inaktív variáns nem rendelhető a boltban. Tartomány szerint a törlésnél használt JSON mezővel."
+        className="bg-card p-4 shadow-sm"
+      >
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setAllNumberedActive(false)}
-            className="rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
-          >
+          <Button type="button" variant="outline" onClick={() => setAllNumberedActive(false)}>
             Mind kikapcsolása
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setAllNumberedActive(true)}
-            className="rounded-none border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest"
-          >
+          <Button type="button" variant="outline" onClick={() => setAllNumberedActive(true)}>
             Mind bekapcsolása
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setNumberedActiveByRanges(false)}
-            className="rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
-          >
+          <Button type="button" variant="outline" onClick={() => setNumberedActiveByRanges(false)}>
             Tartomány kikapcsolása
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setNumberedActiveByRanges(true)}
-            className="rounded-none border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest"
-          >
+          <Button type="button" variant="outline" onClick={() => setNumberedActiveByRanges(true)}>
             Tartomány bekapcsolása
           </Button>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div className="border border-white/10 p-4 space-y-3">
-        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-          Törlés
-        </p>
+      <AdminPanel
+        title="Törlés"
+        description={'Tartomány szerinti törlés — JSON, pl. [{"from":36,"to":46}]'}
+        className="bg-card p-4 shadow-sm"
+      >
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={deleteAllNumbered}
-            className="rounded-none border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button type="button" variant="outline" onClick={deleteAllNumbered} className="text-rose-600">
+            <Trash2 className="mr-2 h-4 w-4" />
             Összes sorszámos törlése
           </Button>
         </div>
-        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-          Tartomány szerinti törlés — JSON, pl. [{`{"from":36,"to":46}`}]
-        </p>
         <textarea
           value={deleteRangesJson}
           onChange={(e) => setDeleteRangesJson(e.target.value)}
           rows={3}
-          className="w-full bg-black border border-white/10 text-white text-xs font-mono p-3 rounded-none"
+          className={cn(adminInputClass, "resize-y py-2 font-mono text-xs")}
           spellCheck={false}
         />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={deleteByRanges}
-          className="rounded-none border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
+        <Button type="button" variant="outline" onClick={deleteByRanges} className="text-rose-600">
+          <Trash2 className="mr-2 h-4 w-4" />
           Tartomány törlése
         </Button>
-      </div>
+      </AdminPanel>
 
-      {message ? (
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-300">{message}</p>
-      ) : null}
+      {message ? <p className="text-sm text-foreground">{message}</p> : null}
     </div>
   );
 }

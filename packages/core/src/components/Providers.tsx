@@ -19,10 +19,15 @@ export function Providers({
   children,
   devMetricsEnabled = false,
   popupCampaigns = [],
+  shopEnabled = true,
+  adminChrome = false,
 }: {
   children: ReactNode
   devMetricsEnabled?: boolean
   popupCampaigns?: PopupCampaign[]
+  shopEnabled?: boolean
+  /** Server-detected admin shell — skip storefront-only client work. */
+  adminChrome?: boolean
 }) {
   return (
     <SessionProvider refetchOnWindowFocus={false}>
@@ -33,12 +38,14 @@ export function Providers({
             <DevMetricsClient enabled />
           </Suspense>
         ) : null}
-        <CartSync />
+        <CartSync shopEnabled={shopEnabled} />
         {children}
-        <Suspense fallback={null}>
-          <StorefrontPopupLayer campaigns={popupCampaigns} />
-        </Suspense>
-        <CookieConsentBanner />
+        {!adminChrome ? (
+          <Suspense fallback={null}>
+            <StorefrontPopupLayer campaigns={popupCampaigns} />
+          </Suspense>
+        ) : null}
+        {!adminChrome ? <CookieConsentBanner /> : null}
       </AnalyticsProvider>
     </SessionProvider>
   )

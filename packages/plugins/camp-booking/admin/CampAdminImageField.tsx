@@ -46,13 +46,13 @@ export function CampAdminImageField({
             <img
               src={mediaImageSrc(value)}
               alt=""
-              className="w-24 h-24 object-cover border border-white/20"
+              className="w-24 h-24 object-cover rounded-lg border border-border"
             />
             <Button
               type="button"
               variant="outline"
               onClick={() => onChange("")}
-              className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+              className="h-9 text-xs"
             >
               Kép törlése
             </Button>
@@ -79,11 +79,11 @@ export function CampAdminImageField({
           variant="outline"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+          className="h-9 text-xs"
         >
           {uploading ? "Feltöltés…" : "Kép feltöltése"}
         </Button>
-        {uploadError ? <p className="text-red-400 text-xs">{uploadError}</p> : null}
+        {uploadError ? <p className="text-destructive text-xs">{uploadError}</p> : null}
       </div>
     </CampAdminField>
   )

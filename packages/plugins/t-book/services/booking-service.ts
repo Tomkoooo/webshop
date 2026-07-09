@@ -20,6 +20,11 @@ import {
   buildBookingQuery,
   type TBookBookingFilters,
 } from "../lib/booking-query"
+import {
+  normalizeAttendeeFieldSchema,
+  normalizeAttendeePayload,
+  validateAttendees,
+} from "../lib/attendee-fields"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -151,6 +156,13 @@ export class TBookBookingService {
       }
     }
 
+    const attendeeFieldSchema = normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? [])
+    const attendeeIssues = validateAttendees(attendeeFieldSchema, parsed.guests, parsed.attendees)
+    if (attendeeIssues.length > 0) {
+      throw new Error(attendeeIssues.map((issue) => issue.message).join(" "))
+    }
+    const attendees = normalizeAttendeePayload(attendeeFieldSchema, parsed.attendees)
+
     const group = event.groupId
       ? await TBookEventGroup.findById(event.groupId).lean()
       : null
@@ -169,6 +181,8 @@ export class TBookBookingService {
         note: parsed.customer.note?.trim() ?? "",
       },
       billing: parsed.billing ?? null,
+      attendeeFieldSchema,
+      attendees,
       guests: parsed.guests,
       nights,
       selections,

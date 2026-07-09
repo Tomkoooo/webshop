@@ -24,6 +24,10 @@ function serializeGroup(g: ITBookEventGroup) {
     defaultBookingOptions: g.defaultBookingOptions ?? [],
     defaultPriceBasis: g.defaultPriceBasis ?? "net",
     defaultVatPercent: g.defaultVatPercent ?? 27,
+    listOnTBookSite: Boolean(g.listOnTBookSite),
+    listingTitle: g.listingTitle ?? "",
+    listingUrl: g.listingUrl ?? "",
+    listingImage: g.listingImage ?? "",
     apiKeyHint: g.apiKeyHint,
     apiKeyCreatedAt: g.apiKeyCreatedAt,
     createdAt: g.createdAt,
@@ -50,6 +54,7 @@ function serializeEvent(e: ITBookEvent) {
     ticketVatPercent: e.ticketVatPercent ?? 27,
     capacity: e.capacity,
     heroImage: e.heroImage,
+    attendeeFieldSchema: e.attendeeFieldSchema ?? [],
     status: e.status,
     sortOrder: e.sortOrder,
   }
@@ -142,6 +147,12 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     // ---- Stripe success/cancel landing (no key: it's a browser redirect) ---
     if (segment === "checkout" && path[1] === "return" && method === "GET") {
       return handleCheckoutReturn(request)
+    }
+
+    // ---- Public directory (no API key) ------------------------------------
+    if (segment === "directory" && method === "GET" && path.length === 1) {
+      const listings = await TBookEventService.listPublicDirectory()
+      return json({ ok: true, listings }, 200, request)
     }
 
     // ---- Public, API-key protected ----------------------------------------
@@ -409,7 +420,10 @@ async function handleTBookAdminApi(
         groupName: b.groupName,
         hotelName: b.hotelName,
         customer: b.customer,
+        attendeeFieldSchema: b.attendeeFieldSchema ?? [],
+        attendees: b.attendees ?? [],
         guests: b.guests,
+        attendeeCount: b.attendees?.length ?? 0,
         nights: b.nights,
         selections: b.selections,
         totalHuf: b.totalHuf,
@@ -471,6 +485,8 @@ async function handleTBookAdminApi(
         hotelName: booking.hotelName,
         customer: booking.customer,
         billing: booking.billing,
+        attendeeFieldSchema: booking.attendeeFieldSchema ?? [],
+        attendees: booking.attendees ?? [],
         guests: booking.guests,
         nights: booking.nights,
         selections: booking.selections,

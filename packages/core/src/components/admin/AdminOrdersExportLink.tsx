@@ -175,7 +175,7 @@ export function AdminOrdersExportLink({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       {selectionActive ? (
-        <p className="text-[9px] font-bold uppercase tracking-widest text-primary sm:mr-2">
+        <p className="text-xs font-medium text-primary sm:mr-2">
           Export: {selectedOrderIds.length} kijelölt
         </p>
       ) : null}
@@ -184,7 +184,7 @@ export function AdminOrdersExportLink({
         variant="outline"
         disabled={isExporting || isExportingLabelsZip}
         onClick={handleExport}
-        className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
+        className="h-12 shrink-0 rounded-md border-border bg-background text-xs font-medium text-muted-foreground text-foreground hover:bg-muted"
         title={excelTitle}
       >
         {isExporting ? (
@@ -200,7 +200,7 @@ export function AdminOrdersExportLink({
           variant="outline"
           disabled={isExporting || isExportingLabelsZip}
           onClick={handleLabelsZipExport}
-          className="h-12 shrink-0 rounded-none border-white/10 bg-black font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10"
+          className="h-12 shrink-0 rounded-md border-border bg-background text-xs font-medium text-muted-foreground text-foreground hover:bg-muted"
           title={zipTitle}
         >
           {isExportingLabelsZip ? (

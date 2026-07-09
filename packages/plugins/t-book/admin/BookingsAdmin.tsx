@@ -4,6 +4,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent } from "@wse/core/components/ui/card"
+import { adminSectionTitle, adminTableHead, adminTableWrap } from "@wse/core/lib/admin-ui"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +23,11 @@ import {
   type AdminEvent,
   type AdminGroup,
 } from "./t-book-api"
+import {
+  formatAttendeeFieldValue,
+  type TBookAttendeeFieldDef,
+  type TBookBookingAttendee,
+} from "../lib/attendee-fields"
 import {
   TBookField,
   TBookInput,
@@ -72,6 +79,66 @@ function formatSelections(selections: Record<string, unknown>): string {
       return `${key}: ${v}`
     })
     .join(" · ")
+}
+
+function AttendeesSection({
+  schema,
+  attendees,
+  guests,
+}: {
+  schema: TBookAttendeeFieldDef[]
+  attendees: TBookBookingAttendee[]
+  guests: number
+}) {
+  if (!schema.length) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <p className={adminSectionTitle}>Résztvevők</p>
+          <p className="text-sm text-muted-foreground">
+            Ehhez az eseményhez nem volt egyedi résztvevői mező — csak a kapcsolattartó adatai
+            érkeztek ({guests} fő).
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        <div>
+          <p className={adminSectionTitle}>Résztvevők ({guests} fő)</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Minden jegyhez külön résztvevői adat — az eligibilitás ellenőrzéshez.
+          </p>
+        </div>
+        {attendees.length === 0 ? (
+          <p className="text-sm text-amber-900">Nincs rögzített résztvevői adat.</p>
+        ) : (
+          <div className="space-y-4">
+            {attendees.map((attendee, index) => (
+              <div key={index} className="rounded-lg bg-muted/30 p-3 space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  {index + 1}. résztvevő
+                </p>
+                <ul className="space-y-1">
+                  {schema.map((field) => (
+                    <li key={field.key} className="flex justify-between gap-4 text-sm">
+                      <span className="text-muted-foreground">{field.label}</span>
+                      <span className="text-foreground text-right">
+                        {formatAttendeeFieldValue(field, attendee.fields[field.key])}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 function BookingDetailDialog({
@@ -135,7 +202,7 @@ function BookingDetailDialog({
 
   return (
     <Dialog open={Boolean(bookingId)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-black border-white/10 text-white sm:max-w-[680px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[680px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Foglalás részletei</DialogTitle>
         </DialogHeader>
@@ -150,36 +217,49 @@ function BookingDetailDialog({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-1">
-                <p className="text-xs font-bold text-neutral-500 uppercase">Vásárló</p>
-                <p className="text-white font-medium">{booking.customer.name}</p>
-                <p className="text-neutral-400">{booking.customer.email}</p>
-                <p className="text-neutral-400">{booking.customer.phone}</p>
+              <Card>
+                <CardContent className="p-4 space-y-1">
+                <p className={adminSectionTitle}>Kapcsolattartó</p>
+                <p className="text-xs text-muted-foreground">
+                  Fizető / szervező — ezzel a személlyel tartják a kapcsolatot (különösen szállás
+                  foglalásnál).
+                </p>
+                <p className="text-foreground font-medium pt-1">{booking.customer.name}</p>
+                <p className="text-muted-foreground">{booking.customer.email}</p>
+                <p className="text-muted-foreground">{booking.customer.phone}</p>
                 {booking.customer.note ? (
-                  <p className="text-neutral-500 text-xs pt-1">„{booking.customer.note}”</p>
+                  <p className="text-muted-foreground text-xs pt-1">„{booking.customer.note}”</p>
                 ) : null}
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-1">
-                <p className="text-xs font-bold text-neutral-500 uppercase">Esemény</p>
-                <p className="text-white font-medium">{booking.eventName}</p>
-                {booking.groupName ? <p className="text-neutral-400">{booking.groupName}</p> : null}
-                <p className="text-neutral-400">
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 space-y-1">
+                <p className={adminSectionTitle}>Esemény</p>
+                <p className="text-foreground font-medium">{booking.eventName}</p>
+                {booking.groupName ? <p className="text-muted-foreground">{booking.groupName}</p> : null}
+                <p className="text-muted-foreground">
                   {booking.guests} fő
                   {booking.hotelName ? ` · ${booking.hotelName} · ${booking.nights} éj` : " · csak jegy"}
                 </p>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
+            <AttendeesSection
+              schema={booking.attendeeFieldSchema ?? []}
+              attendees={booking.attendees ?? []}
+              guests={booking.guests}
+            />
+
             {Object.keys(booking.selections ?? {}).length > 0 ? (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <p className="text-xs font-bold text-neutral-500 uppercase mb-2">
-                  Választott opciók
-                </p>
+              <Card>
+                <CardContent className="p-4">
+                <p className={`${adminSectionTitle} mb-2`}>Választott opciók</p>
                 <ul className="space-y-1">
                   {Object.entries(booking.selections).map(([key, value]) => (
                     <li key={key} className="flex justify-between gap-4">
-                      <span className="text-neutral-400">{key}</span>
-                      <span className="text-neutral-200">
+                      <span className="text-muted-foreground">{key}</span>
+                      <span className="text-foreground">
                         {Array.isArray(value)
                           ? value.join(", ")
                           : value === true
@@ -189,38 +269,43 @@ function BookingDetailDialog({
                     </li>
                   ))}
                 </ul>
-              </div>
+                </CardContent>
+              </Card>
             ) : null}
 
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs font-bold text-neutral-500 uppercase mb-2">Ár részletezés</p>
+            <Card>
+              <CardContent className="p-4">
+              <p className={`${adminSectionTitle} mb-2`}>Ár részletezés</p>
               {booking.quote.lines.map((line) => (
                 <div key={line.key} className="flex justify-between">
-                  <span className="text-neutral-400">{line.label}</span>
-                  <span className="text-neutral-200">{formatHuf(line.amountHuf)}</span>
+                  <span className="text-muted-foreground">{line.label}</span>
+                  <span className="text-foreground">{formatHuf(line.amountHuf)}</span>
                 </div>
               ))}
-              <div className="flex justify-between border-t border-white/10 mt-2 pt-2 font-bold">
+              <div className="flex justify-between border-t border-border mt-2 pt-2 font-semibold">
                 <span>Összesen</span>
                 <span>{formatHuf(booking.totalHuf)}</span>
               </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {booking.billing ? (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-1">
-                <p className="text-xs font-bold text-neutral-500 uppercase">Számlázási adatok</p>
-                <p className="text-neutral-200">{booking.billing.name}</p>
-                <p className="text-neutral-400">
+              <Card>
+                <CardContent className="p-4 space-y-1">
+                <p className={adminSectionTitle}>Számlázási adatok</p>
+                <p className="text-foreground">{booking.billing.name}</p>
+                <p className="text-muted-foreground">
                   {booking.billing.zip} {booking.billing.city}, {booking.billing.street}
                 </p>
                 {booking.billing.taxNumber ? (
-                  <p className="text-neutral-400">Adószám: {booking.billing.taxNumber}</p>
+                  <p className="text-muted-foreground">Adószám: {booking.billing.taxNumber}</p>
                 ) : null}
-              </div>
+                </CardContent>
+              </Card>
             ) : null}
 
             {booking.invoiceError ? (
-              <p className="text-xs text-red-300">Számlázási hiba: {booking.invoiceError}</p>
+              <p className="text-xs text-destructive">Számlázási hiba: {booking.invoiceError}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2 pt-1">
@@ -261,19 +346,20 @@ function BookingDetailDialog({
                   type="button"
                   variant="outline"
                   disabled={busy}
-                  className="h-9 border-white/10 text-white text-xs font-bold"
+                  className="h-9 text-xs"
                   onClick={() => void issueInvoice()}
                 >
                   Számla kiállítása
                 </Button>
               ) : null}
               {booking.invoiceStatus === "issued" ? (
+                <Button asChild variant="outline" className="h-9 text-xs">
                 <a
                   href={`${TBOOK_ADMIN_API}/bookings/${booking.id}/invoice/pdf`}
-                  className="inline-flex items-center h-9 px-4 border border-white/10 rounded-lg text-white text-xs font-bold"
                 >
                   Számla PDF
                 </a>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -351,23 +437,25 @@ export function BookingsAdmin() {
         description="Minden foglalás egy helyen — okos szűrők, keresés, export."
         actions={
           <>
+            <Button asChild variant="outline" className="h-10">
             <a
               href={`${TBOOK_ADMIN_API}/bookings/export?format=xlsx&${exportQuery}`}
-              className="inline-flex items-center h-10 px-4 border border-white/10 rounded-lg text-white text-sm font-bold hover:border-white/30"
             >
               Excel export
             </a>
+            </Button>
+            <Button asChild variant="outline" className="h-10">
             <a
               href={`${TBOOK_ADMIN_API}/bookings/export?format=csv&${exportQuery}`}
-              className="inline-flex items-center h-10 px-4 border border-white/10 rounded-lg text-white text-sm font-bold hover:border-white/30"
             >
               CSV export
             </a>
+            </Button>
           </>
         }
       />
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="rounded-xl bg-card shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <TBookField label="Keresés (név, email, telefon, esemény)">
           <TBookInput
             value={filters.search}
@@ -462,21 +550,21 @@ export function BookingsAdmin() {
         </TBookField>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-400">
+      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
         <span>
-          <strong className="text-white">{total}</strong> találat
+          <strong className="text-foreground">{total}</strong> találat
         </span>
         <span>
           Fizetett bevétel a szűrésben:{" "}
-          <strong className="text-white">{formatHuf(revenue)}</strong>
+          <strong className="text-foreground">{formatHuf(revenue)}</strong>
         </span>
         <span>
-          Vendégek: <strong className="text-white">{guests}</strong>
+          Vendégek: <strong className="text-foreground">{guests}</strong>
         </span>
         {JSON.stringify(filters) !== JSON.stringify(emptyFilters) ? (
           <button
             type="button"
-            className="text-xs font-bold uppercase tracking-widest admin-link-accent"
+            className="text-xs font-medium admin-link-accent"
             onClick={() => {
               setFilters(emptyFilters)
               setPage(1)
@@ -492,11 +580,11 @@ export function BookingsAdmin() {
       ) : rows.length === 0 ? (
         <p className="text-neutral-500 text-sm">Nincs találat a szűrésre.</p>
       ) : (
-        <div className="overflow-x-auto border border-white/10 rounded-2xl">
+        <div className={adminTableWrap}>
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                <th className="p-3">Vásárló</th>
+              <tr className={`border-b border-border bg-muted/40 ${adminTableHead}`}>
+                <th className="p-3">Kapcsolattartó</th>
                 <th className="p-3 hidden md:table-cell">Esemény</th>
                 <th className="p-3 hidden lg:table-cell">Szállás</th>
                 <th className="p-3">Fő</th>
@@ -511,23 +599,28 @@ export function BookingsAdmin() {
             <tbody>
               {rows.map((row) => (
                 <Fragment key={row.id}>
-                  <tr className="border-b border-white/5 hover:bg-white/[0.03] text-neutral-200">
+                  <tr className="border-b border-border/60 hover:bg-muted/40">
                     <td className="p-3">
-                      <p className="font-medium text-white">{row.customer.name}</p>
-                      <p className="text-xs text-neutral-500">{row.customer.email}</p>
+                      <p className="font-medium text-foreground">{row.customer.name}</p>
+                      <p className="text-xs text-muted-foreground">{row.customer.email}</p>
+                      {(row.attendees?.length ?? 0) > 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {row.attendees.length} résztvevő adattal
+                        </p>
+                      ) : null}
                     </td>
-                    <td className="p-3 hidden md:table-cell text-neutral-400">{row.eventName}</td>
-                    <td className="p-3 hidden lg:table-cell text-neutral-400">
+                    <td className="p-3 hidden md:table-cell text-muted-foreground">{row.eventName}</td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground">
                       {row.hotelName || "—"}
                       {row.hotelName ? (
                         <span className="text-neutral-600"> · {row.nights} éj</span>
                       ) : null}
                     </td>
                     <td className="p-3">{row.guests}</td>
-                    <td className="p-3 hidden xl:table-cell text-xs text-neutral-500 max-w-56 truncate">
+                    <td className="p-3 hidden xl:table-cell text-xs text-muted-foreground max-w-56 truncate">
                       {formatSelections(row.selections ?? {}) || "—"}
                     </td>
-                    <td className="p-3 whitespace-nowrap font-bold text-white">
+                    <td className="p-3 whitespace-nowrap font-semibold text-foreground">
                       {formatHuf(row.totalHuf)}
                     </td>
                     <td className="p-3">
@@ -536,14 +629,14 @@ export function BookingsAdmin() {
                     <td className="p-3 hidden md:table-cell">
                       <TBookStatusBadge status={row.invoiceStatus} labels={INVOICE_STATUS_LABELS} />
                     </td>
-                    <td className="p-3 hidden lg:table-cell text-xs text-neutral-500 whitespace-nowrap">
+                    <td className="p-3 hidden lg:table-cell text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(row.createdAt).toLocaleString("hu-HU")}
                     </td>
                     <td className="p-3">
                       <button
                         type="button"
                         onClick={() => setDetailId(row.id)}
-                        className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                        className="text-xs font-medium text-muted-foreground admin-link-accent"
                       >
                         Részletek
                       </button>
@@ -561,7 +654,7 @@ export function BookingsAdmin() {
           <Button
             type="button"
             variant="outline"
-            className="h-9 border-white/10 text-white text-xs"
+            className="h-9 text-xs"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
@@ -573,7 +666,7 @@ export function BookingsAdmin() {
           <Button
             type="button"
             variant="outline"
-            className="h-9 border-white/10 text-white text-xs"
+            className="h-9 text-xs"
             disabled={page >= pageCount}
             onClick={() => setPage((p) => p + 1)}
           >

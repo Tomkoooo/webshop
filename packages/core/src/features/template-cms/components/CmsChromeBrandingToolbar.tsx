@@ -1,8 +1,10 @@
 "use client"
 
+import type { Dispatch, SetStateAction } from "react"
 import { EditableLogo } from "@wse/core/features/site-settings/components/EditableLogo"
 import { EditableBrandName } from "@wse/core/features/site-settings/components/EditableBrandName"
-/** Brand state shared by homepage + JSON surface editors in the CMS chrome strip. */
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
+
 export type CmsBrandingToolbarState = {
   brandName: string
   logoNav: string
@@ -10,7 +12,7 @@ export type CmsBrandingToolbarState = {
   logoHero: string
 }
 
-type DispatchBranding = React.Dispatch<React.SetStateAction<CmsBrandingToolbarState>>
+type DispatchBranding = Dispatch<SetStateAction<CmsBrandingToolbarState>>
 
 async function persistBranding(patch: Partial<CmsBrandingToolbarState>) {
   await fetch("/api/admin/branding", {
@@ -20,10 +22,6 @@ async function persistBranding(patch: Partial<CmsBrandingToolbarState>) {
   })
 }
 
-/**
- * Navbar + footer logos and global shop display name.
- * Structured so uploads sit under “Navbar” vs “Footer” instead of floating in one row next to the name.
- */
 export function CmsChromeBrandingToolbar({
   branding,
   setBranding,
@@ -32,16 +30,11 @@ export function CmsChromeBrandingToolbar({
   setBranding: DispatchBranding
 }) {
   return (
-    <div className="px-4 py-4 border-b border-white/10 bg-black/40 space-y-6">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400">
-        Böngésző fejléc &amp; lábléc megjelenés
-      </p>
+    <div className="cms-editor-branding border-b border-border/40 bg-muted/30 px-4 py-5 space-y-5">
+      <p className="text-sm font-medium text-foreground">Böngésző fejléc és lábléc</p>
 
-      <div className="flex flex-col items-center gap-2 max-w-xl mx-auto w-full text-center">
-        <label
-          htmlFor="cms-shop-display-name"
-          className="block text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400"
-        >
+      <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-2 text-center">
+        <label htmlFor="cms-shop-display-name" className={adminFieldLabel}>
           Bolt megjelenített neve
         </label>
         <EditableBrandName
@@ -49,21 +42,20 @@ export function CmsChromeBrandingToolbar({
           value={branding.brandName}
           editMode
           wrapperClassName="w-full flex justify-center"
-          inputClassName="w-full max-w-md text-center rounded border border-white/20 bg-black/40 px-3 py-2 text-sm font-medium tracking-tight text-white"
+          inputClassName="w-full max-w-md text-center rounded-md border-0 bg-background px-3 py-2 text-sm font-medium shadow-sm ring-1 ring-border/60"
           onChange={async (value: string) => {
             setBranding((prev) => ({ ...prev, brandName: value }))
             await persistBranding({ brandName: value })
           }}
         />
-        <p className="text-[10px] text-neutral-500 max-w-md">
-          Minden sablon közös beállítás — megjelenik a Navbar-on, dokumentum címekben és e-mail láblécekben
-          típus szerint.
+        <p className="text-muted-foreground max-w-md text-xs">
+          Minden sablonra érvényes — navbar, dokumentum címek és e-mail láblécek.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-3 rounded-lg border border-white/10 bg-black/25 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/90">Navbar / fejléc</p>
+        <div className="space-y-3 rounded-xl bg-card p-4 shadow-sm">
+          <p className="text-sm font-semibold text-foreground">Navbar / fejléc</p>
           <EditableLogo
             src={branding.logoNav}
             alt={branding.brandName}
@@ -77,8 +69,8 @@ export function CmsChromeBrandingToolbar({
           />
         </div>
 
-        <div className="space-y-3 rounded-lg border border-white/10 bg-black/25 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/90">Lábléc</p>
+        <div className="space-y-3 rounded-xl bg-card p-4 shadow-sm">
+          <p className="text-sm font-semibold text-foreground">Lábléc</p>
           <EditableLogo
             src={branding.logoFooter}
             alt={branding.brandName}

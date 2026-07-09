@@ -6,6 +6,11 @@ import Link from "next/link"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
 import { ImageUpload } from "@wse/core/components/admin/ImageUpload"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
+import { Card, CardContent, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { adminInputClass } from "@wse/core/lib/admin-ui"
+import { cn } from "@wse/core/lib/utils"
 import { createCategory, updateCategory, deleteCategory } from "@wse/core/actions/admin-categories"
 
 interface CategoryFormProps {
@@ -23,45 +28,40 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
     : categories
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+    <AdminPageScaffold
+      title={isEdit ? "Kategória szerkesztése" : "Új kategória"}
+      actions={
         <Link href="/admin/categories">
-          <Button variant="ghost" size="icon" className="hover:bg-white/5 text-neutral-400 hover:text-white rounded-none">
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="size-5" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            {isEdit ? "KATEGÓRIA" : "ÚJ"} <span className="admin-headline-accent">{isEdit ? "SZERKESZTÉSE" : "KATEGÓRIA"}</span>
-          </h1>
-        </div>
-      </div>
-
-      <form action={isEdit ? updateCategory.bind(null, initialData._id.toString()) : createCategory} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* Main Info */}
-          <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
-            <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 admin-section-marker" />
-              ALAPADATOK
-            </h2>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Kategória Neve</label>
-                <Input 
-                  name="name" 
-                  required 
+      }
+      className="pb-20"
+    >
+      <form
+        action={isEdit ? updateCategory.bind(null, initialData._id.toString()) : createCategory}
+        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+      >
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Alapadatok</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <AdminFormField label="Kategória neve">
+                <Input
+                  name="name"
+                  required
                   defaultValue={initialData?.name}
-                  placeholder="KÉZI SZERSZÁMOK" 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
+                  placeholder="Kézi szerszámok"
                 />
-              </div>
+              </AdminFormField>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
-                  Kiemelt lista index (főoldal)
-                </label>
+              <AdminFormField
+                label="Kiemelt lista index (főoldal)"
+                hint="Kisebb szám = előrébb a kiemelt kategória sávban (automatikus mód)."
+              >
                 <Input
                   name="featuredListIndex"
                   type="number"
@@ -72,119 +72,107 @@ export default function CategoryForm({ categories, initialData, isEdit }: Catego
                       : ""
                   }
                   placeholder="Üres = alap sorrend"
-                  className="bg-black border-white/5 h-12 text-white font-mono rounded-none"
                 />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                  Kisebb szám = előrébb a kiemelt kategória sávban (automatikus mód).
-                </p>
-              </div>
+              </AdminFormField>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Szülő Kategória</label>
-                  <select 
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <AdminFormField label="Szülő kategória">
+                  <select
                     name="parent"
                     defaultValue={initialData?.parent?._id?.toString() || initialData?.parent?.toString() || ""}
-                    className="w-full bg-black border border-white/5 rounded-none h-12 px-3 text-white font-bold uppercase tracking-widest text-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    className={adminInputClass}
                   >
-                    <option value="">NINCS (FŐKATEGÓRIA)</option>
+                    <option value="">Nincs (főkategória)</option>
                     {possibleParents.map((cat: any) => (
-                      <option key={cat._id} value={cat._id.toString()}>{cat.name}</option>
+                      <option key={cat._id} value={cat._id.toString()}>
+                        {cat.name}
+                      </option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Kategória Képe</label>
+                </AdminFormField>
+                <AdminFormField
+                  label="Kategória képe"
+                  hint="Négyzet (1:1) vagy 16:9 — a boltban nagyítással teljes arány látszik."
+                >
                   <ImageUpload
                     currentImage={imageUrl}
                     onUpload={(filename) => setImageUrl(filename)}
                     flexibleCrop
                     aspect={16 / 9}
                   />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Négyzet (1:1) vagy 16:9 — a boltban nagyítással teljes arány látszik.
-                  </p>
                   <input type="hidden" name="image" value={imageUrl} />
-                </div>
+                </AdminFormField>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* SEO Section */}
-          <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
-            <h2 className="text-xl font-heading font-black italic uppercase tracking-wider flex items-center gap-3 text-white">
-              <div className="w-1.5 h-6 admin-section-marker" />
-              SEO BEÁLLÍTÁSOK
-            </h2>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Meta Cím</label>
-                <Input 
-                  name="seo_title" 
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">SEO beállítások</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <AdminFormField label="Meta cím">
+                <Input
+                  name="seo_title"
                   defaultValue={initialData?.seo?.title}
-                  placeholder="OLDAL CÍME" 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
+                  placeholder="Oldal címe"
                 />
-              </div>
+              </AdminFormField>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Meta Leírás</label>
-                <textarea 
-                  name="seo_description" 
+              <AdminFormField label="Meta leírás">
+                <textarea
+                  name="seo_description"
                   rows={3}
                   defaultValue={initialData?.seo?.description}
-                  placeholder="RÖVID LEÍRÁS..." 
-                  className="w-full bg-black border border-white/5 rounded-none p-4 text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
+                  placeholder="Rövid leírás…"
+                  className={cn(adminInputClass, "min-h-[80px] py-2")}
                 />
-              </div>
+              </AdminFormField>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">Kulcsszavak</label>
-                <Input 
-                  name="seo_keywords" 
+              <AdminFormField label="Kulcsszavak">
+                <Input
+                  name="seo_keywords"
                   defaultValue={initialData?.seo?.keywords?.join(", ")}
-                  placeholder="SZERSZÁM, MINŐSÉG..." 
-                  className="bg-black border-white/5 h-12 text-white font-bold uppercase tracking-widest focus-visible:ring-primary rounded-none"
+                  placeholder="szerszám, minőség…"
                 />
-              </div>
-            </div>
-          </div>
+              </AdminFormField>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="space-y-8">
-          <div className="bg-white/5 border border-white/10 rounded-none p-8 sticky top-24 space-y-10">
-            <div className="space-y-6">
-              <h3 className="text-lg font-heading font-black text-white uppercase italic tracking-widest border-b border-white/5 pb-4">MŰVELETEK</h3>
-              <div className="space-y-4">
-                <Button type="submit" variant="krausz" className="w-full h-16 text-base tracking-[0.2em]">
-                  <Save className="w-5 h-5" />
-                  {isEdit ? "MENTÉS" : "LÉTREHOZÁS"}
+        <div className="space-y-6">
+          <Card className="sticky top-24 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Műveletek</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button type="submit" variant="default" className="h-12 w-full">
+                <Save className="size-5" />
+                {isEdit ? "Mentés" : "Létrehozás"}
+              </Button>
+              <Link href="/admin/categories" className="block">
+                <Button type="button" variant="outline" className="h-11 w-full">
+                  Mégse
                 </Button>
-                <Link href="/admin/categories" className="block">
-                  <Button type="button" variant="outline" className="w-full h-14 border-white/10 text-white hover:bg-white/5 rounded-none uppercase tracking-[0.2em] text-[10px] font-black">
-                    MÉGSE
-                  </Button>
-                </Link>
+              </Link>
 
-                {isEdit && (
-                  <div className="pt-10 mt-10 border-t border-white/5">
-                    <Button 
-                      formAction={() => deleteCategory(initialData._id.toString())}
-                      type="submit" 
-                      variant="ghost" 
-                      className="w-full text-rose-500 hover:text-white hover:bg-rose-500/20 rounded-none font-black uppercase tracking-widest text-[10px] h-12"
-                    >
-                      <Trash2 className="w-5 h-5 mr-3" />
-                      TÖRLÉS
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+              {isEdit && (
+                <div className="border-t border-border pt-6">
+                  <Button
+                    formAction={() => deleteCategory(initialData._id.toString())}
+                    type="submit"
+                    variant="ghost"
+                    className="h-12 w-full text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                  >
+                    <Trash2 className="mr-3 size-5" />
+                    Törlés
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </form>
-    </div>
+    </AdminPageScaffold>
   )
 }

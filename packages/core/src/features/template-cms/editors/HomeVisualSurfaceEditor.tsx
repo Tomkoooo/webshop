@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -13,6 +17,7 @@ import {
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@wse/core/templates/registry"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
+import { extractTBookHomeChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
 import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
@@ -111,33 +116,49 @@ export function HomeVisualSurfaceEditor({
     setPath,
   })
 
+  const eventNavItems =
+    templateId === "world-darts-festival"
+      ? navItemsFromTBookChrome(extractTBookHomeChrome(draft))
+      : undefined
+
   const toolbar = (
-    <div className="space-y-3 border-b border-white/10 bg-black/25 px-4 py-3 text-xs text-neutral-400">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-        Főoldal JSON felület: <span className="text-neutral-200">{pageLabel}</span>
-      </p>
-      <p>
-        Kattintással szerkeszthető szövegek és képek — előnézet mód a jobb oldali eszközöknél.
-      </p>
+    <CmsEditorSubtoolbar
+      title={`Főoldal felület: ${pageLabel}`}
+      description="Kattintással szerkeszthető szövegek és képek — előnézet mód a jobb oldali eszközöknél."
+    >
       <div className="flex flex-wrap gap-3">
-        <label className="min-w-[180px] flex-1 space-y-1 text-xs">
-          <span className="text-neutral-500">SEO cím</span>
-          <input
-            className="h-9 w-full rounded border border-white/15 bg-black/50 px-2 text-white"
+        <div className="min-w-[180px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO cím</Label>
+          <Input
+            className="h-9"
             value={meta.seoTitle ?? ""}
             onChange={(e) => setPath("meta.seoTitle", e.target.value)}
           />
-        </label>
-        <label className="min-w-[220px] flex-1 space-y-1 text-xs">
-          <span className="text-neutral-500">SEO leírás</span>
-          <input
-            className="h-9 w-full rounded border border-white/15 bg-black/50 px-2 text-white"
+        </div>
+        <div className="min-w-[220px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO leírás</Label>
+          <Input
+            className="h-9"
             value={meta.seoDescription ?? ""}
             onChange={(e) => setPath("meta.seoDescription", e.target.value)}
           />
-        </label>
+        </div>
+        {templateId === "world-darts-festival" ? (
+          <div className="min-w-[280px] flex-1 space-y-1.5">
+            <Label className={adminFieldLabel}>tBook API kulcs (tbk_…)</Label>
+            <Input
+              className="h-9 font-mono text-xs"
+              type="password"
+              value={
+                (draft as { chrome?: { tbookApiKey?: string } }).chrome?.tbookApiKey ?? ""
+              }
+              onChange={(e) => setPath("chrome.tbookApiKey", e.target.value)}
+              placeholder="tbk_…"
+            />
+          </div>
+        ) : null}
       </div>
-    </div>
+    </CmsEditorSubtoolbar>
   )
 
   return (
@@ -187,6 +208,7 @@ export function HomeVisualSurfaceEditor({
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
       structureSidebar={structureSidebar}
+      navItems={eventNavItems}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

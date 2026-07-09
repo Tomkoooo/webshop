@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useCartStore } from "@wse/core/store/useCartStore"
 import {
@@ -9,6 +10,7 @@ import {
   mergeLocalAndServerCart,
 } from "@wse/core/lib/cart-sync"
 import { reconcileCartItemsWithIssues, cartItemsNeedReconcile } from "@wse/core/lib/cart-reconcile"
+import { isAdminChromePath } from "@wse/core/lib/admin-chrome-path"
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -22,7 +24,7 @@ async function saveCartSnapshot(items: ReturnType<typeof useCartStore.getState>[
   return response.ok
 }
 
-export function CartSync() {
+function CartSyncActive() {
   const { data: session, status } = useSession()
   const hasHydrated = useCartStore((s) => s._hasHydrated)
   const items = useCartStore((s) => s.items)
@@ -143,4 +145,14 @@ export function CartSync() {
   }, [items, status, userId, hasHydrated])
 
   return null
+}
+
+export function CartSync({ shopEnabled = true }: { shopEnabled?: boolean }) {
+  const pathname = usePathname()
+
+  if (!shopEnabled || isAdminChromePath(pathname)) {
+    return null
+  }
+
+  return <CartSyncActive />
 }

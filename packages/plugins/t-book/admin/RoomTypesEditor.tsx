@@ -2,7 +2,6 @@
 
 import { Button } from "@wse/core/components/ui/button"
 import type { TBookRoomType } from "../lib/pricing-types"
-import { slugifyHotelKey } from "../lib/hotel-pricing"
 import { TBookField, TBookInput } from "./t-book-admin-ui"
 import { formatHuf } from "./t-book-api"
 
@@ -29,12 +28,12 @@ export function RoomTypesEditor({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-neutral-500">
-        Minden szobatípus alapdíja <strong>fő / éjszaka</strong> ({priceBasisLabel} Ft). A vendég
-        egy szobatípust választ — ez lesz a szállás alapára.
+      <p className="text-xs text-muted-foreground">
+        Minden szobatípus alapdíja <strong className="text-foreground">fő / éjszaka</strong> (
+        {priceBasisLabel} Ft). A vendég egy szobatípust választ — ez lesz a szállás alapára.
       </p>
       {roomTypes.length === 0 ? (
-        <p className="text-sm text-amber-300/90 border border-amber-500/20 rounded-lg px-4 py-3">
+        <p className="text-sm text-amber-900 border border-amber-500/20 rounded-lg px-4 py-3 bg-amber-500/5">
           Adj hozzá legalább egy szobatípust (pl. Standard, Superior, Lakosztály).
         </p>
       ) : (
@@ -42,33 +41,18 @@ export function RoomTypesEditor({
           {roomTypes.map((room, index) => (
             <div
               key={index}
-              className="grid grid-cols-12 gap-2 items-end border border-white/10 rounded-xl p-3 bg-black/30"
+              className="grid grid-cols-12 gap-2 items-end rounded-xl bg-card shadow-sm p-3"
             >
-              <div className="col-span-4">
-                <TBookField label="Megnevezés">
+              <div className="col-span-5">
+                <TBookField label="Megnevezés (vendég látja)">
                   <TBookInput
                     placeholder="Standard kétágyas"
                     value={room.label}
-                    onChange={(e) => {
-                      const label = e.target.value
-                      update(index, {
-                        label,
-                        key: room.key || slugifyHotelKey(label),
-                      })
-                    }}
+                    onChange={(e) => update(index, { label: e.target.value })}
                   />
                 </TBookField>
               </div>
-              <div className="col-span-3">
-                <TBookField label="Kulcs">
-                  <TBookInput
-                    placeholder="standard"
-                    value={room.key}
-                    onChange={(e) => update(index, { key: slugifyHotelKey(e.target.value) })}
-                  />
-                </TBookField>
-              </div>
-              <div className="col-span-3">
+              <div className="col-span-5">
                 <TBookField label="Alapdíj / fő / éj">
                   <TBookInput
                     type="number"
@@ -84,7 +68,7 @@ export function RoomTypesEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-neutral-400"
+                  className="h-8 w-8 p-0 text-muted-foreground"
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
                 >
@@ -93,18 +77,18 @@ export function RoomTypesEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-red-300"
+                  className="h-8 w-8 p-0 text-red-600"
                   onClick={() => onChange(roomTypes.filter((_, i) => i !== index))}
                 >
                   ✕
                 </Button>
               </div>
-              <p className="col-span-12 text-[11px] text-neutral-600 -mt-1">
+              <p className="col-span-12 text-xs text-muted-foreground -mt-1">
                 Példa 2 fő × 3 éj:{" "}
-                <span className="text-neutral-400 font-bold">
+                <span className="text-foreground font-semibold">
                   {formatHuf(room.baseRateHuf * 2 * 3)}
                 </span>{" "}
-                bruttó előnézet nélkül ({priceBasisLabel} alap)
+                ({priceBasisLabel} alap)
               </p>
             </div>
           ))}
@@ -113,7 +97,7 @@ export function RoomTypesEditor({
       <Button
         type="button"
         variant="outline"
-        className="h-10 border-white/10 text-white font-bold"
+        className="h-10 font-bold"
         onClick={() =>
           onChange([
             ...roomTypes,

@@ -6,7 +6,9 @@ import type {
   TBookOptionDef,
   TBookOptionType,
   TBookPriceMode,
+  TBookRoomType,
 } from "../lib/pricing-types"
+import { ROOM_TYPE_SELECTION_KEY } from "../lib/hotel-pricing"
 import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
 
 const PRICE_MODE_LABELS: Record<TBookPriceMode, string> = {
@@ -22,15 +24,6 @@ const TYPE_LABELS: Record<TBookOptionType, string> = {
   multiselect: "Választó (több érték)",
   number: "Szám",
   checkbox: "Jelölőnégyzet",
-}
-
-function slugifyKey(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
 }
 
 function PriceModeSelect({
@@ -63,29 +56,19 @@ function ChoicesEditor({
   }
   return (
     <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Minden sor egy választható lehetőség — a vendég ezek közül választ.
+      </p>
       {choices.map((choice, index) => (
         <div key={index} className="grid grid-cols-12 gap-2 items-end">
-          <div className="col-span-4">
+          <div className="col-span-5">
             <TBookInput
-              placeholder="Címke (pl. Fél panzió)"
+              placeholder="Megnevezés (pl. Fél panzió)"
               value={choice.label}
-              onChange={(e) => {
-                const label = e.target.value
-                update(index, {
-                  label,
-                  value: choice.value || slugifyKey(label),
-                })
-              }}
+              onChange={(e) => update(index, { label: e.target.value })}
             />
           </div>
           <div className="col-span-3">
-            <TBookInput
-              placeholder="érték (kulcs)"
-              value={choice.value}
-              onChange={(e) => update(index, { value: slugifyKey(e.target.value) })}
-            />
-          </div>
-          <div className="col-span-2">
             <TBookInput
               type="number"
               placeholder="Felár (Ft)"
@@ -93,7 +76,7 @@ function ChoicesEditor({
               onChange={(e) => update(index, { priceHuf: Number(e.target.value) || 0 })}
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-3">
             <PriceModeSelect
               value={choice.priceMode}
               onChange={(priceMode) => update(index, { priceMode })}
@@ -103,7 +86,7 @@ function ChoicesEditor({
             <Button
               type="button"
               variant="ghost"
-              className="h-10 w-full text-red-300"
+              className="h-10 w-full text-red-600"
               onClick={() => onChange(choices.filter((_, i) => i !== index))}
               aria-label="Törlés"
             >
@@ -115,7 +98,7 @@ function ChoicesEditor({
       <Button
         type="button"
         variant="outline"
-        className="h-8 border-white/10 text-white text-xs"
+        className="h-8 text-xs"
         onClick={() =>
           onChange([...choices, { value: "", label: "", priceHuf: 0, priceMode: "fixed" }])
         }
@@ -126,20 +109,105 @@ function ChoicesEditor({
   )
 }
 
-/**
- * Dynamic key-value config builder: each row is a selectable option with its
- * own add-on pricing (fixed / per-person / per-night / percent) and optional
- * dependency on another option.
- */
+function DependencyValuesEditor({
+  option,
+  options,
+  roomTypes,
+  onChange,
+}: {
+  option: TBookOptionDef
+  options: TBookOptionDef[]
+  roomTypes: TBookRoomType[]
+  onChange: (values: string[]) => void
+}) {
+  const depKey = option.dependsOn?.key
+  if (!depKey) return null
+
+  if (depKey === ROOM_TYPE_SELECTION_KEY) {
+    const selected = new Set(option.dependsOn?.values ?? [])
+    return (
+      <TBookField label="Csak ezeknél a szobatípusoknál jelenjen meg">
+        <div className="space-y-1.5 pt-1">
+          {roomTypes.map((room, index) => {
+            const value = room.key || `room-${index}`
+            return (
+              <label key={value} className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={selected.has(value)}
+                  onChange={(e) => {
+                    const next = new Set(selected)
+                    if (e.target.checked) next.add(value)
+                    else next.delete(value)
+                    onChange([...next])
+                  }}
+                />
+                {room.label || "Névtelen szobatípus"}
+              </label>
+            )
+          })}
+        </div>
+      </TBookField>
+    )
+  }
+
+  const depOption = options.find((o) => o.key === depKey)
+  if (depOption?.choices?.length) {
+    const selected = new Set(option.dependsOn?.values ?? [])
+    return (
+      <TBookField label={`Csak ha „${depOption.label || depOption.key}” értéke:`}>
+        <div className="space-y-1.5 pt-1">
+          {depOption.choices.map((choice, index) => {
+            const value = choice.value || `choice-${index}`
+            return (
+              <label key={value} className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={selected.has(value)}
+                  onChange={(e) => {
+                    const next = new Set(selected)
+                    if (e.target.checked) next.add(value)
+                    else next.delete(value)
+                    onChange([...next])
+                  }}
+                />
+                {choice.label || "Névtelen lehetőség"}
+              </label>
+            )
+          })}
+        </div>
+      </TBookField>
+    )
+  }
+
+  return (
+    <TBookField label="Csak ha az érték (vesszővel)">
+      <TBookInput
+        placeholder="pl. suite, apartment"
+        value={option.dependsOn?.values.join(",") ?? ""}
+        onChange={(e) =>
+          onChange(
+            e.target.value
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean)
+          )
+        }
+      />
+    </TBookField>
+  )
+}
+
 export function OptionSchemaEditor({
   options,
   onChange,
-  roomTypeKeys = [],
+  roomTypes = [],
 }: {
   options: TBookOptionDef[]
   onChange: (options: TBookOptionDef[]) => void
-  /** Room type keys available for dependsOn (e.g. standard, suite). */
-  roomTypeKeys?: string[]
+  roomTypes?: TBookRoomType[]
 }) {
   const update = (index: number, patch: Partial<TBookOptionDef>) => {
     onChange(options.map((o, i) => (i === index ? { ...o, ...patch } : o)))
@@ -155,33 +223,26 @@ export function OptionSchemaEditor({
 
   return (
     <div className="space-y-4">
+      {options.length === 0 ? (
+        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-4 text-center">
+          Még nincs foglalási mező ebben a szakaszban.
+        </p>
+      ) : null}
+
       {options.map((option, index) => {
         const needsChoices = option.type === "select" || option.type === "multiselect"
         return (
-          <div key={index} className="border border-white/10 rounded-xl p-4 bg-black/40 space-y-4">
+          <div key={index} className="rounded-xl bg-muted/20 shadow-sm p-4 space-y-4">
             <div className="flex items-start justify-between gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-                <TBookField label="Címke">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                <TBookField label="Mező neve (vendég látja)">
                   <TBookInput
                     placeholder="pl. Étkezés"
                     value={option.label}
-                    onChange={(e) => {
-                      const label = e.target.value
-                      update(index, {
-                        label,
-                        key: option.key || slugifyKey(label),
-                      })
-                    }}
+                    onChange={(e) => update(index, { label: e.target.value })}
                   />
                 </TBookField>
-                <TBookField label="Kulcs">
-                  <TBookInput
-                    placeholder="pl. meals"
-                    value={option.key}
-                    onChange={(e) => update(index, { key: slugifyKey(e.target.value) })}
-                  />
-                </TBookField>
-                <TBookField label="Típus">
+                <TBookField label="Mező típusa">
                   <TBookSelect
                     value={option.type}
                     onChange={(e) => {
@@ -208,7 +269,7 @@ export function OptionSchemaEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-neutral-400"
+                  className="h-8 w-8 p-0 text-muted-foreground"
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
                   aria-label="Fel"
@@ -218,7 +279,7 @@ export function OptionSchemaEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-neutral-400"
+                  className="h-8 w-8 p-0 text-muted-foreground"
                   disabled={index === options.length - 1}
                   onClick={() => move(index, 1)}
                   aria-label="Le"
@@ -228,9 +289,9 @@ export function OptionSchemaEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-red-300"
+                  className="h-8 w-8 p-0 text-red-600"
                   onClick={() => onChange(options.filter((_, i) => i !== index))}
-                  aria-label="Opció törlése"
+                  aria-label="Mező törlése"
                 >
                   ✕
                 </Button>
@@ -238,7 +299,7 @@ export function OptionSchemaEditor({
             </div>
 
             {needsChoices ? (
-              <TBookField label="Választási lehetőségek (címke, kulcs, felár, mód)">
+              <TBookField label="Választható lehetőségek">
                 <ChoicesEditor
                   choices={option.choices ?? []}
                   onChange={(choices) => update(index, { choices })}
@@ -288,57 +349,55 @@ export function OptionSchemaEditor({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-              <label className="flex items-center gap-2 text-sm text-neutral-300 pb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <label className="flex items-center gap-2 text-sm text-foreground pb-2">
                 <input
                   type="checkbox"
                   className="size-4 accent-primary"
                   checked={Boolean(option.required)}
                   onChange={(e) => update(index, { required: e.target.checked })}
                 />
-                Kötelező
+                Kötelező mező
               </label>
-              <TBookField label="Függőség (opció kulcs)">
+              <TBookField label="Csak akkor jelenjen meg, ha…">
                 <TBookSelect
                   value={option.dependsOn?.key ?? ""}
                   onChange={(e) => {
                     const key = e.target.value
                     update(index, {
-                      dependsOn: key ? { key, values: option.dependsOn?.values ?? [] } : null,
+                      dependsOn: key ? { key, values: [] } : null,
                     })
                   }}
                 >
-                  <option value="">— nincs —</option>
-                  {roomTypeKeys.length > 0 ? (
-                    <option value="room_type">Szobatípus (room_type)</option>
+                  <option value="">Mindig látható</option>
+                  {roomTypes.length > 0 ? (
+                    <option value={ROOM_TYPE_SELECTION_KEY}>Szobatípus kiválasztva</option>
                   ) : null}
                   {options
-                    .filter((o) => o.key && o.key !== option.key)
-                    .map((o) => (
-                      <option key={o.key} value={o.key}>
-                        {o.label || o.key}
+                    .filter((o, i) => i !== index && o.label.trim())
+                    .map((o, i) => (
+                      <option key={`${o.label}-${i}`} value={o.key || `field-${i}`}>
+                        {o.label}
                       </option>
                     ))}
                 </TBookSelect>
               </TBookField>
               {option.dependsOn ? (
-                <TBookField label="Csak ha az érték (vesszővel)">
-                  <TBookInput
-                    placeholder="pl. suite,apartment"
-                    value={option.dependsOn.values.join(",")}
-                    onChange={(e) =>
+                <div className="sm:col-span-2">
+                  <DependencyValuesEditor
+                    option={option}
+                    options={options}
+                    roomTypes={roomTypes}
+                    onChange={(values) =>
                       update(index, {
                         dependsOn: {
                           key: option.dependsOn!.key,
-                          values: e.target.value
-                            .split(",")
-                            .map((v) => v.trim())
-                            .filter(Boolean),
+                          values,
                         },
                       })
                     }
                   />
-                </TBookField>
+                </div>
               ) : null}
             </div>
           </div>
@@ -348,7 +407,7 @@ export function OptionSchemaEditor({
       <Button
         type="button"
         variant="outline"
-        className="h-10 border-white/10 text-white font-bold"
+        className="h-10 font-bold"
         onClick={() =>
           onChange([
             ...options,
@@ -363,7 +422,7 @@ export function OptionSchemaEditor({
           ])
         }
       >
-        + Új opció
+        + Foglalási mező
       </Button>
     </div>
   )

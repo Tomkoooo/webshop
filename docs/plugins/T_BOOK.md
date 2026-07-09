@@ -17,69 +17,108 @@ packages/plugins/t-book/
 ├── lib/
 │   ├── pricing.ts              # pure pricing engine (shared server + admin preview)
 │   ├── pricing-types.ts        # option schema types
+│   ├── attendee-fields.ts      # per-participant data schema + validation
 │   ├── schemas.ts              # zod input validation
 │   ├── api-key.ts              # tbk_ keys, SHA-256 at rest, timing-safe verify
 │   ├── booking-query.ts        # filter → Mongo query (pure)
-│   ├── booking-export.ts       # xlsx/csv smart export (dynamic option columns)
+│   ├── booking-export.ts       # xlsx/csv smart export (dynamic option + attendee columns)
 │   ├── rate-limit.ts           # fixed-window limiter for public endpoints
 │   └── openapi.ts              # OpenAPI 3.1 spec for the public API
-└── admin/                      # dashboard, groups, events, hotels + option editor, bookings
+└── admin/                      # dashboard, groups, events, hotels, bookings
 ```
 
 ## Data model
 
-- **Event group** — container + one API key (`tbk_…`). Only the SHA-256 hash and a display hint are stored; the plaintext is shown once on create/rotate. Public endpoints resolve their scope from the key.
-- **Event** — name, location, start/end dates, base ticket fee (`per_person` or `per_booking`), capacity, status. Can be standalone or nested in a group; reorderable.
-- **Hotel** — n per event. `pricing` holds a base rate (`per_person_per_night` | `per_night` | `per_person` | `per_booking`) plus a flexible **option schema**.
-- **Booking** — customer + optional billing, guests, nights, raw `selections` map, frozen price `quote` breakdown, Stripe ids, status (`pending → checkout_started → paid → confirmed | cancelled | expired`), invoice status.
+- **Event group** — container + one API key (`tbk_…`). Only the SHA-256 hash and a display hint are stored; the plaintext is shown once on create/rotate. Public endpoints resolve their scope from the key. Optional **tBook directory** listing fields (`listOnTBookSite`, `listingTitle`, `listingUrl`, `listingImage`).
+- **Event** — name, location, start/end dates, base ticket fee (`per_person` or `per_booking`), capacity, status, **`attendeeFieldSchema`** (per-event participant data fields). Can be standalone or nested in a group; reorderable.
+- **Hotel** — n per group. `pricing` holds room types + **foglalási szakaszok** (addon groups) with priced booking options.
+- **Booking** — **kapcsolattartó** (`customer`: name, email, phone, note) + optional billing, guest count, **`attendees[]`** (one row per ticket with key-value fields), raw `selections` map for hotel pricing, frozen `quote` breakdown, Stripe ids, status.
+
+## Kapcsolattartó vs résztvevők
+
+| Role | API field | When | Purpose |
+| --- | --- | --- | --- |
+| **Kapcsolattartó** | `customer` | Always | Person who books and pays — contact for emails, Stripe, support. Required even when booking for others (especially with hotel). |
+| **Résztvevő** | `attendees[i].fields` | When event has `attendeeFieldSchema` | One object per ticket/guest — name, age, nationality, etc. for eligibility checks. |
+
+Configure participant fields per event in admin: **Esemény szerkesztése → Résztvevői adatok**. Use the **Verseny sablon** for tournaments (name, email, birth year, nationality) or add custom fields.
+
+Field types: `text`, `email`, `phone`, `number`, `date`, `select`. Internal keys are auto-generated from labels (hidden from moderators).
+
+At booking time the server:
+1. Validates `attendees.length === guests` when the event schema is non-empty.
+2. Validates each required field per participant.
+3. Snapshots `attendeeFieldSchema` on the booking so admin labels stay stable after event edits.
 
 ## Option schema & pricing engine
 
-Each hotel option (`TBookOptionDef`) is a key-value selector:
+Each hotel option (`TBookOptionDef`) is a priced selector (room type, meals, extras). See `lib/pricing-types.ts`.
 
-| Field | Meaning |
-| --- | --- |
-| `key`, `label`, `type` | `select`, `multiselect`, `number`, `checkbox` |
-| `choices[]` | per-choice `priceHuf` + `priceMode` (select types) |
-| `unitPriceHuf` + `priceMode` | number/checkbox pricing |
-| `priceMode` | `fixed`, `per_person`, `per_night`, `per_person_per_night`, `percent` (of accommodation base) |
-| `dependsOn` | show/charge only when another option matches (e.g. accessibility only for certain rooms) |
-| `required`, `defaultValue`, `min`/`max` | validation |
+`calculateBookingQuote()` in `lib/pricing.ts` is pure and shared by admin preview, quote API, and checkout. **Total = ticket fee (+ accommodation base + option add-ons when a hotel is chosen)**.
 
-`calculateBookingQuote()` in `lib/pricing.ts` is pure and isomorphic: the admin live preview imports it directly, the API runs it server-side, so totals always agree. **Total = ticket fee (+ accommodation base + option add-ons when a hotel is chosen)**; accommodation is optional per booking.
-
-To add a new pricing behaviour, extend `TBookPriceMode` in `pricing-types.ts`, handle it in `scaleByMode()` and add cases to `tests/unit/t-book-pricing.test.ts`.
+Hotel add-ons use **foglalási szakaszok** (visual sections) containing **foglalási mezők** (individual questions). See admin hotel editor step **Extrák és felárak**.
 
 ## API
 
 Base: `/api/plugins/t-book`. OpenAPI spec: `GET /api/plugins/t-book/openapi`.
+
+**Public directory (no API key):**
+
+| Route | Purpose |
+| --- | --- |
+| `GET /directory` | Active integrations listed on the tBook site (`listOnTBookSite` groups with upcoming events) |
 
 **Public (header `X-TBook-Api-Key` or `Authorization: Bearer`)** — rate limited:
 
 | Route | Purpose |
 | --- | --- |
 | `GET /events` | active events of the key's group |
-| `GET /events/:id` | detail + hotels + option schemas |
+| `GET /events/:id` | detail + hotels + option schemas + **`attendeeFieldSchema`** |
 | `POST /quote` | server-side price calculation |
 | `POST /bookings` | validate → pending booking → Stripe Checkout URL |
 | `GET /bookings/status?bookingId=&session_id=` | payment status poll |
 
-**Admin (`requireAdmin()` session)** — `/admin/...`: dashboard, groups CRUD + `rotate-key`, events CRUD + `reorder`, hotels CRUD, `quote` preview, bookings list with filters (`search`, `eventId`, `groupId`, `hotelId`, `status`, `invoiceStatus`, `optionKey`+`optionValue`, `dateFrom/To`, paging), `bookings/facets`, `bookings/export?format=xlsx|csv`, per-booking `status`, `invoice` (issue/retry), `invoice/reverse`, `invoice/pdf`.
+### `POST /bookings` body (excerpt)
+
+```json
+{
+  "eventId": "...",
+  "guests": 2,
+  "customer": {
+    "name": "Szervező Kovács",
+    "email": "szervezo@example.com",
+    "phone": "+36301234567",
+    "note": "Csapatkapitány"
+  },
+  "attendees": [
+    { "fields": { "full_name": "Nagy Béla", "email": "bela@example.com", "birth_year": 1998, "nationality": "hu" } },
+    { "fields": { "full_name": "Kiss Anna", "email": "anna@example.com", "birth_year": 2001, "nationality": "hu" } }
+  ],
+  "hotelId": "...",
+  "nights": 3,
+  "selections": { "room_type": "standard", "meals": "half_board" }
+}
+```
+
+- `customer` — always required (kapcsolattartó).
+- `attendees` — required when the event defines `attendeeFieldSchema`; length must equal `guests`.
+- Field keys in `attendees[].fields` match the event schema (returned by `GET /events/:id`).
+
+**Admin (`requireAdmin()` session)** — `/admin/...`: dashboard, groups, events (incl. attendee field editor), hotels, bookings list/detail (kapcsolattartó + per-participant cards), export with dynamic attendee columns.
 
 ## Payments & invoicing (server-only secrets)
 
-- Stripe Checkout session is created server-side (`checkout-service.ts`, metadata `checkoutKind: "t_book"`); the client only ever receives the redirect URL. The shared webhook (`packages/plugins/shop/app/api/stripe/webhook/route.ts`) branches on the metadata and calls `finalizeBookingFromStripeSession` (atomic claim → idempotent) or `expireBooking`.
-- On payment: booking → `paid`, szamlazz.hu invoice issued via `invoice-service.ts` (adapter around core `InvoicingSzamlazzService`, so email delivery + PDF storage behave like shop orders), confirmation email sent (template `t_book_booking_confirmation`).
-- Feature flags: `stripePayments`, `szamlazzInvoicing`, and the plugin flag `pluginTBook`.
-- Env: standard `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SZAMLAZZ_*`; optional `TBOOK_INVOICE_VAT_PERCENT` (default 27).
+- Stripe Checkout uses `customer.email`. Confirmation email goes to the kapcsolattartó.
+- Invoice uses `billing` when provided.
+- Feature flags: `stripePayments`, `szamlazzInvoicing`, `pluginTBook`.
 
 ## Enablement checklist
 
 1. Registered in `packages/core/src/plugins/registry.ts` (`t-book`).
-2. Allowlisted in `deployments.config.json` (currently the `default` deployment) or in the site's `WSE_SITE_CONFIG_JSON`.
+2. Allowlisted in site `WSE_SITE_CONFIG_JSON` or legacy `deployments.config.json`.
 3. DB flag `pluginTBook` enabled in `/admin` → Plugin beállítások.
 4. `stripePayments` (+ `szamlazzInvoicing` for invoices) enabled.
 
 ## Tests
 
-`npm run test:unit -- t-book` covers the pricing engine, selection validation, API-key hashing/verification, booking query builder, exports and rate limiting; `plugins-contract.test.ts` validates plugin registration.
+`npm run test:unit -- t-book` covers pricing, attendee validation, API keys, booking query, exports and rate limiting.

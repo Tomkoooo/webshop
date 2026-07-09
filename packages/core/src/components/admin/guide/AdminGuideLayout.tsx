@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { ChevronDown } from "lucide-react"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { Card, CardContent } from "@wse/core/components/ui/card"
 import { cn } from "@wse/core/lib/utils"
 import type { LoadedGuideSection } from "@wse/core/lib/admin-guide/types"
 import { AdminGuideSections, AdminGuideToc } from "@wse/core/components/admin/guide/AdminGuideContent"
@@ -47,52 +49,46 @@ export function AdminGuideLayout({
   }, [sections])
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-          Súgó <span className="admin-text-accent">admin</span>
-        </h1>
-        <p className="text-sm text-neutral-400 max-w-3xl">
-          Részletes útmutató az admin felülethez. A megjelenő fejezetek a telepítéshez (
-          <span className="text-neutral-300">{deploymentLabel}</span>) igazodnak.
-        </p>
-      </header>
-
+    <AdminPageScaffold
+      title="Súgó"
+      description={
+        <>
+          Útmutató az admin felülethez. A fejezetek a telepítéshez (
+          <code className="rounded bg-muted px-1 py-0.5 text-sm">{deploymentLabel}</code>) igazodnak.
+        </>
+      }
+    >
       <div className="lg:hidden">
         <button
           type="button"
           onClick={() => setMobileTocOpen((open) => !open)}
-          className="flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white"
+          className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-3 text-sm font-medium"
         >
           Tartalomjegyzék
-          <ChevronDown className={cn("h-4 w-4 transition-transform", mobileTocOpen && "rotate-180")} />
+          <ChevronDown className={cn("size-4 transition-transform", mobileTocOpen && "rotate-180")} />
         </button>
         {mobileTocOpen ? (
-          <div className="mt-2 rounded-lg border border-white/10 bg-[#111113] p-3">
-            <AdminGuideToc
-              sections={sections}
-              activeId={activeId}
-              onNavigate={scrollToSection}
-            />
-          </div>
+          <Card className="mt-2">
+            <CardContent className="pt-4">
+              <AdminGuideToc sections={sections} activeId={activeId} onNavigate={scrollToSection} />
+            </CardContent>
+          </Card>
         ) : null}
       </div>
 
-      <div className="flex gap-10">
-        <aside className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2">
-            <AdminGuideToc
-              sections={sections}
-              activeId={activeId}
-              onNavigate={scrollToSection}
-            />
-          </div>
+      <div className="flex gap-8">
+        <aside className="hidden w-56 shrink-0 lg:block">
+          <Card className="sticky top-4">
+            <CardContent className="max-h-[calc(100vh-6rem)] overflow-y-auto pt-4">
+              <AdminGuideToc sections={sections} activeId={activeId} onNavigate={scrollToSection} />
+            </CardContent>
+          </Card>
         </aside>
 
         <div className="min-w-0 flex-1">
           <AdminGuideSections sections={sections} />
         </div>
       </div>
-    </div>
+    </AdminPageScaffold>
   )
 }

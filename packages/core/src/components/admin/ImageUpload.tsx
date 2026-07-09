@@ -72,7 +72,7 @@ export function ImageUpload({
 
   return (
     <div className="space-y-4">
-      <div className="relative group aspect-square w-full max-w-[240px] bg-black border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-white/40">
+      <div className="relative group aspect-square w-full max-w-[240px] bg-background border border-border rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-white/40">
         {preview ? (
           <>
             <FallbackImage
@@ -85,23 +85,23 @@ export function ImageUpload({
             <button
               type="button"
               onClick={() => { setPreview(""); onUpload(""); }}
-              className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-1.5 bg-background/60 backdrop-blur-md rounded-full text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X className="w-4 h-4" />
             </button>
           </>
         ) : (
           <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-6">
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-              <Upload className="w-6 h-6 text-neutral-600" />
+            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+              <Upload className="w-6 h-6 text-muted-foreground" />
             </div>
-            <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest line-clamp-1">Kép feltöltése</p>
+            <p className="text-xs font-medium text-muted-foreground line-clamp-1">Kép feltöltése</p>
             <input type="file" className="hidden" onChange={onFileSelect} accept="image/*" />
           </label>
         )}
 
         {uploading && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center">
             <LoadingSpinner size="md" />
           </div>
         )}

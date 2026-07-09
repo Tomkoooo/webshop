@@ -1,8 +1,6 @@
+import { AdminAppShell } from "@wse/core/components/admin/AdminAppShell"
+import { AdminContainer } from "@wse/core/components/admin/AdminContainer"
 import { AdminSidebar } from "@wse/core/components/admin/AdminSidebar"
-import { Sheet, SheetContent, SheetTrigger } from "@wse/core/components/ui/sheet"
-import { Menu, ArrowLeft } from "lucide-react"
-import { Button } from "@wse/core/components/ui/button"
-import Link from "next/link"
 import { auth } from "@wse/core/auth"
 import { redirect } from "next/navigation"
 import { BrandingSettingsService } from "@wse/core/services/branding-settings"
@@ -70,38 +68,8 @@ export default async function AdminLayout({
   }))
 
   return (
-    <div className="admin-shell min-h-screen bg-[#0A0A0B] text-white">
-      {/* Mobile Header */}
-      <div className="lg:hidden h-20 border-b border-white/5 bg-black/50 backdrop-blur-xl px-6 flex items-center justify-between sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Bolt</span>
-        </Link>
-        
-        <span className="text-sm font-heading font-black tracking-tight uppercase italic">
-          {adminBrandName} <span className="admin-headline-accent admin-headline-accent-tight">Admin</span>
-        </span>
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="hover:bg-white/5 text-white">
-              <Menu className="w-6 h-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 border-r border-white/10 w-72">
-            <AdminSidebar
-              brandName={adminBrandName}
-              enabledFeatures={enabledFeatures}
-              shopEnabled={shopEnabled}
-              pluginNavGroups={pluginNavGroups}
-              contentModeNav={shopEnabled ? undefined : contentModeNav}
-            />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-72 border-r border-white/5 flex-col z-50">
+    <AdminAppShell
+      sidebar={
         <AdminSidebar
           brandName={adminBrandName}
           enabledFeatures={enabledFeatures}
@@ -109,13 +77,9 @@ export default async function AdminLayout({
           pluginNavGroups={pluginNavGroups}
           contentModeNav={shopEnabled ? undefined : contentModeNav}
         />
-      </aside>
-
-      <main className="lg:ml-72 min-h-screen">
-        <div className="px-6 py-8 md:px-10 md:py-12 max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+      }
+    >
+      <AdminContainer className="flex flex-col gap-6 pb-8">{children}</AdminContainer>
+    </AdminAppShell>
   )
 }

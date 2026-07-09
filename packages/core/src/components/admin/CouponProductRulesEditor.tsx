@@ -5,9 +5,11 @@ import { Plus, Search, Trash2 } from "lucide-react"
 import { useClickAway } from "react-use"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
-import { Label } from "@wse/core/components/ui/label"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
+import { Card, CardContent } from "@wse/core/components/ui/card"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
 import { cn } from "@wse/core/lib/utils"
+import { adminFieldHint, adminFieldLabel, adminInputClass } from "@wse/core/lib/admin-ui"
 import { getProductForCouponRule } from "@wse/core/actions/admin-checkout"
 import { couponProductRuleKey } from "@wse/core/lib/coupon-product-pricing"
 
@@ -113,17 +115,17 @@ export function CouponProductRulesEditor({
 
   return (
     <div className="space-y-4 md:col-span-2">
-      <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-        Termékáras szabályok
-      </Label>
-      <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600">
-        Egy kupon alatt több termék és variáns kombináció is lehet (pl. A termék minden variánsa + B
-        termék egy variánsa).
-      </p>
+      <div className="space-y-1">
+        <p className={adminFieldLabel}>Termékáras szabályok</p>
+        <p className={adminFieldHint}>
+          Egy kupon alatt több termék és variáns kombináció is lehet (pl. A termék minden variánsa + B
+          termék egy variánsa).
+        </p>
+      </div>
 
       <div ref={wrapRef} className="relative">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => {
@@ -132,33 +134,29 @@ export function CouponProductRulesEditor({
             }}
             onFocus={() => setDropdownOpen(true)}
             placeholder="Termék keresése név vagy slug alapján (min. 2 karakter)"
-            className="bg-black border-white/5 h-12 pl-10 text-white rounded-none"
+            className={cn(adminInputClass, "h-12 pl-10")}
           />
         </div>
         {dropdownOpen && q.trim().length >= 2 ? (
-          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-white/10 bg-black shadow-xl">
+          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl bg-card shadow-lg">
             {searching ? (
-              <div className="flex items-center justify-center gap-2 p-4 text-neutral-500">
+              <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
                 <LoadingSpinner className="h-4 w-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Keresés…</span>
+                <span className="text-sm">Keresés…</span>
               </div>
             ) : results.length === 0 ? (
-              <p className="p-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                Nincs találat
-              </p>
+              <p className="p-4 text-sm text-muted-foreground">Nincs találat</p>
             ) : (
               results.map((product) => (
                 <button
                   key={product.id}
                   type="button"
                   onClick={() => addProduct(product)}
-                  className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-3 text-left hover:bg-white/5"
+                  className="flex w-full items-center gap-3 border-b border-border/50 px-4 py-3 text-left last:border-0 hover:bg-muted/50"
                 >
                   <div className="min-w-0">
-                    <span className="block text-sm font-bold text-white">{product.name}</span>
-                    <span className="block text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-                      {product.slug}
-                    </span>
+                    <span className="block text-sm font-medium text-foreground">{product.name}</span>
+                    <span className="block text-xs text-muted-foreground">{product.slug}</span>
                   </div>
                   <Plus className="ml-auto h-4 w-4 shrink-0 text-primary" />
                 </button>
@@ -169,9 +167,7 @@ export function CouponProductRulesEditor({
       </div>
 
       {rules.length === 0 ? (
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-          Adj hozzá legalább egy terméket.
-        </p>
+        <p className={adminFieldHint}>Adj hozzá legalább egy terméket.</p>
       ) : (
         <div className="space-y-3">
           {rules.map((rule, index) => (
@@ -235,106 +231,99 @@ function CouponProductRuleRow({
   const canAddVariantRule = unusedVariants.length > 0
 
   return (
-    <div className="border border-white/10 bg-white/3 p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold text-white">{displayName || rule.productName || "Termék"}</p>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-            {rule.variantId
-              ? variants.find((variant) => variant.id === rule.variantId)?.label || "Egy variáns"
-              : "Minden variáns / alap termék"}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {variants.length > 0 ? (
-        <div className="space-y-1">
-          <Label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
-            Variáns
-          </Label>
-          <select
-            value={rule.variantId || ""}
-            onChange={(e) => onChange({ variantId: e.target.value || undefined })}
-            disabled={loadingVariants}
-            className="w-full h-10 bg-black border border-white/10 px-3 text-sm text-white rounded-none"
-          >
-            <option value="">Minden variáns</option>
-            {variants.map((variant) => {
-              const takenByOther = rules.some(
-                (entry) =>
-                  entry.product === rule.product &&
-                  entry.variantId === variant.id &&
-                  ruleKey(entry) !== ruleKey(rule)
-              )
-              return (
-                <option key={variant.id} value={variant.id} disabled={takenByOther}>
-                  {variant.label}
-                  {takenByOther ? " (már használt)" : ""}
-                </option>
-              )
-            })}
-          </select>
-          {canAddVariantRule ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                onAddVariantRule(rule.product, displayName || rule.productName || "Termék", unusedVariants[0].id)
-              }
-              className="h-8 px-0 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-transparent hover:text-primary/80"
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              További variáns szabály
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
-            Mód
-          </Label>
-          <div className="flex gap-1 p-1 bg-white/5 border border-white/10">
-            {(["percentage", "fixed_net", "fixed_gross"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onChange({ mode })}
-                className={cn(
-                  "flex-1 py-2 text-[7px] font-black uppercase tracking-widest transition-all",
-                  rule.mode === mode ? "bg-primary text-white" : "text-neutral-500 hover:text-white"
-                )}
-              >
-                {mode === "percentage" ? "%" : mode === "fixed_net" ? "NET" : "BRUT"}
-              </button>
-            ))}
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">{displayName || rule.productName || "Termék"}</p>
+            <p className="text-xs text-muted-foreground">
+              {rule.variantId
+                ? variants.find((variant) => variant.id === rule.variantId)?.label || "Egy variáns"
+                : "Minden variáns / alap termék"}
+            </p>
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
-            {MODE_LABELS[rule.mode]}
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            step={rule.mode === "percentage" ? 1 : 1}
-            value={rule.value}
-            onChange={(e) => onChange({ value: parseFloat(e.target.value) || 0 })}
-            className="bg-black border-white/5 h-10 text-white rounded-none"
-          />
+
+        {variants.length > 0 ? (
+          <AdminFormField label="Variáns">
+            <select
+              value={rule.variantId || ""}
+              onChange={(e) => onChange({ variantId: e.target.value || undefined })}
+              disabled={loadingVariants}
+              className={adminInputClass}
+            >
+              <option value="">Minden variáns</option>
+              {variants.map((variant) => {
+                const takenByOther = rules.some(
+                  (entry) =>
+                    entry.product === rule.product &&
+                    entry.variantId === variant.id &&
+                    ruleKey(entry) !== ruleKey(rule)
+                )
+                return (
+                  <option key={variant.id} value={variant.id} disabled={takenByOther}>
+                    {variant.label}
+                    {takenByOther ? " (már használt)" : ""}
+                  </option>
+                )
+              })}
+            </select>
+            {canAddVariantRule ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  onAddVariantRule(rule.product, displayName || rule.productName || "Termék", unusedVariants[0].id)
+                }
+                className="h-8 px-0 text-xs text-primary hover:bg-transparent hover:text-primary/80"
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                További variáns szabály
+              </Button>
+            ) : null}
+          </AdminFormField>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-3">
+          <AdminFormField label="Mód">
+            <div className="flex gap-1 rounded-lg bg-muted/40 p-1">
+              {(["percentage", "fixed_net", "fixed_gross"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => onChange({ mode })}
+                  className={cn(
+                    "flex-1 rounded-md py-2 text-xs font-medium transition-all",
+                    rule.mode === mode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {mode === "percentage" ? "%" : mode === "fixed_net" ? "NET" : "BRUT"}
+                </button>
+              ))}
+            </div>
+          </AdminFormField>
+          <AdminFormField label={MODE_LABELS[rule.mode]}>
+            <Input
+              type="number"
+              min={0}
+              step={rule.mode === "percentage" ? 1 : 1}
+              value={rule.value}
+              onChange={(e) => onChange({ value: parseFloat(e.target.value) || 0 })}
+              className={adminInputClass}
+            />
+          </AdminFormField>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

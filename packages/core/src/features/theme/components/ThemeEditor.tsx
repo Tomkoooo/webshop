@@ -106,7 +106,7 @@ export function ThemeEditor({
       <section className="border border-white/20 bg-black/70 p-4 space-y-3">
         <div>
           <h3 className="text-xs uppercase tracking-widest text-white">Import palette</h3>
-          <p className="mt-1 text-[11px] text-neutral-400 max-w-2xl">
+          <p className="mt-1 text-xs text-neutral-400 max-w-2xl">
             Upload a <code className="text-neutral-300">.json</code> file or paste palette JSON below, then
             click Apply. Keys: <code className="text-neutral-300">primary</code>,{" "}
             <code className="text-neutral-300">primaryForeground</code>, nested{" "}
@@ -163,7 +163,7 @@ export function ThemeEditor({
         </div>
       </section>
 
-      <p className="text-[11px] text-neutral-400 max-w-3xl border border-white/10 bg-white/5 p-3">
+      <p className="text-xs text-neutral-400 max-w-3xl bg-card shadow-sm p-3">
         <strong className="text-neutral-200">primary</strong> — gombok háttere (
         <code className="text-neutral-300">bg-primary</code>). Boltban ne használd ikonokra, szövegre,
         keretekre — helyette{" "}
@@ -180,7 +180,7 @@ export function ThemeEditor({
 
       {contrastIssues.length > 0 ? (
         <section className="border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
-          <h3 className="text-xs uppercase tracking-widest text-amber-200">
+          <h3 className="text-xs uppercase tracking-widest text-amber-900">
             Contrast warnings ({contrastIssues.length})
           </h3>
           <ul className="space-y-1">
@@ -189,8 +189,8 @@ export function ThemeEditor({
                 key={`${issue.rule.text}-${issue.rule.background}`}
                 className={
                   issue.rule.severity === "error"
-                    ? "text-[11px] text-red-300"
-                    : "text-[11px] text-amber-200/90"
+                    ? "text-xs text-red-300"
+                    : "text-xs text-amber-900/90"
                 }
               >
                 {issue.message}
@@ -235,7 +235,7 @@ export function ThemeEditor({
         <h3 className="text-xs uppercase tracking-widest text-white border-b border-white/10 pb-1">
           Typography
         </h3>
-        <p className="text-[11px] text-neutral-400 max-w-2xl">
+        <p className="text-xs text-neutral-400 max-w-2xl">
           Fonts and heading scale apply as CSS variables next to the colors. Leave a field empty to
           use the template default.
         </p>
@@ -338,7 +338,7 @@ export function ThemeEditor({
         </button>
       </div>
 
-      {resetHelpText ? <p className="text-[11px] text-neutral-500 max-w-xl">{resetHelpText}</p> : null}
+      {resetHelpText ? <p className="text-xs text-neutral-500 max-w-xl">{resetHelpText}</p> : null}
     </div>
   )
 }

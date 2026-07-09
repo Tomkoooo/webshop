@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { ROOM_TYPE_SELECTION_KEY } from "../lib/hotel-pricing"
-import type { TBookPublicHotel, TBookPublicOptionDef, TBookSelections } from "./tbook-public-api"
+import type {
+  TBookPublicAttendeeFieldDef,
+  TBookPublicHotel,
+  TBookPublicOptionDef,
+  TBookSelections,
+  TBookBookingAttendeePayload,
+} from "./tbook-public-api"
 import {
   createBooking,
   formatHuf,
@@ -117,6 +123,82 @@ function OptionField({
   return null
 }
 
+function emptyAttendeeRows(count: number): TBookBookingAttendeePayload[] {
+  return Array.from({ length: count }, () => ({ fields: {} }))
+}
+
+function AttendeeFieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: TBookPublicAttendeeFieldDef
+  value: string | number | undefined
+  onChange: (value: string | number) => void
+}) {
+  const id = `attendee-${field.key}`
+  const label = (
+    <span className="text-xs font-medium text-neutral-300">
+      {field.label}
+      {field.required ? " *" : ""}
+    </span>
+  )
+
+  if (field.type === "select") {
+    return (
+      <label className="block space-y-1" htmlFor={id}>
+        {label}
+        <select
+          id={id}
+          className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+          value={String(value ?? "")}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {!field.required ? <option value="">—</option> : null}
+          {field.choices?.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  }
+
+  if (field.type === "number") {
+    return (
+      <label className="block space-y-1" htmlFor={id}>
+        {label}
+        <input
+          id={id}
+          type="number"
+          min={field.min}
+          max={field.max}
+          className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+          value={typeof value === "number" ? value : ""}
+          onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        />
+      </label>
+    )
+  }
+
+  const inputType =
+    field.type === "email" ? "email" : field.type === "phone" ? "tel" : field.type === "date" ? "date" : "text"
+
+  return (
+    <label className="block space-y-1" htmlFor={id}>
+      {label}
+      <input
+        id={id}
+        type={inputType}
+        className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
+        value={typeof value === "string" ? value : ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  )
+}
+
 export function TBookTestPlayground({
   defaultApiKey = "",
   apiBase,
@@ -132,17 +214,29 @@ export function TBookTestPlayground({
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null)
   const [guests, setGuests] = useState(2)
   const [nights, setNights] = useState(1)
+  const [attendeeFieldSchema, setAttendeeFieldSchema] = useState<TBookPublicAttendeeFieldDef[]>([])
+  const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>(() => emptyAttendeeRows(2))
   const [selections, setSelections] = useState<TBookSelections>({})
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [lastResponse, setLastResponse] = useState<unknown>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [customer, setCustomer] = useState({
-    name: "Teszt Vásárló",
+    name: "Teszt Kapcsolattartó",
     email: "teszt@example.com",
     phone: "+36301234567",
     note: "API playground teszt foglalás",
   })
+
+  useEffect(() => {
+    setAttendees((prev) => {
+      if (prev.length === guests) return prev
+      if (prev.length < guests) {
+        return [...prev, ...emptyAttendeeRows(guests - prev.length)]
+      }
+      return prev.slice(0, guests)
+    })
+  }, [guests])
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -181,6 +275,8 @@ export function TBookTestPlayground({
         const res = await getEventDetail(apiKey.trim(), eventId, apiBase)
         setHotels(res.hotels)
         setNights(res.event.nights)
+        setAttendeeFieldSchema(res.event.attendeeFieldSchema ?? [])
+        setAttendees(emptyAttendeeRows(guests))
         setLastResponse(res)
         const firstHotel = res.hotels[0] ?? null
         setSelectedHotelId(firstHotel?.id ?? null)
@@ -244,6 +340,7 @@ export function TBookTestPlayground({
         eventId: selectedEventId,
         guests,
         customer,
+        attendees: attendeeFieldSchema.length > 0 ? attendees : undefined,
         hotelId: selectedHotelId,
         nights: selectedHotelId ? nights : null,
         selections: selectedHotelId ? selections : null,
@@ -413,7 +510,11 @@ export function TBookTestPlayground({
 
           <div className="border-t border-white/10 pt-4 space-y-3">
             <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-              Ügyfél adatok
+              Kapcsolattartó (fizető / szervező)
+            </p>
+            <p className="text-xs text-neutral-500">
+              Ezzel a személlyel tartják a kapcsolatot — különösen szállásfoglalásnál, ha másoknak
+              foglal.
             </p>
             <div className="grid sm:grid-cols-2 gap-3">
               <input
@@ -436,6 +537,43 @@ export function TBookTestPlayground({
               />
             </div>
           </div>
+
+          {attendeeFieldSchema.length > 0 ? (
+            <div className="border-t border-white/10 pt-4 space-y-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                Résztvevők ({guests} fő)
+              </p>
+              <p className="text-xs text-neutral-500">
+                Minden jegyhez külön adat — pl. név, életkor, állampolgárság az eligibilitáshoz.
+              </p>
+              {attendees.map((attendee, index) => (
+                <div
+                  key={index}
+                  className="rounded-xl border border-white/10 p-4 space-y-3"
+                >
+                  <p className="text-sm font-semibold text-white">{index + 1}. résztvevő</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {attendeeFieldSchema.map((field) => (
+                      <AttendeeFieldInput
+                        key={field.key}
+                        field={field}
+                        value={attendee.fields[field.key]}
+                        onChange={(value) =>
+                          setAttendees((rows) =>
+                            rows.map((row, i) =>
+                              i === index
+                                ? { fields: { ...row.fields, [field.key]: value } }
+                                : row
+                            )
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
             <button

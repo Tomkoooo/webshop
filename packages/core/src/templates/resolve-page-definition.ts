@@ -35,6 +35,11 @@ export function findPageDefinition(
     if (campKey && template.campPages?.[campKey]) {
       return template.campPages[campKey] as unknown as PageDefinition<unknown>
     }
+
+    const tBookKey = TBOOK_PAGE_KEY_TO_PAGE[pageKey as keyof typeof TBOOK_PAGE_KEY_TO_PAGE]
+    if (tBookKey && template.tBookPages?.[tBookKey]) {
+      return template.tBookPages[tBookKey] as unknown as PageDefinition<unknown>
+    }
   }
 
   return null
@@ -45,3 +50,9 @@ const CAMP_PAGE_KEY_TO_CAMP = {
   "page:foglalas": "foglalas",
   "page:foglalas-siker": "foglalasSiker",
 } as const satisfies Record<string, keyof NonNullable<TemplateModule["campPages"]>>
+
+const TBOOK_PAGE_KEY_TO_PAGE = {
+  "page:jegyek": "jegyek",
+  "page:tbook-foglalas": "foglalas",
+  "page:tbook-foglalas-siker": "foglalasSiker",
+} as const satisfies Record<string, keyof NonNullable<TemplateModule["tBookPages"]>>

@@ -1,0 +1,13 @@
+{
+  "name": "@wse/template-eventstructure",
+  "version": "1.0.0",
+  "description": "Webshop Engine template package: eventstructure.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}

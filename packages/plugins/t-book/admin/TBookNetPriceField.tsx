@@ -66,7 +66,7 @@ export function TBookNetPriceField({
         ÁFA: <span className="text-neutral-300 font-bold">{formatHuf(preview.vatHuf)}</span>
         {" · "}
         Bruttó (fizetendő):{" "}
-        <span className="text-amber-200 font-bold">{formatHuf(preview.grossHuf)}</span>
+        <span className="text-amber-900 font-bold">{formatHuf(preview.grossHuf)}</span>
       </p>
     </div>
   )

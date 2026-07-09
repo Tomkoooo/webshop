@@ -8,6 +8,17 @@ export function resolveTBookApiBase(override?: string): string {
   return "/api/plugins/t-book"
 }
 
+export type TBookPublicAttendeeFieldDef = {
+  key: string
+  label: string
+  type: "text" | "email" | "phone" | "number" | "date" | "select"
+  required?: boolean
+  helpText?: string
+  choices?: { value: string; label: string }[]
+  min?: number
+  max?: number
+}
+
 export type TBookPublicEvent = {
   id: string
   name: string
@@ -19,6 +30,7 @@ export type TBookPublicEvent = {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking"
   heroImage: string
+  attendeeFieldSchema: TBookPublicAttendeeFieldDef[]
 }
 
 export type TBookPublicOptionDef = {
@@ -68,6 +80,31 @@ export type TBookPriceQuote = {
 }
 
 export type TBookSelections = Record<string, string | number | boolean | string[]>
+
+export type TBookBookingAttendeePayload = {
+  fields: Record<string, string | number>
+}
+
+export type TBookPublicDirectoryListing = {
+  id: string
+  title: string
+  url: string
+  image: string
+  activeEventCount: number
+  nextEventStart: string | null
+}
+
+export function fetchPublicDirectory(apiBase?: string) {
+  return fetch(`${resolveTBookApiBase(apiBase)}/directory`).then(async (res) => {
+    const data = (await res.json()) as {
+      ok?: boolean
+      listings?: TBookPublicDirectoryListing[]
+      error?: string
+    }
+    if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+    return data.listings ?? []
+  })
+}
 
 async function tbookFetch<T>(
   apiKey: string,
@@ -131,6 +168,7 @@ export function createBooking(
     eventId: string
     guests: number
     customer: { name: string; email: string; phone: string; note?: string }
+    attendees?: TBookBookingAttendeePayload[]
     billing?: {
       name: string
       zip: string

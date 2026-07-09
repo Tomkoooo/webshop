@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { campAdminApi, type AdminTicketType } from "./camp-api"
 import { CampAdminLoading, CampAdminPrimaryButton } from "./camp-admin-ui"
+import { adminSectionTitle } from "@wse/core/lib/admin-ui"
 import { TicketTypeDialog } from "./dialogs/TicketTypeDialog"
 import { SessionRegistrationsTable } from "./SessionRegistrationsTable"
 import { EditSessionDialog } from "./dialogs/EditSessionDialog"
@@ -50,7 +51,7 @@ export function SessionDetailAdmin({
         <button
           type="button"
           onClick={onBack}
-          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+          className="text-xs font-medium text-muted-foreground admin-link-accent"
         >
           ← Turnusok
         </button>
@@ -58,7 +59,7 @@ export function SessionDetailAdmin({
           <Button
             type="button"
             variant="outline"
-            className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+            className="h-9 text-xs"
           >
             Turnus szerkesztése
           </Button>
@@ -67,27 +68,24 @@ export function SessionDetailAdmin({
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-heading font-black text-white uppercase italic tracking-wider">
-            Régisztrációk
-          </h2>
-          <p className="text-xs text-neutral-400 mt-2 max-w-2xl leading-relaxed">
+          <h2 className={adminSectionTitle}>Régisztrációk</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
             Fizetett jelentkezések ezen a turnuson. Részleteknél a gyerekek adatai.
           </p>
         </div>
         <SessionRegistrationsTable sessionId={sessionId} />
+        <CampAdminPrimaryButton asChild>
         <a
           href={`/api/plugins/camp-booking/admin/sessions/${sessionId}/export`}
-          className="inline-flex items-center h-11 px-6 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
         >
           Excel export (turnus)
         </a>
+        </CampAdminPrimaryButton>
       </section>
 
       <div>
-        <h2 className="text-2xl font-heading font-black text-white uppercase italic tracking-wider">
-          Jegytípusok & kiegészítők
-        </h2>
-        <p className="text-xs text-neutral-400 mt-2 max-w-2xl leading-relaxed">
+        <h2 className={adminSectionTitle}>Jegytípusok & kiegészítők</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Alap jegy: tábor részvétel (early bird itt állítható). Kiegészítő: pl. laptop bérlés —
           gyerekenként választható a foglalásnál.
         </p>
@@ -124,16 +122,16 @@ export function SessionDetailAdmin({
           {ticketTypes.map((t) => (
             <li
               key={t.id}
-              className="border border-white/10 rounded-2xl p-4 bg-white/5 flex flex-wrap justify-between gap-3"
+              className="rounded-xl bg-card shadow-sm p-4 flex flex-wrap justify-between gap-3"
             >
               <div>
-                <p className="text-white font-bold">
+                <p className="text-foreground font-semibold">
                   {t.name}{" "}
-                  <span className="text-neutral-500 font-normal text-sm">
+                  <span className="text-muted-foreground font-normal text-sm">
                     ({t.kind === "addon" ? "kiegészítő" : "alap"})
                   </span>
                 </p>
-                <p className="text-neutral-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {t.priceHuf.toLocaleString("hu-HU")} Ft · {t.pricingMode}
                   {!t.isActive ? " · inaktív" : ""}
                 </p>
@@ -148,7 +146,7 @@ export function SessionDetailAdmin({
                     new Date(t.earlyBirdEndsAt).getTime() < Date.now() ? (
                       <span className="text-amber-400"> · lejárt</span>
                     ) : t.earlyBirdEndsAt ? (
-                      <span className="text-emerald-400"> · aktív</span>
+                      <span className="text-emerald-800"> · aktív</span>
                     ) : null}
                     {t.earlyBirdPriceHuf != null
                       ? ` → ${t.earlyBirdPriceHuf.toLocaleString("hu-HU")} Ft`
@@ -165,7 +163,7 @@ export function SessionDetailAdmin({
                 type="button"
                 variant="outline"
                 onClick={() => openEdit(t)}
-                className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none self-start"
+                className="h-9 text-xs self-start"
               >
                 Szerkesztés
               </Button>

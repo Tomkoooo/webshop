@@ -26,9 +26,23 @@ import {
 import { bulkGenerateParcelLabels, bulkGenerateStandardShippingLabels, bulkUpdateOrderStatuses } from "@wse/core/actions/admin-orders"
 import type { AdminOrdersWorkspaceData } from "@wse/core/actions/admin-orders"
 import { AdminOrderDetailSheet } from "@wse/core/components/admin/AdminOrderDetailSheet"
+import { AdminOrderStatusBadge } from "@wse/core/components/admin/AdminOrderStatusBadge"
 import { AdminOrdersExportLink } from "@wse/core/components/admin/AdminOrdersExportLink"
 import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { Checkbox } from "@wse/core/components/ui/checkbox"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
+import { Tabs, TabsList, TabsTrigger } from "@wse/core/components/ui/tabs"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { AdminOrdersFilterPanel } from "@wse/core/components/admin/AdminOrdersFilterPanel"
+import { ADMIN_ORDER_STATUS_OPTIONS } from "@wse/core/lib/admin-orders-filter-ui"
+import {
+  adminAlertDanger,
+  adminAlertInfo,
+  adminCard,
+  adminCardPadding,
+  adminTableWrap,
+} from "@wse/core/lib/admin-ui"
 import { cn } from "@wse/core/lib/utils"
 import { formatHuf } from "@wse/core/lib/pricing"
 import type { AdminOrderFilters } from "@wse/core/lib/admin-orders-filters"
@@ -56,15 +70,12 @@ type AdminOrdersWorkspaceProps = {
   assignEnd?: number
 }
 
-const STATUSES = [
-  { value: "pending", label: "Függőben" },
-  { value: "processing", label: "Feldolgozás alatt" },
-  { value: "shipped", label: "Szállítva" },
-  { value: "delivered", label: "Kézbesítve" },
-  { value: "cancelled", label: "Törölve" },
-] as const
-
+const STATUSES = ADMIN_ORDER_STATUS_OPTIONS
 type OrderStatusValue = (typeof STATUSES)[number]["value"]
+
+function getStatusLabel(status: string) {
+  return STATUSES.find((s) => s.value === status)?.label ?? status
+}
 
 const FILTER_KEYS: (keyof AdminOrderFilters)[] = [
   "q",
@@ -97,31 +108,6 @@ const FILTER_KEYS: (keyof AdminOrderFilters)[] = [
   "sort",
   "deletedFilter",
 ]
-
-function getStatusStyle(status: string) {
-  switch (status) {
-    case "pending":
-      return "bg-amber-500/10 border-amber-500 text-amber-500"
-    case "processing":
-      return "bg-blue-500/10 border-blue-500 text-blue-500"
-    case "shipped":
-      return "bg-purple-500/10 border-purple-500 text-purple-500"
-    case "delivered":
-      return "bg-emerald-500/10 border-emerald-500 text-emerald-500"
-    case "cancelled":
-      return "bg-rose-500/10 border-rose-500 text-rose-500"
-    default:
-      return "bg-white/5 border-white/10 text-neutral-500"
-  }
-}
-
-function getStatusLabel(status: string) {
-  return STATUSES.find((s) => s.value === status)?.label ?? status
-}
-
-const inputClass =
-  "h-10 w-full bg-black border border-white/10 px-3 text-sm text-white placeholder:text-neutral-600 rounded-none focus:border-primary/60 focus:outline-none"
-const labelClass = "text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1 block"
 
 function parseFilename(contentDisposition: string | null): string | null {
   if (!contentDisposition) return null
@@ -423,18 +409,18 @@ export function AdminOrdersWorkspace({
   }
 
   return (
-    <div
+    <AdminPageScaffold
+      title="Rendelések"
+      description="Keresés, státusz frissítés és címkekezelés. A csomagoló nézetek csak raktári munkafolyamathoz kellenek."
       className={cn(
-        "space-y-6 animate-in fade-in duration-500",
         isNavigating && "opacity-60",
         selectedCount > 0 && "pb-28"
       )}
     >
-      <WorkspaceHeader />
-
-      <FilterBar
+      <AdminOrdersFilterPanel
         draft={draft}
         setDraft={setDraft}
+        appliedFilters={filters}
         products={products}
         onApply={applyFilters}
         onReset={resetFilters}
@@ -450,21 +436,16 @@ export function AdminOrdersWorkspace({
       </div>
 
       {isDeletedView && (
-        <div className="border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          <span className="font-black uppercase tracking-widest text-rose-300">Törölt rendelések</span>
-          <span className="text-rose-200/80">
+        <div className={adminAlertDanger}>
+          <span className="font-semibold">Törölt rendelések</span>
+          <span className="text-rose-800/80">
             {" "}
             — csak megtekintés és státusz módosítás. Csoportosítás, munkamegosztás és címke műveletek nem érhetők el.
           </span>
         </div>
       )}
 
-      <StatsBar
-        stats={stats}
-        totalPool={data.totalPool}
-        totalDeleted={data.totalDeleted}
-        deletedFilter={data.deletedFilter}
-      />
+      <StatsBar stats={stats} deletedFilter={data.deletedFilter} />
 
       <ViewTabs
         view={effectiveView}
@@ -591,8 +572,8 @@ export function AdminOrdersWorkspace({
       />
 
       {selectedCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/40 bg-black/95 shadow-2xl backdrop-blur lg:left-72">
-          <div className="mx-auto max-w-7xl px-6 py-4 md:px-10">
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 md:left-[var(--sidebar-width,16rem)]">
+          <div className="mx-auto max-w-7xl px-6 py-4">
             <BulkActionBar
               selectedCount={selectedCount}
               bulkStatus={bulkStatus}
@@ -615,356 +596,53 @@ export function AdminOrdersWorkspace({
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function WorkspaceHeader() {
-  return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Rendelés <span className="admin-headline-accent">Munkatér</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">
-          Okos szűrők, termék-mix csoportosítás és párhuzamos munkamegosztás egy helyen.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function FilterBar({
-  draft,
-  setDraft,
-  products,
-  onApply,
-  onReset,
-  isNavigating,
-}: {
-  draft: AdminOrderFilters
-  setDraft: React.Dispatch<React.SetStateAction<AdminOrderFilters>>
-  products: { id: string; name: string }[]
-  onApply: () => void
-  onReset: () => void
-  isNavigating: boolean
-}) {
-  const set = (key: keyof AdminOrderFilters, value: string) =>
-    setDraft((d) => ({ ...d, [key]: value }))
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onApply()
-      }}
-      className="space-y-4 border border-white/10 bg-white/5 p-4"
-    >
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400">
-        <Filter className="h-3.5 w-3.5 text-primary" />
-        Okos szűrők
-      </div>
-
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-600" />
-        <input
-          value={draft.q || ""}
-          onChange={(e) => set("q", e.target.value)}
-          placeholder="Keresés: azonosító, név, email, telefon, város, termék..."
-          className={cn(inputClass, "h-12 pl-10")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <div>
-          <label className={labelClass}>Rendelés készlet</label>
-          <select
-            value={draft.deletedFilter === "deleted" ? "deleted" : "active"}
-            onChange={(e) => {
-              const next = e.target.value
-              setDraft((d) => ({
-                ...d,
-                deletedFilter: next === "deleted" ? "deleted" : undefined,
-                status: next === "deleted" ? "cancelled" : d.status === "cancelled" ? "all" : d.status,
-                mix: next === "deleted" ? undefined : d.mix,
-              }))
-            }}
-            className={inputClass}
-          >
-            <option value="active">Aktív rendelések</option>
-            <option value="deleted">Csak töröltek</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Termék</label>
-          <select value={draft.productId || "all"} onChange={(e) => set("productId", e.target.value)} className={inputClass}>
-            <option value="all">Minden termék</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Státusz</label>
-          <select
-            value={draft.deletedFilter === "deleted" ? "cancelled" : draft.status || "all"}
-            onChange={(e) => set("status", e.target.value)}
-            disabled={draft.deletedFilter === "deleted"}
-            className={inputClass}
-          >
-            {draft.deletedFilter === "deleted" ? (
-              <option value="cancelled">Törölve</option>
-            ) : (
-              <>
-                <option value="all">Minden státusz</option>
-                {STATUSES.filter((status) => status.value !== "cancelled").map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </>
-            )}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Szállítás</label>
-          <select value={draft.shippingType || "all"} onChange={(e) => set("shippingType", e.target.value)} className={inputClass}>
-            <option value="all">Minden szállítás</option>
-            <option value="gls">GLS csomagpont</option>
-            <option value="foxpost">Foxpost</option>
-            <option value="standard">Standard</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Címke állapot</label>
-          <select value={draft.labelState || "all"} onChange={(e) => set("labelState", e.target.value)} className={inputClass}>
-            <option value="all">Mindegy</option>
-            <option value="needs">Címke hiányzik</option>
-            <option value="generating">Címke generálás alatt</option>
-            <option value="error">Címke generálási hiba</option>
-            <option value="has">Van címke</option>
-            <option value="none">Nincs csomagküldés</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Számla</label>
-          <select value={draft.invoiceStatus || "all"} onChange={(e) => set("invoiceStatus", e.target.value)} className={inputClass}>
-            <option value="all">Minden számla</option>
-            <option value="pending">Pending</option>
-            <option value="issued">Issued</option>
-            <option value="failed">Failed</option>
-            <option value="manual">Manual</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Vásárló típus</label>
-          <select value={draft.billingType || "all"} onChange={(e) => set("billingType", e.target.value)} className={inputClass}>
-            <option value="all">Mindegy</option>
-            <option value="personal">Magánszemély</option>
-            <option value="company">Cég</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        <NumberRange label="Darabszám (db)" minKey="unitsMin" maxKey="unitsMax" draft={draft} set={set} />
-        <NumberRange label="Tételféle" minKey="kindsMin" maxKey="kindsMax" draft={draft} set={set} />
-        <NumberRange label="Összeg (Ft)" minKey="totalMin" maxKey="totalMax" draft={draft} set={set} step={1000} />
-        <div>
-          <label className={labelClass}>Rendelés – tól</label>
-          <input type="date" value={draft.dateFrom || ""} onChange={(e) => set("dateFrom", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Rendelés – ig</label>
-          <input type="date" value={draft.dateTo || ""} onChange={(e) => set("dateTo", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Utoljára módosítva – tól</label>
-          <input type="date" value={draft.updatedFrom || ""} onChange={(e) => set("updatedFrom", e.target.value)} className={inputClass} />
-          <p className="mt-1 text-[9px] italic text-neutral-600">Bármilyen mező (címke, kapcsolat, tétel…)</p>
-        </div>
-        <div>
-          <label className={labelClass}>Utoljára módosítva – ig</label>
-          <input type="date" value={draft.updatedTo || ""} onChange={(e) => set("updatedTo", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Státusz átállítás napja</label>
-          <input type="date" value={draft.statusChangedOn || ""} onChange={(e) => set("statusChangedOn", e.target.value)} className={inputClass} />
-          <p className="mt-1 text-[9px] italic text-neutral-600">
-            Státuszváltás napja (statusHistory). Régi rendeléseknél futtasd a backfill scriptet.
-          </p>
-        </div>
-        <div>
-          <label className={labelClass}>Státusz átállítás – tól</label>
-          <input type="date" value={draft.statusChangedFrom || ""} onChange={(e) => set("statusChangedFrom", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Státusz átállítás – ig</label>
-          <input type="date" value={draft.statusChangedTo || ""} onChange={(e) => set("statusChangedTo", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Foxpost címke napja</label>
-          <input type="date" value={draft.foxpostLabelOn || ""} onChange={(e) => set("foxpostLabelOn", e.target.value)} className={inputClass} />
-          <p className="mt-1 text-[9px] italic text-neutral-600">
-            Tömeges címkegenerálás napja (foxpostShipment.generatedAt)
-          </p>
-        </div>
-        <div>
-          <label className={labelClass}>Foxpost címke – tól</label>
-          <input type="date" value={draft.foxpostLabelFrom || ""} onChange={(e) => set("foxpostLabelFrom", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Foxpost címke – ig</label>
-          <input type="date" value={draft.foxpostLabelTo || ""} onChange={(e) => set("foxpostLabelTo", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>GLS címke napja</label>
-          <input type="date" value={draft.glsLabelOn || ""} onChange={(e) => set("glsLabelOn", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Rendezés</label>
-          <select value={draft.sort || "newest"} onChange={(e) => set("sort", e.target.value)} className={inputClass}>
-            {WORKSPACE_SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="submit"
-          disabled={isNavigating}
-          className="h-10 rounded-none bg-primary px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
-        >
-          {isNavigating ? <LoadingSpinner size="xs" className="mr-2" /> : <Filter className="mr-2 h-4 w-4" />}
-          Szűrés
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onReset}
-          className="h-10 rounded-none border-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-neutral-300"
-        >
-          <RotateCcw className="mr-2 h-3.5 w-3.5" />
-          Törlés
-        </Button>
-        {draft.mix && (
-          <span className="inline-flex items-center gap-2 border border-primary/40 bg-primary/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
-            <Layers className="h-3 w-3" /> Mix szűrő aktív
-            <button type="button" onClick={() => set("mix", "")} className="hover:text-white">
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        )}
-      </div>
-    </form>
-  )
-}
-
-function NumberRange({
-  label,
-  minKey,
-  maxKey,
-  draft,
-  set,
-  step,
-}: {
-  label: string
-  minKey: keyof AdminOrderFilters
-  maxKey: keyof AdminOrderFilters
-  draft: AdminOrderFilters
-  set: (key: keyof AdminOrderFilters, value: string) => void
-  step?: number
-}) {
-  return (
-    <div>
-      <label className={labelClass}>{label}</label>
-      <div className="flex items-center gap-1">
-        <input
-          type="number"
-          min={0}
-          step={step}
-          value={(draft[minKey] as string) || ""}
-          onChange={(e) => set(minKey, e.target.value)}
-          placeholder="min"
-          className={cn(inputClass, "px-2 text-center")}
-        />
-        <span className="text-neutral-600">–</span>
-        <input
-          type="number"
-          min={0}
-          step={step}
-          value={(draft[maxKey] as string) || ""}
-          onChange={(e) => set(maxKey, e.target.value)}
-          placeholder="max"
-          className={cn(inputClass, "px-2 text-center")}
-        />
-      </div>
-    </div>
+    </AdminPageScaffold>
   )
 }
 
 function StatsBar({
   stats,
-  totalPool,
-  totalDeleted,
   deletedFilter,
 }: {
   stats: AdminOrdersWorkspaceData["stats"]
-  totalPool: number
-  totalDeleted: number
   deletedFilter: AdminOrdersWorkspaceData["deletedFilter"]
 }) {
-  const poolLabel = deletedFilter === "deleted" ? "Törölt" : "Aktív"
-  return (
-    <div className="flex flex-wrap gap-2 text-sm">
-      <StatChip label={`Találat (${poolLabel})`} value={`${stats.totalOrders} / ${totalPool}`} />
-      {deletedFilter !== "deleted" && totalDeleted > 0 ? (
-        <StatChip
-          label="Törölve (rejtett)"
-          value={totalDeleted}
-          accent="text-rose-300"
-          border="border-rose-500/20 bg-rose-500/5"
-        />
-      ) : null}
-      <StatChip label="Összes db" value={stats.totalUnits.toLocaleString("hu-HU")} accent="text-white" />
-      {deletedFilter !== "deleted" ? (
-        <>
-          <StatChip label="Szállítási sáv" value={stats.shippingLanes} accent="text-primary" />
-          <StatChip label="Mix csoport" value={stats.mixGroups} accent="text-primary" />
-        </>
-      ) : null}
-      <StatChip label="Címke kész" value={stats.hasLabel} accent="text-emerald-300" border="border-emerald-500/20 bg-emerald-500/5" />
-      <StatChip label="Címke hiányzik" value={stats.needsLabel} accent="text-amber-300" border="border-amber-500/20 bg-amber-500/5" />
-      {STATUSES.map((status) =>
-        stats.statusCounts[status.value] ? (
-          <StatChip key={status.value} label={status.label} value={stats.statusCounts[status.value]} />
-        ) : null
-      )}
-    </div>
-  )
-}
+  const items: { label: string; value: string | number; tone?: "default" | "warning" | "success" }[] = [
+    {
+      label: deletedFilter === "deleted" ? "Törölt rendelés" : "Megjelenítve",
+      value: stats.totalOrders,
+    },
+  ]
 
-function StatChip({
-  label,
-  value,
-  accent = "text-white",
-  border = "border-white/10 bg-black/40",
-}: {
-  label: string
-  value: string | number
-  accent?: string
-  border?: string
-}) {
+  if (deletedFilter !== "deleted" && stats.needsLabel > 0) {
+    items.push({ label: "Címke hiányzik", value: stats.needsLabel, tone: "warning" })
+  }
+  if (deletedFilter !== "deleted" && stats.statusCounts.processing) {
+    items.push({
+      label: "Feldolgozás alatt",
+      value: stats.statusCounts.processing,
+    })
+  }
+  if (deletedFilter !== "deleted" && stats.hasLabel > 0) {
+    items.push({ label: "Címke kész", value: stats.hasLabel, tone: "success" })
+  }
+
   return (
-    <div className={cn("border px-4 py-2", border)}>
-      <span className="text-neutral-500">{label}:</span>{" "}
-      <span className={cn("font-black", accent)}>{value}</span>
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm shadow-sm",
+            item.tone === "warning" && "bg-amber-500/10 text-amber-900",
+            item.tone === "success" && "bg-emerald-500/10 text-emerald-900",
+            !item.tone && "bg-muted/40"
+          )}
+        >
+          <span className="text-muted-foreground">{item.label}: </span>
+          <span className="font-semibold tabular-nums">{item.value}</span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -973,7 +651,6 @@ function ViewTabs({
   view,
   setView,
   mixCount,
-  shippingLaneCount,
   orderCount,
   isDeletedView,
 }: {
@@ -985,42 +662,45 @@ function ViewTabs({
   isDeletedView: boolean
 }) {
   const tabs: { id: WorkspaceView; label: string; icon: typeof Package; hint: string }[] = [
-    { id: "list", label: "Lista", icon: Package, hint: `${orderCount} rendelés` },
+    { id: "list", label: "Rendeléslista", icon: Package, hint: `${orderCount} db` },
     ...(isDeletedView
       ? []
       : [
           {
             id: "mix" as const,
-            label: "Termék-mix",
+            label: "Azonos kosár",
             icon: Layers,
-            hint: `${shippingLaneCount} szállítás · ${mixCount} mix`,
+            hint: `${mixCount} csoport`,
           },
-          { id: "assign" as const, label: "Munkamegosztás", icon: Users, hint: "párhuzamos" },
+          { id: "assign" as const, label: "Felosztás", icon: Users, hint: "csapatnak" },
         ]),
   ]
   return (
-    <div className="flex flex-wrap gap-2 border-b border-white/10">
-      {tabs.map((tab) => {
-        const Icon = tab.icon
-        const active = view === tab.id
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setView(tab.id)}
-            className={cn(
-              "flex items-center gap-2 border-b-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors",
-              active
-                ? "border-primary text-white"
-                : "border-transparent text-neutral-500 hover:text-neutral-300"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {tab.label}
-            <span className="text-neutral-600">({tab.hint})</span>
-          </button>
-        )
-      })}
+    <div className="space-y-2">
+      <Tabs value={view} onValueChange={(value) => setView(value as WorkspaceView)}>
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <TabsTrigger key={tab.id} value={tab.id} className="gap-2 px-4 py-2">
+                <Icon className="size-4" />
+                {tab.label}
+                <span className="text-muted-foreground text-xs">({tab.hint})</span>
+              </TabsTrigger>
+            )
+          })}
+        </TabsList>
+      </Tabs>
+      {view === "mix" ? (
+        <p className="text-muted-foreground text-sm">
+          Ugyanazt a kosár-összetételt tartalmazó rendelések csoportja — tömeges címkezéshez és csomagoláshoz.
+        </p>
+      ) : null}
+      {view === "assign" ? (
+        <p className="text-muted-foreground text-sm">
+          A szűrt rendelések felosztása dolgozók között párhuzamos feldolgozáshoz.
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -1039,17 +719,17 @@ function MixFilterBanner({
   onSelectAllFiltered: () => void
 }) {
   return (
-    <div className="flex flex-col gap-3 border border-primary/40 bg-primary/10 p-4 md:flex-row md:items-center md:justify-between">
+    <div className={cn(adminAlertInfo, "flex flex-col gap-3 md:flex-row md:items-center md:justify-between")}>
       <div className="flex items-start gap-3">
-        <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <Layers className="mt-0.5 size-5 shrink-0 text-primary" />
         <div>
-          <p className="text-sm font-black uppercase tracking-widest text-white">Termék-mix szűrő aktív</p>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-primary/80">
+          <p className="text-sm font-semibold">Termék-mix szűrő aktív</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             {orderCount} rendelés ebben a mixben
             {shippingType && shippingType !== "all" ? ` · ${shippingType} szállítás` : ""}
             {" · "}mix #{mixKey}
           </p>
-          <p className="mt-2 text-xs italic text-neutral-400">
+          <p className="mt-2 text-xs text-muted-foreground">
             A státusz és címke állapot szűrők csak ezen a mixen belül érvényesek. Pl. válaszd a „Címke hiányzik”
             opciót, majd kattints a Szűrés gombra.
           </p>
@@ -1059,17 +739,12 @@ function MixFilterBanner({
         <Button
           type="button"
           onClick={onSelectAllFiltered}
-          className="h-9 rounded-none bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+          className="h-9 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/80"
         >
           <Boxes className="mr-2 h-4 w-4" />
           Mix összes kijelölése ({orderCount})
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClear}
-          className="h-9 rounded-none border-white/20 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-200"
-        >
+        <Button type="button" variant="outline" onClick={onClear} className="h-9">
           <X className="mr-1 h-3.5 w-3.5" /> Mix törlése
         </Button>
       </div>
@@ -1101,8 +776,8 @@ function SelectionToolbar({
   const showScopeButtons = filteredCount > visibleCount
 
   return (
-    <div className="flex flex-col gap-3 border border-white/10 bg-black/40 p-3 md:flex-row md:items-center md:justify-between">
-      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+    <div className={cn(adminCard, adminCardPadding, "flex flex-col gap-3 md:flex-row md:items-center md:justify-between")}>
+      <p className="text-sm text-muted-foreground">
         Kijelölés: {selectedCount} rendelés
         {showScopeButtons
           ? ` · látható ${selectedVisibleCount}/${visibleCount} · szűrt találat ${filteredCount}`
@@ -1114,7 +789,7 @@ function SelectionToolbar({
           variant="outline"
           onClick={onSelectVisible}
           disabled={allVisibleSelected}
-          className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-200 disabled:opacity-40"
+          className="h-9"
         >
           Látható kijelölése ({visibleCount})
         </Button>
@@ -1124,18 +799,13 @@ function SelectionToolbar({
             variant="outline"
             onClick={onSelectAllFiltered}
             disabled={allFilteredSelected}
-            className="h-9 rounded-none border-primary/40 px-3 text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-40"
+            className="h-9"
           >
             Összes szűrt találat ({filteredCount})
           </Button>
         ) : null}
         {selectedCount > 0 ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClear}
-            className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-400"
-          >
+          <Button type="button" variant="outline" onClick={onClear} className="h-9">
             Kijelölés törlése
           </Button>
         ) : null}
@@ -1160,14 +830,14 @@ function FocusBanner({
   onNavigate: (href: string) => void
 }) {
   return (
-    <div className="flex flex-col gap-3 border border-primary/40 bg-primary/10 p-4 md:flex-row md:items-center md:justify-between">
+    <div className={cn(adminAlertInfo, "flex flex-col gap-3 md:flex-row md:items-center md:justify-between")}>
       <div className="flex items-center gap-3">
-        <Users className="h-5 w-5 text-primary" />
+        <Users className="size-5 text-primary" />
         <div>
-          <p className="text-sm font-black uppercase tracking-widest text-white">
+          <p className="text-sm font-semibold">
             Munkacsomag{shippingLabel ? `: ${shippingLabel}` : ""} — rendelések {range.start + 1}–{range.end}
           </p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
+          <p className="text-muted-foreground text-xs">
             {count} rendelés ebben a tartományban
           </p>
         </div>
@@ -1176,16 +846,11 @@ function FocusBanner({
         <Button
           type="button"
           onClick={onSelectBatch}
-          className="h-9 rounded-none bg-primary px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+          className="h-9 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/80"
         >
           Csomag kijelölése
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onNavigate(clearHref)}
-          className="h-9 rounded-none border-white/20 px-4 text-[10px] font-black uppercase tracking-widest text-neutral-200"
-        >
+        <Button type="button" variant="outline" onClick={() => onNavigate(clearHref)} className="h-9">
           <X className="mr-1 h-3.5 w-3.5" /> Teljes lista
         </Button>
       </div>
@@ -1234,11 +899,11 @@ function BulkActionBar({
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center bg-primary text-sm font-black text-white">
+        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
           {selectedCount}
         </span>
-        <span className="text-[10px] font-black uppercase tracking-widest text-white">rendelés kijelölve</span>
-        <button type="button" onClick={onClear} className="text-neutral-500 hover:text-white" aria-label="Kijelölés törlése">
+        <span className="text-sm text-foreground">rendelés kijelölve</span>
+        <button type="button" onClick={onClear} className="text-muted-foreground hover:text-foreground" aria-label="Kijelölés törlése">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -1247,7 +912,7 @@ function BulkActionBar({
           value={bulkStatus}
           onChange={(e) => setBulkStatus(e.target.value as OrderStatusValue)}
           disabled={busy}
-          className="h-10 rounded-none border border-white/10 bg-black px-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-50"
+          className="h-10 rounded-md bg-background px-3 text-sm shadow-sm ring-1 ring-border/60 disabled:opacity-50"
         >
           {STATUSES.map((status) => (
             <option key={status.value} value={status.value}>
@@ -1259,7 +924,7 @@ function BulkActionBar({
           type="button"
           onClick={onApplyStatus}
           disabled={busy}
-          className="h-10 rounded-none bg-primary px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+          className="h-10 rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/80"
         >
           {isUpdating ? <LoadingSpinner size="xs" className="mr-2" /> : null}
           Státusz
@@ -1270,7 +935,7 @@ function BulkActionBar({
             variant="outline"
             onClick={onGenerateParcelLabels}
             disabled={busy}
-            className="h-10 rounded-none border-amber-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-500/10"
+            className="h-10 text-amber-900 hover:bg-amber-500/10"
           >
             {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <Printer className="mr-2 h-4 w-4" />}
             Csomagcímkék
@@ -1282,7 +947,7 @@ function BulkActionBar({
             variant="outline"
             onClick={onGenerateStandardLabels}
             disabled={busy}
-            className="h-10 rounded-none border-emerald-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10"
+            className="h-10 text-emerald-800 hover:bg-emerald-500/10"
           >
             {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <Tag className="mr-2 h-4 w-4" />}
             PDF címkék
@@ -1294,7 +959,7 @@ function BulkActionBar({
             variant="outline"
             onClick={onRegenerateStandardLabels}
             disabled={busy}
-            className="h-10 rounded-none border-emerald-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/10"
+            className="h-10 text-emerald-800 hover:bg-emerald-500/10"
           >
             {isGeneratingLabels ? <LoadingSpinner size="xs" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}
             PDF újragenerálás
@@ -1306,7 +971,7 @@ function BulkActionBar({
             variant="outline"
             onClick={onDownloadZip}
             disabled={busy}
-            className="h-10 rounded-none border-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-white"
+            className="h-10"
             title={selectionHasLabels ? undefined : "A kijelölésben még nincs letölthető címke"}
           >
             {isDownloadingZip ? <LoadingSpinner size="xs" className="mr-2" /> : <Download className="mr-2 h-4 w-4" />}
@@ -1314,27 +979,6 @@ function BulkActionBar({
           </Button>
         ) : null}
       </div>
-    </div>
-  )
-}
-
-function MixChips({ order }: { order: AdminOrderSummary }) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {order.items.slice(0, 4).map((item, idx) => (
-        <span
-          key={idx}
-          className="border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-bold text-neutral-300"
-        >
-          {item.quantity}× {item.name.length > 22 ? `${item.name.slice(0, 22)}…` : item.name}
-          {item.variantLabel ? ` (${item.variantLabel})` : ""}
-        </span>
-      ))}
-      {order.items.length > 4 && (
-        <span className="border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
-          +{order.items.length - 4}
-        </span>
-      )}
     </div>
   )
 }
@@ -1360,7 +1004,7 @@ function SortHeader({
       type="button"
       onClick={() => onSort(next)}
       className={cn(
-        "flex items-center gap-1 font-black uppercase tracking-widest text-[10px] text-neutral-500 hover:text-white",
+        "flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground",
         align === "right" && "ml-auto"
       )}
     >
@@ -1394,41 +1038,40 @@ function ListView({
   const allSelected = orders.length > 0 && orders.every((o) => selectedIds.has(o.id))
 
   return (
-    <div className="overflow-hidden border border-white/10 bg-white/5 text-white shadow-2xl">
+    <div className={adminTableWrap}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1040px] text-left">
+        <table className="w-full min-w-[1040px] text-left text-sm">
           <thead>
-            <tr className="border-b border-white/5 bg-white/5">
+            <tr className="border-0 bg-muted/30">
               <th className="px-4 py-4">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={onToggleAll}
                   disabled={orders.length === 0}
-                  className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary"
+                  className="h-4 w-4 rounded-md border-border bg-background accent-primary"
                   aria-label="Összes kijelölése"
                 />
               </th>
               <th className="px-4 py-4">
                 <SortHeader label="Azonosító / Dátum" ascKey="oldest" descKey="newest" current={sort} onSort={onSort} />
               </th>
-              <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-neutral-500">Vásárló</th>
-              <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-neutral-500">Termék-mix</th>
-              <th className="px-4 py-4">
-                <SortHeader label="Db / Tétel" ascKey="units_asc" descKey="units_desc" current={sort} onSort={onSort} />
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Vásárló</th>
+              <th className="px-4 py-3">
+                <SortHeader label="Tételek" ascKey="units_asc" descKey="units_desc" current={sort} onSort={onSort} />
               </th>
-              <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-neutral-500">Szállítás</th>
-              <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-neutral-500">Állapot</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Szállítás</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Állapot</th>
               <th className="px-4 py-4">
                 <SortHeader label="Összeg" ascKey="total_asc" descKey="total_desc" current={sort} onSort={onSort} align="right" />
               </th>
-              <th className="px-4 py-4 text-right font-black uppercase tracking-widest text-[10px] text-neutral-500">Művelet</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Művelet</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody>
             {orders.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-20 text-center italic text-white/20">
+              <tr className="border-0">
+                <td colSpan={8} className="px-6 py-16 text-center text-muted-foreground">
                   <Package className="mx-auto mb-4 h-12 w-12 opacity-10" />
                   Nincs a szűrőnek megfelelő rendelés.
                 </td>
@@ -1440,7 +1083,7 @@ function ListView({
                   <tr
                     key={order.id}
                     className={cn(
-                      "cursor-pointer transition-colors hover:bg-white/5",
+                      "cursor-pointer border-0 transition-colors hover:bg-muted/40",
                       isSelected && "bg-primary/5"
                     )}
                     onClick={() => onOpenOrder(order.id)}
@@ -1450,75 +1093,58 @@ function ListView({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => onToggle(order.id)}
-                        className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary"
+                        className="h-4 w-4 rounded-md border-border bg-background accent-primary"
                         aria-label={`${order.orderNumber} kijelölése`}
                       />
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <span className="font-heading text-sm font-black uppercase tracking-wider text-white hover:text-primary">
-                        {order.orderNumber}
-                      </span>
-                      <div className="mt-1 flex items-center gap-1 text-neutral-500">
-                        <Calendar className="h-3 w-3" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">
-                          {format(new Date(order.createdAt), "yyyy.MM.dd HH:mm", { locale: hu })}
-                        </span>
-                      </div>
+                    <td className="px-4 py-3 align-top">
+                      <p className="text-sm font-medium">{order.orderNumber}</p>
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        {format(new Date(order.createdAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
+                      </p>
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <p className="text-sm font-bold italic text-white">{order.customerName}</p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">{order.deliveryHint || "—"}</p>
+                    <td className="px-4 py-3 align-top">
+                      <p className="text-sm font-medium">{order.customerName}</p>
+                      {order.deliveryHint ? (
+                        <p className="text-muted-foreground text-xs">{order.deliveryHint}</p>
+                      ) : null}
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <MixChips order={order} />
+                    <td className="px-4 py-3 align-top text-sm tabular-nums">
+                      {order.totalUnits} db
+                      <span className="text-muted-foreground"> · {order.itemKinds} tétel</span>
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-neutral-700" />
-                        <span className="text-sm font-black tracking-widest text-white">{order.totalUnits} db</span>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-600">{order.itemKinds} tételféle</span>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">{order.shippingLabel}</span>
-                      {order.isGeneratingLabel && (
-                        <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Generálás alatt</p>
-                      )}
-                      {order.labelError && !order.isGeneratingLabel && (
-                        <p
-                          className="mt-1 line-clamp-2 text-[9px] font-bold leading-snug text-rose-400"
-                          title={order.labelError}
-                        >
+                    <td className="px-4 py-3 align-top">
+                      <p className="text-sm">{order.shippingLabel}</p>
+                      {order.isGeneratingLabel ? (
+                        <p className="text-xs text-blue-600">Címke generálás…</p>
+                      ) : order.labelError ? (
+                        <p className="line-clamp-1 text-xs text-rose-600" title={order.labelError}>
                           {order.labelError}
                         </p>
-                      )}
-                      {order.hasLabel && !order.isGeneratingLabel && !order.labelError && (
-                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Címke kész</p>
-                      )}
-                      {order.needsLabel && !order.isGeneratingLabel && !order.labelError && (
-                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Címke hiányzik</p>
-                      )}
+                      ) : order.needsLabel ? (
+                        <p className="text-xs text-amber-600">Címke hiányzik</p>
+                      ) : order.hasLabel ? (
+                        <p className="text-xs text-emerald-600">Címke kész</p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4 align-top">
-                      <span className={cn("inline-block border px-2.5 py-1 text-[9px] font-black uppercase tracking-widest", getStatusStyle(order.status))}>
-                        {getStatusLabel(order.status)}
-                      </span>
+                      <AdminOrderStatusBadge status={order.status} />
                     </td>
-                    <td className="px-4 py-4 align-top text-right">
-                      <span className="text-base font-black tracking-tighter text-white">{formatHuf(order.gross)}</span>
+                    <td className="px-4 py-3 align-top text-right">
+                      <span className="text-base font-semibold tabular-nums">{formatHuf(order.gross)}</span>
                       {order.discount > 0 && (
-                        <p className="flex items-center justify-end gap-1 text-[8px] font-black uppercase tracking-widest text-highlight">
-                          <Tag className="h-3 w-3" /> kedvezmény
+                        <p className="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary">
+                          <Tag className="size-3" /> kedvezmény
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-4 text-right align-top" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-3 text-right align-top" onClick={(e) => e.stopPropagation()}>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => onOpenOrder(order.id)}
-                        className="h-10 w-10 rounded-none border border-transparent text-neutral-500 hover:border-white/30 hover:bg-white/10 hover:text-white"
+                        className="size-9 text-muted-foreground hover:text-foreground"
                         title="Részletek megnyitása"
                       >
                         <Eye className="h-5 w-5" />
@@ -1560,8 +1186,8 @@ function MixView({
 
   if (sections.length === 0) {
     return (
-      <div className="border border-white/10 bg-white/5 p-12 text-center italic text-white/30">
-        <Layers className="mx-auto mb-4 h-12 w-12 opacity-10" />
+      <div className="rounded-xl bg-muted/40 p-12 text-center text-muted-foreground shadow-sm">
+        <Layers className="mx-auto mb-4 size-12 opacity-10" />
         Nincs csoportosítható rendelés.
       </div>
     )
@@ -1569,7 +1195,7 @@ function MixView({
 
   return (
     <div className="space-y-8">
-      <p className="text-sm font-medium italic text-white/40">
+      <p className="text-sm text-muted-foreground">
         Először szállítási mód szerint, azon belül azonos kosár-mix szerint. Így a Foxpost/GLS címkézés és a
         webshop szállítás külön munkafolyamatban kezelhető.
       </p>
@@ -1578,53 +1204,53 @@ function MixView({
         const sectionOrderIds = section.mixGroups.flatMap((group) => group.orderIds)
         const laneStyle =
           section.shippingType === "standard"
-            ? "border-white/15 bg-white/5"
+            ? "bg-muted/40"
             : section.shippingType === "foxpost"
-              ? "border-amber-500/30 bg-amber-500/5"
-              : "border-blue-500/30 bg-blue-500/5"
+              ? "bg-amber-500/5"
+              : "bg-blue-500/5"
 
         return (
-          <section key={section.key} className={cn("border p-4 md:p-5", laneStyle)}>
+          <section key={section.key} className={cn("rounded-xl p-4 shadow-sm md:p-5", laneStyle)}>
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-3">
                 <div
                   className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center border",
+                    "flex size-11 shrink-0 items-center justify-center rounded-lg",
                     section.canAutoLabel
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-white/20 bg-black/40 text-neutral-300"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-foreground"
                   )}
                 >
-                  <Truck className="h-5 w-5" />
+                  <Truck className="size-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black uppercase tracking-wider text-white">{section.label}</h2>
-                  <p className="mt-1 text-sm italic text-neutral-400">{section.description}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
-                    <span className="border border-white/10 bg-black/40 px-2 py-1 text-white">
+                  <h2 className="text-lg font-semibold text-foreground">{section.label}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                       {section.orderCount} rendelés
                     </span>
-                    <span className="border border-white/10 bg-black/40 px-2 py-1 text-white">
+                    <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                       {section.totalUnits} db
                     </span>
-                    <span className="border border-white/10 bg-black/40 px-2 py-1 text-neutral-300">
+                    <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                       {section.mixGroups.length} mix csoport
                     </span>
                     {section.canAutoLabel ? (
                       <>
-                        <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                        <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-emerald-900">
                           {section.hasLabel} címkés
                         </span>
-                        <span className="border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-amber-300">
+                        <span className="rounded-md bg-amber-500/10 px-2 py-1 text-amber-900">
                           {section.needsLabel} címke hiányzik
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-amber-300">
+                        <span className="rounded-md bg-amber-500/10 px-2 py-1 text-amber-900">
                           {section.needsLabel} címke hiányzik
                         </span>
-                        <span className="border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                        <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-emerald-900">
                           {section.hasLabel} címkés
                         </span>
                       </>
@@ -1637,7 +1263,7 @@ function MixView({
                 <Button
                   type="button"
                   onClick={() => onSelectGroup(sectionOrderIds)}
-                  className="h-9 rounded-none bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+                  className="h-9 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/80"
                 >
                   <Boxes className="mr-2 h-4 w-4" />
                   Sáv kijelölése
@@ -1646,7 +1272,7 @@ function MixView({
                   type="button"
                   variant="outline"
                   onClick={() => onNavigate(buildShippingHref(section.shippingType))}
-                  className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-300"
+                  className="h-9"
                 >
                   Sáv szűrése
                 </Button>
@@ -1656,7 +1282,7 @@ function MixView({
                     variant="outline"
                     disabled={isGeneratingLabels}
                     onClick={() => void onGenerateLabels(sectionOrderIds)}
-                    className="h-9 rounded-none border-amber-500/30 px-3 text-[10px] font-black uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
+                    className="h-9 text-amber-900 hover:bg-amber-500/10"
                   >
                     {isGeneratingLabels ? (
                       <LoadingSpinner size="xs" className="mr-2" />
@@ -1672,7 +1298,7 @@ function MixView({
                     variant="outline"
                     disabled={isGeneratingLabels}
                     onClick={() => void onGenerateStandardLabels(sectionOrderIds, { skipExisting: true })}
-                    className="h-9 rounded-none border-amber-500/30 px-3 text-[10px] font-black uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
+                    className="h-9 text-amber-900 hover:bg-amber-500/10"
                   >
                     {isGeneratingLabels ? (
                       <LoadingSpinner size="xs" className="mr-2" />
@@ -1688,7 +1314,7 @@ function MixView({
                     variant="outline"
                     disabled={isGeneratingLabels}
                     onClick={() => void onGenerateStandardLabels(sectionOrderIds, { skipExisting: false })}
-                    className="h-9 rounded-none border-emerald-500/30 px-3 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/10"
+                    className="h-9 text-emerald-800 hover:bg-emerald-500/10"
                   >
                     {isGeneratingLabels ? (
                       <LoadingSpinner size="xs" className="mr-2" />
@@ -1702,36 +1328,32 @@ function MixView({
             </div>
 
             {section.mixGroups.length === 0 ? (
-              <p className="text-sm italic text-neutral-500">Nincs mix csoport ebben a szállítási sávban.</p>
+              <p className="text-sm text-muted-foreground">Nincs mix csoport ebben a szállítási sávban.</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
                 {section.mixGroups.map((group, idx) => (
-                  <div key={`${section.key}-${group.key}`} className="flex flex-col border border-white/10 bg-black/30 p-4">
+                  <div key={`${section.key}-${group.key}`} className="flex flex-col rounded-lg bg-background/60 p-4 shadow-sm">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 items-center justify-center bg-primary/20 text-[11px] font-black text-primary">
+                        <span className="flex size-7 items-center justify-center rounded-md bg-primary/15 text-xs font-semibold text-primary">
                           {idx + 1}
                         </span>
                         <div>
-                          <p className="text-2xl font-black leading-none text-white">{group.orderCount}</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
-                            azonos kosár
-                          </p>
+                          <p className="text-2xl font-semibold leading-none">{group.orderCount}</p>
+                          <p className="text-xs text-muted-foreground">azonos kosár</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-white">{group.totalUnits} db</p>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600">
-                          {group.kinds} tételféle
-                        </p>
+                        <p className="text-sm font-semibold">{group.totalUnits} db</p>
+                        <p className="text-xs text-muted-foreground">{group.kinds} tételféle</p>
                       </div>
                     </div>
 
-                    <div className="mb-3 flex-1 space-y-1 border-y border-white/5 py-3">
+                    <div className="mb-3 flex-1 space-y-1 border-y border-border/50 py-3">
                       {group.lines.map((line) => (
                         <div key={line.key} className="flex items-center justify-between gap-2 text-sm">
-                          <span className="text-neutral-300">{line.label}</span>
-                          <span className="font-black text-white">{line.quantity}×</span>
+                          <span className="text-foreground">{line.label}</span>
+                          <span className="font-semibold text-foreground">{line.quantity}×</span>
                         </div>
                       ))}
                     </div>
@@ -1740,7 +1362,7 @@ function MixView({
                       <Button
                         type="button"
                         onClick={() => onSelectGroup(group.orderIds)}
-                        className="h-9 flex-1 rounded-none bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+                        className="h-9 flex-1 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/80"
                       >
                         <Boxes className="mr-2 h-4 w-4" /> Mix kijelölése
                       </Button>
@@ -1748,7 +1370,7 @@ function MixView({
                         type="button"
                         variant="outline"
                         onClick={() => onNavigate(buildMixHref(group.key, section.shippingType))}
-                        className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-300"
+                        className="h-9"
                       >
                         Szűrés
                       </Button>
@@ -1762,7 +1384,7 @@ function MixView({
       })}
 
       {totalMixGroups === 0 ? null : (
-        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+        <p className="text-xs text-muted-foreground">
           Összesen {sections.length} szállítási sáv · {totalMixGroups} termék-mix csoport
         </p>
       )}
@@ -1795,22 +1417,22 @@ function AssignView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 border border-white/10 bg-white/5 p-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl bg-muted/40 p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm font-black uppercase tracking-widest text-white">Párhuzamos munkamegosztás</p>
-          <p className="text-[10px] font-bold italic text-neutral-500">
+          <p className="text-sm font-semibold text-foreground">Párhuzamos munkamegosztás</p>
+          <p className="text-sm text-muted-foreground">
             A {totalOrders} szűrt rendelés szállítási sávonként külön osztva {employeeCount} dolgozóra. Minden
             sávban külön munkafolyamat (webshop manuális / Foxpost / GLS címke).
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Dolgozók / sáv</span>
+          <span className="text-sm text-muted-foreground">Dolgozók / sáv</span>
           <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
+              size="icon"
               onClick={() => setEmployeeCount(Math.max(1, employeeCount - 1))}
-              className="h-10 w-10 rounded-none border-white/10 text-lg font-black text-white"
             >
               −
             </Button>
@@ -1819,13 +1441,13 @@ function AssignView({
               min={1}
               value={employeeCount}
               onChange={(e) => setEmployeeCount(Math.max(1, Number(e.target.value) || 1))}
-              className="h-10 w-16 rounded-none border border-white/10 bg-black text-center text-sm font-black text-white"
+              className="h-10 w-16 rounded-md bg-background text-center text-sm font-medium shadow-sm ring-1 ring-border/60"
             />
             <Button
               type="button"
               variant="outline"
+              size="icon"
               onClick={() => setEmployeeCount(employeeCount + 1)}
-              className="h-10 w-10 rounded-none border-white/10 text-lg font-black text-white"
             >
               +
             </Button>
@@ -1834,43 +1456,43 @@ function AssignView({
       </div>
 
       {assignSections.length === 0 ? (
-        <div className="border border-white/10 bg-white/5 p-12 text-center italic text-white/30">
+        <div className="rounded-xl bg-muted/40 p-12 text-center text-muted-foreground shadow-sm">
           Nincs szétosztható rendelés a jelenlegi szűrővel.
         </div>
       ) : (
         assignSections.map((section) => {
           const laneStyle =
             section.shippingType === "standard"
-              ? "border-white/15 bg-white/5"
+              ? "bg-muted/40"
               : section.shippingType === "foxpost"
-                ? "border-amber-500/30 bg-amber-500/5"
-                : "border-blue-500/30 bg-blue-500/5"
+                ? "bg-amber-500/5"
+                : "bg-blue-500/5"
 
           return (
-            <section key={section.key} className={cn("border p-4 md:p-5", laneStyle)}>
+            <section key={section.key} className={cn("rounded-xl p-4 shadow-sm md:p-5", laneStyle)}>
               <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-start gap-3">
                   <div
                     className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center border",
+                      "flex size-11 shrink-0 items-center justify-center rounded-lg",
                       section.canAutoLabel
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-white/20 bg-black/40 text-neutral-300"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-foreground"
                     )}
                   >
-                    <Truck className="h-5 w-5" />
+                    <Truck className="size-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-wider text-white">{section.label}</h2>
-                    <p className="mt-1 text-sm italic text-neutral-400">{section.description}</p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
-                      <span className="border border-white/10 bg-black/40 px-2 py-1 text-white">
+                    <h2 className="text-lg font-semibold text-foreground">{section.label}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                         {section.orderCount} rendelés
                       </span>
-                      <span className="border border-white/10 bg-black/40 px-2 py-1 text-white">
+                      <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                         {section.mixGroups.length} mix csoport
                       </span>
-                      <span className="border border-white/10 bg-black/40 px-2 py-1 text-neutral-300">
+                      <span className="rounded-md bg-background/80 px-2 py-1 shadow-sm">
                         {section.batches.filter((batch) => batch.orderCount > 0).length} aktív csomag
                       </span>
                     </div>
@@ -1879,38 +1501,36 @@ function AssignView({
               </div>
 
               {section.orderCount === 0 ? (
-                <p className="text-sm italic text-neutral-500">Nincs rendelés ebben a sávban.</p>
+                <p className="text-sm text-muted-foreground">Nincs rendelés ebben a sávban.</p>
               ) : (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {section.batches.map((batch) => (
                     <div
                       key={`${section.key}-${batch.index}`}
                       className={cn(
-                        "flex flex-col border border-white/10 bg-black/30 p-4",
+                        "flex flex-col rounded-lg bg-background/60 p-4 shadow-sm",
                         batch.orderCount === 0 && "opacity-40"
                       )}
                     >
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-8 w-8 items-center justify-center bg-primary/20 text-xs font-black text-primary">
+                          <span className="flex size-8 items-center justify-center rounded-md bg-primary/15 text-xs font-semibold text-primary">
                             {batch.index + 1}
                           </span>
-                          <p className="text-sm font-black uppercase tracking-widest text-white">
-                            {batch.index + 1}. dolgozó
-                          </p>
+                          <p className="text-sm font-medium">{batch.index + 1}. dolgozó</p>
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                        <span className="text-xs text-muted-foreground">
                           #{batch.start + 1}–{batch.end}
                         </span>
                       </div>
                       <div className="mb-4 flex gap-4">
                         <div>
-                          <p className="text-2xl font-black leading-none text-white">{batch.orderCount}</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600">rendelés</p>
+                          <p className="text-2xl font-semibold leading-none">{batch.orderCount}</p>
+                          <p className="text-xs text-muted-foreground">rendelés</p>
                         </div>
                         <div>
-                          <p className="text-2xl font-black leading-none text-white">{batch.totalUnits}</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600">db összesen</p>
+                          <p className="text-2xl font-semibold leading-none">{batch.totalUnits}</p>
+                          <p className="text-xs text-muted-foreground">db összesen</p>
                         </div>
                       </div>
                       <div className="mt-auto flex flex-wrap gap-2">
@@ -1920,7 +1540,7 @@ function AssignView({
                           onClick={() =>
                             onNavigate(buildBatchHref(section.shippingType, batch.start, batch.end))
                           }
-                          className="h-9 flex-1 rounded-none bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80 disabled:opacity-40"
+                          className="h-9 flex-1 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-40"
                         >
                           Megnyitás
                         </Button>
@@ -1929,7 +1549,7 @@ function AssignView({
                           variant="outline"
                           disabled={batch.orderCount === 0}
                           onClick={() => onSelectBatch(batch.orderIds)}
-                          className="h-9 rounded-none border-white/10 px-3 text-[10px] font-black uppercase tracking-widest text-neutral-300 disabled:opacity-40"
+                          className="h-9 disabled:opacity-40"
                         >
                           Kijelölés
                         </Button>

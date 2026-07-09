@@ -52,7 +52,7 @@ export function StandardShippingLabelPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+      <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
         Webshop / házhozszállítás — PDF címke a feladó és címzett adataival
       </p>
 
@@ -61,14 +61,14 @@ export function StandardShippingLabelPanel({
       ) : null}
 
       {isGenerating ? (
-        <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-400">
+        <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground text-amber-400">
           <LoadingSpinner size="xs" />
           Címke generálás folyamatban…
         </p>
       ) : null}
 
       {hasLabel && standardShippingLabel?.generatedAt ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+        <p className="text-xs font-medium text-muted-foreground text-emerald-800">
           Címke kész — {new Date(standardShippingLabel.generatedAt).toLocaleString("hu-HU")}
         </p>
       ) : null}
@@ -79,7 +79,7 @@ export function StandardShippingLabelPanel({
             type="button"
             onClick={() => void handleGenerate()}
             disabled={generating || isGenerating}
-            className="h-10 rounded-none bg-primary px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+            className="h-10 rounded-md bg-primary px-4 text-xs font-medium text-muted-foreground text-primary-foreground hover:bg-primary/80"
           >
             {generating || isGenerating ? (
               <LoadingSpinner size="xs" className="mr-2" />
@@ -94,7 +94,7 @@ export function StandardShippingLabelPanel({
             variant="outline"
             onClick={() => void handleGenerate()}
             disabled={generating || isGenerating}
-            className="h-10 rounded-none border-emerald-500/30 px-4 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10"
+            className="h-10 rounded-md border-emerald-500/30 px-4 text-xs font-medium text-muted-foreground text-emerald-800 hover:bg-emerald-500/10"
           >
             {generating || isGenerating ? (
               <LoadingSpinner size="xs" className="mr-2" />
@@ -110,7 +110,7 @@ export function StandardShippingLabelPanel({
             type="button"
             variant="outline"
             asChild
-            className="h-10 rounded-none border-white/10 px-4 text-[10px] font-black uppercase tracking-widest text-neutral-200"
+            className="h-10 rounded-md border-border px-4 text-xs font-medium text-muted-foreground text-neutral-200"
           >
             <Link href={labelUrl} target="_blank" rel="noopener noreferrer">
               <Download className="mr-2 h-4 w-4" />

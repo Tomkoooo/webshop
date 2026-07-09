@@ -127,17 +127,17 @@ export function FixedProductsSourcePicker({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-neutral-400 text-[10px] font-black uppercase tracking-widest">
+        <Label className="text-muted-foreground text-xs font-medium text-muted-foreground">
           Konkrét termékek
         </Label>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Keress név vagy cikkszó alapján, és kattints a listára. A sorrend meghatározza a javaslatok prioritását.
         </p>
       </div>
 
       <div ref={wrapRef} className="relative space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => {
@@ -146,7 +146,7 @@ export function FixedProductsSourcePicker({
             }}
             onFocus={() => setDropdownOpen(true)}
             placeholder="Kezdj el gépelni (min. 2 karakter)…"
-            className="rounded-none border-white/10 bg-white/5 pl-10 text-white placeholder:text-neutral-600"
+            className="rounded-md border-border bg-muted/50 pl-10 text-foreground placeholder:text-muted-foreground"
             autoComplete="off"
           />
           {searching ? (
@@ -155,22 +155,22 @@ export function FixedProductsSourcePicker({
         </div>
 
         {dropdownOpen && q.trim().length >= SEARCH_MIN_CHARS ? (
-          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border border-white/10 bg-[#0f0f10] shadow-xl">
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border border-border bg-[#0f0f10] shadow-xl">
             {filteredResults.length === 0 && !searching ? (
-              <p className="px-4 py-6 text-center text-sm text-neutral-500">Nincs találat. Próbálj más keresőszót.</p>
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">Nincs találat. Próbálj más keresőszót.</p>
             ) : (
-              <ul className="divide-y divide-white/5">
+              <ul className="divide-y divide-border/50">
                 {filteredResults.map((p) => (
                   <li key={p.id}>
                     <button
                       type="button"
-                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
                       onClick={() => addProduct(p)}
                     >
-                      <div className="relative h-11 w-11 shrink-0 overflow-hidden border border-white/10 bg-neutral-900">
+                      <div className="relative h-11 w-11 shrink-0 overflow-hidden border border-border bg-muted">
                         <FallbackImage src={p.image} alt="" width={44} height={44} className="h-full w-full object-cover" />
                       </div>
-                      <span className="min-w-0 flex-1 text-sm font-semibold text-white">{p.name}</span>
+                      <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">{p.name}</span>
                       <Plus className="h-4 w-4 shrink-0 admin-icon-accent" />
                     </button>
                   </li>
@@ -181,16 +181,16 @@ export function FixedProductsSourcePicker({
         ) : null}
       </div>
 
-      <div className="rounded-none border border-white/10 bg-white/5 p-4">
+      <div className="rounded-md border border-border bg-muted/50 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+          <span className="text-xs font-medium text-muted-foreground text-muted-foreground">
             Kiválasztva ({productIds.length} / {MAX_PRODUCTS})
           </span>
-          {hydrating ? <span className="text-[10px] text-neutral-500">Szinkronizálás…</span> : null}
+          {hydrating ? <span className="text-xs text-muted-foreground">Szinkronizálás…</span> : null}
         </div>
 
         {productIds.length === 0 ? (
-          <p className="py-8 text-center text-sm text-neutral-500">
+          <p className="py-8 text-center text-sm text-muted-foreground">
             Még nincs kiválasztott termék. Használd a keresőt fent.
           </p>
         ) : (
@@ -198,14 +198,14 @@ export function FixedProductsSourcePicker({
             {displayRows.map((row, idx) => (
               <li
                 key={row.id}
-                className="flex items-center gap-3 border border-white/5 bg-black/30 px-3 py-2.5"
+                className="flex items-center gap-3 border border-border bg-background/30 px-3 py-2.5"
               >
-                <div className="flex flex-col gap-0.5 border-r border-white/10 pr-2">
+                <div className="flex flex-col gap-0.5 border-r border-border pr-2">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-none text-neutral-500 hover:text-white"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
                     disabled={idx === 0}
                     onClick={() => move(idx, -1)}
                     aria-label="Fel"
@@ -216,7 +216,7 @@ export function FixedProductsSourcePicker({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-none text-neutral-500 hover:text-white"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
                     disabled={idx === productIds.length - 1}
                     onClick={() => move(idx, 1)}
                     aria-label="Le"
@@ -224,21 +224,21 @@ export function FixedProductsSourcePicker({
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-white/10 bg-neutral-900">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-border bg-muted">
                   <FallbackImage src={row.image} alt="" width={56} height={56} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-white">{row.name}</p>
+                  <p className="truncate font-semibold text-foreground">{row.name}</p>
                   {row.slug ? (
-                    <p className="truncate text-[11px] text-neutral-500">/{row.slug}</p>
+                    <p className="truncate text-xs text-muted-foreground">/{row.slug}</p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 items-center gap-1 border-l border-white/10 pl-2">
+                <div className="flex shrink-0 items-center gap-1 border-l border-border pl-2">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-none text-neutral-500 hover:text-white"
+                    className="h-9 w-9 rounded-md text-muted-foreground hover:text-foreground"
                     asChild
                   >
                     <Link href={`/admin/products/${row.id}`} target="_blank" rel="noreferrer" title="Megnyitás szerkesztőben">
@@ -249,7 +249,7 @@ export function FixedProductsSourcePicker({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-none text-neutral-500 hover:text-rose-400"
+                    className="h-9 w-9 rounded-md text-muted-foreground hover:text-rose-400"
                     title="Eltávolítás"
                     onClick={() => removeAt(idx)}
                   >

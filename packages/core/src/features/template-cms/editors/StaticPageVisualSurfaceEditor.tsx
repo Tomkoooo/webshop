@@ -4,6 +4,7 @@ import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
@@ -79,7 +80,7 @@ export function StaticPageVisualSurfaceEditor({
 
   if (!mod) {
     return (
-      <div className="rounded-xl border border-white/10 bg-black/40 px-6 py-10 text-sm text-neutral-400">
+      <div className="rounded-xl bg-muted/40 px-6 py-10 text-sm text-muted-foreground">
         Sablon betöltése…
       </div>
     )
@@ -110,15 +111,10 @@ export function StaticPageVisualSurfaceEditor({
   const structureSidebar = buildListFieldsSidebar({ specs: def.listFields, draft, setPath })
 
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs text-neutral-400 space-y-2">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-        Sablon statikus lap: <span className="text-neutral-200">{slug}</span>
-      </p>
-      <p>
-        A sablon előnézetén közvetlenül szerkeszthetővé tett szöveget és médiumokat itt változtatod —
-        előnézet mód a jobb oldali eszközöknél ellenőrzéshez.
-      </p>
-    </div>
+    <CmsEditorSubtoolbar
+      title={`Statikus lap: ${slug}`}
+      description="A sablon előnézetén közvetlenül szerkeszthetővé tett szöveget és médiumokat itt változtatod — előnézet mód a jobb oldali eszközöknél ellenőrzéshez."
+    />
   )
 
   return (

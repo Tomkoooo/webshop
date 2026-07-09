@@ -18,6 +18,7 @@ import {
 } from "@wse/core/components/ui/dialog";
 import { Input } from "@wse/core/components/ui/input";
 import type { FoxpostParcelPoint } from "@wse/core/lib/foxpost";
+import { adminFieldHint, adminInputClass } from "@wse/core/lib/admin-ui";
 import { cn } from "@wse/core/lib/utils";
 
 type FoxpostApmCatalogResponse = {
@@ -122,39 +123,39 @@ export function FoxpostParcelPointEditor({
         variant="outline"
         disabled={disabled || parcelLocked}
         onClick={() => setOpen(true)}
-        className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
+        className="h-10"
       >
         <MapPin className="mr-2 h-4 w-4" />
         Csomagpont módosítása
       </Button>
 
       <Dialog open={open} onOpenChange={(next) => !isPending && setOpen(next)}>
-        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-none border-white/10 bg-black p-0 text-white sm:max-w-2xl">
-          <DialogHeader className="border-b border-white/10 px-5 py-4 pr-12">
-            <DialogTitle className="text-lg font-black uppercase italic tracking-tight">
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden rounded-xl bg-background p-0 text-foreground sm:max-w-2xl">
+          <DialogHeader className="border-b border-border/50 px-5 py-4 pr-12">
+            <DialogTitle className="text-lg font-semibold">
               Foxpost csomagpont választása
             </DialogTitle>
-            <DialogDescription className="text-sm text-neutral-400">
+            <DialogDescription className="text-sm text-muted-foreground">
               A lista naponta frissül a Foxpost hivatalos forrásából (
-              <span className="text-neutral-300">foxplus.json</span>). Válassz élő automatát — a bezárt pontok
+              <span className="text-foreground">foxplus.json</span>). Válassz élő automatát — a bezárt pontok
               nincsenek a listában.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 border-b border-white/10 px-5 py-4">
+          <div className="space-y-3 border-b border-border/50 px-5 py-4">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Keresés név, város, irányítószám vagy ID alapján…"
-                className="h-10 flex-1 rounded-none border-white/10 bg-neutral-950"
+                className={cn(adminInputClass, "h-10 flex-1")}
               />
               <Button
                 type="button"
                 variant="outline"
                 disabled={loadingList}
                 onClick={() => void loadCatalog(true)}
-                className="h-10 shrink-0 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+                className="h-10 shrink-0 text-xs"
               >
                 {loadingList ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -165,7 +166,7 @@ export function FoxpostParcelPointEditor({
               </Button>
             </div>
             {catalog?.fetchedAt ? (
-              <p className="text-[10px] uppercase tracking-widest text-neutral-500">
+              <p className={adminFieldHint}>
                 Lista betöltve:{" "}
                 {format(new Date(catalog.fetchedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
                 {catalog.mode === "sandbox" ? " · sandbox" : " · éles"}
@@ -175,12 +176,12 @@ export function FoxpostParcelPointEditor({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
             {loadingList && !catalog ? (
-              <div className="flex h-40 items-center justify-center text-neutral-400">
+              <div className="flex h-40 items-center justify-center text-muted-foreground">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Automaták betöltése…
               </div>
             ) : filteredApms.length === 0 ? (
-              <p className="py-8 text-center text-sm text-neutral-500">Nincs találat.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Nincs találat.</p>
             ) : (
               <ul className="space-y-2">
                 {filteredApms.map((apm) => {
@@ -191,14 +192,14 @@ export function FoxpostParcelPointEditor({
                         type="button"
                         onClick={() => setSelectedId(apm.id)}
                         className={cn(
-                          "w-full border p-3 text-left transition-colors",
+                          "w-full rounded-lg p-3 text-left transition-colors",
                           isSelected
-                            ? "border-amber-500/50 bg-amber-500/10"
-                            : "border-white/10 bg-black/40 hover:border-white/20"
+                            ? "bg-amber-500/10 ring-1 ring-amber-500/40"
+                            : "bg-muted/30 hover:bg-muted/50"
                         )}
                       >
-                        <p className="text-sm font-bold text-white">{apm.name}</p>
-                        <p className="mt-1 text-[10px] uppercase tracking-widest text-neutral-500">
+                        <p className="text-sm font-medium text-foreground">{apm.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {apm.id} · {formatApmLine(apm) || "—"}
                         </p>
                       </button>
@@ -209,13 +210,13 @@ export function FoxpostParcelPointEditor({
             )}
           </div>
 
-          <DialogFooter className="gap-2 border-t border-white/10 px-5 py-4 sm:gap-2">
+          <DialogFooter className="gap-2 border-t border-border/50 px-5 py-4 sm:gap-2">
             <Button
               type="button"
               variant="outline"
               disabled={isPending}
               onClick={() => setOpen(false)}
-              className="h-10 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+              className="h-10 text-xs"
             >
               Mégse
             </Button>
@@ -223,7 +224,7 @@ export function FoxpostParcelPointEditor({
               type="button"
               disabled={isPending || !selectedId}
               onClick={handleSave}
-              className="h-10 rounded-none text-[10px] font-black uppercase tracking-widest"
+              className="h-10 text-xs"
             >
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Csomagpont mentése

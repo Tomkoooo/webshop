@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { WandSparkles } from "lucide-react";
 import { Button } from "@wse/core/components/ui/button";
 import { Input } from "@wse/core/components/ui/input";
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField";
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel";
+import { adminInputClass } from "@wse/core/lib/admin-ui";
 import {
   ELADHATO_NUMBER_RANGES,
   expandNumberRanges,
@@ -14,6 +17,7 @@ import { mergeNumberedVariantsIntoExisting } from "@wse/core/lib/generate-number
 import { generateNumberedVariants } from "@wse/core/actions/admin-products";
 import type { AdminVariantRow } from "@wse/core/lib/admin-product-variants";
 import type { UniqueNumberedVariantsConfig } from "@wse/core/lib/unique-numbered-variants";
+import { cn } from "@wse/core/lib/utils";
 
 type Props = {
   productId?: string;
@@ -154,19 +158,18 @@ export function NumberedVariantsGenerator({
   };
 
   return (
-    <div className="border border-primary/30 bg-primary/5 p-4 space-y-4">
-      <div className="flex items-center gap-2 text-white">
-        <WandSparkles className="h-4 w-4 text-primary" />
-        <p className="text-xs font-black uppercase tracking-widest">Sorszámos (egyedi) variáns generátor</p>
+    <AdminPanel
+      title="Sorszámos variáns generátor"
+      description="ELADHATO előbeállítás: 36–46, 49–76 (50 kihagyva), 79–409 — összesen 369 db, készlet 1 / variáns."
+      className="bg-primary/5"
+    >
+      <div className="flex items-center gap-2 text-primary">
+        <WandSparkles className="h-4 w-4" />
+        <span className="text-sm font-medium">Egyedi sorszámos variánsok</span>
       </div>
-      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
-        ELADHATÓ előbeállítás: 36–46, 49–76 (50 kihagyva), 79–409 — összesen 369 db, készlet 1 / variáns.
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">
-            Attribútum neve
-          </label>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <AdminFormField label="Attribútum neve">
           <Input
             value={attributeName}
             onChange={(e) => {
@@ -175,14 +178,14 @@ export function NumberedVariantsGenerator({
                 syncUniqueConfig(e.target.value, descriptionHtml);
               }
             }}
-            className="bg-black border-white/5 h-10 text-white rounded-none"
+            className={adminInputClass}
           />
-        </div>
+        </AdminFormField>
         <div className="flex items-end gap-2">
           <Button
             type="button"
             variant="outline"
-            className="rounded-none uppercase tracking-widest text-xs"
+            className="rounded-md text-sm"
             onClick={() => setRangesJson(PRESET_JSON)}
           >
             ELADHATÓ preset
@@ -190,14 +193,10 @@ export function NumberedVariantsGenerator({
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">
-          Leírás sorszámos variánsokhoz (opcionális)
-        </label>
-        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-          Üresen hagyva a termék alapleírása jelenik meg. Használható: {"{{number}}"} vagy {"{{szam}}"} a
-          kiválasztott sorszám beillesztéséhez. HTML megengedett.
-        </p>
+      <AdminFormField
+        label="Leírás sorszámos variánsokhoz (opcionális)"
+        hint="Üresen hagyva a termék alapleírása jelenik meg. Használható: {{number}} vagy {{szam}}. HTML megengedett."
+      >
         <textarea
           value={descriptionHtml}
           onChange={(e) => {
@@ -208,28 +207,25 @@ export function NumberedVariantsGenerator({
           }}
           rows={5}
           placeholder="Pl. Limitált példány, sorszám: {{number}}…"
-          className="w-full bg-black border border-white/10 text-white text-sm p-3 rounded-none resize-y min-h-[100px]"
+          className={cn(adminInputClass, "min-h-[100px] resize-y py-2")}
         />
-      </div>
+      </AdminFormField>
 
-      <textarea
-        value={rangesJson}
-        onChange={(e) => setRangesJson(e.target.value)}
-        rows={6}
-        className="w-full bg-black border border-white/10 text-white text-xs font-mono p-3 rounded-none"
-        spellCheck={false}
-      />
-      <Button
-        type="button"
-        disabled={isPending}
-        onClick={handleGenerate}
-        className="rounded-none uppercase tracking-widest text-xs font-black"
-      >
+      <AdminFormField label="Tartományok (JSON)">
+        <textarea
+          value={rangesJson}
+          onChange={(e) => setRangesJson(e.target.value)}
+          rows={6}
+          className={cn(adminInputClass, "resize-y py-2 font-mono text-xs")}
+          spellCheck={false}
+        />
+      </AdminFormField>
+
+      <Button type="button" disabled={isPending} onClick={handleGenerate}>
         {isPending ? "Generálás…" : "Sorszám variánsok generálása"}
       </Button>
-      {message ? (
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-300">{message}</p>
-      ) : null}
-    </div>
+
+      {message ? <p className="text-sm text-foreground">{message}</p> : null}
+    </AdminPanel>
   );
 }

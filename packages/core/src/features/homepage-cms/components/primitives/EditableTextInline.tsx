@@ -6,7 +6,7 @@ import { useCmsEdit } from "@wse/core/features/homepage-cms/components/editor/cm
 import type { HomepageBlock } from "@wse/core/features/homepage-cms/types/block-types"
 
 const editableFieldClass =
-  "w-full border border-dashed border-primary/40 bg-[color-mix(in_oklab,var(--theme-surface)_75%,transparent)] px-2 py-1 text-inherit"
+  "w-full rounded-md border-0 bg-[color-mix(in_oklab,var(--theme-surface)_80%,transparent)] px-2 py-1 text-inherit shadow-sm ring-2 ring-primary/35 ring-offset-1 ring-offset-transparent focus-visible:ring-primary/60"
 
 export function EditableTextInline({
   blockType,

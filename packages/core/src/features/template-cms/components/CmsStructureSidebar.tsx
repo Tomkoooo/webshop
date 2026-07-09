@@ -17,8 +17,8 @@ export function CmsStructureSidebar({
   children: ReactNode
 }) {
   return (
-    <div className="max-h-[calc(100vh-6rem)] space-y-4 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-500">{title}</p>
+    <div className="max-h-[calc(100vh-6rem)] space-y-4 overflow-y-auto rounded-xl bg-card p-4 shadow-sm">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
       {children}
     </div>
   )
@@ -26,8 +26,7 @@ export function CmsStructureSidebar({
 
 /**
  * Renders a page's declared `listFields` as structured list managers bound to
- * the current draft. Returns null when the page declares no list fields, so
- * editors can pass the result straight to the chrome's `structureSidebar` slot.
+ * the current draft. Returns null when the page declares no list fields.
  */
 export function buildListFieldsSidebar({
   specs,

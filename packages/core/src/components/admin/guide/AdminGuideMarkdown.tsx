@@ -9,7 +9,7 @@ const markdownComponents: Components = {
   a: ({ href, children }) => {
     if (href?.startsWith("/admin") || href?.startsWith("/")) {
       return (
-        <Link href={href} className="text-amber-300 underline underline-offset-2 hover:text-amber-200">
+        <Link href={href} className="text-amber-800 underline underline-offset-2 hover:text-amber-900">
           {children}
         </Link>
       )
@@ -19,7 +19,7 @@ const markdownComponents: Components = {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-amber-300 underline underline-offset-2 hover:text-amber-200"
+        className="text-amber-800 underline underline-offset-2 hover:text-amber-900"
       >
         {children}
       </a>

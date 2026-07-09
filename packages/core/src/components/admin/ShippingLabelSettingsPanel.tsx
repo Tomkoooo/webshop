@@ -9,8 +9,8 @@ import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import type { ShippingLabelSettings } from "@wse/core/services/shipping-label-settings"
 
 const inputClass =
-  "h-10 w-full bg-black border border-white/10 px-3 text-sm text-white placeholder:text-neutral-600 rounded-none focus:border-primary/60 focus:outline-none"
-const labelClass = "text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1 block"
+  "h-10 w-full bg-background border border-border px-3 text-sm text-foreground placeholder:text-muted-foreground rounded-md focus:border-primary/60 focus:outline-none"
+const labelClass = "text-xs font-medium text-muted-foreground text-muted-foreground mb-1 block"
 
 type ShippingLabelSettingsPanelProps = {
   initial: ShippingLabelSettings
@@ -46,10 +46,10 @@ export function ShippingLabelSettingsPanel({ initial }: ShippingLabelSettingsPan
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 border border-white/10 bg-white/5 p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 border border-border bg-muted/50 p-6">
       <div>
-        <h2 className="text-lg font-black uppercase tracking-wider text-white">Webshop címke — feladó adatok</h2>
-        <p className="mt-1 text-sm italic text-neutral-400">
+        <h2 className="text-lg font-semibold text-foreground">Webshop címke — feladó adatok</h2>
+        <p className="mt-1 text-sm italic text-muted-foreground">
           Ezek jelennek meg a házhozszállítás PDF címkéken. A szállítási leírás a rendeléshez tartozó szállítási
           mód admin beállításából kerül a PDF-be.
         </p>
@@ -112,7 +112,7 @@ export function ShippingLabelSettingsPanel({ initial }: ShippingLabelSettingsPan
       <Button
         type="submit"
         disabled={saving}
-        className="h-10 rounded-none bg-primary px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
+        className="h-10 rounded-md bg-primary px-6 text-xs font-medium text-muted-foreground text-primary-foreground hover:bg-primary/80"
       >
         {saving ? <LoadingSpinner size="xs" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
         Mentés
@@ -122,4 +122,4 @@ export function ShippingLabelSettingsPanel({ initial }: ShippingLabelSettingsPan
 }
 
 const cnTextarea =
-  "w-full bg-black border border-white/10 px-3 py-2 text-sm text-white placeholder:text-neutral-600 rounded-none focus:border-primary/60 focus:outline-none min-h-[80px]"
+  "w-full bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground rounded-md focus:border-primary/60 focus:outline-none min-h-[80px]"

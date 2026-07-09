@@ -10,6 +10,9 @@ const syncRegistry: Partial<Record<string, TemplateModule>> = {
 }
 
 const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
+  eventstructure: () => import("@wse/template-eventstructure/template.config").then((m) => m.eventstructure),
+  "world-darts-festival": () =>
+    import("@wse/template-world-darts-festival/template.config").then((m) => m.worldDartsFestival),
   "atelier-showcase": () => import("@wse/template-atelier-showcase/template.config").then((m) => m.atelierShowcase),
   "minecraft-camp": () => import("@wse/template-minecraft-camp/template.config").then((m) => m.minecraftCamp),
   sakkmed: () => import("@wse/template-sakkmed/template.config").then((m) => m.sakkmed),

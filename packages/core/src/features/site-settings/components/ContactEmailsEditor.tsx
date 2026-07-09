@@ -85,7 +85,7 @@ export function ContactEmailsEditor({
               variant="ghost"
               disabled={entries.length <= 1}
               onClick={() => setEntries((prev) => prev.filter((_, idx) => idx !== index))}
-              className="h-10 rounded-none border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
+              className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
               aria-label="E-mail törlése"
             >
               <Trash2 className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function ContactEmailsEditor({
           type="button"
           variant="outline"
           onClick={() => setEntries((prev) => [...prev, newEntry()])}
-          className="rounded-none border-white/20 text-white hover:bg-white/10 h-11 font-black uppercase tracking-widest text-[10px]"
+          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
         >
           <Plus className="w-4 h-4 mr-2" />
           Új e-mail
@@ -143,7 +143,7 @@ export function ContactEmailsEditor({
                 variant="ghost"
                 disabled={newOrderEmails.length <= 1}
                 onClick={() => setNewOrderEmails((prev) => prev.filter((_, idx) => idx !== index))}
-                className="h-10 rounded-none border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
+                className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
                 aria-label="Új rendelés értesítési e-mail törlése"
               >
                 <Trash2 className="w-4 h-4" />
@@ -156,7 +156,7 @@ export function ContactEmailsEditor({
           type="button"
           variant="outline"
           onClick={() => setNewOrderEmails((prev) => [...prev, ""])}
-          className="rounded-none border-white/20 text-white hover:bg-white/10 h-11 font-black uppercase tracking-widest text-[10px]"
+          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
         >
           <Plus className="w-4 h-4 mr-2" />
           Új rendelés értesítő
@@ -203,7 +203,7 @@ export function ContactEmailsEditor({
                 onClick={() =>
                   setInvoiceAlertEmails((prev) => prev.filter((_, idx) => idx !== index))
                 }
-                className="h-10 rounded-none border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
+                className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
                 aria-label="Értesítési e-mail törlése"
               >
                 <Trash2 className="w-4 h-4" />
@@ -216,7 +216,7 @@ export function ContactEmailsEditor({
           type="button"
           variant="outline"
           onClick={() => setInvoiceAlertEmails((prev) => [...prev, ""])}
-          className="rounded-none border-white/20 text-white hover:bg-white/10 h-11 font-black uppercase tracking-widest text-[10px]"
+          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
         >
           <Plus className="w-4 h-4 mr-2" />
           Új számlázási értesítő
@@ -273,7 +273,7 @@ export function ContactEmailsEditor({
               setSaving(false)
             }
           }}
-          className="rounded-none bg-primary hover:bg-primary/85 text-white h-11 font-black uppercase tracking-widest text-[10px] min-w-[160px]"
+          className="rounded-md bg-primary hover:bg-primary/85 text-white h-11 text-xs font-medium text-muted-foreground min-w-[160px]"
         >
           {saving ? "Mentés…" : "Mentés"}
         </Button>

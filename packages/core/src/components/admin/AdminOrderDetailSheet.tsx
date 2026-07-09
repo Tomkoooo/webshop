@@ -30,6 +30,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@wse/core/components/ui/sheet"
+import { AdminOrderStatusBadge } from "@wse/core/components/admin/AdminOrderStatusBadge"
+import { adminCard, adminCardPadding, adminFieldLabel, adminInputClass, adminSectionMarker } from "@wse/core/lib/admin-ui"
 import { cn } from "@wse/core/lib/utils"
 import { formatOrderNumberLabel } from "@wse/core/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@wse/core/lib/pricing"
@@ -53,30 +55,17 @@ type AdminOrderDetailSheetProps = {
   onOrderUpdated?: () => void
 }
 
-function getStatusStyle(status: string) {
-  switch (status) {
-    case "pending":
-      return "text-amber-500 border-amber-500/20 bg-amber-500/5"
-    case "processing":
-      return "text-blue-500 border-blue-500/20 bg-blue-500/5"
-    case "shipped":
-      return "text-purple-500 border-purple-500/20 bg-purple-500/5"
-    case "delivered":
-      return "text-emerald-500 border-emerald-500/20 bg-emerald-500/5"
-    case "cancelled":
-      return "text-rose-500 border-rose-500/20 bg-rose-500/5"
-    default:
-      return "text-neutral-500 border-white/10 bg-white/5"
-  }
-}
-
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-neutral-300">
-      <div className="admin-section-marker h-4 w-1 rounded-full" />
+    <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+      <div className={cn("h-4 w-1 rounded-full", adminSectionMarker)} />
       {children}
     </h3>
   )
+}
+
+function DetailSection({ children, className }: { children: ReactNode; className?: string }) {
+  return <section className={cn(adminCard, adminCardPadding, className)}>{children}</section>
 }
 
 export function AdminOrderDetailSheet({
@@ -147,15 +136,15 @@ export function AdminOrderDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 overflow-hidden border-l border-white/10 p-0 sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-l bg-background p-0 sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl"
       >
-        <SheetHeader className="shrink-0 border-b border-white/10 bg-black/60 px-6 py-5 pr-16">
+        <SheetHeader className="shrink-0 border-b bg-card px-6 py-5 pr-16">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <SheetTitle className="text-2xl uppercase italic">
+              <SheetTitle className="text-2xl font-semibold">
                 {order ? formatOrderNumberLabel(order._id) : "Rendelés betöltése"}
               </SheetTitle>
-              <SheetDescription className="mt-1 flex flex-wrap items-center gap-2 text-neutral-400">
+              <SheetDescription className="mt-1 flex flex-wrap items-center gap-2">
                 {order ? (
                   <>
                     <Calendar className="h-3.5 w-3.5" />
@@ -166,21 +155,12 @@ export function AdminOrderDetailSheet({
                 )}
               </SheetDescription>
             </div>
-            {order ? (
-              <span
-                className={cn(
-                  "shrink-0 border px-4 py-2 text-[10px] font-black uppercase tracking-[0.25em]",
-                  getStatusStyle(order.status)
-                )}
-              >
-                {order.status}
-              </span>
-            ) : null}
+            {order ? <AdminOrderStatusBadge status={order.status} /> : null}
           </div>
           {orderIdStr ? (
             <Link
               href={`/admin/orders/${orderIdStr}`}
-              className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3 w-3" />
               Teljes oldal megnyitása
@@ -200,14 +180,14 @@ export function AdminOrderDetailSheet({
                 type="button"
                 variant="outline"
                 onClick={() => void reloadOrder()}
-                className="mt-4 h-10 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+                className="mt-4 h-10 rounded-md border-border text-xs font-medium text-muted-foreground"
               >
                 Újrapróbálás
               </Button>
             </div>
           ) : order ? (
             <div className={cn("space-y-6 pb-8", (loading || isPending) && "opacity-70")}>
-              <section className="border border-white/10 bg-white/5 p-5">
+              <DetailSection>
                 <SectionTitle>Állapot frissítése</SectionTitle>
                 <OrderStatusButtons
                   orderId={orderIdStr}
@@ -215,34 +195,34 @@ export function AdminOrderDetailSheet({
                   onUpdated={handleUpdated}
                 />
                 {!isDeletedOrder ? (
-                  <div className="mt-4 border-t border-white/5 pt-4">
+                  <div className="mt-4 border-t border-border pt-4">
                     <OrderCancelButton orderId={orderIdStr} onCancelled={handleUpdated} />
                   </div>
                 ) : order.cancellationReason ? (
-                  <div className="mt-4 border-t border-white/5 pt-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                       Törlés indoka
                     </p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-300">
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">
                       {order.cancellationReason}
                     </p>
                   </div>
                 ) : null}
-              </section>
+              </DetailSection>
 
               {(orderHasParcelShipping(order) ||
                 order.glsLabel?.parcelNumber ||
                 order.glsLabel?.lastError ||
                 order.foxpostShipment?.clFoxId ||
                 order.foxpostShipment?.lastError) && (
-                <section className="border border-white/10 bg-white/5 p-5">
+                <DetailSection>
                   <SectionTitle>Csomagpont szállítás</SectionTitle>
                   {isDeletedOrder ? (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
+                    <p className="text-xs font-medium text-muted-foreground text-rose-400">
                       Törölt rendelés — címke generálás nem elérhető.
                     </p>
                   ) : !parcelManagerEnabled ? (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                    <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                       A csomag/címke kezelő ki van kapcsolva.
                     </p>
                   ) : null}
@@ -268,21 +248,21 @@ export function AdminOrderDetailSheet({
                       onUpdated={handleUpdated}
                     />
                   ) : null}
-                </section>
+                </DetailSection>
               )}
 
               {!isDeletedOrder && !orderHasParcelShipping(order) ? (
-                <section className="border border-white/10 bg-white/5 p-5">
+                <DetailSection>
                   <SectionTitle>Webshop szállítási címke</SectionTitle>
                   <StandardShippingLabelPanel
                     orderId={orderIdStr}
                     standardShippingLabel={order.standardShippingLabel}
                     onUpdated={handleUpdated}
                   />
-                </section>
+                </DetailSection>
               ) : null}
 
-              <section className="border border-white/10 bg-white/5 p-5">
+              <DetailSection>
                 <SectionTitle>Rendelt tételek</SectionTitle>
                 <OrderItemsEditor
                   orderId={orderIdStr}
@@ -296,7 +276,7 @@ export function AdminOrderDetailSheet({
                   onSaved={handleUpdated}
                 />
                 {totalBreakdown ? (
-                  <div className="mt-4 space-y-2 border-t border-white/5 pt-4 text-sm text-neutral-500">
+                  <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Nettó</span>
                       <span>{formatHuf(totalBreakdown.net)}</span>
@@ -307,32 +287,32 @@ export function AdminOrderDetailSheet({
                     </div>
                   </div>
                 ) : null}
-              </section>
+              </DetailSection>
 
-              <section className="border border-white/10 bg-white/5 p-5">
+              <DetailSection>
                 <SectionTitle>Vásárló adatai</SectionTitle>
                 {isDeletedOrder ? (
                   <div className="space-y-5">
                     <div className="flex gap-3">
-                      <User className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                        <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                           Számlázási név
                         </p>
-                        <p className="font-bold uppercase italic text-white">{order.billingInfo.name}</p>
-                        <p className="mt-1 text-xs text-neutral-500">{order.billingInfo.email}</p>
-                        <p className="text-xs text-neutral-500">{order.billingInfo.phone}</p>
+                        <p className="font-bold uppercase italic text-foreground">{order.billingInfo.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{order.billingInfo.email}</p>
+                        <p className="text-xs text-muted-foreground">{order.billingInfo.phone}</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                        <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                           Kapcsolattartó
                         </p>
-                        <p className="font-bold text-white">{order.shippingAddress.name}</p>
-                        <p className="text-xs text-neutral-500">{order.shippingAddress.email}</p>
-                        <p className="text-xs text-neutral-500">{order.shippingAddress.phone}</p>
+                        <p className="font-bold text-foreground">{order.shippingAddress.name}</p>
+                        <p className="text-xs text-muted-foreground">{order.shippingAddress.email}</p>
+                        <p className="text-xs text-muted-foreground">{order.shippingAddress.phone}</p>
                       </div>
                     </div>
                   </div>
@@ -354,44 +334,44 @@ export function AdminOrderDetailSheet({
                       onSaved={handleUpdated}
                     />
                     {order.billingInfo.type === "company" && order.billingInfo.taxNumber ? (
-                      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                      <p className="mt-4 text-xs font-medium text-muted-foreground text-muted-foreground">
                         Adószám: {order.billingInfo.taxNumber}
                       </p>
                     ) : null}
                   </>
                 )}
 
-                <div className="mt-6 space-y-5 border-t border-white/5 pt-6">
+                <div className="mt-6 space-y-5 border-t border-border pt-6">
                   <div className="flex gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                     <div>
                       {parcelDelivery ? (
                         <>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                          <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                             {parcelDelivery.title}
                           </p>
                           {parcelDelivery.lines.map((line) => (
-                            <p key={line} className="text-sm text-neutral-400">
+                            <p key={line} className="text-sm text-muted-foreground">
                               {line}
                             </p>
                           ))}
                           {parcelDelivery.idLine ? (
-                            <p className="mt-1 text-[10px] text-neutral-600">{parcelDelivery.idLine}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{parcelDelivery.idLine}</p>
                           ) : null}
                         </>
                       ) : (
                         <>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                          <p className="text-xs font-medium text-muted-foreground text-muted-foreground">
                             Szállítási cím
                           </p>
-                          <p className="text-sm text-neutral-400">
+                          <p className="text-sm text-muted-foreground">
                             {order.shippingAddress.zip} {order.shippingAddress.city}
                           </p>
-                          <p className="text-sm text-neutral-400">{order.shippingAddress.street}</p>
+                          <p className="text-sm text-muted-foreground">{order.shippingAddress.street}</p>
                         </>
                       )}
                       {order.shippingAddress.comment ? (
-                        <p className="mt-2 border-l-2 border-white/20 pl-2 text-xs italic text-neutral-500">
+                        <p className="mt-2 border-l-2 border-border pl-2 text-xs italic text-muted-foreground">
                           &quot;{order.shippingAddress.comment}&quot;
                         </p>
                       ) : null}
@@ -399,8 +379,8 @@ export function AdminOrderDetailSheet({
                   </div>
 
                   <div className="flex gap-3">
-                    <Truck className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
-                    <div className="space-y-1 text-xs font-black uppercase tracking-tight text-white/80">
+                    <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="space-y-1 text-xs font-medium text-foreground/80">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-3.5 w-3.5" />
                         Fizetés: Online
@@ -413,16 +393,16 @@ export function AdminOrderDetailSheet({
                     </div>
                   </div>
                 </div>
-              </section>
+              </DetailSection>
 
-              <section className="border border-white/10 bg-white/5 p-5">
+              <DetailSection>
                 <SectionTitle>Számla kezelés</SectionTitle>
-                <div className="mb-4 space-y-1 text-[11px] font-black uppercase tracking-widest text-neutral-400">
+                <div className="mb-4 space-y-1 text-sm text-muted-foreground">
                   <p>
-                    Invoice ID: <span className="text-white">{order.invoiceId || "-"}</span>
+                    Invoice ID: <span className="text-foreground font-medium">{order.invoiceId || "-"}</span>
                   </p>
                   <p>
-                    Státusz: <span className="text-white">{order.invoiceStatus || "pending"}</span>
+                    Státusz: <span className="text-foreground font-medium">{order.invoiceStatus || "pending"}</span>
                   </p>
                   {order.invoiceLastError ? (
                     <p className="text-rose-400">Hiba: {order.invoiceLastError}</p>
@@ -445,13 +425,13 @@ export function AdminOrderDetailSheet({
                     name="invoiceId"
                     defaultValue={order.invoiceId || ""}
                     placeholder="Számlaszám"
-                    className="h-10 border border-white/10 bg-black px-3 text-xs uppercase tracking-widest text-white"
+                    className={adminInputClass}
                   />
                   <input
                     name="invoiceExternalId"
                     defaultValue={order.invoiceExternalId || ""}
                     placeholder="Külső azonosító"
-                    className="h-10 border border-white/10 bg-black px-3 text-xs text-white"
+                    className={adminInputClass}
                   />
                   <input
                     name="invoiceIssuedAt"
@@ -461,12 +441,12 @@ export function AdminOrderDetailSheet({
                         : ""
                     }
                     type="date"
-                    className="h-10 border border-white/10 bg-black px-3 text-xs text-white"
+                    className={adminInputClass}
                   />
                   <select
                     name="invoiceStatus"
                     defaultValue={order.invoiceStatus || "manual"}
-                    className="h-10 border border-white/10 bg-black px-3 text-xs uppercase tracking-widest text-white"
+                    className={adminInputClass}
                   >
                     <option value="pending">pending</option>
                     <option value="issued">issued</option>
@@ -476,7 +456,7 @@ export function AdminOrderDetailSheet({
                   </select>
                   <Button
                     type="submit"
-                    className="h-10 rounded-none bg-primary text-[10px] font-black uppercase tracking-widest sm:col-span-2"
+                    className="h-10 rounded-md bg-primary text-xs font-medium text-muted-foreground sm:col-span-2"
                   >
                     Számla adatok mentése
                   </Button>
@@ -499,12 +479,12 @@ export function AdminOrderDetailSheet({
                     name="file"
                     accept=".pdf,application/pdf"
                     required
-                    className="text-xs text-neutral-400"
+                    className="text-xs text-muted-foreground"
                   />
                   <Button
                     type="submit"
                     variant="outline"
-                    className="h-10 shrink-0 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+                    className="h-10 shrink-0 rounded-md border-border text-xs font-medium text-muted-foreground"
                   >
                     PDF feltöltése
                   </Button>
@@ -524,7 +504,7 @@ export function AdminOrderDetailSheet({
                     <Button
                       type="submit"
                       variant="outline"
-                      className="h-10 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+                      className="h-10 rounded-md border-border text-xs font-medium text-muted-foreground"
                     >
                       Email újraküldése
                     </Button>
@@ -533,13 +513,13 @@ export function AdminOrderDetailSheet({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-10 rounded-none border-white/10 text-[10px] font-black uppercase tracking-widest"
+                      className="h-10 rounded-md border-border text-xs font-medium text-muted-foreground"
                     >
                       PDF letöltése
                     </Button>
                   </a>
                 </div>
-              </section>
+              </DetailSection>
             </div>
           ) : null}
         </div>

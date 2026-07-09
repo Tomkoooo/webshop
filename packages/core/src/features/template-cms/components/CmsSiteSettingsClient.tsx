@@ -12,6 +12,10 @@ import { SeoEditor } from "@wse/core/features/site-settings/components/SeoEditor
 import { FooterEditor } from "@wse/core/features/site-settings/components/FooterEditor"
 import { ContactEmailsEditor } from "@wse/core/features/site-settings/components/ContactEmailsEditor"
 import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/components/CmsChromeBrandingToolbar"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { adminLinkAccent, adminNavItem, adminNavItemActive } from "@wse/core/lib/admin-ui"
+import { cn } from "@wse/core/lib/utils"
 import type { ThemeTokens } from "@wse/core/services/theme"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
@@ -71,78 +75,79 @@ export function CmsSiteSettingsClient({
   const activeMeta = sections.find((s) => s.id === section)
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <Link
-            href="/admin/cms"
-            className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
-          >
-            ← CMS áttekintés
-          </Link>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-            Weboldal <span className="admin-text-accent">beállítások</span>
-          </h1>
-          <p className="text-sm text-neutral-400 max-w-xl">
-            Sablon: <code className="text-neutral-200">{templateName}</code> — ezek az egész webshopra
-            érvényesek (nem egyetlen oldal tartalmához kötöttek).
-          </p>
-        </div>
+    <AdminPageScaffold
+      title="Weboldal beállítások"
+      description={
+        <>
+          Sablon: <code className="rounded bg-muted px-1.5 py-0.5 text-sm">{templateName}</code> — ezek az
+          egész webshopra érvényesek (nem egyetlen oldal tartalmához kötöttek).
+        </>
+      }
+      actions={
+        <Link href="/admin/cms" className={cn("text-sm font-medium", adminLinkAccent)}>
+          ← CMS áttekintés
+        </Link>
+      }
+    >
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        <Card className="shrink-0 lg:w-60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Szakaszok</CardTitle>
+            <CardDescription>Válassz beállítási területet.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1 pt-0">
+            {sections.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSection(item.id)}
+                className={section === item.id ? adminNavItemActive : adminNavItem}
+              >
+                <span className="block text-sm font-medium">{item.label}</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  {item.description}
+                </span>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 flex-1">
+          <CardHeader>
+            <CardTitle className="text-lg">{activeMeta?.label ?? "Beállítások"}</CardTitle>
+            {activeMeta?.description ? (
+              <CardDescription>{activeMeta.description}</CardDescription>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            {section === "theme" ? (
+              <ThemeEditor
+                initial={initialTheme}
+                resetBaseline={themeResetBaseline}
+                resetHelpText={themeResetHelpText}
+              />
+            ) : null}
+            {section === "seo" ? <SeoEditor initial={initialSeo} /> : null}
+            {section === "branding" ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  A logók és a bolt neve a CMS oldalszerkesztők fejlécében is gyorsan módosíthatók.
+                </p>
+                <CmsChromeBrandingToolbar branding={branding} setBranding={setBranding} />
+              </div>
+            ) : null}
+            {section === "footer" ? <FooterEditor initial={initialFooter} /> : null}
+            {section === "contact" ? (
+              <ContactEmailsEditor
+                initial={initialContactEmails}
+                initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
+                initialNewOrderNotificationEmails={initialNewOrderNotificationEmails}
+                showShopOrderEmails={showShopOrderEmails}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
       </div>
-
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <aside className="lg:w-56 shrink-0 space-y-1">
-          {sections.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setSection(item.id)}
-              className={
-                section === item.id
-                  ? "w-full text-left rounded-lg border border-primary/50 bg-primary/15 px-3 py-2.5"
-                  : "w-full text-left rounded-lg border border-transparent px-3 py-2.5 text-neutral-400 hover:border-white/10 hover:bg-white/5 hover:text-white"
-              }
-            >
-              <span className="block text-xs font-black uppercase tracking-widest">{item.label}</span>
-              <span className="mt-0.5 block text-[10px] normal-case tracking-normal text-neutral-500">
-                {item.description}
-              </span>
-            </button>
-          ))}
-        </aside>
-
-        <div className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 p-6">
-          {activeMeta ? (
-            <h2 className="text-lg font-black uppercase tracking-wider text-white mb-6">{activeMeta.label}</h2>
-          ) : null}
-
-          {section === "theme" ? (
-            <ThemeEditor
-              initial={initialTheme}
-              resetBaseline={themeResetBaseline}
-              resetHelpText={themeResetHelpText}
-            />
-          ) : null}
-          {section === "seo" ? <SeoEditor initial={initialSeo} /> : null}
-          {section === "branding" ? (
-            <div className="space-y-4">
-              <p className="text-sm text-neutral-400">
-                A logók és a bolt neve a CMS oldalszerkesztők fejlécében is gyorsan módosíthatók.
-              </p>
-              <CmsChromeBrandingToolbar branding={branding} setBranding={setBranding} />
-            </div>
-          ) : null}
-          {section === "footer" ? <FooterEditor initial={initialFooter} /> : null}
-          {section === "contact" ? (
-            <ContactEmailsEditor
-              initial={initialContactEmails}
-              initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
-              initialNewOrderNotificationEmails={initialNewOrderNotificationEmails}
-              showShopOrderEmails={showShopOrderEmails}
-            />
-          ) : null}
-        </div>
-      </div>
-    </div>
+    </AdminPageScaffold>
   )
 }

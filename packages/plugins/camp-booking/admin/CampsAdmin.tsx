@@ -59,7 +59,7 @@ export function CampsAdmin({ path }: { path: string[] }) {
           </CreateCampDialog>
         }
       />
-      {error ? <p className="text-red-400 text-sm">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {loading ? (
         <CampAdminLoading />
       ) : camps.length === 0 ? (
@@ -73,13 +73,13 @@ export function CampsAdmin({ path }: { path: string[] }) {
             return (
               <li
                 key={c.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div>
-                  <p className="font-heading font-black text-white uppercase tracking-wider">
+                  <p className="font-semibold text-foreground">
                     {c.title}
                     {!c.isPublished ? (
-                      <span className="ml-2 text-[10px] text-neutral-500 font-black">vázlat</span>
+                      <span className="ml-2 text-xs text-muted-foreground font-medium">vázlat</span>
                     ) : null}
                   </p>
                   <p className="text-xs text-neutral-500 mt-1">{c.slug}</p>
@@ -95,14 +95,14 @@ export function CampsAdmin({ path }: { path: string[] }) {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-9 border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-none"
+                      className="h-9 text-xs"
                     >
                       Szerkesztés
                     </Button>
                   </EditCampDialog>
                   <Link
                     href={`/admin/plugins/camp-booking/camps/${c.id}/sessions`}
-                    className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                    className="text-xs font-medium text-muted-foreground admin-link-accent"
                   >
                     Turnusok & árazás →
                   </Link>

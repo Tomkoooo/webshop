@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
+import { adminSectionTitle } from "@wse/core/lib/admin-ui"
 import { normalizeHotelPricing } from "../lib/hotel-pricing"
 import {
   tBookAdminApi,
@@ -69,7 +70,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
     return (
       <div className="space-y-4">
         <p className="text-neutral-500">A csoport nem található.</p>
-        <Link href="/admin/plugins/t-book/groups" className="text-amber-300 underline text-sm">
+        <Link href="/admin/plugins/t-book/groups" className="text-amber-800 underline text-sm">
           ← Vissza a csoportokhoz
         </Link>
       </div>
@@ -92,31 +93,37 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
         }
       />
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2">
+      <div className="rounded-2xl bg-card shadow-sm p-5 space-y-2">
         <div className="flex items-center gap-3 flex-wrap">
           <TBookStatusBadge status={group.status} labels={TBOOK_STATUS_LABELS} />
           <span className="text-xs text-neutral-500 font-mono">API: {group.apiKeyHint}</span>
         </div>
         {group.description ? (
           <div
-            className="prose prose-invert prose-sm max-w-none text-neutral-400"
+            className="prose prose-sm max-w-none text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: group.description }}
           />
+        ) : null}
+        {group.listOnTBookSite ? (
+          <p className="text-xs text-muted-foreground pt-1">
+            tBook listán: {group.listingTitle || group.name}
+            {group.listingUrl ? ` · ${group.listingUrl}` : ""}
+          </p>
         ) : null}
       </div>
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-white">Szállások</h2>
-            <p className="text-xs text-neutral-500 mt-1">
-              Hotelek, szobatípusok és felár-csoportok — csoport szinten kezelve
+            <h2 className={adminSectionTitle}>Szállások</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Hotelek, szobatípusok és foglalási szakaszok — csoport szinten kezelve
             </p>
           </div>
           <div className="flex gap-2">
             <Link
               href={`/admin/plugins/t-book/groups/${groupId}/hotels`}
-              className="text-xs font-bold uppercase tracking-widest admin-link-accent"
+              className="text-xs font-medium admin-link-accent"
             >
               Összes szállás →
             </Link>
@@ -145,13 +152,13 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                 <li key={hotel.id}>
                   <Link
                     href={`/admin/plugins/t-book/groups/${groupId}/hotels/${hotel.id}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:border-white/25 transition-colors"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-card shadow-sm px-4 py-3 hover:shadow-md transition-shadow"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium text-white truncate">{hotel.name}</p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="font-medium text-foreground truncate">{hotel.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                        felár-csoport
+                        foglalási szakasz
                       </p>
                     </div>
                     <TBookStatusBadge status={hotel.status} labels={TBOOK_STATUS_LABELS} />
@@ -163,7 +170,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
               <li className="text-center pt-1">
                 <Link
                   href={`/admin/plugins/t-book/groups/${groupId}/hotels`}
-                  className="text-xs text-amber-300 hover:underline"
+                  className="text-xs text-amber-800 hover:underline"
                 >
                   +{hotels.length - 4} további szállás
                 </Link>
@@ -176,7 +183,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-white">Események</h2>
+            <h2 className={adminSectionTitle}>Események</h2>
             <p className="text-xs text-neutral-500 mt-1">
               Időpont, helyszín és jegyár — a szállások közösek
             </p>
@@ -187,7 +194,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
         </div>
 
         {events.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/15 p-8 text-center space-y-3">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center space-y-3">
             <p className="text-neutral-500 text-sm">Még nincs esemény ebben a csoportban.</p>
             <TBookPrimaryButton asChild>
               <Link href={`/admin/plugins/t-book/groups/${groupId}/events/new`}>
@@ -200,11 +207,11 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
             {events.map((event) => (
               <li
                 key={event.id}
-                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <p className="font-bold text-white">{event.name}</p>
+                    <p className="font-semibold text-foreground">{event.name}</p>
                     <TBookStatusBadge status={event.status} labels={TBOOK_STATUS_LABELS} />
                   </div>
                   <p className="text-xs text-neutral-500 mt-1.5">
@@ -213,7 +220,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                     {event.location?.address ? ` · ${event.location.address}` : ""}
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    Jegy: <span className="text-white font-bold">{formatHuf(event.ticketFeeHuf)}</span>
+                    Jegy: <span className="text-foreground font-semibold">{formatHuf(event.ticketFeeHuf)}</span>
                     {event.ticketPriceBasis === "net" ? " nettó" : " bruttó"}
                     {event.ticketFeeMode === "per_person" ? " / fő" : " / foglalás"}
                   </p>
@@ -221,7 +228,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Link
                     href={`/admin/plugins/t-book/groups/${groupId}/events/${event.id}/edit`}
-                    className="inline-flex h-9 items-center px-3 border border-white/10 rounded-lg text-white text-xs font-bold hover:bg-white/5"
+                    className="inline-flex h-9 items-center px-3 rounded-lg border border-border text-xs font-medium hover:bg-muted"
                   >
                     Szerkesztés
                   </Link>

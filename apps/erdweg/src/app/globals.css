@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../../../packages/core/src/styles/admin.css";
 
 /* Monorepo: scan engine packages for Tailwind utilities (auto-detection only covers this app). */
 @source "../../../../packages";
@@ -31,6 +32,15 @@
   --color-background-dark: var(--theme-background);
   --color-text-main: var(--theme-foreground);
   --color-text-secondary: var(--theme-muted-foreground);
+
+  --color-success: var(--theme-success);
+  --color-success-foreground: var(--theme-success-foreground);
+  --color-warning: var(--theme-warning);
+  --color-warning-foreground: var(--theme-warning-foreground);
+  --color-error: var(--theme-error);
+  --color-error-foreground: var(--theme-error-foreground);
+  --color-destructive: var(--theme-error);
+  --color-destructive-foreground: var(--theme-error-foreground);
 
   --font-sans: var(--theme-font-body, "Inter", "Roboto", ui-sans-serif, system-ui);
   --font-heading: var(--theme-font-heading, "Oswald", "Roboto Condensed", sans-serif);
@@ -180,87 +190,6 @@ h6 {
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
   color: inherit !important;
-}
-
-/* Admin UI: theme-independent selection (dark panels) */
-.admin-item-selected {
-  border-color: color-mix(in oklab, white 40%, transparent);
-  background-color: color-mix(in oklab, white 15%, transparent);
-  color: white;
-  box-shadow: 0 0 0 1px color-mix(in oklab, white 30%, transparent);
-}
-
-.admin-item-idle {
-  border-color: color-mix(in oklab, white 10%, transparent);
-  color: rgb(212 212 212);
-}
-
-.admin-item-idle:hover {
-  border-color: color-mix(in oklab, white 25%, transparent);
-  background-color: color-mix(in oklab, white 5%, transparent);
-}
-
-.admin-action-outline {
-  border-color: color-mix(in oklab, white 20%, transparent);
-  background-color: transparent;
-  color: white;
-}
-
-.admin-action-outline:hover {
-  background-color: color-mix(in oklab, white 10%, transparent);
-}
-
-/* Admin shell is always dark; theme `primary` is for fills, not body text */
-.admin-headline-accent {
-  color: #ffffff;
-  text-decoration-line: underline;
-  text-decoration-color: color-mix(in oklab, white 12%, transparent);
-  text-underline-offset: 0.5rem;
-}
-
-.admin-headline-accent-tight {
-  text-underline-offset: 0.25rem;
-}
-
-.admin-text-accent {
-  color: #ffffff;
-}
-
-.admin-value {
-  color: #ffffff;
-}
-
-.admin-icon-accent {
-  color: #ffffff;
-}
-
-.admin-icon-well {
-  background-color: color-mix(in oklab, white 10%, transparent);
-  border: 1px solid color-mix(in oklab, white 18%, transparent);
-}
-
-.admin-section-marker {
-  background-color: color-mix(in oklab, white 35%, transparent);
-}
-
-/* Admin shell: avoid theme primary on icon/text hovers (buttons use data-slot from shadcn) */
-.admin-shell [data-slot="button"][data-variant="ghost"]:hover,
-.admin-shell [data-slot="button"][data-variant="outline"]:hover {
-  background-color: color-mix(in oklab, white 10%, transparent) !important;
-  color: #ffffff !important;
-}
-
-.admin-shell [data-slot="button"][data-variant="ghost"]:hover svg,
-.admin-shell [data-slot="button"][data-variant="outline"]:hover svg {
-  color: #ffffff;
-}
-
-.admin-link-accent {
-  color: var(--color-highlight, #ffd700);
-}
-
-.admin-link-accent:hover {
-  text-decoration: underline;
 }
 
 /* Storefront: primary is a fill; accents use foreground/secondary on normal surfaces */
@@ -616,106 +545,4 @@ img.pixelated {
   border: 3px solid #1a3d5c;
   border-right: none;
   text-decoration: none;
-}
-
-/* Admin chrome: always light text on dark shell (independent of storefront theme tokens on <html>). */
-.admin-shell {
-  --theme-foreground: #fafafa;
-  --theme-muted-foreground: #a3a3a3;
-  --theme-surface-foreground: #fafafa;
-  --theme-primary-foreground: #ffffff;
-  --theme-secondary-foreground: #e5e5e5;
-  --theme-accent-foreground: #fafafa;
-  --foreground: #fafafa;
-  --muted-foreground: #a3a3a3;
-  --card-foreground: #fafafa;
-  --popover-foreground: #fafafa;
-  color: #ffffff;
-}
-
-.admin-shell .text-foreground {
-  color: #fafafa;
-}
-
-.admin-shell .text-muted-foreground {
-  color: #a3a3a3;
-}
-
-.admin-shell .prose {
-  color: #e5e5e5;
-}
-
-/* CMS storefront preview: theme tokens from preview wrapper beat admin-shell text overrides */
-.admin-shell .admin-storefront-preview .text-foreground {
-  color: var(--theme-foreground, var(--foreground));
-}
-
-.admin-shell .admin-storefront-preview .text-muted-foreground {
-  color: var(--theme-muted-foreground, var(--muted-foreground));
-}
-
-.admin-shell .admin-storefront-preview .prose {
-  color: var(--theme-foreground, var(--foreground));
-}
-
-[data-cms-editing="true"] input,
-[data-cms-editing="true"] textarea {
-  color: inherit;
-}
-
-/* CMS editor chrome: never use storefront theme background (minecraft sky-blue). */
-.cms-editor-chrome {
-  background-color: #0a0a0b;
-  color: #fafafa;
-}
-
-/* Admin-only controls inside storefront preview — system UI, not pixel font. */
-.cms-admin-control,
-.cms-admin-control input,
-.cms-admin-control textarea,
-.cms-admin-control button,
-.cms-admin-control label,
-.cms-admin-control p,
-.cms-admin-control select {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif !important;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-.admin-storefront-preview [data-cms-editing="true"] .cms-admin-control {
-  position: relative;
-  z-index: 60;
-}
-
-[data-cms-editing="true"] .minecraft-social-tab {
-  display: none;
-}
-
-.admin-storefront-preview [data-cms-editing="true"] textarea:not(.font-minecraft) {
-  min-height: 6rem;
-  resize: vertical;
-}
-
-/* CMS device preview: restore pale storefront text (minecraft-camp public pages). */
-.admin-storefront-preview.minecraft-camp-preview {
-  --theme-foreground: #2d2817;
-  --theme-muted-foreground: #5c4a32;
-  --theme-surface-foreground: #2d5016;
-  --foreground: #2d2817;
-  --muted-foreground: #5c4a32;
-  color: #2d2817;
-  background-color: #b8d88a;
-}
-
-.admin-storefront-preview.minecraft-camp-preview .text-foreground,
-.admin-storefront-preview.minecraft-camp-preview h1,
-.admin-storefront-preview.minecraft-camp-preview h2,
-.admin-storefront-preview.minecraft-camp-preview h3,
-.admin-storefront-preview.minecraft-camp-preview h4 {
-  color: #2d2817;
-}
-
-.admin-storefront-preview.minecraft-camp-preview .text-muted-foreground,
-.admin-storefront-preview.minecraft-camp-preview .prose {
-  color: #5c4a32;
 }

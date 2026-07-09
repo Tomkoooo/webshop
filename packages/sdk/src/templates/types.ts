@@ -26,6 +26,13 @@ export type NavbarSearchSlotProps = {
   inputClassName?: string
 }
 
+export type ChromeNavLink = { label: string; href: string }
+
+/** CMS-driven navbar entry — link or responsive dropdown (templates such as eventstructure). */
+export type ChromeNavItem =
+  | { type: "link"; label: string; href: string }
+  | { type: "dropdown"; label: string; items: ChromeNavLink[] }
+
 export type ChromeProps = {
   brandName: string
   logoSrc: string
@@ -40,6 +47,8 @@ export type ChromeProps = {
   NavbarSearch?: ComponentType<NavbarSearchSlotProps>
   /** Short venue label from homepage CMS (minecraft-camp contact / hero badge). */
   venueBadge?: string
+  /** Optional CMS-driven navigation items (eventstructure and similar templates). */
+  navItems?: ChromeNavItem[]
   children?: ReactNode
 }
 
@@ -417,6 +426,14 @@ export interface TemplateModule {
   campPages?: {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     jegyvasarlas?: PageDefinition<any, CampPageDeps>
+    foglalas?: PageDefinition<any, CampPageDeps>
+    foglalasSiker?: PageDefinition<any, CampPageDeps>
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+  }
+  /** Optional tBook storefront copy surfaces (jegyek / foglalas / success). */
+  tBookPages?: {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    jegyek?: PageDefinition<any, CampPageDeps>
     foglalas?: PageDefinition<any, CampPageDeps>
     foglalasSiker?: PageDefinition<any, CampPageDeps>
     /* eslint-enable @typescript-eslint/no-explicit-any */

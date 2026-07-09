@@ -21,7 +21,9 @@ import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookLocationField } from "./TBookLocationField"
 import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
+import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
+import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 function toDateInputValue(value?: string): string {
   if (!value) return ""
@@ -32,6 +34,7 @@ const STEPS = [
   { id: "basics", title: "Alapadatok" },
   { id: "schedule", title: "Időpont & hely" },
   { id: "pricing", title: "Jegyár" },
+  { id: "attendees", title: "Résztvevői adatok" },
   { id: "content", title: "Tartalom" },
 ]
 
@@ -48,6 +51,7 @@ type EventDraft = {
   ticketVatPercent: number
   capacity: string
   heroImage: string
+  attendeeFieldSchema: TBookAttendeeFieldDef[]
 }
 
 export function EventFormPage({
@@ -76,6 +80,7 @@ export function EventFormPage({
     ticketVatPercent: TBOOK_DEFAULT_VAT_PERCENT,
     capacity: "",
     heroImage: "",
+    attendeeFieldSchema: [],
   })
 
   useEffect(() => {
@@ -101,6 +106,7 @@ export function EventFormPage({
             ticketVatPercent: e.ticketVatPercent ?? TBOOK_DEFAULT_VAT_PERCENT,
             capacity: e.capacity != null ? String(e.capacity) : "",
             heroImage: e.heroImage,
+            attendeeFieldSchema: e.attendeeFieldSchema ?? [],
           })
         })
       )
@@ -132,6 +138,7 @@ export function EventFormPage({
       ticketVatPercent: draft.ticketVatPercent,
       capacity: draft.capacity ? Number(draft.capacity) : null,
       heroImage: draft.heroImage,
+      attendeeFieldSchema: draft.attendeeFieldSchema,
       status: draft.status,
     }
     try {
@@ -161,13 +168,13 @@ export function EventFormPage({
         actions={
           <Link
             href={`/admin/plugins/t-book/groups/${groupId}`}
-            className="inline-flex h-10 items-center px-4 border border-white/10 rounded-lg text-white text-sm"
+            className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-foreground text-sm"
           >
             Mégse
           </Link>
         }
       />
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 md:p-8">
+      <div className="rounded-2xl bg-card shadow-sm p-6 md:p-8">
         <TBookWizard
           steps={STEPS}
           currentStep={step}
@@ -256,6 +263,12 @@ export function EventFormPage({
             </div>
           ) : null}
           {step === 3 ? (
+            <AttendeeFieldsEditor
+              fields={draft.attendeeFieldSchema}
+              onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
+            />
+          ) : null}
+          {step === 4 ? (
             <div className="space-y-4">
               <TBookRichTextField
                 label="Leírás"

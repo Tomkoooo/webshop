@@ -4,6 +4,7 @@ import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -93,15 +94,10 @@ export function CampSurfaceVisualEditor({
   }))
 
   const toolbar = (
-    <div className="cms-editor-chrome px-4 py-3 border-b border-white/10 text-xs text-neutral-400 space-y-2">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-500">
-        Tábor oldal: <span className="text-neutral-200">{pageLabel}</span>
-      </p>
-      <p>
-        A szövegeket közvetlenül az előnézeten szerkesztheted. A turnuslista és a fizetési folyamat
-        működése változatlan marad — csak a megjelenő szövegek módosulnak.
-      </p>
-    </div>
+    <CmsEditorSubtoolbar
+      title={`Tábor oldal: ${pageLabel}`}
+      description="A szövegeket közvetlenül az előnézeten szerkesztheted. A turnuslista és a fizetési folyamat működése változatlan marad — csak a megjelenő szövegek módosulnak."
+    />
   )
 
   return (

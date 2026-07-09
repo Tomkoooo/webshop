@@ -20,7 +20,7 @@ export function TBookRichTextField({
         variant="mail"
         value={value || "<p></p>"}
         onChange={onChange}
-        className="border border-white/10 rounded-lg overflow-hidden"
+        className="border border-border rounded-lg overflow-hidden"
         editorClassName={minHeight}
       />
     </TBookField>

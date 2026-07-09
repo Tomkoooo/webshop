@@ -17,7 +17,7 @@ type Props = {
 export function PressKitPdfSidebarPanel({ pdfMediaFilename, pdfSettings, onChange }: Props) {
   return (
     <PressAdminPanel title="Képregény PDF" className="!p-4 space-y-3">
-      <p className="text-[11px] text-neutral-400 leading-relaxed">
+      <p className="text-xs text-neutral-400 leading-relaxed">
         A feltöltött PDF a sajtóportál alján jelenik meg védett előnézetként. Részletes belépési
         beállítások:{" "}
         <Link href="/admin/plugins/press-kit/content/settings" className="text-primary underline">

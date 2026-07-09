@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@wse/core/lib/utils"
+import { pluginAdminLinkAccent } from "@wse/core/lib/plugin-admin-ui"
 
 function tabs(groupId: string) {
   return [
@@ -22,15 +23,15 @@ export function TBookGroupSubnav({
   const pathname = usePathname()
 
   return (
-    <div className="space-y-3 border-b border-white/10 pb-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-        <Link href="/admin/plugins/t-book/groups" className="hover:text-white transition-colors">
+    <div className="space-y-3 border-b border-border pb-4">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/admin/plugins/t-book/groups" className={cn(pluginAdminLinkAccent, "text-xs")}>
           Csoportok
         </Link>
         <span>/</span>
-        <span className="text-neutral-300 font-medium">{groupName ?? "…"}</span>
+        <span className="text-foreground font-medium">{groupName ?? "…"}</span>
       </div>
-      <nav className="flex flex-wrap gap-2">
+      <nav className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
         {tabs(groupId).map((tab) => {
           const overviewHref = `/admin/plugins/t-book/groups/${groupId}`
           const active =
@@ -44,10 +45,10 @@ export function TBookGroupSubnav({
               key={tab.href}
               href={tab.href}
               className={cn(
-                "rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-colors",
+                "rounded-md px-4 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "border-amber-400/50 bg-amber-500/15 text-amber-200"
-                  : "border-white/10 text-neutral-400 hover:border-white/25 hover:text-white"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}

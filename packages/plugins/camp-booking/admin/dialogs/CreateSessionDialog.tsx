@@ -57,9 +57,9 @@ export function CreateSessionDialog({ campId, children, onCreated }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-black border-white/10 text-white rounded-none sm:max-w-[520px]">
+      <DialogContent className=" sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
+          <DialogTitle>
             Új turnus
           </DialogTitle>
         </DialogHeader>
@@ -78,17 +78,17 @@ export function CreateSessionDialog({ campId, children, onCreated }: Props) {
           <CampAdminField label="Kapacitás (fő)">
             <CampAdminInput name="capacity" type="number" min={1} required defaultValue={20} />
           </CampAdminField>
-          <label className="flex items-center gap-3 text-sm text-neutral-300">
+          <label className="flex items-center gap-3 text-sm text-foreground">
             <input type="checkbox" name="isPublished" className="size-4 accent-primary" />
             Közzététel azonnal
           </label>
-          {error ? <p className="text-red-400 text-sm">{error}</p> : null}
+          {error ? <p className="text-destructive text-sm">{error}</p> : null}
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
-              variant="krausz"
+              variant="default"
               disabled={saving}
-              className="flex-1 h-11 uppercase tracking-widest text-[10px] font-black"
+              className="flex-1 h-11 font-semibold"
             >
               {saving ? "Mentés…" : "Turnus létrehozása"}
             </Button>
@@ -96,7 +96,7 @@ export function CreateSessionDialog({ campId, children, onCreated }: Props) {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="h-11 border-white/10 text-white rounded-none"
+              className="h-11"
             >
               Mégse
             </Button>

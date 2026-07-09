@@ -80,9 +80,9 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black border-white/10 text-white rounded-none sm:max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
+          <DialogTitle>
             {title}
           </DialogTitle>
         </DialogHeader>
@@ -123,7 +123,7 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
                 <option value="addon">Kiegészítő (pl. laptop)</option>
               </select>
             </CampAdminField>
-            <label className="flex items-end gap-3 pb-2 text-sm text-neutral-300">
+            <label className="flex items-end gap-3 pb-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={isActive}
@@ -134,8 +134,8 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
             </label>
           </div>
           {kind === "base" ? (
-            <div className="border-t border-white/10 pt-6 space-y-4">
-              <p className="text-xs font-black uppercase tracking-widest text-sky-300">Early bird</p>
+            <div className="border-t border-border pt-6 space-y-4">
+              <p className="text-sm font-medium text-foreground">Early bird</p>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 Ha külön early bird és normál jegytípusod van, az early bird vége után a normál jegy
                 automatikusan megjelenik a foglalásnál (a normál jegy legyen aktív). Egyetlen jegynél
@@ -174,9 +174,9 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
-              variant="krausz"
+              variant="default"
               disabled={saving || !name}
-              className="flex-1 h-11 uppercase tracking-widest text-[10px] font-black"
+              className="flex-1 h-11 font-semibold"
             >
               {saving ? "Mentés…" : "Mentés"}
             </Button>
@@ -184,7 +184,7 @@ export function TicketTypeDialog({ open, onOpenChange, title, initial, onSubmit 
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-11 border-white/10 text-white rounded-none"
+              className="h-11"
             >
               Mégse
             </Button>

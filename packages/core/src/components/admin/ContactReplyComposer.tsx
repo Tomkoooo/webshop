@@ -36,20 +36,20 @@ export function ContactReplyComposer({ messageId, defaultSubject, themeColors }:
   return (
     <form ref={formRef} action={formAction} className="space-y-5">
       <div className="space-y-2">
-        <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+        <label className="block text-xs font-medium text-muted-foreground text-muted-foreground">
           Válasz tárgya
         </label>
         <input
           name="subject"
           defaultValue={defaultSubject}
-          className="h-12 w-full rounded-none border border-white/10 bg-black px-4 text-sm font-bold text-white outline-none focus:border-primary"
+          className="h-12 w-full rounded-md border border-border bg-background px-4 text-sm font-bold text-foreground outline-none focus:border-primary"
           placeholder="Re: Kapcsolatfelvétel"
           required
         />
       </div>
 
       <div className="space-y-2">
-        <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+        <label className="block text-xs font-medium text-muted-foreground text-muted-foreground">
           Válasz tartalma
         </label>
         <RichTextEditor
@@ -65,8 +65,8 @@ export function ContactReplyComposer({ messageId, defaultSubject, themeColors }:
       {state.message ? (
         <p
           className={cn(
-            "text-xs font-black uppercase tracking-[0.15em]",
-            state.ok ? "text-emerald-400" : "text-rose-400"
+            "text-xs font-medium",
+            state.ok ? "text-emerald-800" : "text-rose-400"
           )}
         >
           {state.message}
@@ -76,7 +76,7 @@ export function ContactReplyComposer({ messageId, defaultSubject, themeColors }:
       <Button
         type="submit"
         disabled={isPending}
-        className="h-12 rounded-none bg-primary px-6 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-primary/80 disabled:opacity-60"
+        className="h-12 rounded-md bg-primary px-6 text-xs font-medium text-muted-foreground text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
       >
         <Send className="h-4 w-4" />
         {isPending ? "Küldés..." : "Válasz küldése"}

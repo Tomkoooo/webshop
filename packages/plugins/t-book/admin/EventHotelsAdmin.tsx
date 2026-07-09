@@ -16,7 +16,7 @@ import {
 import type { TBookHotelPricing } from "../lib/pricing-types"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "../lib/vat"
 import type { TBookPriceBasis } from "../lib/vat"
-import { normalizeHotelPricing } from "../lib/hotel-pricing"
+import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
 import {
   TBookField,
   TBookInput,
@@ -113,13 +113,14 @@ function HotelEditor({
 
   const patch = (partial: Partial<HotelDraft>) => setDraft((d) => ({ ...d, ...partial }))
   const patchPricing = (partial: Partial<TBookHotelPricing>) =>
-    setDraft((d) => ({ ...d, pricing: { ...d.pricing, ...partial } }))
+    setDraft((d) => ({
+      ...d,
+      pricing: assignPricingKeys({ ...d.pricing, ...partial }),
+    }))
 
+  const previewPricing = useMemo(() => assignPricingKeys(draft.pricing), [draft.pricing])
+  const roomTypes = previewPricing.roomTypes
   const priceBasisLabel = draft.pricing.priceBasis === "net" ? "nettó" : "bruttó"
-  const roomTypeKeys = useMemo(
-    () => draft.pricing.roomTypes.map((r) => r.key).filter(Boolean),
-    [draft.pricing.roomTypes]
-  )
 
   const save = async () => {
     if (!draft.name.trim()) {
@@ -166,13 +167,13 @@ function HotelEditor({
     <div className="space-y-8 animate-in fade-in duration-500">
       <TBookPageHeader
         title={hotel ? `Szállás: ${hotel.name}` : "Új szállás"}
-        description={`Esemény: ${event.name} — szállás → szobatípus → felár-csoportok`}
+        description={`Esemény: ${event.name} — szállás → szobatípus → foglalási szakaszok`}
         actions={
           <>
             <Button
               type="button"
               variant="outline"
-              className="h-10 border-white/10 text-white"
+              className="h-10"
               onClick={onBack}
             >
               ← Vissza
@@ -284,16 +285,16 @@ function HotelEditor({
               <AddonGroupsEditor
                 groups={draft.pricing.addonGroups}
                 onChange={(addonGroups) => patchPricing({ addonGroups })}
-                roomTypeKeys={roomTypeKeys}
+                roomTypes={roomTypes}
               />
             ) : null}
 
             {step === 3 ? (
               <div className="space-y-4">
                 <HotelComplexitySummary pricing={draft.pricing} />
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm space-y-2">
+                <div className="rounded-xl bg-card shadow-sm p-4 text-sm space-y-2">
                   <p>
-                    <strong className="text-white">{draft.name || "—"}</strong>
+                    <strong className="text-foreground">{draft.name || "—"}</strong>
                     {draft.distanceFromVenueKm
                       ? ` · ${draft.distanceFromVenueKm} km a helyszíntől`
                       : ""}
@@ -301,7 +302,7 @@ function HotelEditor({
                   <p className="text-neutral-400 text-xs">{draft.address || "Nincs cím"}</p>
                   <p className="text-neutral-300 text-xs">
                     {draft.pricing.roomTypes.length} szobatípus ·{" "}
-                    {draft.pricing.addonGroups.length} felár-csoport
+                    {draft.pricing.addonGroups.length} foglalási szakasz
                   </p>
                   <ul className="text-xs text-neutral-500 space-y-1">
                     {draft.pricing.roomTypes.map((room) => (
@@ -404,7 +405,7 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
           <>
             <Link
               href="/admin/plugins/t-book/events"
-              className="inline-flex items-center h-10 px-4 border border-white/10 rounded-lg text-white text-sm"
+              className="inline-flex items-center h-10 px-4 border border-border rounded-lg text-foreground text-sm"
             >
               ← Események
             </Link>
@@ -437,11 +438,11 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
             return (
               <li
                 key={hotel.id}
-                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <p className="font-bold text-white truncate">{hotel.name}</p>
+                    <p className="font-semibold text-foreground truncate">{hotel.name}</p>
                     <TBookStatusBadge status={hotel.status} labels={TBOOK_STATUS_LABELS} />
                   </div>
                   <p className="text-xs text-neutral-500 mt-1">
@@ -452,14 +453,14 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
                     {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                    felár-csoport ({addonCount} mező)
+                    foglalási szakasz ({addonCount} mező)
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 border-white/10 text-white text-xs font-bold"
+                    className="h-9 text-xs"
                     onClick={() => setEditorHotel(hotel)}
                   >
                     Szerkesztés

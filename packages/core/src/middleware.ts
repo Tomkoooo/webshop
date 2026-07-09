@@ -13,6 +13,12 @@ import {
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
 
+function nextWithPathname(req: Parameters<Parameters<typeof auth>[0]>[0]) {
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set("x-pathname", req.nextUrl.pathname)
+  return NextResponse.next({ request: { headers: requestHeaders } })
+}
+
 function isConfiguredMaintenanceEnabled(): boolean {
   const raw = process.env.MAINTENANCE_MODE ?? process.env.NEXT_PUBLIC_MAINTENANCE_MODE
   return raw === "1" || raw?.toLowerCase() === "true"
@@ -41,7 +47,7 @@ export const storefrontMiddleware = auth(async (req) => {
   }
 
   if (isAuthRoute || isMaintenancePath || isNextInternal || isStaticAsset) {
-    return NextResponse.next()
+    return nextWithPathname(req)
   }
 
   const maintenanceEnabled = isConfiguredMaintenanceEnabled()
@@ -86,12 +92,12 @@ export const storefrontMiddleware = auth(async (req) => {
 
   const previewCookie = req.cookies.get("wse_template_preview")
   if (previewCookie && !isAdminUser) {
-    const response = NextResponse.next()
+    const response = nextWithPathname(req)
     response.cookies.delete("wse_template_preview")
     return response
   }
 
-  return NextResponse.next()
+  return nextWithPathname(req)
 })
 
 export const config = {

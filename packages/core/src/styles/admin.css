@@ -1,0 +1,566 @@
+/**
+ * Admin chrome design system — tCrm / shadcn sidebar pattern.
+ * Scoped under `.admin-shell`; independent of storefront Theme v2.
+ *
+ * CRITICAL: Site apps map Tailwind `@theme` colors to `--theme-*` (storefront).
+ * Inside `.admin-shell` we re-map `--color-*` so utilities like `bg-background`
+ * and `text-foreground` use the operator palette, not the shop theme.
+ */
+
+@theme {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+.admin-shell {
+  --radius: 0.625rem;
+  --dvh: 1vh;
+
+  /* Operator palette (light, high readability) */
+  --background: oklch(0.99 0.002 286);
+  --foreground: oklch(0.18 0.01 286);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.01 286);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 286);
+  --primary: oklch(0.55 0.14 268);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.004 286);
+  --secondary-foreground: oklch(0.28 0.02 286);
+  --muted: oklch(0.96 0.004 286);
+  --muted-foreground: oklch(0.48 0.02 286);
+  --accent: oklch(0.95 0.01 286);
+  --accent-foreground: oklch(0.22 0.02 286);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.91 0.006 286);
+  --input: oklch(0.91 0.006 286);
+  --ring: oklch(0.55 0.14 268 / 45%);
+
+  --sidebar: oklch(0.985 0.002 286);
+  --sidebar-foreground: oklch(0.22 0.02 286);
+  --sidebar-primary: oklch(0.55 0.14 268);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.01 286);
+  --sidebar-accent-foreground: oklch(0.22 0.02 286);
+  --sidebar-border: oklch(0.91 0.006 286);
+  --sidebar-ring: oklch(0.55 0.14 268 / 40%);
+
+  --success: oklch(0.62 0.15 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.78 0.14 85);
+  --warning-foreground: oklch(0.28 0.05 85);
+  --error: oklch(0.58 0.22 27);
+  --error-foreground: oklch(0.99 0 0);
+
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* Bridge Tailwind v4 `@theme` color utilities to admin semantics */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+
+  /* Stop storefront theme vars from leaking into admin chrome */
+  --theme-background: var(--background);
+  --theme-foreground: var(--foreground);
+  --theme-muted: var(--muted);
+  --theme-muted-foreground: var(--muted-foreground);
+  --theme-primary: var(--primary);
+  --theme-primary-foreground: var(--primary-foreground);
+  --theme-secondary: var(--secondary);
+  --theme-secondary-foreground: var(--secondary-foreground);
+  --theme-border: var(--border);
+  --theme-surface: var(--card);
+  --theme-surface-foreground: var(--card-foreground);
+  --theme-success: var(--success);
+  --theme-warning: var(--warning);
+  --theme-error: var(--error);
+
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dark operator palette — toggled via data-admin-theme on html + .admin-shell */
+.admin-shell[data-admin-theme="dark"],
+html[data-admin-theme="dark"] .admin-shell {
+  --background: oklch(0.145 0.012 286);
+  --foreground: oklch(0.96 0.004 286);
+  --card: oklch(0.19 0.014 286);
+  --card-foreground: oklch(0.96 0.004 286);
+  --popover: oklch(0.19 0.014 286);
+  --popover-foreground: oklch(0.96 0.004 286);
+  --primary: oklch(0.66 0.16 268);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.24 0.016 286);
+  --secondary-foreground: oklch(0.92 0.006 286);
+  --muted: oklch(0.24 0.016 286);
+  --muted-foreground: oklch(0.68 0.02 286);
+  --accent: oklch(0.27 0.02 286);
+  --accent-foreground: oklch(0.96 0.004 286);
+  --destructive: oklch(0.58 0.2 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.3 0.016 286);
+  --input: oklch(0.3 0.016 286);
+  --ring: oklch(0.66 0.16 268 / 45%);
+
+  --sidebar: oklch(0.16 0.012 286);
+  --sidebar-foreground: oklch(0.92 0.006 286);
+  --sidebar-primary: oklch(0.66 0.16 268);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.24 0.016 286);
+  --sidebar-accent-foreground: oklch(0.96 0.004 286);
+  --sidebar-border: oklch(0.3 0.016 286);
+  --sidebar-ring: oklch(0.66 0.16 268 / 40%);
+
+  --success: oklch(0.68 0.14 155);
+  --success-foreground: oklch(0.82 0.12 155);
+  --warning: oklch(0.78 0.14 85);
+  --warning-foreground: oklch(0.86 0.12 85);
+  --error: oklch(0.62 0.2 27);
+  --error-foreground: oklch(0.99 0 0);
+
+  --chart-1: oklch(0.72 0.17 268);
+  --chart-2: oklch(0.7 0.12 185);
+  --chart-3: oklch(0.62 0.1 227);
+  --chart-4: oklch(0.75 0.15 85);
+  --chart-5: oklch(0.72 0.14 70);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+
+  --theme-background: var(--background);
+  --theme-foreground: var(--foreground);
+  --theme-muted: var(--muted);
+  --theme-muted-foreground: var(--muted-foreground);
+  --theme-primary: var(--primary);
+  --theme-primary-foreground: var(--primary-foreground);
+  --theme-secondary: var(--secondary);
+  --theme-secondary-foreground: var(--secondary-foreground);
+  --theme-border: var(--border);
+  --theme-surface: var(--card);
+  --theme-surface-foreground: var(--card-foreground);
+  --theme-success: var(--success);
+  --theme-warning: var(--warning);
+  --theme-error: var(--error);
+
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+html[data-admin-theme="dark"] [data-sonner-toaster] [data-sonner-toast] {
+  background: oklch(0.19 0.014 286) !important;
+  color: oklch(0.96 0.004 286) !important;
+  border-color: oklch(0.3 0.016 286) !important;
+}
+
+html[data-admin-theme="dark"] [data-sonner-toaster] [data-description] {
+  color: oklch(0.68 0.02 286) !important;
+}
+
+html[data-admin-theme="light"] [data-sonner-toaster] [data-sonner-toast],
+html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
+  background: var(--card, oklch(1 0 0)) !important;
+  color: var(--card-foreground, oklch(0.18 0.01 286)) !important;
+  border-color: var(--border, oklch(0.91 0.006 286)) !important;
+}
+
+@supports (height: 100dvh) {
+  .admin-shell {
+    --dvh: 1dvh;
+  }
+}
+
+/* Legacy admin utility aliases */
+.admin-shell .text-admin-foreground,
+.admin-text-accent {
+  color: var(--foreground);
+}
+
+.admin-shell .text-admin-muted {
+  color: var(--muted-foreground);
+}
+
+.admin-shell .text-admin-subtle {
+  color: oklch(0.58 0.02 286);
+}
+
+.admin-shell .bg-admin-background {
+  background-color: var(--background);
+}
+
+.admin-shell .bg-admin-surface,
+.admin-icon-well {
+  background-color: var(--card);
+}
+
+.admin-shell .bg-admin-surface-raised {
+  background-color: var(--muted);
+}
+
+.admin-shell .border-admin-border {
+  border-color: var(--border);
+}
+
+.admin-shell .border-admin-border-strong {
+  border-color: oklch(0.84 0.01 286);
+}
+
+.admin-shell .text-admin-accent,
+.admin-icon-accent,
+.admin-link-accent {
+  color: var(--primary);
+}
+
+.admin-shell .bg-admin-accent-muted {
+  background-color: oklch(0.55 0.14 268 / 12%);
+}
+
+.admin-shell .text-admin-success {
+  color: var(--success);
+}
+
+.admin-shell .text-admin-error,
+.admin-shell .text-admin-warning {
+  color: var(--error);
+}
+
+.admin-section-marker {
+  background-color: var(--primary);
+}
+
+.admin-item-selected {
+  border-color: var(--primary);
+  background-color: oklch(0.55 0.14 268 / 10%);
+  color: var(--foreground);
+  box-shadow: inset 3px 0 0 0 var(--primary);
+}
+
+.admin-item-idle {
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+
+.admin-item-idle:hover {
+  border-color: oklch(0.84 0.01 286);
+  background-color: var(--accent);
+}
+
+.admin-action-outline {
+  border-color: var(--border);
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.admin-action-outline:hover {
+  background-color: var(--accent);
+}
+
+.admin-headline-accent {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.admin-value {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-link-accent:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.admin-shell [data-slot="sidebar-inset"] {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.admin-shell [data-slot="button"][data-variant="ghost"]:hover,
+.admin-shell [data-slot="button"][data-variant="outline"]:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.admin-shell [data-slot="sidebar-container"] {
+  border: none;
+}
+
+.admin-shell [data-slot="sidebar-inner"] {
+  border: none;
+}
+
+/* Soft edge shadow — separates sidebar from content without a hard border */
+.admin-shell [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-inner"] {
+  box-shadow: 6px 0 20px -10px color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+.admin-shell [data-slot="sidebar"][data-side="right"] [data-slot="sidebar-inner"] {
+  box-shadow: -6px 0 20px -10px color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+.admin-shell [data-slot="sidebar-header"],
+.admin-shell [data-slot="sidebar-footer"] {
+  border: none;
+}
+
+.admin-shell [data-slot="sidebar-menu-sub"] {
+  border: none;
+}
+
+.admin-shell [data-slot="sidebar-rail"]::after {
+  opacity: 0;
+}
+
+.admin-shell [data-slot="sidebar-rail"]:hover::after {
+  opacity: 0;
+}
+
+/* Global admin typography — neutralize legacy Krausz micro-label utilities */
+.admin-shell .uppercase {
+  text-transform: none !important;
+}
+
+.admin-shell .tracking-widest,
+.admin-shell .tracking-wider,
+.admin-shell .tracking-\[0\.2em\],
+.admin-shell .tracking-\[0\.3em\] {
+  letter-spacing: normal !important;
+}
+
+.admin-shell .font-black {
+  font-weight: 600 !important;
+}
+
+.admin-shell .italic {
+  font-style: normal;
+}
+
+/* Border-light surfaces */
+.admin-shell [data-slot="card"] {
+  border: none;
+}
+
+.admin-shell [data-slot="table-container"] {
+  border: none;
+}
+
+.admin-shell .shadow-2xl {
+  box-shadow: 0 1px 3px 0 color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+/* Safety net: neutralize leftover dark-theme utility classes in admin routes */
+.admin-shell :where(h1, h2, h3, h4, h5, h6, p, span, label, td, th, li) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.admin-shell .text-white {
+  color: var(--foreground);
+}
+
+.admin-shell .text-neutral-300,
+.admin-shell .text-neutral-400,
+.admin-shell .text-neutral-500,
+.admin-shell .text-neutral-600 {
+  color: var(--muted-foreground);
+}
+
+/* Dark-theme text tints that become unreadable on light admin surfaces */
+.admin-shell .text-amber-100,
+.admin-shell .text-amber-200,
+.admin-shell .text-amber-300,
+.admin-shell .text-amber-400 {
+  color: oklch(0.45 0.12 75);
+}
+
+.admin-shell .text-violet-100,
+.admin-shell .text-violet-200,
+.admin-shell .text-violet-300 {
+  color: oklch(0.42 0.14 285);
+}
+
+.admin-shell .text-emerald-300,
+.admin-shell .text-emerald-400 {
+  color: oklch(0.42 0.12 155);
+}
+
+.admin-shell .text-rose-300,
+.admin-shell .text-rose-400,
+.admin-shell .text-red-300,
+.admin-shell .text-red-400 {
+  color: var(--destructive);
+}
+
+.admin-shell .text-white\/40,
+.admin-shell .text-white\/50,
+.admin-shell .text-white\/60 {
+  color: var(--muted-foreground);
+}
+
+.admin-shell .bg-black,
+.admin-shell .bg-neutral-900,
+.admin-shell .bg-\[\#111113\] {
+  background-color: var(--card);
+}
+
+.admin-shell .bg-white\/5,
+.admin-shell .bg-white\/10 {
+  background-color: color-mix(in oklch, var(--muted) 55%, transparent);
+}
+
+.admin-shell .border-white\/5,
+.admin-shell .border-white\/10,
+.admin-shell .border-white\/15,
+.admin-shell .border-white\/20 {
+  border-color: var(--border);
+}
+
+/* CMS preview overrides */
+.admin-shell .admin-storefront-preview .text-foreground {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+.admin-shell .admin-storefront-preview .text-muted-foreground {
+  color: var(--theme-muted-foreground, var(--muted-foreground));
+}
+
+.admin-shell .admin-storefront-preview .prose {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+[data-cms-editing="true"] input,
+[data-cms-editing="true"] textarea {
+  color: inherit;
+}
+
+.cms-editor-chrome {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.cms-editor-toolbar,
+.cms-editor-branding,
+.cms-editor-subtoolbar {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.cms-admin-control,
+.cms-admin-control input,
+.cms-admin-control textarea,
+.cms-admin-control button,
+.cms-admin-control label,
+.cms-admin-control p,
+.cms-admin-control select {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.admin-storefront-preview [data-cms-editing="true"] .cms-admin-control {
+  position: relative;
+  z-index: 60;
+}
+
+[data-cms-editing="true"] .minecraft-social-tab {
+  display: none;
+}
+
+.admin-storefront-preview [data-cms-editing="true"] textarea:not(.font-minecraft) {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.admin-storefront-preview.minecraft-camp-preview {
+  --theme-foreground: #2d2817;
+  --theme-muted-foreground: #5c4a32;
+  --foreground: #2d2817;
+  --muted-foreground: #5c4a32;
+  color: #2d2817;
+  background-color: #b8d88a;
+}
+
+.admin-storefront-preview.minecraft-camp-preview .text-foreground,
+.admin-storefront-preview.minecraft-camp-preview h1,
+.admin-storefront-preview.minecraft-camp-preview h2,
+.admin-storefront-preview.minecraft-camp-preview h3,
+.admin-storefront-preview.minecraft-camp-preview h4 {
+  color: #2d2817;
+}
+
+.admin-storefront-preview.minecraft-camp-preview .text-muted-foreground,
+.admin-storefront-preview.minecraft-camp-preview .prose {
+  color: #5c4a32;
+}
+
+.admin-breadcrumb-scroll {
+  scrollbar-width: none;
+}
+
+.admin-breadcrumb-scroll::-webkit-scrollbar {
+  display: none;
+}

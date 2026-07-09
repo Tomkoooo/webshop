@@ -30,7 +30,7 @@ export function PressKitOverview() {
   }, [])
 
   if (loading) return <PressAdminLoading />
-  if (error) return <p className="text-red-400">{error}</p>
+  if (error) return <p className="text-destructive">{error}</p>
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -71,13 +71,13 @@ export function PressKitOverview() {
         <PressAdminPrimaryButton asChild>
           <Link href="/admin/plugins/press-kit/content">Vizuális szerkesztő</Link>
         </PressAdminPrimaryButton>
-        <Button asChild variant="outline" className="rounded-none border-white/10 h-11 uppercase text-[10px] font-black tracking-widest">
+        <Button asChild variant="outline" className="h-11 text-sm font-medium">
           <Link href="/admin/plugins/press-kit/contacts">Kapcsolatok</Link>
         </Button>
-        <Button asChild variant="outline" className="rounded-none border-white/10 h-11 uppercase text-[10px] font-black tracking-widest">
+        <Button asChild variant="outline" className="h-11 text-sm font-medium">
           <Link href="/admin/plugins/press-kit/stats">Megnyitások</Link>
         </Button>
-        <Button asChild variant="outline" className="rounded-none border-white/10 h-11 uppercase text-[10px] font-black tracking-widest">
+        <Button asChild variant="outline" className="h-11 text-sm font-medium">
           <Link href="/sajto" target="_blank">
             <ExternalLink className="w-3.5 h-3.5 mr-2 inline" />
             Portál

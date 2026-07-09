@@ -40,6 +40,10 @@ import {
 } from "@wse/core/components/analytics/GoogleTagManager";
 import { Toaster } from "@wse/core/components/ui/sonner";
 import { PopupCampaignService } from "@wse/core/services/popup-campaign";
+import { isAdminChromePath } from "@wse/core/lib/admin-chrome-path";
+import { ADMIN_THEME_BOOT_SCRIPT } from "@wse/core/lib/admin-theme";
+import { isShopEnabled } from "@wse/core/lib/features/shop";
+import { headers } from "next/headers";
 
 function toAbsoluteUrl(value: string, fallbackBase: string): string {
   if (!value) return fallbackBase;
@@ -110,11 +114,18 @@ export default async function RootLayout({
     ...themeTokensToCssVars(theme),
     ...themeTypographyToCssVars(typography),
   };
-  const popupCampaigns = await PopupCampaignService.getActiveForStorefront();
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  const adminChrome = isAdminChromePath(pathname);
+  const popupCampaigns = adminChrome
+    ? []
+    : await PopupCampaignService.getActiveForStorefront();
 
   return (
     <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
       <head>
+        {adminChrome ? (
+          <script dangerouslySetInnerHTML={{ __html: ADMIN_THEME_BOOT_SCRIPT }} />
+        ) : null}
         <GoogleTagManagerHead />
         <noscript>
           <style
@@ -133,6 +144,8 @@ export default async function RootLayout({
             process.env.DEV_METRICS === "1" || process.env.DEV_METRICS?.toLowerCase() === "true"
           }
           popupCampaigns={popupCampaigns}
+          shopEnabled={isShopEnabled()}
+          adminChrome={adminChrome}
         >
           {children}
           <Toaster position="bottom-right" />

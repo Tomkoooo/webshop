@@ -25,19 +25,19 @@ export function TBookWizard({
 
   return (
     <div className="space-y-6">
-      <ol className="flex flex-wrap gap-2">
+      <ol className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
         {steps.map((step, index) => (
           <li key={step.id}>
             <button
               type="button"
               onClick={() => index < currentStep && onStepChange(index)}
               className={cn(
-                "rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-widest border transition-colors",
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 index === currentStep
-                  ? "border-amber-400/60 bg-amber-500/15 text-amber-200"
+                  ? "bg-background text-foreground shadow-sm"
                   : index < currentStep
-                    ? "border-white/20 bg-white/5 text-neutral-300 hover:border-white/40"
-                    : "border-white/10 text-neutral-600"
+                    ? "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground/60"
               )}
             >
               {index + 1}. {step.title}
@@ -51,7 +51,7 @@ export function TBookWizard({
           <Button
             type="button"
             variant="outline"
-            className="h-10 border-white/10 text-white"
+            className="h-10"
             onClick={() => onStepChange(currentStep - 1)}
           >
             ← Vissza
@@ -60,13 +60,13 @@ export function TBookWizard({
         {!isLast ? (
           <Button
             type="button"
-            className="flex-1 h-10 font-bold"
+            className="flex-1 h-10 font-semibold"
             onClick={() => onStepChange(currentStep + 1)}
           >
             Tovább →
           </Button>
         ) : onSubmit ? (
-          <Button type="button" disabled={submitting} className="flex-1 h-10 font-bold" onClick={onSubmit}>
+          <Button type="button" disabled={submitting} className="flex-1 h-10 font-semibold" onClick={onSubmit}>
             {submitting ? "Mentés…" : submitLabel}
           </Button>
         ) : null}

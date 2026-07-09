@@ -1,88 +1,78 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Mail, Sparkles } from "lucide-react";
-import { Button } from "@wse/core/components/ui/button";
-import { RichTextEditor } from "@wse/core/components/admin/RichTextEditor";
+import { useState } from "react"
+import { Mail, Sparkles } from "lucide-react"
+import { Button } from "@wse/core/components/ui/button"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
+import { RichTextEditor } from "@wse/core/components/admin/RichTextEditor"
+import { adminFieldHint, adminInputClass, adminPanel } from "@wse/core/lib/admin-ui"
+import { cn } from "@wse/core/lib/utils"
 
 interface NewsletterCampaignFormProps {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<void>
 }
 
 export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) {
-  const [subject, setSubject] = useState("");
-  const [bodyHtml, setBodyHtml] = useState("<p>Kedves {{name}}!</p><p></p>");
+  const [subject, setSubject] = useState("")
+  const [bodyHtml, setBodyHtml] = useState("<p>Kedves {{name}}!</p><p></p>")
 
   return (
-    <div className="bg-white/5 border border-white/10 p-6 space-y-6">
-      <div className="flex items-center gap-2 text-white">
-        <Sparkles className="w-4 h-4 admin-icon-accent" />
-        <h2 className="font-black uppercase tracking-wider">Új kampány</h2>
+    <div className={cn(adminPanel)}>
+      <div className="flex items-center gap-2">
+        <Sparkles className="size-4 text-primary" />
+        <h2 className="text-lg font-semibold">Új kampány</h2>
       </div>
 
-      <form action={action} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <form action={action} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <input
-            name="title"
-            placeholder="Kampány cím"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-white/40"
-            required
-          />
-          <input
-            name="subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Email tárgy"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-white/40"
-            required
-          />
-          <select
-            name="topic"
-            defaultValue="general"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-white/40"
-          >
-            <option value="general">Általános</option>
-            <option value="discounts">Kedvezmények</option>
-            <option value="coupons">Kuponok</option>
-            <option value="new_products">Új termékek</option>
-          </select>
-          <select
-            name="audience"
-            defaultValue="all_users"
-            className="h-12 w-full bg-black border border-white/10 px-4 text-white focus:outline-none focus:border-white/40"
-          >
-            <option value="all_users">Feliratkozott felhasználók</option>
-            <option value="customers">Feliratkozott vásárló ügyfelek (rendeléssel)</option>
-          </select>
-
-          <p className="text-xs text-neutral-500 leading-relaxed">
-            A <code>{"{{name}}"}</code> változó automatikusan a címzett nevére lesz cserélve.
-            A rendszer minden levél végére kötelezően hozzáadja a{" "}
-            <strong>Leiratkozás</strong> linket.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">
-              Email tartalom
-            </p>
-            <RichTextEditor
-              value={bodyHtml}
-              onChange={setBodyHtml}
-              placeholder="Írd meg a hírlevél tartalmát..."
-              variant="mail"
+          <AdminFormField label="Kampány cím">
+            <input name="title" placeholder="Kampány cím" className={cn(adminInputClass, "h-10")} required />
+          </AdminFormField>
+          <AdminFormField label="Email tárgy">
+            <input
+              name="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Email tárgy"
+              className={cn(adminInputClass, "h-10")}
+              required
             />
-            <input type="hidden" name="bodyHtml" value={bodyHtml} />
-          </div>
+          </AdminFormField>
+          <AdminFormField label="Téma">
+            <select name="topic" defaultValue="general" className={cn(adminInputClass, "h-10")}>
+              <option value="general">Általános</option>
+              <option value="discounts">Kedvezmények</option>
+              <option value="coupons">Kuponok</option>
+              <option value="new_products">Új termékek</option>
+            </select>
+          </AdminFormField>
+          <AdminFormField label="Célközönség">
+            <select name="audience" defaultValue="all_users" className={cn(adminInputClass, "h-10")}>
+              <option value="all_users">Feliratkozott felhasználók</option>
+              <option value="customers">Feliratkozott vásárló ügyfelek (rendeléssel)</option>
+            </select>
+          </AdminFormField>
+
+          <p className={adminFieldHint}>
+            A <code>{"{{name}}"}</code> változó automatikusan a címzett nevére lesz cserélve.
+            A rendszer minden levél végére kötelezően hozzáadja a <strong>Leiratkozás</strong> linket.
+          </p>
         </div>
 
-        <div className="lg:col-span-2 space-y-3">
-          <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">
-            Előnézet
-          </p>
-          <div className="bg-white border border-white/10 p-6 text-black">
-            <p className="text-sm text-neutral-700 mb-3">
+        <AdminFormField label="Email tartalom">
+          <RichTextEditor
+            value={bodyHtml}
+            onChange={setBodyHtml}
+            placeholder="Írd meg a hírlevél tartalmát..."
+            variant="mail"
+          />
+          <input type="hidden" name="bodyHtml" value={bodyHtml} />
+        </AdminFormField>
+
+        <div className="space-y-3 lg:col-span-2">
+          <p className="text-sm font-medium">Előnézet</p>
+          <div className="rounded-lg bg-white p-6 text-black shadow-sm">
+            <p className="mb-3 text-sm text-neutral-700">
               <strong>Tárgy:</strong> {subject || "(nincs tárgy)"}
             </p>
             <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
@@ -90,7 +80,7 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
             <p className="text-xs text-neutral-600">
               Ezt az üzenetet azért kaptad, mert feliratkoztál a hírlevelünkre.
               <br />
-              <a href="https://krauszbarkacs.hu/profile" className="admin-link-accent">
+              <a href="https://krauszbarkacs.hu/profile" className="text-primary font-medium hover:underline">
                 Leiratkozás
               </a>
             </p>
@@ -98,12 +88,12 @@ export function NewsletterCampaignForm({ action }: NewsletterCampaignFormProps) 
         </div>
 
         <div className="lg:col-span-2">
-          <Button type="submit" className="h-12 rounded-none bg-primary hover:bg-primary/85 text-white font-black uppercase tracking-widest text-[10px]">
-            <Mail className="w-4 h-4 mr-2" />
+          <Button type="submit" className="h-10">
+            <Mail className="mr-2 size-4" />
             Kampány mentése
           </Button>
         </div>
       </form>
     </div>
-  );
+  )
 }

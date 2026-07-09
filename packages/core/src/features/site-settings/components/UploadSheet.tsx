@@ -177,17 +177,17 @@ export function UploadSheet({
 
             {flexible ? (
               <div className="px-4 py-3 border-b border-white/5 space-y-3 bg-black/30">
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Kivágás alakja</p>
+                <p className="text-xs font-medium text-muted-foreground text-neutral-400">Kivágás alakja</p>
                 <div className="flex flex-wrap gap-2">
                   {aspectPresets.map((preset) => (
                     <button
                       key={preset.id}
                       type="button"
                       onClick={() => selectPreset(preset.id)}
-                      className={`px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+                      className={`px-3 h-8 rounded-lg text-xs font-medium text-muted-foreground border ${
                         selectedPresetId === preset.id
                           ? "border-primary-foreground/35 text-white bg-primary/20"
-                          : "border-white/15 text-neutral-400 hover:border-white/30"
+                          : "border-white/15 text-neutral-400 hover:shadow-md"
                       }`}
                     >
                       {preset.label}
@@ -251,7 +251,7 @@ export function UploadSheet({
               {!useFullImage ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                    <div className="flex justify-between items-center text-xs font-medium text-muted-foreground text-neutral-400">
                       <span>Nagyítás</span>
                       <span className="text-primary-foreground">{Math.round(zoom * 100)}%</span>
                     </div>
@@ -270,7 +270,7 @@ export function UploadSheet({
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                    <div className="flex justify-between items-center text-xs font-medium text-muted-foreground text-neutral-400">
                       <span>Forgatás</span>
                       <span className="text-primary-foreground">{rotation}°</span>
                     </div>

@@ -1,8 +1,9 @@
 "use client"
 
 import type { CampPricingSettings } from "./camp-api"
-import { CampAdminField, CampAdminInput } from "./camp-admin-ui"
-import { Button } from "@wse/core/components/ui/button"
+import { CampAdminField, CampAdminInput, CampAdminPrimaryButton } from "./camp-admin-ui"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
+import { adminSectionTitle } from "@wse/core/lib/admin-ui"
 
 type Props = {
   settings: CampPricingSettings
@@ -13,11 +14,9 @@ type Props = {
 
 export function CampPricingForm({ settings, onChange, onSave, saving }: Props) {
   return (
-    <div className="border border-amber-500/30 bg-amber-950/20 rounded-2xl p-6 space-y-4">
-      <h3 className="text-sm font-black uppercase tracking-widest text-amber-300">
-        Kedvezmények & szabályok
-      </h3>
-      <p className="text-xs text-neutral-400 leading-relaxed">
+    <AdminPanel className="border border-amber-500/20 bg-amber-500/5 shadow-none">
+      <h3 className={adminSectionTitle}>Kedvezmények & szabályok</h3>
+      <p className="text-xs text-muted-foreground leading-relaxed">
         Többgyermekes kedvezmény: minimum gyerekszám után. Testvérkedvezmény: azonos vezetéknév
         (külön mező vagy a név első szava) legalább két gyereknél. Ha mindkettő érvényes, a
         magasabb százalék kerül alkalmazásra.
@@ -55,7 +54,7 @@ export function CampPricingForm({ settings, onChange, onSave, saving }: Props) {
             }
           />
         </CampAdminField>
-        <label className="flex items-end gap-3 pb-2 text-sm text-neutral-300">
+        <label className="flex items-end gap-3 pb-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={settings.siblingMatchByLastName}
@@ -67,15 +66,9 @@ export function CampPricingForm({ settings, onChange, onSave, saving }: Props) {
           Testvér párosítás vezetéknév alapján
         </label>
       </div>
-      <Button
-        type="button"
-        variant="krausz"
-        disabled={saving}
-        onClick={onSave}
-        className="h-11 px-6 uppercase tracking-widest text-[10px] font-black"
-      >
+      <CampAdminPrimaryButton type="button" disabled={saving} onClick={onSave}>
         {saving ? "Mentés…" : "Kedvezmények mentése"}
-      </Button>
-    </div>
+      </CampAdminPrimaryButton>
+    </AdminPanel>
   )
 }

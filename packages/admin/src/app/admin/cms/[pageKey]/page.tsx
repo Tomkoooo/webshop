@@ -1,20 +1,15 @@
 import { createHash } from "crypto"
 import type { ReactNode } from "react"
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import { TemplateService } from "@wse/core/services/template"
 import { PageContentService } from "@wse/core/services/page-content"
 import { listEditablePages } from "@wse/core/templates/cms-pages"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { getAccessibleCmsSiteSettingsSections } from "@wse/core/lib/admin-settings-access"
-import { CmsTemplatePageClient } from "@wse/core/features/template-cms/components/CmsTemplatePageClient"
-import { ShopVisualSurfaceEditor } from "@wse/core/features/template-cms/editors/ShopVisualSurfaceEditor"
-import { StaticPageVisualSurfaceEditor } from "@wse/core/features/template-cms/editors/StaticPageVisualSurfaceEditor"
-import { PdpVisualSurfaceEditor } from "@wse/core/features/template-cms/editors/PdpVisualSurfaceEditor"
-import { FlowShellVisualSurfaceEditor } from "@wse/core/features/template-cms/editors/FlowShellVisualSurfaceEditor"
-import { CampSurfaceVisualEditor } from "@wse/core/features/template-cms/editors/CampSurfaceVisualEditor"
-import { HomeVisualSurfaceEditor } from "@wse/core/features/template-cms/editors/HomeVisualSurfaceEditor"
+import { CmsEditorLoading } from "@wse/core/features/template-cms/components/CmsEditorLoading"
 import { AdminCmsPageNav } from "@wse/core/components/admin/AdminCmsPageNav"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
 import { PluginService } from "@wse/core/services/plugin"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import { BrandingSettingsService } from "@wse/core/services/branding-settings"
@@ -32,6 +27,7 @@ import type { DefaultModernFlowShellContent } from "@wse/template-default-modern
 export const dynamic = "force-dynamic"
 
 const CAMP_PAGE_KEYS = new Set(["page:jegyvasarlas", "page:foglalas", "page:foglalas-siker"])
+const TBOOK_PAGE_KEYS = new Set(["page:jegyek", "page:tbook-foglalas", "page:tbook-foglalas-siker"])
 
 const FLOW_PAGE_ROUTE: Partial<Record<string, FlowRouteKey>> = {
   "page:cart": "cart",
@@ -57,7 +53,8 @@ export default async function CmsPageEditor({
   const dbActiveTemplate = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
   const campBookingEnabled = await PluginService.isEnabled("camp-booking")
-  const editablePages = listEditablePages(template, shopEnabled, campBookingEnabled)
+  const tBookEnabled = await PluginService.isEnabled("t-book")
+  const editablePages = listEditablePages(template, shopEnabled, campBookingEnabled, tBookEnabled)
   const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
   const entry = editablePages.find((p) => p.adminSegment === pageKey)
   if (!entry) notFound()
@@ -107,44 +104,42 @@ export default async function CmsPageEditor({
       initialDraft,
     ])
 
-    return (
-      <div className="space-y-6">
-        <header className="flex flex-col gap-4">
-          <Link
-            href="/admin/cms"
-            className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white w-fit"
-          >
-            ← CMS áttekintés
-          </Link>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-black uppercase tracking-tight text-white">
-                CMS: {entry.label}
-              </h1>
-              <p className="text-xs text-neutral-500">
-                Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
-                <span className="ml-2 admin-text-accent">· Blokkos főoldal</span>
-              </p>
-            </div>
-            <AdminCmsPageNav
-              editablePages={editablePages}
-              activeSegment={pageKey}
-              settingsSections={cmsSettingsSections}
-            />
-          </div>
-        </header>
+    const { CmsTemplatePageClient } = await import(
+      "@wse/core/features/template-cms/components/CmsTemplatePageClient"
+    )
 
-        <CmsTemplatePageClient
-          hydrationKey={editorHydrationKey}
-          templateId={template.manifest.id}
-          shopEnabled={shopEnabled}
-          initialSnapshot={hydratedSnapshot}
-          initialBranding={branding}
-          initialFooter={footer}
-          initialTheme={theme}
-          dependencies={dependencies}
-        />
-      </div>
+    return (
+      <AdminPageScaffold
+        backHref="/admin/cms"
+        backLabel="CMS áttekintés"
+        title={entry.label}
+        description={
+          <>
+            Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
+            <span className="ml-2 text-primary">· Blokkos főoldal</span>
+          </>
+        }
+        actions={
+          <AdminCmsPageNav
+            editablePages={editablePages}
+            activeSegment={pageKey}
+            settingsSections={cmsSettingsSections}
+          />
+        }
+      >
+        <Suspense fallback={<CmsEditorLoading label="Főoldal szerkesztő betöltése…" />}>
+          <CmsTemplatePageClient
+            hydrationKey={editorHydrationKey}
+            templateId={template.manifest.id}
+            shopEnabled={shopEnabled}
+            initialSnapshot={hydratedSnapshot}
+            initialBranding={branding}
+            initialFooter={footer}
+            initialTheme={theme}
+            dependencies={dependencies}
+          />
+        </Suspense>
+      </AdminPageScaffold>
     )
   }
 
@@ -160,6 +155,10 @@ export default async function CmsPageEditor({
     case "page:home": {
       if (entry.editorKind !== "surface-json") notFound()
 
+      const { HomeVisualSurfaceEditor } = await import(
+        "@wse/core/features/template-cms/editors/HomeVisualSurfaceEditor"
+      )
+
       return (
         <SurfacePageLayout
           label={entry.label}
@@ -170,25 +169,30 @@ export default async function CmsPageEditor({
           manifestName={template.manifest.name}
           fullPageKey={fullPageKey}
         >
-          <HomeVisualSurfaceEditor
-            hydrationKey={editorHydrationKey}
-            templateId={template.manifest.id}
-            shopEnabled={shopEnabled}
-            pageKey={fullPageKey}
-            pageLabel={entry.label}
-            initialDraft={initialDraftUnknown as Record<string, unknown>}
-            branding={branding}
-            footer={footer}
-            seo={seo}
-            theme={theme}
-            themeResetBaseline={themeResetBaseline}
-            homepageDeps={dependencies}
-          />
+          <Suspense fallback={<CmsEditorLoading />}>
+            <HomeVisualSurfaceEditor
+              hydrationKey={editorHydrationKey}
+              templateId={template.manifest.id}
+              shopEnabled={shopEnabled}
+              pageKey={fullPageKey}
+              pageLabel={entry.label}
+              initialDraft={initialDraftUnknown as Record<string, unknown>}
+              branding={branding}
+              footer={footer}
+              seo={seo}
+              theme={theme}
+              themeResetBaseline={themeResetBaseline}
+              homepageDeps={dependencies}
+            />
+          </Suspense>
         </SurfacePageLayout>
       )
     }
 
     case "page:shop": {
+      const { ShopVisualSurfaceEditor } = await import(
+        "@wse/core/features/template-cms/editors/ShopVisualSurfaceEditor"
+      )
       const initialDraft = initialDraftUnknown as ShopContent
       const shopDeps = await getShopCmsPreviewDeps(template, initialDraft.pageSize, shopEnabled)
       return (
@@ -201,25 +205,30 @@ export default async function CmsPageEditor({
           manifestName={template.manifest.name}
           fullPageKey={fullPageKey}
         >
-          <ShopVisualSurfaceEditor
-            hydrationKey={editorHydrationKey}
-            templateId={template.manifest.id}
-            shopEnabled={shopEnabled}
-            pageKey={fullPageKey}
-            initialDraft={initialDraft}
-            shopDeps={shopDeps}
-            branding={branding}
-            footer={footer}
-            seo={seo}
-            theme={theme}
-            themeResetBaseline={themeResetBaseline}
-            homepageDeps={dependencies}
-          />
+          <Suspense fallback={<CmsEditorLoading />}>
+            <ShopVisualSurfaceEditor
+              hydrationKey={editorHydrationKey}
+              templateId={template.manifest.id}
+              shopEnabled={shopEnabled}
+              pageKey={fullPageKey}
+              initialDraft={initialDraft}
+              shopDeps={shopDeps}
+              branding={branding}
+              footer={footer}
+              seo={seo}
+              theme={theme}
+              themeResetBaseline={themeResetBaseline}
+              homepageDeps={dependencies}
+            />
+          </Suspense>
         </SurfacePageLayout>
       )
     }
 
     case "page:pdp": {
+      const { PdpVisualSurfaceEditor } = await import(
+        "@wse/core/features/template-cms/editors/PdpVisualSurfaceEditor"
+      )
       const product = await getPdpPreviewProduct()
       const pdpDeps = { product, selectedVariantId: undefined, shopEnabled, templateId: template.manifest.id }
       const initialDraft = initialDraftUnknown as PdpContent
@@ -233,20 +242,22 @@ export default async function CmsPageEditor({
           manifestName={template.manifest.name}
           fullPageKey={fullPageKey}
         >
-          <PdpVisualSurfaceEditor
-            hydrationKey={editorHydrationKey}
-            templateId={template.manifest.id}
-            shopEnabled={shopEnabled}
-            pageKey={fullPageKey}
-            initialDraft={initialDraft}
-            pdpDeps={pdpDeps}
-            branding={branding}
-            footer={footer}
-            seo={seo}
-            theme={theme}
-            themeResetBaseline={themeResetBaseline}
-            homepageDeps={dependencies}
-          />
+          <Suspense fallback={<CmsEditorLoading />}>
+            <PdpVisualSurfaceEditor
+              hydrationKey={editorHydrationKey}
+              templateId={template.manifest.id}
+              shopEnabled={shopEnabled}
+              pageKey={fullPageKey}
+              initialDraft={initialDraft}
+              pdpDeps={pdpDeps}
+              branding={branding}
+              footer={footer}
+              seo={seo}
+              theme={theme}
+              themeResetBaseline={themeResetBaseline}
+              homepageDeps={dependencies}
+            />
+          </Suspense>
         </SurfacePageLayout>
       )
     }
@@ -254,6 +265,9 @@ export default async function CmsPageEditor({
     default: {
       const flowRoute = FLOW_PAGE_ROUTE[fullPageKey]
       if (flowRoute) {
+        const { FlowShellVisualSurfaceEditor } = await import(
+          "@wse/core/features/template-cms/editors/FlowShellVisualSurfaceEditor"
+        )
         const initialDraft = initialDraftUnknown as DefaultModernFlowShellContent
 
         return (
@@ -266,26 +280,31 @@ export default async function CmsPageEditor({
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
           >
-            <FlowShellVisualSurfaceEditor
-              hydrationKey={editorHydrationKey}
-              templateId={template.manifest.id}
-              shopEnabled={shopEnabled}
-              pageKey={fullPageKey}
-              flowRoute={flowRoute}
-              initialDraft={initialDraft}
-              branding={branding}
-              footer={footer}
-              seo={seo}
-              theme={theme}
-              themeResetBaseline={themeResetBaseline}
-              homepageDeps={dependencies}
-            />
+            <Suspense fallback={<CmsEditorLoading />}>
+              <FlowShellVisualSurfaceEditor
+                hydrationKey={editorHydrationKey}
+                templateId={template.manifest.id}
+                shopEnabled={shopEnabled}
+                pageKey={fullPageKey}
+                flowRoute={flowRoute}
+                initialDraft={initialDraft}
+                branding={branding}
+                footer={footer}
+                seo={seo}
+                theme={theme}
+                themeResetBaseline={themeResetBaseline}
+                homepageDeps={dependencies}
+              />
+            </Suspense>
           </SurfacePageLayout>
         )
       }
 
       const staticSlug = fullPageKey.startsWith("page:") ? fullPageKey.slice("page:".length) : ""
       if (staticSlug && template.staticPages[staticSlug]) {
+        const { StaticPageVisualSurfaceEditor } = await import(
+          "@wse/core/features/template-cms/editors/StaticPageVisualSurfaceEditor"
+        )
         return (
           <SurfacePageLayout
             label={entry.label}
@@ -296,26 +315,31 @@ export default async function CmsPageEditor({
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
           >
-            <StaticPageVisualSurfaceEditor
-              hydrationKey={editorHydrationKey}
-              templateId={template.manifest.id}
-              shopEnabled={shopEnabled}
-              pageKey={fullPageKey}
-              slug={staticSlug}
-              pageLabel={entry.label}
-              initialDraft={initialDraftUnknown as Record<string, unknown>}
-              branding={branding}
-              footer={footer}
-              seo={seo}
-              theme={theme}
-              themeResetBaseline={themeResetBaseline}
-              homepageDeps={dependencies}
-            />
+            <Suspense fallback={<CmsEditorLoading />}>
+              <StaticPageVisualSurfaceEditor
+                hydrationKey={editorHydrationKey}
+                templateId={template.manifest.id}
+                shopEnabled={shopEnabled}
+                pageKey={fullPageKey}
+                slug={staticSlug}
+                pageLabel={entry.label}
+                initialDraft={initialDraftUnknown as Record<string, unknown>}
+                branding={branding}
+                footer={footer}
+                seo={seo}
+                theme={theme}
+                themeResetBaseline={themeResetBaseline}
+                homepageDeps={dependencies}
+              />
+            </Suspense>
           </SurfacePageLayout>
         )
       }
 
       if (CAMP_PAGE_KEYS.has(fullPageKey) && template.campPages) {
+        const { CampSurfaceVisualEditor } = await import(
+          "@wse/core/features/template-cms/editors/CampSurfaceVisualEditor"
+        )
         return (
           <SurfacePageLayout
             label={entry.label}
@@ -326,20 +350,56 @@ export default async function CmsPageEditor({
             manifestName={template.manifest.name}
             fullPageKey={fullPageKey}
           >
-            <CampSurfaceVisualEditor
-              hydrationKey={editorHydrationKey}
-              templateId={template.manifest.id}
-              shopEnabled={shopEnabled}
-              pageKey={fullPageKey}
-              pageLabel={entry.label}
-              initialDraft={initialDraftUnknown as Record<string, unknown>}
-              branding={branding}
-              footer={footer}
-              seo={seo}
-              theme={theme}
-              themeResetBaseline={themeResetBaseline}
-              homepageDeps={dependencies}
-            />
+            <Suspense fallback={<CmsEditorLoading />}>
+              <CampSurfaceVisualEditor
+                hydrationKey={editorHydrationKey}
+                templateId={template.manifest.id}
+                shopEnabled={shopEnabled}
+                pageKey={fullPageKey}
+                pageLabel={entry.label}
+                initialDraft={initialDraftUnknown as Record<string, unknown>}
+                branding={branding}
+                footer={footer}
+                seo={seo}
+                theme={theme}
+                themeResetBaseline={themeResetBaseline}
+                homepageDeps={dependencies}
+              />
+            </Suspense>
+          </SurfacePageLayout>
+        )
+      }
+
+      if (TBOOK_PAGE_KEYS.has(fullPageKey) && template.tBookPages) {
+        const { TBookSurfaceVisualEditor } = await import(
+          "@wse/core/features/template-cms/editors/TBookSurfaceVisualEditor"
+        )
+        return (
+          <SurfacePageLayout
+            label={entry.label}
+            subtitle="tBook foglalás · szövegek"
+            editablePages={editablePages}
+            settingsSections={cmsSettingsSections}
+            pageKey={pageKey}
+            manifestName={template.manifest.name}
+            fullPageKey={fullPageKey}
+          >
+            <Suspense fallback={<CmsEditorLoading />}>
+              <TBookSurfaceVisualEditor
+                hydrationKey={editorHydrationKey}
+                templateId={template.manifest.id}
+                shopEnabled={shopEnabled}
+                pageKey={fullPageKey}
+                pageLabel={entry.label}
+                initialDraft={initialDraftUnknown as Record<string, unknown>}
+                branding={branding}
+                footer={footer}
+                seo={seo}
+                theme={theme}
+                themeResetBaseline={themeResetBaseline}
+                homepageDeps={dependencies}
+              />
+            </Suspense>
           </SurfacePageLayout>
         )
       }
@@ -369,31 +429,25 @@ function SurfacePageLayout({
   children: ReactNode
 }) {
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4">
-        <Link
-          href="/admin/cms"
-          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white w-fit"
-        >
-          ← CMS áttekintés
-        </Link>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight text-white">CMS: {label}</h1>
-            <p className="text-xs text-neutral-500">
-              Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
-              <span className="ml-2 admin-text-accent">· {subtitle}</span>
-            </p>
-          </div>
-          <AdminCmsPageNav
-            editablePages={editablePages}
-            activeSegment={pageKey}
-            settingsSections={settingsSections}
-          />
-        </div>
-      </header>
-
-      <div>{children}</div>
-    </div>
+    <AdminPageScaffold
+      backHref="/admin/cms"
+      backLabel="CMS áttekintés"
+      title={label}
+      description={
+        <>
+          Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
+          <span className="ml-2 text-primary">· {subtitle}</span>
+        </>
+      }
+      actions={
+        <AdminCmsPageNav
+          editablePages={editablePages}
+          activeSegment={pageKey}
+          settingsSections={settingsSections}
+        />
+      }
+    >
+      {children}
+    </AdminPageScaffold>
   )
 }

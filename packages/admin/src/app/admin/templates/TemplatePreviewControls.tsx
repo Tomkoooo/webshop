@@ -66,7 +66,7 @@ export function TemplatePreviewControls({
   return (
     <div className="space-y-2 pt-2">
       {isPreviewTarget ? (
-        <p className="text-[11px] text-amber-200/95">
+        <p className="text-xs text-amber-900/95">
           Ez a sablon az admin előnézetben — lásd felül a részletes státuszsort és az „End preview”
           gombot is.
         </p>
@@ -77,7 +77,7 @@ export function TemplatePreviewControls({
         variant={isPreviewTarget ? "default" : "outline"}
         className={
           isPreviewTarget
-            ? "bg-amber-600 hover:bg-amber-600/90 text-white border-none"
+            ? "bg-amber-600 hover:bg-amber-600/90 text-foreground border-none"
             : undefined
         }
         onClick={setPreview}
@@ -96,7 +96,7 @@ export function TemplatePreviewControls({
         </Button>
       ) : null}
       {isActive ? (
-        <span className="ml-auto text-xs font-semibold uppercase tracking-widest text-green-500">
+        <span className="ml-auto text-xs font-medium text-green-600">
           Aktív sablon
         </span>
       ) : showActivateConfirm ? (

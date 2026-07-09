@@ -1,9 +1,14 @@
 import Link from "next/link"
 import type { EditablePageNavItem } from "@wse/core/templates/cms-pages"
+import { cn } from "@wse/core/lib/utils"
+
 type SettingsSectionLink = {
   id: string
   label: string
 }
+
+const navLinkClass =
+  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors"
 
 export function AdminCmsPageNav({
   editablePages,
@@ -19,10 +24,13 @@ export function AdminCmsPageNav({
   return (
     <nav className="flex flex-col gap-3 sm:items-end">
       {showSettingsLink ? (
-        <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex flex-wrap justify-end gap-1 rounded-lg bg-muted/40 p-1">
           <Link
             href="/admin/cms/settings"
-            className="rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-violet-200 hover:bg-violet-500/20"
+            className={cn(
+              navLinkClass,
+              "bg-background text-foreground shadow-sm"
+            )}
           >
             Weboldal beállítások
           </Link>
@@ -30,25 +38,29 @@ export function AdminCmsPageNav({
             <Link
               key={section.id}
               href={`/admin/cms/settings?section=${section.id}`}
-              className="rounded-md border border-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:border-white/25 hover:text-white"
+              className={cn(
+                navLinkClass,
+                "text-muted-foreground hover:bg-background hover:text-foreground"
+              )}
             >
               {section.label}
             </Link>
           ))}
         </div>
       ) : null}
-      <div className="flex flex-wrap gap-2 justify-end">
+      <div className="flex flex-wrap justify-end gap-1 rounded-lg bg-muted/40 p-1">
         {editablePages.map((p) => {
           const isActive = p.adminSegment === activeSegment
           return (
             <Link
               key={p.adminSegment}
               href={`/admin/cms/${p.adminSegment}`}
-              className={
+              className={cn(
+                navLinkClass,
                 isActive
-                  ? "rounded-md bg-primary px-3 py-1.5 text-xs font-black uppercase tracking-widest text-white"
-                  : "rounded-md border border-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-white"
-              }
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background hover:text-foreground"
+              )}
             >
               {p.label}
             </Link>

@@ -1,6 +1,30 @@
 import { z } from "zod"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "./vat"
 
+export const tBookAttendeeFieldChoiceSchema = z.object({
+  value: z.string().min(1),
+  label: z.string().min(1),
+})
+
+export const tBookAttendeeFieldDefSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_]+$/, "Kulcs: csak kisbetű, szám és aláhúzás"),
+  label: z.string().min(1),
+  type: z.enum(["text", "email", "phone", "number", "date", "select"]),
+  required: z.boolean().optional(),
+  helpText: z.string().optional(),
+  choices: z.array(tBookAttendeeFieldChoiceSchema).optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  sortOrder: z.number().int().optional(),
+})
+
+export const tBookBookingAttendeeSchema = z.object({
+  fields: z.record(z.string(), z.union([z.string(), z.number()])),
+})
+
 export const tBookStatusSchema = z.enum(["draft", "active", "archived"])
 export type TBookStatus = z.infer<typeof tBookStatusSchema>
 
@@ -159,6 +183,10 @@ export const eventGroupInputSchema = z.object({
   defaultBookingOptions: z.array(tBookOptionDefSchema).default([]),
   defaultPriceBasis: tBookPriceBasisSchema.default("net"),
   defaultVatPercent: tBookVatPercentSchema,
+  listOnTBookSite: z.boolean().default(false),
+  listingTitle: z.string().optional().default(""),
+  listingUrl: z.string().optional().default(""),
+  listingImage: z.string().optional().default(""),
 })
 
 export const eventInputSchema = z.object({
@@ -174,6 +202,7 @@ export const eventInputSchema = z.object({
   ticketVatPercent: tBookVatPercentSchema,
   capacity: z.number().int().min(0).nullable().optional(),
   heroImage: z.string().optional().default(""),
+  attendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -233,6 +262,7 @@ export const createBookingSchema = z.object({
   hotelId: z.string().nullable().optional(),
   nights: z.number().int().min(1).max(60).nullable().optional(),
   selections: selectionsSchema.nullable().optional(),
+  attendees: z.array(tBookBookingAttendeeSchema).optional().default([]),
 })
 
 export type EventGroupInput = z.infer<typeof eventGroupInputSchema>

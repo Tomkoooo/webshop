@@ -110,7 +110,7 @@ export function GroupFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black border-white/10 text-white sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{group ? "Csoport szerkesztése" : "Új eseménycsoport"}</DialogTitle>
         </DialogHeader>
@@ -193,7 +193,7 @@ export function GroupFormDialog({
           type="button"
           variant="outline"
           onClick={() => onOpenChange(false)}
-          className="w-full h-10 border-white/10 text-white mt-2"
+          className="w-full h-10 mt-2"
         >
           Mégse
         </Button>

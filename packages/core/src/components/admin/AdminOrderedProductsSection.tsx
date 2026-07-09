@@ -4,7 +4,12 @@ import { useState, useTransition } from "react";
 import { Package, Search, Download, Calendar } from "lucide-react";
 import { Button } from "@wse/core/components/ui/button";
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner";
+import { AdminKpiCard } from "@wse/core/components/admin/AdminKpiCard";
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel";
+import { AdminStatusBadge } from "@wse/core/components/admin/AdminStatusBadge";
+import { adminInputClass, adminTableWrap } from "@wse/core/lib/admin-ui";
 import { formatHuf } from "@wse/core/lib/pricing";
+import { cn } from "@wse/core/lib/utils";
 import type { OrderedProductRow } from "@wse/core/actions/admin-stats";
 
 type AdminOrderedProductsSectionProps = {
@@ -51,39 +56,33 @@ export function AdminOrderedProductsSection({
   };
 
   return (
-    <section className="bg-white/5 border border-white/10 p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
-            <Package className="w-5 h-5 admin-icon-accent" />
-            Rendelt termékek listája
-          </h2>
-          <p className="text-sm text-neutral-500 mt-1">
-            Összes rendelt termék variánsokkal együtt
-          </p>
-        </div>
-
+    <AdminPanel
+      title="Rendelt termékek listája"
+      description="Összes rendelt termék variánsokkal együtt"
+      actions={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setDateMode("all")}
-              className={`h-10 px-4 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+              className={cn(
+                "h-10 rounded-md px-4 text-sm font-medium transition-colors",
                 dateMode === "all"
-                  ? "bg-primary text-white border-primary"
-                  : "bg-transparent text-neutral-400 border-white/10 hover:border-white/30"
-              }`}
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
             >
               Összes idő
             </button>
             <button
               type="button"
               onClick={() => setDateMode("since")}
-              className={`h-10 px-4 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+              className={cn(
+                "h-10 rounded-md px-4 text-sm font-medium transition-colors",
                 dateMode === "since"
-                  ? "bg-primary text-white border-primary"
-                  : "bg-transparent text-neutral-400 border-white/10 hover:border-white/30"
-              }`}
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
             >
               Dátum óta
             </button>
@@ -91,12 +90,12 @@ export function AdminOrderedProductsSection({
 
           {dateMode === "since" && (
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-neutral-500" />
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               <input
                 type="date"
                 value={sinceDate}
                 onChange={(e) => setSinceDate(e.target.value)}
-                className="h-10 bg-black border border-white/10 px-3 text-sm text-white rounded-none"
+                className={cn(adminInputClass, "h-10")}
               />
             </div>
           )}
@@ -105,94 +104,88 @@ export function AdminOrderedProductsSection({
             type="button"
             onClick={handleFilter}
             disabled={isPending || (dateMode === "since" && !sinceDate)}
-            className="h-10 rounded-none bg-primary px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
           >
-            {isPending ? <LoadingSpinner size="xs" className="mr-2" /> : <Search className="w-4 h-4 mr-2" />}
+            {isPending ? <LoadingSpinner size="xs" className="mr-2" /> : <Search className="mr-2 h-4 w-4" />}
             Szűrés
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={exportCsv}
-            disabled={products.length === 0}
-            className="h-10 rounded-none border-white/10 bg-black px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
-          >
-            <Download className="w-4 h-4 mr-2" />
+          <Button type="button" variant="outline" onClick={exportCsv} disabled={products.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
             CSV
           </Button>
         </div>
-      </div>
-
+      }
+    >
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Termék sorok</p>
-          <p className="text-2xl font-black text-white mt-1">{products.length}</p>
-        </div>
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Összes darab</p>
-          <p className="text-2xl font-black text-white mt-1">{totalQuantity.toLocaleString("hu-HU")}</p>
-        </div>
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Összes bevétel</p>
-          <p className="text-2xl font-black admin-value mt-1">{formatHuf(totalRevenue)}</p>
-        </div>
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Szűrő</p>
-          <p className="text-sm font-bold text-neutral-300 mt-1">
-            {dateMode === "all" ? "Minden idő" : sinceDate || "-"}
-          </p>
-        </div>
+        <AdminKpiCard title="Termék sorok" value={String(products.length)} icon={Package} />
+        <AdminKpiCard
+          title="Összes darab"
+          value={totalQuantity.toLocaleString("hu-HU")}
+          icon={Package}
+        />
+        <AdminKpiCard title="Összes bevétel" value={formatHuf(totalRevenue)} icon={Package} />
+        <AdminKpiCard
+          title="Szűrő"
+          value={dateMode === "all" ? "Minden idő" : sinceDate || "—"}
+          icon={Calendar}
+        />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left min-w-[700px]">
-          <thead>
-            <tr className="border-b border-white/10">
-              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-neutral-500">Termék</th>
-              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-neutral-500">Variáns</th>
-              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-neutral-500 text-right">Eladott DB</th>
-              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-neutral-500 text-right">Bevétel</th>
-              <th className="px-4 py-3 font-black uppercase tracking-widest text-[10px] text-neutral-500 text-right">Rendelések</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {products.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-neutral-500 italic">
-                  Nincs megjeleníthető adat.
-                </td>
+      <div className={adminTableWrap}>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-left">
+            <thead>
+              <tr className="border-b border-border/50">
+                <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Termék</th>
+                <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Variáns</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Eladott DB</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Bevétel</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Rendelések</th>
               </tr>
-            ) : (
-              products.map((product, index) => (
-                <tr key={`${product.productId}-${product.variantLabel ?? "base"}-${index}`} className="hover:bg-white/5">
-                  <td className="px-4 py-3">
-                    <span className="font-bold text-white">{product.productName}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {product.variantLabel ? (
-                      <span className="text-xs font-bold admin-value px-2 py-1 border border-white/10 bg-black/40">
-                        {product.variantLabel}
-                      </span>
-                    ) : (
-                      <span className="text-neutral-600">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="font-black text-white">{product.totalQuantity.toLocaleString("hu-HU")}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="font-black admin-value">{formatHuf(product.totalRevenue)}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-neutral-400 font-bold">{product.orderCount}</span>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                    Nincs megjeleníthető adat.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                products.map((product, index) => (
+                  <tr
+                    key={`${product.productId}-${product.variantLabel ?? "base"}-${index}`}
+                    className="hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-foreground">{product.productName}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {product.variantLabel ? (
+                        <AdminStatusBadge status="active" label={product.variantLabel} />
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {product.totalQuantity.toLocaleString("hu-HU")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {formatHuf(product.totalRevenue)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="font-medium text-muted-foreground">{product.orderCount}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </section>
+    </AdminPanel>
   );
 }

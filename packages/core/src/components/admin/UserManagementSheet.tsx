@@ -19,8 +19,11 @@ import {
   updateAdminUserProfile,
   deleteAdminUser,
 } from "@wse/core/actions/admin-users"
+import { AdminOrderStatusBadge } from "@wse/core/components/admin/AdminOrderStatusBadge"
+import { adminFieldHint, adminFieldLabel, adminInputClass } from "@wse/core/lib/admin-ui"
 import { formatOrderNumberLabel } from "@wse/core/lib/order-number"
 import { formatHuf, totalsBreakdownFromGross } from "@wse/core/lib/pricing"
+import { cn } from "@wse/core/lib/utils"
 
 type RecentOrder = {
   _id: string
@@ -183,61 +186,71 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
         <Button
           size="sm"
           variant="ghost"
-          className="rounded-none text-neutral-400 hover:text-white hover:bg-white/5"
+          className="rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           title="Részletek"
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="size-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
-        <SheetHeader className="border-b border-white/10 p-8">
+      <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl">
+        <SheetHeader className="border-b border-border/60 p-6">
           <SheetTitle>{user.name || "Névtelen felhasználó"}</SheetTitle>
-          <p className="text-sm text-neutral-500 font-bold">{user.email || "Nincs email"}</p>
+          <p className="text-sm text-muted-foreground">{user.email || "Nincs email"}</p>
         </SheetHeader>
-        <div className="p-8 space-y-8">
+        <div className="space-y-8 p-6">
           <form action={handleProfileSubmit} className="space-y-4" noValidate>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Fiók adatok</h3>
-            <input
-              name="name"
-              defaultValue={user.name || ""}
-              placeholder="Név"
-              required
-              minLength={1}
-              className="w-full h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
-            />
-            <input
-              name="email"
-              type="email"
-              defaultValue={user.email || ""}
-              placeholder="Email"
-              required
-              className="w-full h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
-            />
-            <select
-              name="role"
-              defaultValue={user.role || "USER"}
-              className="w-full h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none uppercase"
-            >
-              <option value="USER">USER</option>
-              <option value="ADMIN">ADMIN</option>
-            </select>
-            {profileError && (
-              <p className="text-[11px] font-bold uppercase tracking-widest text-rose-400">{profileError}</p>
-            )}
-            {profileMessage && (
-              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">{profileMessage}</p>
-            )}
-            <Button
-              type="submit"
-              disabled={profilePending}
-              className="w-full h-12 rounded-none bg-primary hover:bg-primary/80 text-white font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
-            >
+            <h3 className={adminFieldLabel}>Fiók adatok</h3>
+            <div className="space-y-1.5">
+              <label htmlFor="user-name" className={adminFieldLabel}>
+                Név
+              </label>
+              <input
+                id="user-name"
+                name="name"
+                defaultValue={user.name || ""}
+                placeholder="Név"
+                required
+                minLength={1}
+                className={cn(adminInputClass, "h-10")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="user-email" className={adminFieldLabel}>
+                Email
+              </label>
+              <input
+                id="user-email"
+                name="email"
+                type="email"
+                defaultValue={user.email || ""}
+                placeholder="Email"
+                required
+                className={cn(adminInputClass, "h-10")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="user-role" className={adminFieldLabel}>
+                Szerepkör
+              </label>
+              <select
+                id="user-role"
+                name="role"
+                defaultValue={user.role || "USER"}
+                className={cn(adminInputClass, "h-10")}
+              >
+                <option value="USER">Felhasználó</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+            {profileError ? <p className="text-sm text-destructive">{profileError}</p> : null}
+            {profileMessage ? <p className="text-sm text-emerald-700">{profileMessage}</p> : null}
+            <Button type="submit" disabled={profilePending} className="w-full">
               {profilePending ? "Mentés..." : "Mentés"}
             </Button>
           </form>
 
           <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Jelszó kezelése</h3>
+            <h3 className={adminFieldLabel}>Jelszó kezelése</h3>
             <div className="grid grid-cols-1 gap-3">
               <form action={handlePasswordSubmit} className="space-y-3" noValidate>
                 <input
@@ -245,38 +258,27 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
                   type="password"
                   minLength={8}
                   placeholder="Új jelszó (min. 8 karakter)"
-                  className="w-full h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
+                  className={cn(adminInputClass, "h-10")}
                 />
-                {passwordError && (
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-rose-400">{passwordError}</p>
-                )}
-                {passwordMessage && (
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">{passwordMessage}</p>
-                )}
-                <Button
-                  type="submit"
-                  disabled={passwordPending}
-                  className="w-full h-12 rounded-none border border-white/15 bg-transparent hover:bg-white/5 text-white font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
-                >
+                {passwordError ? <p className="text-sm text-destructive">{passwordError}</p> : null}
+                {passwordMessage ? <p className="text-sm text-emerald-700">{passwordMessage}</p> : null}
+                <Button type="submit" variant="outline" disabled={passwordPending} className="w-full">
                   {passwordPending ? "Mentés..." : "Új jelszó beállítása"}
                 </Button>
               </form>
 
-              <div className="space-y-2 border-t border-white/10 pt-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+              <div className="space-y-2 border-t border-border/60 pt-4">
+                <p className={adminFieldHint}>
                   Önkiszolgáló reset link küldése — a felhasználó maga állítja be az új jelszót.
                 </p>
-                {resetError && (
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-rose-400">{resetError}</p>
-                )}
-                {resetMessage && (
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">{resetMessage}</p>
-                )}
+                {resetError ? <p className="text-sm text-destructive">{resetError}</p> : null}
+                {resetMessage ? <p className="text-sm text-emerald-700">{resetMessage}</p> : null}
                 <Button
                   type="button"
+                  variant="outline"
                   onClick={handlePasswordReset}
                   disabled={resetPending || !user.email}
-                  className="w-full h-12 rounded-none admin-action-outline font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+                  className="w-full"
                 >
                   {resetPending ? "Küldés..." : "Reset email küldése"}
                 </Button>
@@ -285,26 +287,27 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] admin-text-accent">Rendelések</h3>
+            <h3 className={adminFieldLabel}>Rendelések</h3>
             {recentOrders.length === 0 ? (
-              <p className="text-sm text-neutral-500 italic">Nincs rendelése.</p>
+              <p className="text-sm text-muted-foreground">Nincs rendelése.</p>
             ) : (
               <div className="space-y-2">
                 {recentOrders.map((order) => (
                   <Link
                     key={order._id}
                     href={`/admin/orders/${order._id}`}
-                    className="flex items-center justify-between border border-white/10 bg-white/5 p-3 hover:border-white/30 transition-colors"
+                    className="flex items-center justify-between rounded-lg bg-muted/40 p-3 shadow-sm transition-shadow hover:shadow-md"
                   >
-                    <div>
-                      <p className="text-white font-black uppercase tracking-widest text-sm">{formatOrderNumberLabel(order._id)}</p>
-                      <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-                        {new Date(order.createdAt).toLocaleDateString("hu-HU")} · {order.status}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{formatOrderNumberLabel(order._id)}</p>
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{new Date(order.createdAt).toLocaleDateString("hu-HU")}</span>
+                        <AdminOrderStatusBadge status={order.status} className="text-xs" />
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="admin-value font-black">{formatHuf(order.total)}</p>
-                      <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
+                      <p className="font-semibold tabular-nums">{formatHuf(order.total)}</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
                         Nettó {formatHuf(totalsBreakdownFromGross(order.total).net)}
                       </p>
                     </div>
@@ -314,23 +317,21 @@ export function UserManagementSheet({ user, recentOrders }: UserManagementSheetP
             )}
             <Link
               href={`/admin/users/${user._id}`}
-              className="inline-flex text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
+              className="inline-flex text-sm text-muted-foreground hover:text-foreground"
             >
               Teljes adatlap megnyitása
             </Link>
           </div>
 
-          <div className="space-y-4 border-t border-white/10 pt-6">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Veszélyes zóna</h3>
-            {deleteError ? (
-              <p className="text-[11px] font-bold uppercase tracking-widest text-rose-400">{deleteError}</p>
-            ) : null}
+          <div className="space-y-4 border-t border-border/60 pt-6">
+            <h3 className="text-sm font-medium text-destructive">Veszélyes zóna</h3>
+            {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
             <Button
               type="button"
               variant="destructive"
               disabled={deletePending}
               onClick={handleDeleteUser}
-              className="w-full h-12 rounded-none font-black uppercase tracking-widest text-[10px]"
+              className="w-full"
             >
               {deletePending ? "Törlés…" : "Felhasználó törlése"}
             </Button>

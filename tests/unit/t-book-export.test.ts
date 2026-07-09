@@ -40,7 +40,7 @@ describe("booking export", () => {
     const rows = buildBookingExportRows([makeBooking()])
     expect(rows).toHaveLength(1)
     const row = rows[0]
-    expect(row["Vásárló neve"]).toBe("Kovács Anna")
+    expect(row["Kapcsolattartó neve"]).toBe("Kovács Anna")
     expect(row["Opció: room_type"]).toBe("suite")
     expect(row["Opció: meals"]).toBe("half_board")
     expect(row["Opció: accessibility"]).toBe("Igen")

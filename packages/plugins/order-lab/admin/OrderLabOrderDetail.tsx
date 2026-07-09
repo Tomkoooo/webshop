@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { FoxpostShipmentPanel } from "@wse/core/components/admin/foxpost/FoxpostShipmentPanel";
+import { adminSectionTitle } from "@wse/core/lib/admin-ui";
 import { formatHuf } from "@wse/core/lib/pricing";
 import type { FoxpostParcelPoint, FoxpostShipment } from "@wse/core/lib/foxpost";
+import {
+  OrderLabLoading,
+  OrderLabPageHeader,
+  OrderLabPanel,
+} from "./order-lab-admin-ui";
 
 type SandboxOrderDetail = {
   _id: string;
@@ -52,7 +57,7 @@ export function OrderLabOrderDetail({ orderId }: { orderId: string }) {
   if (error) {
     return (
       <div className="space-y-4">
-        <p className="text-rose-400">{error}</p>
+        <p className="text-destructive">{error}</p>
         <Link href="/admin/plugins/order-lab/orders" className="admin-link-accent text-sm">
           Vissza a listához
         </Link>
@@ -61,55 +66,47 @@ export function OrderLabOrderDetail({ orderId }: { orderId: string }) {
   }
 
   if (!order) {
-    return <p className="text-neutral-500">Betöltés...</p>;
+    return <OrderLabLoading />;
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link
-          href="/admin/plugins/order-lab/orders"
-          className="group flex items-center gap-2 text-neutral-500 hover:text-white transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Vissza</span>
-        </Link>
-        <h1 className="text-3xl font-heading font-black uppercase italic text-white">{order.orderNumber}</h1>
-        <p className="text-neutral-500 text-sm mt-1">
-          {format(new Date(order.createdAt), "yyyy. MMMM dd. HH:mm", { locale: hu })} · {order.status}
-        </p>
-      </div>
+      <OrderLabPageHeader
+        backHref="/admin/plugins/order-lab/orders"
+        title={order.orderNumber}
+        description={`${format(new Date(order.createdAt), "yyyy. MMMM dd. HH:mm", { locale: hu })} · ${order.status}`}
+      />
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="border border-white/10 bg-white/5 p-6 space-y-4">
-          <h2 className="text-sm font-black uppercase tracking-widest text-neutral-300">Tételek</h2>
+        <OrderLabPanel>
+          <h2 className={adminSectionTitle}>Tételek</h2>
           {order.items.map((item, index) => (
-            <div key={index} className="flex justify-between gap-4 text-sm border-b border-white/5 pb-3">
+            <div key={index} className="flex justify-between gap-4 text-sm border-b border-border pb-3">
               <div>
-                <p className="text-white font-bold">{item.name}</p>
+                <p className="text-foreground font-medium">{item.name}</p>
                 {item.variantLabel ? (
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
+                  <p className="text-sm text-muted-foreground">
                     Variáns: {item.variantLabel}
                   </p>
                 ) : null}
-                <p className="text-neutral-500 text-xs">{item.quantity} db</p>
+                <p className="text-muted-foreground text-xs">{item.quantity} db</p>
               </div>
-              <p className="text-white font-black">{formatHuf(item.price * item.quantity)}</p>
+              <p className="text-foreground font-semibold">{formatHuf(item.price * item.quantity)}</p>
             </div>
           ))}
-          <p className="text-right text-white font-black">Összesen: {formatHuf(order.total)}</p>
-        </div>
+          <p className="text-right text-foreground font-semibold">Összesen: {formatHuf(order.total)}</p>
+        </OrderLabPanel>
 
         <div className="space-y-4">
-          <div className="border border-white/10 bg-white/5 p-6 space-y-2 text-sm">
-            <h2 className="text-sm font-black uppercase tracking-widest text-neutral-300">Címzett</h2>
-            <p className="text-white">{order.shippingAddress.name}</p>
-            <p className="text-neutral-400">{order.shippingAddress.email}</p>
-            <p className="text-neutral-400">{order.shippingAddress.phone}</p>
+          <OrderLabPanel>
+            <h2 className={adminSectionTitle}>Címzett</h2>
+            <p className="text-foreground">{order.shippingAddress.name}</p>
+            <p className="text-muted-foreground">{order.shippingAddress.email}</p>
+            <p className="text-muted-foreground">{order.shippingAddress.phone}</p>
             {order.shippingAddress.comment ? (
-              <p className="text-neutral-500 text-xs">{order.shippingAddress.comment}</p>
+              <p className="text-muted-foreground text-xs">{order.shippingAddress.comment}</p>
             ) : null}
-          </div>
+          </OrderLabPanel>
 
           <FoxpostShipmentPanel
             source="sandbox"

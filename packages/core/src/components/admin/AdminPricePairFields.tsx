@@ -32,7 +32,7 @@ export function AdminPricePairFields({
 }: Props) {
   const breakdown = priceBreakdownFromGross(grossPrice, 1, vatPercent)
   const h = compact ? "h-11" : "h-12"
-  const inputClass = `bg-black border-white/5 ${h} text-white rounded-none w-full`
+  const inputClass = `bg-background border-border ${h} text-foreground rounded-md w-full`
 
   const netField = (
     <AdminFormField label="Nettó ár (Ft)">
@@ -56,7 +56,7 @@ export function AdminPricePairFields({
         className={inputClass}
       />
       {showVatHint && !compact ? (
-        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+        <p className="text-xs font-medium text-muted-foreground">
           ÁFA: {formatHuf(breakdown.unitVat)} ({breakdown.vatPercent}%)
         </p>
       ) : null}

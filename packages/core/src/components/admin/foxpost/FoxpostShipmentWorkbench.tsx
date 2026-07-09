@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { Button } from "@wse/core/components/ui/button";
 import { Input } from "@wse/core/components/ui/input";
-import { Label } from "@wse/core/components/ui/label";
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField";
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel";
+import { adminAlertWarning, adminInputClass } from "@wse/core/lib/admin-ui";
 import { orderNeedsParcelLabel } from "@wse/core/lib/parcel-locker";
 import type { FoxpostLabelInfo, FoxpostParcelPoint, FoxpostShipment, FoxpostTrack } from "@wse/core/lib/foxpost";
 import { FoxpostParcelPointEditor } from "@wse/core/components/admin/foxpost/FoxpostParcelPointEditor";
@@ -187,24 +189,20 @@ export function FoxpostShipmentWorkbench({
   }
 
   return (
-    <div className="rounded border border-white/10 bg-black/40 p-4 space-y-4">
-      <p className="text-[10px] font-black uppercase tracking-widest admin-text-accent">Foxpost</p>
-
-      <div className="space-y-2">
-        <p className="text-[11px] text-neutral-300">
-          <span className="text-white">{foxpostParcelPoint?.name}</span>
-          {foxpostParcelPoint?.id ? (
-            <span className="block text-neutral-500 mt-1">Automata: {foxpostParcelPoint.id}</span>
-          ) : null}
-        </p>
-        <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
+    <AdminPanel title="Foxpost" className="shadow-sm">
+      <div className="space-y-2 text-sm">
+        <p className="font-medium text-foreground">{foxpostParcelPoint?.name}</p>
+        {foxpostParcelPoint?.id ? (
+          <p className="text-muted-foreground">Automata: {foxpostParcelPoint.id}</p>
+        ) : null}
+        <p className="text-muted-foreground">
           {foxpostParcelPoint?.zip} {foxpostParcelPoint?.city} {foxpostParcelPoint?.address}
         </p>
         {foxpostParcelPoint?.findme ? (
-          <p className="text-[10px] text-neutral-500">{foxpostParcelPoint.findme}</p>
+          <p className="text-xs text-muted-foreground">{foxpostParcelPoint.findme}</p>
         ) : null}
         {foxpostParcelPoint?.load ? (
-          <p className="text-[10px] text-neutral-500">Telítettség: {foxpostParcelPoint.load}</p>
+          <p className="text-xs text-muted-foreground">Telítettség: {foxpostParcelPoint.load}</p>
         ) : null}
       </div>
 
@@ -223,14 +221,14 @@ export function FoxpostShipmentWorkbench({
             <Button
               type="button"
               variant="outline"
+              size="sm"
               disabled={isPending}
               onClick={() => runLabelGeneration(false)}
-              className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
             >
               {isPending && pendingAction?.includes("létrehozása") ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Printer className="w-4 h-4 mr-2" />
+                <Printer className="mr-2 size-4" />
               )}
               Foxpost csomag + címke
             </Button>
@@ -240,14 +238,15 @@ export function FoxpostShipmentWorkbench({
             <Button
               type="button"
               variant="outline"
+              size="sm"
               disabled={isPending}
               onClick={() => runLabelGeneration(true)}
-              className="h-10 border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 rounded-none uppercase tracking-widest text-[10px] font-black"
+              className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10"
             >
               {isPending && pendingAction?.includes("újragenerálása") ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="mr-2 size-4" />
               )}
               Címke újragenerálása
             </Button>
@@ -258,6 +257,7 @@ export function FoxpostShipmentWorkbench({
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() =>
                   runAction("Tracking frissítés", refreshTrackingAction, {
@@ -267,20 +267,15 @@ export function FoxpostShipmentWorkbench({
                     },
                   })
                 }
-                className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="mr-2 size-4" />
                 Tracking frissítés
               </Button>
 
               {foxpostShipment.labelUrl ? (
                 <a href={foxpostShipment.labelUrl} target="_blank" rel="noreferrer">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
+                  <Button type="button" variant="outline" size="sm">
+                    <Download className="mr-2 size-4" />
                     Címke PDF
                   </Button>
                 </a>
@@ -289,6 +284,7 @@ export function FoxpostShipmentWorkbench({
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() =>
                   runAction("Fuvarlevél letöltése", downloadDeliveryNoteAction, {
@@ -300,15 +296,15 @@ export function FoxpostShipmentWorkbench({
                     },
                   })
                 }
-                className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
               >
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="mr-2 size-4" />
                 Fuvarlevél
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() =>
                   runAction("Címke információ lekérése", fetchLabelInfoAction, {
@@ -317,15 +313,15 @@ export function FoxpostShipmentWorkbench({
                     },
                   })
                 }
-                className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
               >
-                <Info className="w-4 h-4 mr-2" />
+                <Info className="mr-2 size-4" />
                 Címke info
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() => {
                   setShowUpdateForm((v) => !v);
@@ -336,7 +332,6 @@ export function FoxpostShipmentWorkbench({
                     recipientEmail: prev.recipientEmail || "",
                   }));
                 }}
-                className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
               >
                 Címzett szerkesztése
               </Button>
@@ -344,28 +339,29 @@ export function FoxpostShipmentWorkbench({
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() => {
                   if (!window.confirm("Biztosan létrehozod a visszaküldési csomagot?")) return;
                   runAction("Visszaküldés létrehozása", createReturnAction);
                 }}
-                className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
+                <RotateCcw className="mr-2 size-4" />
                 Visszaküldés
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 disabled={isPending}
                 onClick={() => {
                   if (!window.confirm("Biztosan törlöd a Foxpost csomagot?")) return;
                   runAction("Foxpost csomag törlése", deleteParcelAction);
                 }}
-                className="h-10 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 rounded-none uppercase tracking-widest text-[10px] font-black"
+                className="text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="mr-2 size-4" />
                 Csomag törlése
               </Button>
             </>
@@ -374,77 +370,68 @@ export function FoxpostShipmentWorkbench({
       ) : null}
 
       {foxpostShipment?.clFoxId ? (
-        <p className="text-[10px] text-neutral-500">
+        <p className="text-xs text-muted-foreground">
           A csomagpont csak Foxpost csomag törlése után módosítható.
         </p>
       ) : null}
 
       {showUpdateForm && foxpostShipment?.clFoxId ? (
         <form
-          className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-white/10 bg-black/30"
+          className="grid grid-cols-1 gap-3 rounded-lg bg-muted/40 p-4 md:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
             runAction("Címzett adatok frissítése", () => updateParcelAction(updateForm));
           }}
         >
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Név</Label>
+          <AdminFormField label="Név">
             <Input
               value={updateForm.recipientName}
               onChange={(e) => setUpdateForm((f) => ({ ...f, recipientName: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10"
+              className={adminInputClass}
             />
-          </div>
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Telefon</Label>
+          </AdminFormField>
+          <AdminFormField label="Telefon">
             <Input
               value={updateForm.recipientPhone}
               onChange={(e) => setUpdateForm((f) => ({ ...f, recipientPhone: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10"
+              className={adminInputClass}
             />
-          </div>
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Email</Label>
+          </AdminFormField>
+          <AdminFormField label="Email">
             <Input
               value={updateForm.recipientEmail}
               onChange={(e) => setUpdateForm((f) => ({ ...f, recipientEmail: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10"
+              className={adminInputClass}
             />
-          </div>
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Méret</Label>
+          </AdminFormField>
+          <AdminFormField label="Méret">
             <Input
               value={updateForm.size}
               onChange={(e) => setUpdateForm((f) => ({ ...f, size: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10"
+              className={adminInputClass}
             />
-          </div>
-          <div className="md:col-span-2">
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Megjegyzés</Label>
+          </AdminFormField>
+          <AdminFormField label="Megjegyzés" className="md:col-span-2">
             <Input
               value={updateForm.comment}
               onChange={(e) => setUpdateForm((f) => ({ ...f, comment: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10"
+              className={adminInputClass}
             />
-          </div>
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="h-10 rounded-none md:col-span-2 uppercase tracking-widest text-[10px] font-black"
-          >
+          </AdminFormField>
+          <Button type="submit" disabled={isPending} className="md:col-span-2">
             Frissítés mentése
           </Button>
         </form>
       ) : null}
 
       {hasLabelError && contactUpdated ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+        <p className={adminAlertWarning}>
           A kapcsolati adatok frissítve — használd a „Címke újragenerálása” gombot.
         </p>
       ) : null}
 
       {hasLabelError && !isPending ? (
-        <p className="text-[10px] text-neutral-500">
+        <p className="text-xs text-muted-foreground">
           Ha hibás volt a név, email vagy telefon, előbb mentsd a kapcsolati adatokat, majd generáld újra a
           címkét.
         </p>
@@ -454,10 +441,10 @@ export function FoxpostShipmentWorkbench({
         <p
           className={
             statusMessage.type === "success"
-              ? "text-[10px] font-black uppercase tracking-widest text-emerald-400"
+              ? "text-sm text-emerald-800"
               : statusMessage.type === "error"
-                ? "text-[10px] font-black uppercase tracking-widest text-rose-400"
-                : "text-[10px] font-black uppercase tracking-widest text-sky-400 animate-pulse"
+                ? "text-sm text-rose-600"
+                : "animate-pulse text-sm text-sky-700"
           }
           role="status"
           aria-live="polite"
@@ -467,45 +454,49 @@ export function FoxpostShipmentWorkbench({
       ) : null}
 
       {foxpostShipment?.clFoxId ? (
-        <div className="text-[10px] font-black uppercase tracking-widest text-neutral-300 space-y-1">
-          <p>
-            CLFOX: <span className="text-white">{foxpostShipment.clFoxId}</span>
-          </p>
+        <dl className="space-y-1 text-sm text-muted-foreground">
+          <div>
+            <dt className="inline">CLFOX: </dt>
+            <dd className="inline text-foreground">{foxpostShipment.clFoxId}</dd>
+          </div>
           {foxpostShipment.refCode ? (
-            <p>
-              Ref: <span className="text-white">{foxpostShipment.refCode}</span>
-            </p>
+            <div>
+              <dt className="inline">Ref: </dt>
+              <dd className="inline text-foreground">{foxpostShipment.refCode}</dd>
+            </div>
           ) : null}
           {foxpostShipment.returnBarcode ? (
-            <p>
-              Visszaküldés: <span className="text-white">{foxpostShipment.returnBarcode}</span>
-            </p>
+            <div>
+              <dt className="inline">Visszaküldés: </dt>
+              <dd className="inline text-foreground">{foxpostShipment.returnBarcode}</dd>
+            </div>
           ) : null}
           {foxpostShipment.trackingStatus ? (
-            <p>
-              Státusz: <span className="text-white">{foxpostShipment.trackingStatus}</span>
-            </p>
+            <div>
+              <dt className="inline">Státusz: </dt>
+              <dd className="inline text-foreground">{foxpostShipment.trackingStatus}</dd>
+            </div>
           ) : null}
           {foxpostShipment.generatedAt ? (
-            <p>
-              Generálva:{" "}
-              <span className="text-white">
+            <div>
+              <dt className="inline">Generálva: </dt>
+              <dd className="inline text-foreground">
                 {format(new Date(foxpostShipment.generatedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
-              </span>
-            </p>
+              </dd>
+            </div>
           ) : null}
-        </div>
+        </dl>
       ) : needsLabel ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Csomag/címke hiányzik</p>
+        <p className="text-sm text-amber-900">Csomag/címke hiányzik</p>
       ) : null}
 
       {tracks.length > 0 ? (
-        <div className="space-y-2 pt-2 border-t border-white/10">
-          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Tracking előzmények</p>
-          <ul className="space-y-1 max-h-48 overflow-y-auto">
+        <div className="space-y-2 border-t border-border pt-4">
+          <p className="text-sm font-medium text-foreground">Tracking előzmények</p>
+          <ul className="max-h-48 space-y-1 overflow-y-auto">
             {tracks.map((track, index) => (
-              <li key={`${track.trackId}-${index}`} className="text-[10px] text-neutral-400">
-                <span className="text-white">{track.status || "—"}</span>
+              <li key={`${track.trackId}-${index}`} className="text-xs text-muted-foreground">
+                <span className="text-foreground">{track.status || "—"}</span>
                 {track.statusDate ? (
                   <span className="ml-2">
                     {format(new Date(track.statusDate), "yyyy.MM.dd HH:mm", { locale: hu })}
@@ -518,8 +509,8 @@ export function FoxpostShipmentWorkbench({
       ) : null}
 
       {labelInfo ? (
-        <div className="space-y-1 pt-2 border-t border-white/10 text-[10px] text-neutral-400">
-          <p className="font-black uppercase tracking-widest text-neutral-300">Címke információ</p>
+        <div className="space-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">Címke információ</p>
           <p>Feladó: {labelInfo.senderName}</p>
           <p>Címzett: {labelInfo.recipientName}</p>
           <p>Email: {labelInfo.recipientEmail}</p>
@@ -531,14 +522,14 @@ export function FoxpostShipmentWorkbench({
       ) : null}
 
       {foxpostError ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">Foxpost hiba: {foxpostError}</p>
+        <p className="text-sm text-rose-600">Foxpost hiba: {foxpostError}</p>
       ) : null}
 
       {source === "sandbox" ? (
-        <p className="text-[10px] text-neutral-600 uppercase tracking-widest">
+        <p className="text-xs text-muted-foreground">
           Sandbox rendelés — csak teszt környezetben használd.
         </p>
       ) : null}
-    </div>
+    </AdminPanel>
   );
 }

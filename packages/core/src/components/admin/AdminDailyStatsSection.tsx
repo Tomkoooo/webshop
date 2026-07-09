@@ -1,7 +1,15 @@
 import Link from "next/link"
+import { Banknote, Package, ShoppingCart } from "lucide-react"
 import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { AdminDataTable, type AdminDataTableColumn } from "@wse/core/components/admin/AdminDataTable"
+import { AdminFilterBar } from "@wse/core/components/admin/AdminFilterBar"
+import { AdminKpiCard } from "@wse/core/components/admin/AdminKpiCard"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
 import type { DailyIncomeRow, DailyProductRow } from "@wse/core/lib/admin-stats-types"
 import type { AdminStatsDatePreset } from "@wse/core/lib/admin-stats-date-range"
+import { adminFilterInput, adminSectionTitle } from "@wse/core/lib/admin-ui"
+import { cn } from "@wse/core/lib/utils"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 
@@ -39,6 +47,26 @@ function presetHref(preset: AdminStatsDatePreset) {
   return `/admin/stats?preset=${preset}`
 }
 
+const incomeColumns: AdminDataTableColumn<DailyIncomeRow>[] = [
+  {
+    id: "date",
+    header: "Dátum",
+    cell: (row) => <span className="font-medium">{formatDisplayDate(row.date)}</span>,
+  },
+  {
+    id: "orders",
+    header: "Rendelések",
+    cell: (row) => <span className="tabular-nums">{row.orders}</span>,
+  },
+  {
+    id: "revenue",
+    header: "Bevétel",
+    headerClassName: "text-right",
+    className: "text-right font-semibold tabular-nums",
+    cell: (row) => formatCurrency(row.revenue),
+  },
+]
+
 export function AdminDailyStatsSection({
   range,
   summary,
@@ -53,132 +81,121 @@ export function AdminDailyStatsSection({
   }
 
   return (
-    <section className="space-y-6 bg-white/5 border border-white/10 p-6">
-      <div className="space-y-2">
-        <h2 className="text-xl font-black uppercase tracking-wider text-white">Napi részletek</h2>
-        <p className="text-white/40 font-medium italic">
+    <section className="flex flex-col gap-6">
+      <div className="space-y-1">
+        <h2 className={adminSectionTitle}>Napi részletek</h2>
+        <p className="text-sm text-muted-foreground">
           Napi bevétel és termékértékesítés az alábbi időszakra: {range.label}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
         {PRESETS.map((preset) => (
           <Link
             key={preset.id}
             href={presetHref(preset.id)}
-            className={`inline-flex h-10 items-center px-4 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+            className={cn(
+              "inline-flex h-9 items-center rounded-md px-4 text-sm font-medium transition-colors",
               range.preset === preset.id
-                ? "bg-primary border-primary text-white"
-                : "bg-black border-white/10 text-neutral-400 hover:text-white hover:border-white/30"
-            }`}
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-background hover:text-foreground"
+            )}
           >
             {preset.label}
           </Link>
         ))}
       </div>
 
-      <form
-        method="get"
-        action="/admin/stats"
-        className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-4"
-      >
+      <AdminFilterBar method="get" action="/admin/stats">
         <input type="hidden" name="preset" value="custom" />
-        <input
-          type="date"
-          name="dateFrom"
-          defaultValue={range.dateFrom}
-          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
-        />
-        <input
-          type="date"
-          name="dateTo"
-          defaultValue={range.dateTo}
-          className="h-12 bg-black border border-white/10 px-4 text-sm text-white rounded-none"
-        />
-        <Button
-          type="submit"
-          className="h-12 rounded-none bg-primary font-black uppercase tracking-widest text-[10px] text-white hover:bg-primary/80"
-        >
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="stats-date-from" className="text-sm font-medium text-foreground">
+            Kezdő dátum
+          </label>
+          <input
+            id="stats-date-from"
+            type="date"
+            name="dateFrom"
+            defaultValue={range.dateFrom}
+            className={adminFilterInput}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="stats-date-to" className="text-sm font-medium text-foreground">
+            Záró dátum
+          </label>
+          <input
+            id="stats-date-to"
+            type="date"
+            name="dateTo"
+            defaultValue={range.dateTo}
+            className={adminFilterInput}
+          />
+        </div>
+        <Button type="submit" className="h-10">
           Szűrés
         </Button>
-      </form>
+      </AdminFilterBar>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Bevétel</p>
-          <p className="mt-2 text-2xl font-black text-white">{formatCurrency(summary.revenue)}</p>
-        </div>
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Rendelések</p>
-          <p className="mt-2 text-2xl font-black text-white">{summary.orders}</p>
-        </div>
-        <div className="border border-white/10 bg-black/40 p-4">
-          <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Eladott darab</p>
-          <p className="mt-2 text-2xl font-black text-white">{summary.unitsSold}</p>
-        </div>
+        <AdminKpiCard title="Bevétel" value={formatCurrency(summary.revenue)} icon={Banknote} />
+        <AdminKpiCard title="Rendelések" value={String(summary.orders)} icon={ShoppingCart} />
+        <AdminKpiCard title="Eladott darab" value={String(summary.unitsSold)} icon={Package} />
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">Napi bevétel</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-md text-sm">
-            <thead>
-              <tr className="border-b border-white/10 text-left text-[10px] uppercase tracking-widest text-neutral-500">
-                <th className="py-2 pr-4 font-black">Dátum</th>
-                <th className="py-2 pr-4 font-black">Rendelések</th>
-                <th className="py-2 font-black text-right">Bevétel</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dailyIncome.map((row) => (
-                <tr key={row.date} className="border-b border-white/5">
-                  <td className="py-3 pr-4 font-bold text-neutral-300">{formatDisplayDate(row.date)}</td>
-                  <td className="py-3 pr-4 text-white">{row.orders}</td>
-                  <td className="py-3 text-right font-black admin-value">{formatCurrency(row.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <AdminPanel title="Napi bevétel">
+        <AdminDataTable
+          columns={incomeColumns}
+          rows={dailyIncome}
+          getRowKey={(row) => row.date}
+          emptyMessage="Nincs adat a kiválasztott időszakra."
+          rowClassName={() => "border-0"}
+        />
+      </AdminPanel>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">Napi termékértékesítés</h3>
-        <div className="space-y-4">
+      <div className="flex flex-col gap-4">
+        <h3 className={adminSectionTitle}>Napi termékértékesítés</h3>
+        <div className="flex flex-col gap-4">
           {dailyIncome.map((day) => {
             const products = productsByDate.get(day.date) || []
+            const productColumns: AdminDataTableColumn<DailyProductRow>[] = [
+              {
+                id: "name",
+                header: "Termék",
+                cell: (product) => <span className="font-medium">{product.productName}</span>,
+              },
+              {
+                id: "qty",
+                header: "Db",
+                cell: (product) => <span className="tabular-nums">{product.soldQuantity}</span>,
+              },
+              {
+                id: "revenue",
+                header: "Bevétel",
+                headerClassName: "text-right",
+                className: "text-right font-semibold tabular-nums",
+                cell: (product) => formatCurrency(product.revenue),
+              },
+            ]
+
             return (
-              <div key={day.date} className="border border-white/10 bg-black/20">
-                <div className="border-b border-white/10 px-4 py-3">
-                  <p className="font-black uppercase tracking-wide text-white">{formatDisplayDate(day.date)}</p>
-                </div>
-                {products.length === 0 ? (
-                  <p className="px-4 py-3 text-sm italic text-neutral-500">Nincs eladás</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[24rem] text-sm">
-                      <thead>
-                        <tr className="border-b border-white/5 text-left text-[10px] uppercase tracking-widest text-neutral-500">
-                          <th className="px-4 py-2 font-black">Termék</th>
-                          <th className="px-4 py-2 font-black">Db</th>
-                          <th className="px-4 py-2 font-black text-right">Bevétel</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {products.map((product) => (
-                          <tr key={`${product.date}-${product.productId}`} className="border-b border-white/5">
-                            <td className="px-4 py-2 font-bold text-white">{product.productName}</td>
-                            <td className="px-4 py-2 text-neutral-300">{product.soldQuantity}</td>
-                            <td className="px-4 py-2 text-right font-black admin-value">
-                              {formatCurrency(product.revenue)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+              <Card key={day.date} className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-semibold">{formatDisplayDate(day.date)}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {products.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nincs eladás</p>
+                  ) : (
+                    <AdminDataTable
+                      columns={productColumns}
+                      rows={products}
+                      getRowKey={(product) => `${product.date}-${product.productId}`}
+                      rowClassName={() => "border-0"}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             )
           })}
         </div>

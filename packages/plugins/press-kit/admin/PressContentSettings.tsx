@@ -55,7 +55,7 @@ export function PressContentSettings() {
   }
 
   if (loading) return <PressAdminLoading />
-  if (!settings) return <p className="text-red-400">{error}</p>
+  if (!settings) return <p className="text-destructive">{error}</p>
 
   return (
     <div className="space-y-8 max-w-3xl animate-in fade-in duration-500">
@@ -66,14 +66,14 @@ export function PressContentSettings() {
         backHref="/admin/plugins/press-kit/content"
         backLabel="← Vizuális szerkesztő"
         actions={
-          <Button asChild variant="outline" className="rounded-none border-white/10">
+          <Button asChild variant="outline" className="rounded-md">
             <Link href="/admin/plugins/press-kit/content">Vizuális szerkesztő</Link>
           </Button>
         }
       />
 
-      {error ? <p className="text-red-400 text-sm">{error}</p> : null}
-      {message ? <p className="text-emerald-400 text-sm">{message}</p> : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {message ? <p className="text-emerald-800 text-sm">{message}</p> : null}
 
       <PressAdminPanel title="Belépés">
         <PressAdminField label="Hozzáférési mód">

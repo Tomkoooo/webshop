@@ -3,10 +3,10 @@ import {
   ShoppingCart,
   Users,
   Package,
-  ArrowUpRight,
-  ArrowDownRight,
   Eye,
   Mail,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react"
 import { getAdminStats } from "@wse/core/actions/admin-stats"
 import Link from "next/link"
@@ -14,21 +14,14 @@ import { redirect } from "next/navigation"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { resolveShopDisabledAdminLanding } from "@wse/core/lib/admin-plugin-navigation"
 import { AdminContentModeHub } from "@wse/core/components/admin/AdminContentModeHub"
+import { AdminKpiCard } from "@wse/core/components/admin/AdminKpiCard"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { formatOrderNumberLabel } from "@wse/core/lib/order-number"
 import type { ComponentType } from "react"
-
-type Trend = "up" | "down"
-
-type KpiCardProps = {
-  title: string
-  value: string
-  subtitle?: string
-  change: number
-  trend: Trend
-  icon: ComponentType<{ className?: string }>
-}
 
 type RecentOrder = {
   _id: string
@@ -42,29 +35,6 @@ type UnreadContactMessage = {
   email: string
   message: string
   createdAt: string | Date
-}
-
-async function KpiCard({ title, value, subtitle, change, trend, icon: Icon }: KpiCardProps) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/30 transition-colors group">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-3 admin-icon-well rounded-xl group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-6 h-6 admin-icon-accent" />
-        </div>
-        <div
-          className={`flex items-center gap-1 text-sm font-medium ${trend === "up" ? "text-emerald-400" : "text-rose-400"}`}
-        >
-          {trend === "up" ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-          {change}%
-        </div>
-      </div>
-      <div>
-        <h3 className="text-white/40 text-sm font-medium mb-1 uppercase tracking-wider">{title}</h3>
-        <p className="text-3xl font-bold">{value}</p>
-        {subtitle ? <p className="mt-2 text-xs font-bold text-neutral-500">{subtitle}</p> : null}
-      </div>
-    </div>
-  )
 }
 
 export default async function AdminDashboard({
@@ -92,183 +62,160 @@ export default async function AdminDashboard({
   const typedRecentOrders = recentOrders as RecentOrder[]
   const typedUnreadMessages = unreadContactMessages as UnreadContactMessage[]
 
-  const stats: KpiCardProps[] = [
+  const stats: Array<{
+    title: string
+    value: string
+    subtitle?: string
+    icon: ComponentType<{ className?: string }>
+  }> = [
     {
-      title: "Összes Bevétel",
+      title: "Összes bevétel",
       value: `${Math.round(kpis.totalRevenue).toLocaleString("hu-HU")} Ft`,
-      change: 0,
-      trend: "up",
       icon: TrendingUp,
     },
     {
-      title: "Összes Rendelés",
+      title: "Összes rendelés",
       value: kpis.ordersCount.toString(),
-      change: 0,
-      trend: "up",
       icon: ShoppingCart,
     },
     {
-      title: "Összes Vásárló",
+      title: "Összes vásárló",
       value: kpis.totalCustomersCount.toString(),
-      subtitle: `Regisztrált: ${kpis.registeredCustomersCount} · Vendég: ${kpis.guestCustomersCount}`,
-      change: 0,
-      trend: "up",
       icon: Users,
     },
     {
-      title: "Összes Termék",
+      title: "Összes termék",
       value: kpis.productsCount.toString(),
-      change: 0,
-      trend: "up",
       icon: Package,
     },
   ]
 
-  return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div>
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
-          Vezérlőpult <span className="admin-headline-accent">Áttekintés</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">
-          Üdvözöljük az adminisztrációs felületen. Itt láthatja a bolt jelenlegi állapotát.
-        </p>
-      </div>
+  const quickActions = [
+    { label: "Rendelések", href: "/admin/orders", icon: ShoppingCart },
+    { label: "Termékek", href: "/admin/products", icon: Package },
+    { label: "CMS", href: "/admin/cms", icon: Sparkles },
+    { label: "Rendszer", href: "/admin/info", icon: TrendingUp },
+  ]
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <KpiCard key={i} {...stat} />
+  return (
+    <AdminPageScaffold
+      title="Üdv újra!"
+      description="Gyors áttekintés és a leggyakoribb feladatok — részletes statisztikákhoz használd a Statisztikák menüt."
+    >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <AdminKpiCard key={stat.title} {...stat} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[400px]">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
-              Legutóbbi Rendelések
-            </h2>
-            <Link
-              href="/admin/orders"
-              className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
-            >
-              Összes megtekintése
-            </Link>
-          </div>
-          <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Első lépések</CardTitle>
+          <CardDescription>Gyors hozzáférés a leggyakoribb feladatokhoz.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {quickActions.map((action) => (
+            <Button key={action.href} variant="outline" size="sm" asChild>
+              <Link href={action.href}>
+                <action.icon className="size-4" />
+                {action.label}
+              </Link>
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-lg">Legutóbbi rendelések</CardTitle>
+              <CardDescription>Az utolsó beérkező rendelések listája.</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/orders">
+                Összes
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {typedRecentOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                <ShoppingCart className="w-12 h-12 mb-4 opacity-10" />
-                <p className="italic">Még nincs rendelés.</p>
-              </div>
+              <p className="text-muted-foreground py-8 text-center text-sm">Még nincs rendelés.</p>
             ) : (
               typedRecentOrders.map((order) => (
                 <div
                   key={order._id}
-                  className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group"
+                  className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3"
                 >
-                  <div className="flex flex-col">
-                    <span className="font-heading font-black text-white uppercase tracking-wider text-sm">
-                      {formatOrderNumberLabel(order._id)}
-                    </span>
-                    <span className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-                      {format(new Date(order.createdAt), "MM. dd. HH:mm", { locale: hu })}
-                    </span>
+                  <div>
+                    <p className="text-sm font-medium">{formatOrderNumberLabel(order._id)}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {format(new Date(order.createdAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-black text-white text-sm">
-                      {order.total.toLocaleString("hu-HU")} FT
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold">
+                      {order.total.toLocaleString("hu-HU")} Ft
                     </span>
-                    <Link href={`/admin/orders/${order._id}`}>
-                      <Eye className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
-                    </Link>
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link href={`/admin/orders/${order._id}`}>
+                        <Eye className="size-4" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ))
             )}
-          </div>
-          {recentOrdersPagination.totalPages > 1 ? (
-            <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                {recentOrdersPagination.page}. / {recentOrdersPagination.totalPages} oldal ·{" "}
-                {recentOrdersPagination.totalItems} rendelés
-              </p>
-              <div className="flex gap-2">
-                {recentOrdersPagination.hasPrevious ? (
-                  <Link
-                    href={`/admin?recentPage=${recentOrdersPagination.page - 1}`}
-                    className="border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-300 hover:border-white/30 hover:text-white"
-                  >
-                    Előző
-                  </Link>
-                ) : null}
-                {recentOrdersPagination.hasNext ? (
-                  <Link
-                    href={`/admin?recentPage=${recentOrdersPagination.page + 1}`}
-                    className="border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-neutral-300 hover:border-white/30 hover:text-white"
-                  >
-                    Következő
-                  </Link>
-                ) : null}
-              </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-lg">Kapcsolatfelvételek</CardTitle>
+              <CardDescription>Olvasatlan üzenetek az ügyfélszolgálatról.</CardDescription>
             </div>
-          ) : null}
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[400px]">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1.5 h-6 admin-section-marker rounded-full" />
-              Aktivitási Napló
-            </h2>
-            <Link
-              href="/admin/contact"
-              className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
-            >
-              Üzenetek
-            </Link>
-          </div>
-          <div className="space-y-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/contact">
+                Üzenetek
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {typedUnreadMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                <TrendingUp className="w-12 h-12 mb-4 opacity-10" />
-                <p className="italic">Nincs új olvasatlan kapcsolatfelvétel.</p>
-              </div>
+              <p className="text-muted-foreground py-8 text-center text-sm">
+                Nincs új olvasatlan üzenet.
+              </p>
             ) : (
               typedUnreadMessages.map((message) => (
                 <div
                   key={message._id}
-                  className="flex items-start justify-between gap-4 p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors group"
+                  className="flex gap-3 rounded-lg border bg-muted/30 p-4"
                 >
-                  <div className="min-w-0 flex items-start gap-3">
-                    <div className="mt-1 rounded-full bg-primary/10 p-2">
-                      <Mail className="h-4 w-4 admin-icon-accent" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="font-heading font-black text-white uppercase tracking-wider text-sm">
-                        Új üzenet: {message.name}
-                      </span>
-                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-400">
-                        {message.message}
-                      </p>
-                      <span className="mt-2 block text-[10px] text-neutral-500 font-black uppercase tracking-widest">
-                        {message.email} ·{" "}
-                        {format(new Date(message.createdAt), "MM. dd. HH:mm", { locale: hu })}
-                      </span>
-                    </div>
+                  <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+                    <Mail className="size-4" />
                   </div>
-                  <Link
-                    href={`/admin/contact/${message._id}`}
-                    className="mt-1 shrink-0"
-                    title="Üzenet megnyitása"
-                  >
-                    <Eye className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
-                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Új üzenet: {message.name}</p>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{message.message}</p>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {message.email} ·{" "}
+                      {format(new Date(message.createdAt), "MM. dd. HH:mm", { locale: hu })}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href={`/admin/contact/${message._id}`}>
+                      <Eye className="size-4" />
+                    </Link>
+                  </Button>
                 </div>
               ))
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </AdminPageScaffold>
   )
 }

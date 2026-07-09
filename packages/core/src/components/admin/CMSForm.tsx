@@ -34,10 +34,10 @@ export function CMSForm({ children, action: submitAction }: CMSFormProps) {
       {children}
       
       {/* Sticky Bottom Save Bar */}
-      <div className="fixed bottom-0 left-0 lg:left-72 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-6 z-50 flex justify-center lg:justify-end animate-in slide-in-from-bottom duration-500">
+      <div className="fixed bottom-0 left-0 lg:left-72 right-0 bg-background/80 backdrop-blur-xl border-t border-border p-6 z-50 flex justify-center lg:justify-end animate-in slide-in-from-bottom duration-500">
         <div className="container mx-auto flex items-center justify-between lg:justify-end gap-6 max-w-7xl">
           {showSuccess && (
-            <div className="flex items-center gap-3 text-emerald-400 font-black uppercase tracking-widest text-[10px] animate-in fade-in slide-in-from-left duration-300">
+            <div className="flex items-center gap-3 text-emerald-800 text-xs font-medium text-muted-foreground animate-in fade-in slide-in-from-left duration-300">
               <CheckCircle2 className="w-5 h-5" />
               SIKERES MENTÉS!
             </div>
@@ -45,7 +45,7 @@ export function CMSForm({ children, action: submitAction }: CMSFormProps) {
           
           <Button 
             type="submit" 
-            variant="krausz" 
+            variant="default" 
             disabled={isPending}
             className={cn(
               "h-16 px-10 min-w-[240px] text-base tracking-[0.2em] relative overflow-hidden group",

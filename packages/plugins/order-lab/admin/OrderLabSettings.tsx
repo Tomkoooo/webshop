@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@wse/core/components/ui/button";
-import { Label } from "@wse/core/components/ui/label";
-import { Input } from "@wse/core/components/ui/input";
-import { FOXPOST_SANDBOX_DEFAULT_APM_ID } from "@wse/core/lib/foxpost-sandbox-apms";
-import type { FoxpostParcelPoint } from "@wse/core/lib/foxpost";
+import { Loader2 } from "lucide-react"
+import { Button } from "@wse/core/components/ui/button"
+import { FOXPOST_SANDBOX_DEFAULT_APM_ID } from "@wse/core/lib/foxpost-sandbox-apms"
+import type { FoxpostParcelPoint } from "@wse/core/lib/foxpost"
+import {
+  OrderLabField,
+  OrderLabInput,
+  OrderLabPageHeader,
+  OrderLabPanel,
+  orderLabSelectClass,
+} from "./order-lab-admin-ui"
 
 type ConnectionForm = {
   apiBaseUrl: string;
@@ -129,128 +134,105 @@ export function OrderLabSettings() {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-3xl font-heading font-black uppercase italic text-white">Beállítások</h1>
-        <p className="text-neutral-500 text-sm mt-1">
-          Foxpost sandbox API hitelesítés az adminban (nem <code className="text-neutral-400">FOXPOST_*</code> env).
-          Éles rendelések továbbra is env változókat használnak.
-        </p>
-      </div>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <OrderLabPageHeader
+        title="Beállítások"
+        description="Foxpost sandbox API hitelesítés az adminban. Éles rendelések továbbra is env változókat használnak."
+      />
 
-      <div className="border border-white/10 bg-white/5 p-6 space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-widest text-neutral-300">Foxpost sandbox kapcsolat</h2>
-
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">API URL</Label>
-          <Input
+      <OrderLabPanel title="Foxpost sandbox kapcsolat">
+        <OrderLabField label="API URL">
+          <OrderLabInput
             value={form.apiBaseUrl}
             onChange={(e) => setForm((f) => ({ ...f, apiBaseUrl: e.target.value }))}
             placeholder="https://webapi-test.foxpost.hu/api"
-            className="h-10 rounded-none bg-black border-white/10 mt-1"
           />
-        </div>
+        </OrderLabField>
 
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Felhasználónév</Label>
-          <Input
+        <OrderLabField label="Felhasználónév">
+          <OrderLabInput
             value={form.username}
             onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-            className="h-10 rounded-none bg-black border-white/10 mt-1"
           />
-        </div>
+        </OrderLabField>
 
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">
-            Jelszó {form.hasPassword ? "(üresen hagyva megtartja a mentett értéket)" : ""}
-          </Label>
-          <Input
+        <OrderLabField
+          label={`Jelszó${form.hasPassword ? " (üresen hagyva megtartja a mentett értéket)" : ""}`}
+        >
+          <OrderLabInput
             type="password"
             value={form.password}
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-            className="h-10 rounded-none bg-black border-white/10 mt-1"
             autoComplete="new-password"
           />
-        </div>
+        </OrderLabField>
 
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">
-            API kulcs {form.hasApiKey ? "(üresen hagyva megtartja a mentett értéket)" : ""}
-          </Label>
-          <Input
+        <OrderLabField
+          label={`API kulcs${form.hasApiKey ? " (üresen hagyva megtartja a mentett értéket)" : ""}`}
+        >
+          <OrderLabInput
             type="password"
             value={form.apiKey}
             onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
-            className="h-10 rounded-none bg-black border-white/10 mt-1"
             autoComplete="new-password"
           />
-        </div>
+        </OrderLabField>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Csomag méret</Label>
-            <Input
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <OrderLabField label="Csomag méret">
+            <OrderLabInput
               value={form.parcelSize}
               onChange={(e) => setForm((f) => ({ ...f, parcelSize: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10 mt-1"
             />
-          </div>
-          <div>
-            <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Címke méret</Label>
-            <Input
+          </OrderLabField>
+          <OrderLabField label="Címke méret">
+            <OrderLabInput
               value={form.labelPageSize}
               onChange={(e) => setForm((f) => ({ ...f, labelPageSize: e.target.value }))}
-              className="h-10 rounded-none bg-black border-white/10 mt-1"
             />
-          </div>
-          <div className="flex items-end">
-            <label className="flex items-center gap-2 text-sm text-neutral-300 pb-2">
-              <input
-                type="checkbox"
-                checked={form.isWeb}
-                onChange={(e) => setForm((f) => ({ ...f, isWeb: e.target.checked }))}
-              />
-              isWeb
-            </label>
-          </div>
+          </OrderLabField>
+          <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={form.isWeb}
+              onChange={(e) => setForm((f) => ({ ...f, isWeb: e.target.checked }))}
+            />
+            isWeb
+          </label>
         </div>
 
-        <Button
-          type="button"
-          disabled={isPending}
-          onClick={saveConnection}
-          className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest"
-        >
-          {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+        <Button type="button" disabled={isPending} onClick={saveConnection}>
+          {isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
           Kapcsolat mentése
         </Button>
-      </div>
+      </OrderLabPanel>
 
-      <div className="border border-white/10 bg-white/5 p-6 space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-widest text-neutral-300">Seed beállítások</h2>
-        <p className="text-xs text-neutral-500">
+      <OrderLabPanel title="Seed beállítások">
+        <p className="text-muted-foreground text-sm">
           Automaták:{" "}
-          <a href="https://cdn.foxpost.hu/sandbox_foxplus.json" className="admin-link-accent" target="_blank" rel="noreferrer">
+          <a
+            href="https://cdn.foxpost.hu/sandbox_foxplus.json"
+            className="text-primary font-medium hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
             sandbox_foxplus.json
           </a>{" "}
           (hu1000 alatti operator_id).
         </p>
 
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Seed darabszám (1–20)</Label>
-          <Input
+        <OrderLabField label="Seed darabszám (1–20)">
+          <OrderLabInput
             value={form.defaultSeedCount}
             onChange={(e) => setForm((f) => ({ ...f, defaultSeedCount: e.target.value }))}
-            className="h-10 rounded-none bg-black border-white/10 mt-1"
           />
-        </div>
+        </OrderLabField>
 
-        <div>
-          <Label className="text-[10px] uppercase tracking-widest text-neutral-500">Alapértelmezett automata</Label>
+        <OrderLabField label="Alapértelmezett automata">
           <select
             value={form.defaultApmId}
             onChange={(e) => setForm((f) => ({ ...f, defaultApmId: e.target.value }))}
-            className="w-full h-10 mt-1 bg-black border border-white/10 px-3 text-white text-sm"
+            className={orderLabSelectClass}
           >
             {apms.map((apm) => (
               <option key={apm.id} value={apm.id}>
@@ -258,20 +240,15 @@ export function OrderLabSettings() {
               </option>
             ))}
           </select>
-        </div>
+        </OrderLabField>
 
-        <Button
-          type="button"
-          disabled={isPending || !form.isConfigured}
-          onClick={seedWithSettings}
-          className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest"
-        >
+        <Button type="button" disabled={isPending || !form.isConfigured} onClick={seedWithSettings}>
           Seed futtatása
         </Button>
-      </div>
+      </OrderLabPanel>
 
-      {message ? <p className="text-[10px] text-emerald-400 uppercase tracking-widest">{message}</p> : null}
-      {error ? <p className="text-[10px] text-rose-400 uppercase tracking-widest">{error}</p> : null}
+      {message ? <p className="text-sm text-emerald-800">{message}</p> : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
     </div>
-  );
+  )
 }

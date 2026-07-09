@@ -4,6 +4,7 @@ import type {
   TBookPriceQuote,
   TBookSelections,
 } from "../lib/pricing-types"
+import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "../lib/attendee-fields"
 import type { TBookLocation } from "../lib/location"
 import type { TBookPriceBasis } from "../lib/vat"
 
@@ -17,6 +18,10 @@ export type AdminGroup = {
   defaultBookingOptions: TBookOptionDef[]
   defaultPriceBasis: TBookPriceBasis
   defaultVatPercent: number
+  listOnTBookSite: boolean
+  listingTitle: string
+  listingUrl: string
+  listingImage: string
   apiKeyHint: string
   apiKeyCreatedAt: string
   createdAt: string
@@ -36,6 +41,7 @@ export type AdminEvent = {
   ticketVatPercent: number
   capacity: number | null
   heroImage: string
+  attendeeFieldSchema: TBookAttendeeFieldDef[]
   status: "draft" | "active" | "archived"
   sortOrder: number
 }
@@ -62,6 +68,8 @@ export type AdminBookingRow = {
   groupName: string
   hotelName: string
   customer: { name: string; email: string; phone: string; note: string }
+  attendeeFieldSchema: TBookAttendeeFieldDef[]
+  attendees: TBookBookingAttendee[]
   guests: number
   nights: number
   selections: TBookSelections
@@ -108,7 +116,7 @@ export type AdminDashboardStats = {
   }>
 }
 
-export type { TBookOptionDef, TBookPriceQuote, TBookHotelPricing, TBookSelections }
+export type { TBookOptionDef, TBookPriceQuote, TBookHotelPricing, TBookSelections, TBookAttendeeFieldDef, TBookBookingAttendee }
 
 export async function tBookAdminApi<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${TBOOK_ADMIN_API}/${path}`, {

@@ -6,7 +6,9 @@ import { EmailTemplateRelationBanner } from "@wse/core/components/admin/EmailTem
 import { Mail, Edit2, Info, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent } from "@wse/core/components/ui/card"
 import { initializeMissingEmailTemplates, seedEmailTemplates } from "@wse/core/actions/admin-emails"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
 
 function templateTitle(type: string) {
   return EMAIL_TEMPLATE_TYPE_LABELS[type] ?? type.replace(/_/g, " ")
@@ -26,137 +28,126 @@ export default async function AdminEmails() {
   })
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-            Email <span className="admin-headline-accent">Sablonok</span>
-          </h1>
-          <p className="text-white/40 font-medium italic max-w-2xl">
-            Színes címkék: plugin / folyamat szerint. A{" "}
-            <span className="text-amber-300">Számlázz.hu</span> számla és számlázási probléma sablonok
-            párban futnak — siker → <code className="text-amber-200/80">invoice_sent</code>, hiba →{" "}
-            <code className="text-rose-200/80">invoice_issue</code>.
-          </p>
-        </div>
-
+    <AdminPageScaffold
+      title="Email sablonok"
+      description={
+        <>
+          Színes címkék: plugin / folyamat szerint. A{" "}
+          <span className="text-amber-800">Számlázz.hu</span> számla és számlázási probléma sablonok
+          párban futnak — siker → <code className="text-amber-900/80">invoice_sent</code>, hiba →{" "}
+          <code className="text-rose-800/80">invoice_issue</code>.
+        </>
+      }
+      actions={
         <div className="flex flex-wrap gap-3">
           <form action={initializeMissingEmailTemplates}>
-            <Button variant="krausz" type="submit" className="h-14 px-8 flex items-center gap-3">
-              <RefreshCw className="w-5 h-5" />
-              HIÁNYZÓ SABLONOK INICIALIZÁLÁSA
+            <Button type="submit">
+              <RefreshCw className="size-4" />
+              Hiányzó sablonok inicializálása
             </Button>
           </form>
           {templates.length > 0 ? (
             <form action={seedEmailTemplates}>
-              <Button
-                variant="ghost"
-                type="submit"
-                className="text-neutral-500 hover:text-white hover:bg-white/5 uppercase tracking-widest text-[10px] font-black gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                SABLONOK VISSZAÁLLÍTÁSA
+              <Button variant="ghost" type="submit">
+                <RefreshCw className="size-4" />
+                Sablonok visszaállítása
               </Button>
             </form>
           ) : null}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 text-[9px] font-black uppercase tracking-widest text-neutral-500">
-        <span className="text-neutral-400">Jelmagyarázat:</span>
+      }
+    >
+      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <span>Jelmagyarázat:</span>
         <EmailTemplateTagBadges
           tags={["shop", "contact", "szamlazz", "szamlazz-failure", "camp-booking"]}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         {sorted.length === 0 ? (
-          <div className="col-span-full bg-white/5 border border-white/10 p-12 text-center space-y-4">
-            <Mail className="w-12 h-12 text-neutral-700 mx-auto" />
-            <p className="text-white/20 italic font-medium">
-              Még nincsenek sablonok az adatbázisban. Kattintson az inicializálásra!
-            </p>
-          </div>
+          <Card className="col-span-full shadow-sm">
+            <CardContent className="space-y-4 py-12 text-center">
+              <Mail className="mx-auto size-12 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                Még nincsenek sablonok az adatbázisban. Kattintson az inicializálásra!
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           sorted.map((template) => (
-            <div
+            <Card
               key={template.type}
-              className={`group bg-white/5 border border-white/10 p-8 space-y-5 hover:border-white/25 transition-all duration-300 ${getEmailTemplateCardAccent(template.tags, template.type)}`}
+              className={`shadow-sm ${getEmailTemplateCardAccent(template.tags, template.type)}`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 admin-icon-well flex items-center justify-center transition-transform group-hover:scale-110">
-                    <Mail className="w-6 h-6 admin-icon-accent" />
+              <CardContent className="space-y-5 pt-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="admin-icon-well flex size-12 items-center justify-center">
+                      <Mail className="size-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold leading-none">
+                        {templateTitle(template.type)}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {template.type}
+                        {template.pluginId ? (
+                          <span> · plugin: {template.pluginId}</span>
+                        ) : (
+                          <span> · core</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-heading font-black text-xl text-white uppercase italic tracking-wider leading-none mb-1">
-                      {templateTitle(template.type)}
-                    </h3>
-                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-none">
-                      {template.type}
-                      {template.pluginId ? (
-                        <span className="text-lime-400/90"> · plugin: {template.pluginId}</span>
-                      ) : (
-                        <span className="text-slate-400"> · core</span>
-                      )}
-                    </p>
-                  </div>
+                  <Link href={`/admin/emails/${template.type}`}>
+                    <Button variant="ghost" size="icon">
+                      <Edit2 className="size-4" />
+                    </Button>
+                  </Link>
                 </div>
-                <Link href={`/admin/emails/${template.type}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-white/10 text-neutral-500 hover:text-white border border-transparent hover:border-white/10 transition-all"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
 
-              <EmailTemplateRelationBanner templateType={template.type} />
+                <EmailTemplateRelationBanner templateType={template.type} />
 
-              <div className="space-y-3">
-                <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-                  {template.description || "Nincs leírás megadva."}
-                </p>
-
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">
-                    Címkék
+                <div className="space-y-3">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {template.description || "Nincs leírás megadva."}
                   </p>
-                  <EmailTemplateTagBadges tags={template.tags ?? []} />
-                </div>
 
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">
-                    Változók
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {template.variables.map((variable: string) => (
-                      <span
-                        key={variable}
-                        className="px-2.5 py-1 bg-zinc-900/80 border border-zinc-700/80 text-[9px] font-mono text-zinc-400 rounded-sm"
-                      >
-                        {"{{"}
-                        {variable}
-                        {"}}"}
-                      </span>
-                    ))}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Címkék</p>
+                    <EmailTemplateTagBadges tags={template.tags ?? []} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Változók</p>
+                    <div className="flex flex-wrap gap-2">
+                      {template.variables.map((variable: string) => (
+                        <span
+                          key={variable}
+                          className="rounded-sm bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground"
+                        >
+                          {"{{"}
+                          {variable}
+                          {"}}"}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-white/5">
-                <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Info className="w-3.5 h-3.5" />
-                  Jelenlegi tárgy
-                </p>
-                <p className="text-sm font-bold text-white truncate italic">{template.subject}</p>
-              </div>
-            </div>
+                <div className="border-t pt-4">
+                  <p className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Info className="size-3.5" />
+                    Jelenlegi tárgy
+                  </p>
+                  <p className="truncate text-sm font-medium">{template.subject}</p>
+                </div>
+              </CardContent>
+            </Card>
           ))
         )}
       </div>
-    </div>
+    </AdminPageScaffold>
   )
 }

@@ -11,8 +11,12 @@ import { bulkGenerateSandboxParcelLabels } from "@wse/core/actions/order-lab-ord
 import { Button } from "@wse/core/components/ui/button";
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner";
 import { cn } from "@wse/core/lib/utils";
+import { adminOrderStatusClass, adminTableHead, adminTableWrap } from "@wse/core/lib/admin-ui";
 import { orderNeedsParcelLabel } from "@wse/core/lib/parcel-locker";
 import { formatHuf } from "@wse/core/lib/pricing";
+import {
+  OrderLabPageHeader,
+} from "./order-lab-admin-ui";
 
 type SandboxOrderRow = {
   _id: string;
@@ -271,22 +275,17 @@ export function OrderLabOrdersAdmin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-heading font-black uppercase italic text-white">
-            Sandbox rendelések
-          </h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Külön gyűjtemény — nem érinti az éles rendeléseket.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <OrderLabPageHeader
+        title="Sandbox rendelések"
+        description="Külön gyűjtemény — nem érinti az éles rendeléseket."
+        actions={
+          <>
           <Button
             type="button"
             variant="outline"
             disabled={isExporting || isExportingLabelsZip || loading}
             onClick={() => void handleExport()}
-            className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest border-white/10"
+            className="h-10"
           >
             {isExporting ? (
               <LoadingSpinner size="xs" className="mr-2 shrink-0" />
@@ -301,7 +300,7 @@ export function OrderLabOrdersAdmin() {
               variant="outline"
               disabled={isExporting || isExportingLabelsZip || loading}
               onClick={() => void handleLabelsZipExport()}
-              className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest border-white/10"
+              className="h-10"
             >
               {isExportingLabelsZip ? (
                 <LoadingSpinner size="xs" className="mr-2 shrink-0" />
@@ -315,7 +314,7 @@ export function OrderLabOrdersAdmin() {
             type="button"
             disabled={isPending}
             onClick={() => seedOrders(3)}
-            className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest"
+            className="h-10"
           >
             {isPending ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -329,15 +328,16 @@ export function OrderLabOrdersAdmin() {
             variant="outline"
             disabled={isPending}
             onClick={clearOrders}
-            className="h-10 rounded-none uppercase text-[10px] font-black tracking-widest border-rose-500/30 text-rose-400"
+            className="h-10 border-rose-500/30 text-rose-400"
           >
             <Trash2 className="w-4 h-4 mr-2" />
             Összes törlése
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {error ? <p className="text-rose-400 text-sm">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {loading ? <p className="text-neutral-500">Betöltés...</p> : null}
 
       {!loading && orders.length === 0 ? (
@@ -347,12 +347,12 @@ export function OrderLabOrdersAdmin() {
       {!loading && orders.length > 0 ? (
         <div className="space-y-4">
           {foxpostManagerEnabled ? (
-            <div className="flex flex-col gap-3 border border-white/10 bg-white/5 p-4 text-white md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-3 rounded-xl bg-card shadow-sm p-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+                <p className="text-sm font-medium text-muted-foreground">
                   Tömeges címke kezelés
                 </p>
-                <p className="mt-1 text-sm font-bold italic text-white/70">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Csak a hiányzó Foxpost címkék készülnek. A ZIP a már generált PDF-eket
                   tartalmazza.
                 </p>
@@ -368,7 +368,7 @@ export function OrderLabOrdersAdmin() {
                     isPending
                   }
                   onClick={() => void handleBulkGenerateLabels()}
-                  className="h-12 rounded-none border-white/10 bg-black px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
+                  className="h-10"
                 >
                   {isGeneratingLabels ? (
                     <LoadingSpinner size="xs" className="mr-2 shrink-0" />
@@ -387,7 +387,7 @@ export function OrderLabOrdersAdmin() {
                     isPending
                   }
                   onClick={() => void handleDownloadSelectedLabelsZip()}
-                  className="h-12 rounded-none border-white/10 bg-black px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
+                  className="h-10"
                 >
                   {isDownloadingSelectedZip ? (
                     <LoadingSpinner size="xs" className="mr-2 shrink-0" />
@@ -400,9 +400,9 @@ export function OrderLabOrdersAdmin() {
             </div>
           ) : null}
 
-          <div className="border border-white/10 overflow-x-auto">
+          <div className={adminTableWrap}>
             <table className="w-full text-left text-sm min-w-[900px]">
-              <thead className="text-[10px] uppercase tracking-widest text-neutral-500 border-b border-white/10 bg-white/5">
+              <thead className={`border-b border-border bg-muted/40 ${adminTableHead}`}>
                 <tr>
                   <th className="p-3">
                     <input
@@ -411,7 +411,7 @@ export function OrderLabOrdersAdmin() {
                       aria-checked={partiallySelected ? "mixed" : allVisibleSelected}
                       disabled={orders.length === 0 || isGeneratingLabels || isPending}
                       onChange={toggleAllVisible}
-                      className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary disabled:opacity-40"
+                      className="h-4 w-4 rounded-md border-border accent-primary disabled:opacity-40"
                       aria-label="Összes sandbox rendelés kijelölése"
                     />
                   </th>
@@ -441,7 +441,7 @@ export function OrderLabOrdersAdmin() {
                     <tr
                       key={order._id}
                       className={cn(
-                        "border-b border-white/5 hover:bg-white/5",
+                        "border-b border-border/60 hover:bg-muted/40",
                         isSelected && "bg-primary/5"
                       )}
                     >
@@ -451,42 +451,44 @@ export function OrderLabOrdersAdmin() {
                           checked={isSelected}
                           disabled={isGeneratingLabels || isPending}
                           onChange={() => toggleOrder(order._id)}
-                          className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary disabled:opacity-40"
+                          className="h-4 w-4 rounded-md border-border accent-primary disabled:opacity-40"
                           aria-label={`${order.orderNumber} rendelés kijelölése`}
                         />
                       </td>
-                      <td className="p-3 font-mono text-white">{order.orderNumber}</td>
-                      <td className="p-3 text-neutral-300">
+                      <td className="p-3 font-mono text-foreground">{order.orderNumber}</td>
+                      <td className="p-3 text-muted-foreground">
                         {order.shippingAddress?.name || "—"}
                       </td>
-                      <td className="p-3 text-neutral-400">{order.foxpostParcelPoint?.id}</td>
-                      <td className="p-3 text-neutral-400">
+                      <td className="p-3 text-muted-foreground">{order.foxpostParcelPoint?.id}</td>
+                      <td className="p-3 text-muted-foreground">
                         {order.foxpostShipment?.clFoxId || "—"}
                       </td>
                       <td className="p-3">
                         {needsLabel ? (
-                          <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">
+                          <span className="text-xs font-medium text-amber-900">
                             Hiányzik
                           </span>
                         ) : order.foxpostParcelPoint?.id ? (
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                          <span className="text-xs font-medium text-emerald-900">
                             Van
                           </span>
                         ) : (
-                          <span className="text-neutral-600">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="p-3 text-neutral-300 uppercase text-[10px]">
+                      <td className="p-3">
+                        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", adminOrderStatusClass(order.status))}>
                         {order.status}
+                        </span>
                       </td>
-                      <td className="p-3 text-neutral-500 text-xs">
+                      <td className="p-3 text-muted-foreground text-xs">
                         {format(new Date(order.createdAt), "yyyy.MM.dd HH:mm", { locale: hu })}
                       </td>
-                      <td className="p-3 text-white font-black">{formatHuf(order.total)}</td>
+                      <td className="p-3 text-foreground font-semibold">{formatHuf(order.total)}</td>
                       <td className="p-3">
                         <Link
                           href={`/admin/plugins/order-lab/orders/${order._id}`}
-                          className="admin-link-accent text-[10px] uppercase tracking-widest"
+                          className="admin-link-accent text-sm font-medium"
                         >
                           Részletek
                         </Link>

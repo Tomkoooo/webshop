@@ -427,10 +427,10 @@ const MenuBar = ({
   ]
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-900 border-b border-white/10">
+    <div className="flex flex-wrap items-center gap-1 p-2 bg-muted border-b border-border">
       {items.map((item, index) => (
         item.type === "divider" ? (
-          <div key={index} className="w-px h-6 bg-white/10 mx-1 self-center" />
+          <div key={index} className="w-px h-6 bg-muted mx-1 self-center" />
         ) : (
           <Button
             key={index}
@@ -441,8 +441,8 @@ const MenuBar = ({
               item.action?.()
             }}
             className={cn(
-              "w-8 h-8 rounded-none hover:bg-white/10 hover:text-white transition-colors",
-              item.isActive?.() ? "bg-white/15 text-white" : "text-neutral-400"
+              "w-8 h-8 rounded-md hover:bg-muted hover:text-foreground transition-colors",
+              item.isActive?.() ? "bg-white/15 text-foreground" : "text-muted-foreground"
             )}
             title={item.title}
           >
@@ -452,7 +452,7 @@ const MenuBar = ({
       ))}
       {isMailEditor ? (
         <>
-          <div className="w-px h-6 bg-white/10 mx-1 self-center" />
+          <div className="w-px h-6 bg-muted mx-1 self-center" />
           <input
             ref={uploadInputRef}
             type="file"
@@ -469,7 +469,7 @@ const MenuBar = ({
               event.preventDefault()
               uploadInputRef.current?.click()
             }}
-            className="w-8 h-8 rounded-none text-neutral-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
             title="Kép feltöltése emailhez"
           >
             <Upload className="w-4 h-4" />
@@ -485,16 +485,16 @@ const MenuBar = ({
               const alt = window.prompt("Kép alternatív szövege (opcionális):") ?? ""
               insertMailImage(editor, url, alt)
             }}
-            className="w-8 h-8 rounded-none text-neutral-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             title="Kép beszúrása URL-ből"
           >
             <ImageIcon className="w-4 h-4" />
           </Button>
         </>
       ) : null}
-      <div className="w-px h-6 bg-white/10 mx-1 self-center" />
+      <div className="w-px h-6 bg-muted mx-1 self-center" />
       <div className="flex flex-wrap items-center gap-1 pl-1">
-        <Palette className="h-4 w-4 text-neutral-500" />
+        <Palette className="h-4 w-4 text-muted-foreground" />
         {colorOptions.map((item) => (
           <button
             key={`${item.label}-${item.value}`}
@@ -506,7 +506,7 @@ const MenuBar = ({
               editor.chain().focus().setColor(item.value).run()
             }}
             className={cn(
-              "h-7 w-7 rounded-none border border-white/15 transition-transform hover:scale-110",
+              "h-7 w-7 rounded-md border border-border transition-transform hover:scale-110",
               editor.isActive("textStyle", { color: item.value }) && "ring-2 ring-white"
             )}
             style={{ backgroundColor: item.value }}
@@ -518,15 +518,15 @@ const MenuBar = ({
             event.preventDefault()
             editor.chain().focus().unsetColor().run()
           }}
-          className="h-7 rounded-none border border-white/15 px-2 text-[10px] font-black uppercase tracking-widest text-neutral-300 hover:bg-white/10 hover:text-white"
+          className="h-7 rounded-md border border-border px-2 text-xs font-medium text-muted-foreground text-foreground hover:bg-muted hover:text-foreground"
         >
           Alap
         </button>
       </div>
       {isMailEditor && editor.isActive("image") ? (
         <>
-          <div className="w-px h-6 bg-white/10 mx-1 self-center" />
-          <div className="flex flex-wrap items-center gap-1 pl-1 text-[10px] font-black uppercase tracking-widest text-neutral-500">
+          <div className="w-px h-6 bg-muted mx-1 self-center" />
+          <div className="flex flex-wrap items-center gap-1 pl-1 text-xs font-medium text-muted-foreground text-muted-foreground">
             <span className="px-1">Kép</span>
             <label className="flex items-center gap-1">
               <span>Szélesség</span>
@@ -541,7 +541,7 @@ const MenuBar = ({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.preventDefault()
                 }}
-                className="h-7 w-20 rounded-none border border-white/15 bg-black px-2 text-xs font-bold text-white outline-none focus:border-white/40"
+                className="h-7 w-20 rounded-md border border-border bg-background px-2 text-xs font-bold text-foreground outline-none focus:border-white/40"
               />
               <span>px</span>
             </label>
@@ -551,7 +551,7 @@ const MenuBar = ({
                 event.preventDefault()
                 updateSelectedImage({ width: "100%" })
               }}
-              className="h-7 rounded-none border border-white/15 px-2 text-[10px] font-black uppercase tracking-widest text-neutral-300 hover:bg-white/10 hover:text-white"
+              className="h-7 rounded-md border border-border px-2 text-xs font-medium text-muted-foreground text-foreground hover:bg-muted hover:text-foreground"
             >
               100%
             </button>
@@ -569,8 +569,8 @@ const MenuBar = ({
                   updateSelectedImage({ align: item.align })
                 }}
                 className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-none border border-white/15 text-neutral-400 hover:bg-white/10 hover:text-white",
-                  selectedImageAlign === item.align && "bg-white/15 text-white"
+                  "flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                  selectedImageAlign === item.align && "bg-white/15 text-foreground"
                 )}
               >
                 <item.icon className="h-3.5 w-3.5" />
@@ -633,7 +633,7 @@ export function RichTextEditor({
 
   return (
     <div className={cn(
-      "bg-white border border-white/5 rounded-none overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary",
+      "bg-white border border-border rounded-md overflow-hidden transition-all focus-within:ring-2 focus-within:ring-primary",
       className
     )}>
       <MenuBar editor={editor} themeColors={themeColors} variant={variant} />

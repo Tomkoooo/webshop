@@ -9,7 +9,8 @@
     "./components/*": "./src/components/*",
     "./features/*": "./src/features/*",
     "./templates/*": "./src/templates/*",
-    "./plugins/*": "./src/plugins/*"
+    "./plugins/*": "./src/plugins/*",
+    "./styles/*": "./src/styles/*"
   },
   "dependencies": {
     "@wse/sdk": "*"

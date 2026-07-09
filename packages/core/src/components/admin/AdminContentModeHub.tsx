@@ -1,4 +1,9 @@
 import Link from "next/link"
+import { MessageSquare, Puzzle, Sparkles } from "lucide-react"
+import { AdminNavCard, AdminNavCardGrid } from "@wse/core/components/admin/AdminNavCard"
+import { AdminPageScaffold, AdminSection } from "@wse/core/components/admin/AdminPageScaffold"
+import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
 
 export function AdminContentModeHub({
   plugins,
@@ -8,63 +13,63 @@ export function AdminContentModeHub({
   pendingPlugins?: Array<{ id: string; name: string; settingsHref: string }>
 }) {
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 max-w-xl">
-      <div>
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2 uppercase italic text-white">
-          Admin <span className="admin-headline-accent">tartalom</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">
-          A webshop ki van kapcsolva. Válassz plugint az üzleti felülethez, vagy a CMS / beállítások
-          menüt a honlaphoz.
-        </p>
-      </div>
+    <AdminPageScaffold
+      title="Admin"
+      description="A webshop ki van kapcsolva. Válassz plugint a napi munkához, vagy a tartalom / rendszer menüket."
+    >
       {pendingPlugins.length > 0 ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-5 py-4 space-y-2">
-          <p className="text-sm text-amber-200 font-medium">
-            Ezek a pluginek telepítve vannak, de még nincsenek bekapcsolva:
-          </p>
-          <ul className="space-y-1 text-sm text-amber-100/90">
+        <Card className="border-amber-500/30 bg-amber-500/5 shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Bekapcsolandó pluginek</CardTitle>
+            <CardDescription>
+              Ezek telepítve vannak, de még nincsenek engedélyezve a rendszerbeállításokban.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {pendingPlugins.map((p) => (
-              <li key={p.id}>
-                <strong>{p.name}</strong> — kapcsold be a{" "}
-                <Link href={p.settingsHref} className="underline font-bold">
-                  Beállítások → Plugin beállítások
-                </Link>{" "}
-                alatt.
-              </li>
+              <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-medium text-foreground">{p.name}</span>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={p.settingsHref}>Bekapcsolás</Link>
+                </Button>
+              </div>
             ))}
-          </ul>
-        </div>
+          </CardContent>
+        </Card>
       ) : null}
-      <div className="flex flex-col gap-3 text-sm font-bold uppercase tracking-widest">
-        {plugins.map((p) => (
-          <Link
-            key={p.id}
-            href={p.href}
-            className="rounded-lg border border-amber-500/30 bg-amber-950/30 px-5 py-4 text-white hover:border-amber-400/50"
-          >
-            {p.name}
-          </Link>
-        ))}
-        <Link
-          href="/admin/cms"
-          className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-        >
-          CMS
-        </Link>
-        <Link
-          href="/admin/contact"
-          className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-        >
-          Kapcsolat
-        </Link>
-        <Link
-          href="/admin/info"
-          className="rounded-lg border border-white/15 bg-white/5 px-5 py-4 text-white hover:border-white/30"
-        >
-          Beállítások
-        </Link>
-      </div>
-    </div>
+
+      <AdminSection title="Pluginek" description="Napi működés — foglalások, kampányok, egyedi modulok.">
+        <AdminNavCardGrid columns="two">
+          {plugins.map((p) => (
+            <AdminNavCard
+              key={p.id}
+              href={p.href}
+              title={p.name}
+              description="Plugin admin felület megnyitása"
+              icon={Puzzle}
+              accent="settings"
+            />
+          ))}
+        </AdminNavCardGrid>
+      </AdminSection>
+
+      <AdminSection title="Tartalom és üzenetek" description="Honlap szerkesztése és beérkező üzenetek.">
+        <AdminNavCardGrid columns="two">
+          <AdminNavCard
+            href="/admin/cms"
+            title="CMS"
+            description="Oldalak, szövegek, téma, SEO és popup kampányok."
+            icon={Sparkles}
+            accent="settings"
+          />
+          <AdminNavCard
+            href="/admin/contact"
+            title="Kapcsolat"
+            description="Beérkező üzenetek és válaszok kezelése."
+            icon={MessageSquare}
+          />
+        </AdminNavCardGrid>
+      </AdminSection>
+    </AdminPageScaffold>
   )
 }

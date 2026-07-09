@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation"
 import { TopBar } from "@wse/core/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@wse/core/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/components/CmsChromeBrandingToolbar"
+import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/CmsReviewOverlay"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
-import type { TemplateModule } from "@wse/sdk/templates/types"
+import type { ChromeNavItem, TemplateModule } from "@wse/sdk/templates/types"
 import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars"
-import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { ContactEmailEntry } from "@wse/core/lib/contact-emails"
 import type { ThemeTokens } from "@wse/core/services/theme"
@@ -56,6 +56,7 @@ export function DefaultModernVisualCmsChrome({
   footerCategories,
   toolbarBelowBranding,
   structureSidebar,
+  navItems,
   renderMain,
 }: {
   templateId: string
@@ -80,6 +81,7 @@ export function DefaultModernVisualCmsChrome({
   toolbarBelowBranding?: React.ReactNode
   /** Structured editing panel (e.g. list managers) shown beside the canvas in edit mode. */
   structureSidebar?: React.ReactNode
+  navItems?: ChromeNavItem[]
   renderMain: (ctx: VisualCmsChromeCtx) => React.ReactNode
 }) {
   const router = useRouter()
@@ -105,11 +107,27 @@ export function DefaultModernVisualCmsChrome({
     return () => window.removeEventListener("keydown", onKey)
   }, [reviewOpen])
 
+  const [minecraftFontVariable, setMinecraftFontVariable] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (templateId !== "minecraft-camp") {
+      setMinecraftFontVariable(null)
+      return
+    }
+    let cancelled = false
+    void import("@wse/template-minecraft-camp/fonts").then((mod) => {
+      if (!cancelled) setMinecraftFontVariable(mod.pressStart2P.variable)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [templateId])
+
   const mod = useTemplateModule(templateId)
 
   if (!mod) {
     return (
-      <div className="rounded-xl border border-white/10 bg-black/40 px-6 py-10 text-sm text-neutral-400">
+      <div className="rounded-xl bg-muted/40 px-6 py-10 text-sm text-muted-foreground">
         Sablon betöltése…
       </div>
     )
@@ -118,8 +136,8 @@ export function DefaultModernVisualCmsChrome({
   const NavbarCmp = mod.chrome.Navbar
   const FooterCmp = mod.chrome.Footer
   const isMinecraftCamp = templateId === "minecraft-camp"
-  const previewSurfaceClass = isMinecraftCamp
-    ? `minecraft-camp-preview minecraft-page-mineshow ${pressStart2P.variable}`
+  const previewSurfaceClass = isMinecraftCamp && minecraftFontVariable
+    ? `minecraft-camp-preview minecraft-page-mineshow ${minecraftFontVariable}`
     : ""
   const previewBgClass = isMinecraftCamp ? "bg-[#b8d88a]" : "bg-background"
 
@@ -130,6 +148,7 @@ export function DefaultModernVisualCmsChrome({
         logoSrc={branding.logoNav}
         shopEnabled={shopEnabled}
         cmsChromePreview
+        navItems={navItems}
       />
       {/* Shop-style mains use pt-32 for a fixed storefront bar; shrink that under in-flow CMS preview. */}
       <div className="min-h-0 flex-1 overflow-x-hidden [&>main.min-h-screen]:!pt-8">{main}</div>
@@ -186,7 +205,7 @@ export function DefaultModernVisualCmsChrome({
   const mainReview = renderMain(ctxReview)
 
   return (
-    <div className="cms-editor-chrome min-h-screen text-white">
+    <div className="cms-editor-chrome min-h-screen">
       <TopBar
         dirty={dirty}
         device={device}
@@ -228,24 +247,14 @@ export function DefaultModernVisualCmsChrome({
       </div>
 
       {reviewOpen ? (
-        <div className="fixed inset-0 z-200 bg-black overflow-y-auto">
-          <div className="sticky top-0 z-210 px-4 py-3 border-b border-white/10 bg-black/95 backdrop-blur flex items-center justify-between">
-            <p className="text-xs uppercase tracking-widest text-neutral-300">{reviewTitle}</p>
-            <button
-              type="button"
-              onClick={() => setReviewOpen(false)}
-              className="px-3 h-9 border border-white/20 text-white text-xs uppercase cursor-pointer"
-            >
-              Vissza
-            </button>
-          </div>
-            <div
-              className={`flex min-h-screen flex-col overflow-x-hidden text-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-              style={themeTokensToCssVars(themeSettings)}
-            >
+        <CmsReviewOverlay title={reviewTitle} onClose={() => setReviewOpen(false)} closeLabel="Vissza">
+          <div
+            className={`flex min-h-screen flex-col overflow-x-hidden text-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
+            style={themeTokensToCssVars(themeSettings)}
+          >
             {wrapLayout("review", mainReview)}
           </div>
-        </div>
+        </CmsReviewOverlay>
       ) : null}
     </div>
   )

@@ -26,8 +26,7 @@ import { CmsEditProvider } from "@wse/core/features/homepage-cms/components/edit
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import type { HomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import { resolveContactDisplayField } from "@wse/core/lib/contact-display"
-import { extractMineshowSiteConfig } from "@wse/template-minecraft-camp/lib/site-config"
-import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
+import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/CmsReviewOverlay"
 
 type Props = {
   templateId: string
@@ -116,20 +115,41 @@ export function VisualHomepageEditor({
     () => allowedHomepageBlockTypes.filter((t) => !snapshot.blocks.some((b) => b.type === t)),
     [allowedHomepageBlockTypes, snapshot.blocks]
   )
+  const [minecraftCampExtras, setMinecraftCampExtras] = useState<{
+    fontVariable: string
+    venueBadge?: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (templateId !== "minecraft-camp") {
+      setMinecraftCampExtras(null)
+      return
+    }
+    let cancelled = false
+    void Promise.all([
+      import("@wse/template-minecraft-camp/lib/site-config"),
+      import("@wse/template-minecraft-camp/fonts"),
+    ]).then(([siteConfigMod, fontsMod]) => {
+      if (cancelled) return
+      setMinecraftCampExtras({
+        fontVariable: fontsMod.pressStart2P.variable,
+        venueBadge: siteConfigMod.extractMineshowSiteConfig(snapshot).venueShort,
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [templateId, snapshot])
+
   const NavbarCmp = templateModule.chrome.Navbar
   const FooterCmp = templateModule.chrome.Footer
   const HomeRender = templateModule.pages.home.Render
-  const mineshowVenueBadge = useMemo(
-    () =>
-      templateId === "minecraft-camp"
-        ? extractMineshowSiteConfig(snapshot).venueShort
-        : undefined,
-    [templateId, snapshot]
-  )
   const isMinecraftCamp = templateId === "minecraft-camp"
-  const previewSurfaceClass = isMinecraftCamp
-    ? `admin-storefront-preview minecraft-camp-preview minecraft-page-mineshow ${pressStart2P.variable}`
-    : "admin-storefront-preview"
+  const mineshowVenueBadge = isMinecraftCamp ? minecraftCampExtras?.venueBadge : undefined
+  const previewSurfaceClass =
+    isMinecraftCamp && minecraftCampExtras
+      ? `admin-storefront-preview minecraft-camp-preview minecraft-page-mineshow ${minecraftCampExtras.fontVariable}`
+      : "admin-storefront-preview"
   const patchHeroTopLevelField = (
     data: HeroBlock["data"],
     field: string,
@@ -223,7 +243,7 @@ export function VisualHomepageEditor({
   }, [reviewOpen])
 
   return (
-    <div className="cms-editor-chrome min-h-screen text-white">
+    <div className="cms-editor-chrome min-h-screen">
       <TopBar
         dirty={dirty}
         device={device}
@@ -269,8 +289,8 @@ export function VisualHomepageEditor({
         <div className="flex-1 min-w-0">
           <CmsChromeBrandingToolbar branding={branding} setBranding={setBranding} />
           <Breadcrumb block={selectedBlock} />
-          <div className="cms-editor-chrome p-4 border-b border-white/10 space-y-3">
-            <p className="text-[10px] uppercase tracking-widest text-neutral-400">Szekciók megjelenítése</p>
+          <div className="cms-editor-subtoolbar space-y-3 border-b border-border/40 bg-muted/30 p-4">
+            <p className="text-sm font-medium text-foreground">Szekciók megjelenítése</p>
             <div className="flex flex-wrap gap-2">
               {allowedHomepageBlockTypes.map((sectionType) => {
                 const block = snapshot.blocks.find((b) => b.type === sectionType)
@@ -278,7 +298,7 @@ export function VisualHomepageEditor({
                 return (
                   <label
                     key={sectionType}
-                    className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-neutral-300 border border-white/15 px-2 py-1"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-background px-3 py-1.5 text-xs text-foreground shadow-sm ring-1 ring-border/50"
                   >
                     <input
                       type="checkbox"
@@ -414,20 +434,11 @@ export function VisualHomepageEditor({
         </div>
       </div>
       {reviewOpen ? (
-        <div className="fixed inset-0 z-200 bg-black overflow-y-auto">
-          <div className="sticky top-0 z-210 px-4 py-3 border-b border-white/10 bg-black/95 backdrop-blur flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-neutral-300">Főoldal előnézet</p>
-              <p className="text-[11px] text-neutral-500">Így jelenik meg a főoldal az aktuális CMS piszkozattal.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setReviewOpen(false)}
-              className="px-3 h-9 border border-white/20 text-white text-xs uppercase cursor-pointer"
-            >
-              Vissza a szerkesztőhöz
-            </button>
-          </div>
+        <CmsReviewOverlay
+          title="Főoldal előnézet"
+          description="Így jelenik meg a főoldal az aktuális CMS piszkozattal."
+          onClose={() => setReviewOpen(false)}
+        >
           <div
             className={`min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground ${previewSurfaceClass}`}
             style={themeTokensToCssVars(themeSettings)}
@@ -471,7 +482,7 @@ export function VisualHomepageEditor({
               address={contactData.address}
             />
           </div>
-        </div>
+        </CmsReviewOverlay>
       ) : null}
     </div>
   )

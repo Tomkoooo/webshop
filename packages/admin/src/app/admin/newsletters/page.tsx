@@ -5,8 +5,11 @@ import {
   sendNewsletterCampaign,
 } from "@wse/core/actions/admin-newsletters";
 import { Button } from "@wse/core/components/ui/button";
-import { cn } from "@wse/core/lib/utils";
+import { Card, CardContent } from "@wse/core/components/ui/card";
 import { NewsletterCampaignForm } from "@wse/core/components/admin/NewsletterCampaignForm";
+import { AdminPageScaffold, AdminSection } from "@wse/core/components/admin/AdminPageScaffold";
+import { AdminDataTable } from "@wse/core/components/admin/AdminDataTable";
+import { AdminStatusBadge } from "@wse/core/components/admin/AdminStatusBadge";
 
 type CampaignRow = {
   _id: string;
@@ -30,21 +33,12 @@ type SubscriberRow = {
   newsletterSubscribedAt?: string | Date;
 };
 
-function StatusPill({ status }: { status: CampaignRow["status"] }) {
-  return (
-    <span
-      className={cn(
-        "px-2 py-1 text-[10px] uppercase tracking-widest font-black border",
-        status === "draft" && "text-neutral-300 border-white/20 bg-white/5",
-        status === "sending" && "text-amber-300 border-amber-300/40 bg-amber-500/10",
-        status === "sent" && "text-emerald-400 border-emerald-400/40 bg-emerald-500/10",
-        status === "failed" && "text-rose-400 border-rose-400/40 bg-rose-500/10"
-      )}
-    >
-      {status}
-    </span>
-  );
-}
+const campaignStatusLabels: Record<CampaignRow["status"], string> = {
+  draft: "Piszkozat",
+  sending: "Küldés folyamatban",
+  sent: "Elküldve",
+  failed: "Sikertelen",
+};
 
 export default async function AdminNewslettersPage() {
   const { isEnabled, campaigns, subscribers } = (await getAdminNewsletters()) as {
@@ -54,109 +48,101 @@ export default async function AdminNewslettersPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div>
-        <h1 className="text-4xl md:text-5xl font-heading font-black tracking-tight mb-2 uppercase italic text-white leading-[0.9]">
-          Hírlevelek <span className="admin-headline-accent">Kampányok</span>
-        </h1>
-        <p className="text-white/40 font-medium italic">
-          Kampány készítése és kiküldése vásárlóknak.
-        </p>
-      </div>
-
+    <AdminPageScaffold
+      title="Hírlevelek"
+      description="Kampány készítése és kiküldése vásárlóknak."
+    >
       {!isEnabled ? (
-        <div className="bg-amber-500/10 border border-amber-300/30 p-6 text-amber-200">
+        <div className="rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-900">
           A hírlevél funkció jelenleg ki van kapcsolva. Kapcsold be az admin beállításoknál.
         </div>
       ) : (
         <NewsletterCampaignForm action={createNewsletterCampaign} />
       )}
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-black uppercase tracking-wider text-white">Kampány lista</h2>
+      <AdminSection title="Kampány lista">
         {campaigns.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 p-8 text-white/30 italic">
-            Még nincs létrehozott kampány.
-          </div>
+          <Card className="shadow-sm">
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Még nincs létrehozott kampány.
+            </CardContent>
+          </Card>
         ) : (
-          campaigns.map((campaign) => (
-            <div key={campaign._id} className="bg-white/5 border border-white/10 p-6 space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-lg font-black uppercase tracking-wider text-white">{campaign.title}</h3>
-                    <StatusPill status={campaign.status} />
+          <div className="space-y-4">
+            {campaigns.map((campaign) => (
+              <Card key={campaign._id} className="shadow-sm">
+                <CardContent className="space-y-4 pt-6">
+                  <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="text-lg font-semibold">{campaign.title}</h3>
+                        <AdminStatusBadge
+                          status={campaign.status}
+                          label={campaignStatusLabels[campaign.status]}
+                        />
+                      </div>
+                      <p className="font-medium text-muted-foreground">{campaign.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Célcsoport: {campaign.audience} · Téma: {campaign.topic}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Létrehozva: {new Date(campaign.createdAt).toLocaleString("hu-HU")}
+                        {campaign.sentAt ? ` · Kiküldve: ${new Date(campaign.sentAt).toLocaleString("hu-HU")}` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Címzettek: {campaign.recipientsCount} · Sikeres: {campaign.successCount} · Sikertelen: {campaign.failureCount}
+                      </p>
+                      {campaign.errorMessage ? (
+                        <p className="text-xs text-rose-600">{campaign.errorMessage}</p>
+                      ) : null}
+                    </div>
+                    <form action={sendNewsletterCampaign.bind(null, campaign._id)} className="inline-block">
+                      <Button
+                        type="submit"
+                        disabled={!isEnabled || campaign.status === "sending"}
+                      >
+                        <Send className="size-4" />
+                        Küldés
+                      </Button>
+                    </form>
                   </div>
-                  <p className="text-neutral-400 font-bold">{campaign.subject}</p>
-                  <p className="text-[11px] text-neutral-500 uppercase tracking-widest font-black">
-                    audience: {campaign.audience} · topic: {campaign.topic}
-                  </p>
-                  <p className="text-[11px] text-neutral-500">
-                    Létrehozva: {new Date(campaign.createdAt).toLocaleString("hu-HU")}
-                    {campaign.sentAt ? ` · Kiküldve: ${new Date(campaign.sentAt).toLocaleString("hu-HU")}` : ""}
-                  </p>
-                  <p className="text-[11px] text-neutral-500">
-                    Címzettek: {campaign.recipientsCount} · Sikeres: {campaign.successCount} · Sikertelen: {campaign.failureCount}
-                  </p>
-                  {campaign.errorMessage ? (
-                    <p className="text-[11px] text-rose-400">{campaign.errorMessage}</p>
-                  ) : null}
-                </div>
-                <div>
-                  <form action={sendNewsletterCampaign.bind(null, campaign._id)} className="inline-block">
-                    <Button
-                      type="submit"
-                      className="h-11 rounded-none bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase tracking-widest text-[10px]"
-                      disabled={!isEnabled || campaign.status === "sending"}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Küldés
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          ))
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
-      </div>
+      </AdminSection>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-black uppercase tracking-wider text-white">
-          Feliratkozott tagok ({subscribers.length})
-        </h2>
-        {subscribers.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 p-8 text-white/30 italic">
-            Jelenleg nincs feliratkozott felhasználó.
-          </div>
-        ) : (
-          <div className="bg-white/5 border border-white/10 overflow-x-auto">
-            <table className="w-full min-w-[640px]">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Név</th>
-                  <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Email</th>
-                  <th className="px-5 py-4 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-black">Feliratkozás dátuma</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {subscribers.map((subscriber) => (
-                  <tr key={subscriber._id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-5 py-4 text-white font-bold">
-                      {subscriber.name || "Névtelen"}
-                    </td>
-                    <td className="px-5 py-4 text-neutral-300">{subscriber.email}</td>
-                    <td className="px-5 py-4 text-neutral-400">
-                      {subscriber.newsletterSubscribedAt
-                        ? new Date(subscriber.newsletterSubscribedAt).toLocaleString("hu-HU")
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+      <AdminSection title={`Feliratkozott tagok (${subscribers.length})`}>
+        <AdminDataTable
+          rows={subscribers}
+          getRowKey={(subscriber) => subscriber._id}
+          emptyMessage="Jelenleg nincs feliratkozott felhasználó."
+          className="min-w-[640px]"
+          columns={[
+            {
+              id: "name",
+              header: "Név",
+              cell: (subscriber) => (
+                <span className="font-medium">{subscriber.name || "Névtelen"}</span>
+              ),
+            },
+            {
+              id: "email",
+              header: "Email",
+              cell: (subscriber) => subscriber.email,
+            },
+            {
+              id: "subscribedAt",
+              header: "Feliratkozás dátuma",
+              cell: (subscriber) =>
+                subscriber.newsletterSubscribedAt
+                  ? new Date(subscriber.newsletterSubscribedAt).toLocaleString("hu-HU")
+                  : "-",
+            },
+          ]}
+        />
+      </AdminSection>
+    </AdminPageScaffold>
   );
 }

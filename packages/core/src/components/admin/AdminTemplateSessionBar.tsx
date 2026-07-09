@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Button } from "@wse/core/components/ui/button"
+import { adminAlertWarning, adminSurface } from "@wse/core/lib/admin-ui"
+import { cn } from "@wse/core/lib/utils"
 import { toast } from "sonner"
 
 type Props = {
@@ -36,27 +38,27 @@ export function AdminTemplateSessionBar({
   }
 
   return (
-    <div className="mb-6 rounded-lg border border-white/15 bg-white/4 px-4 py-3 text-sm text-neutral-300">
+    <div className={cn("mb-6 px-4 py-3 text-sm", previewTemplateId ? adminAlertWarning : adminSurface)}>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p>
-            <span className="text-neutral-500">Active in database (public default):</span>{" "}
-            <span className="font-semibold text-white">{dbActiveName}</span>
+            <span className="text-muted-foreground">Active in database (public default):</span>{" "}
+            <span className="font-semibold text-foreground">{dbActiveName}</span>
           </p>
           {previewTemplateId ? (
             <p>
-              <span className="text-amber-200/90">Admin storefront preview:</span>{" "}
-              <span className="font-semibold text-amber-100">
+              <span className="font-medium text-amber-900">Admin storefront preview:</span>{" "}
+              <span className="font-semibold text-amber-900">
                 {previewTemplateName ?? previewTemplateId}
               </span>
-              <span className="text-neutral-500">
+              <span className="text-muted-foreground">
                 {" "}
                 — only your admin session; max 1 h. While previewing another template, saved theme
                 overrides are hidden on the storefront. End preview to see your shop colors.
               </span>
             </p>
           ) : (
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               No preview session — the storefront uses the database active template (for you too).
             </p>
           )}
@@ -66,7 +68,7 @@ export function AdminTemplateSessionBar({
             type="button"
             size="sm"
             variant="outline"
-            className="shrink-0 border-amber-500/40 text-amber-100 hover:bg-amber-500/10"
+            className="shrink-0 border-amber-500/40 text-amber-900 hover:bg-amber-500/10"
             disabled={pending}
             onClick={endPreview}
           >
@@ -75,7 +77,7 @@ export function AdminTemplateSessionBar({
         ) : null}
       </div>
       {clearError ? (
-        <p className="mt-2 text-xs text-red-400">Try again or open /admin/templates and use “Előnézet kikapcsolása”.</p>
+        <p className="mt-2 text-xs text-destructive">Try again or open /admin/templates and use “Előnézet kikapcsolása”.</p>
       ) : null}
     </div>
   )

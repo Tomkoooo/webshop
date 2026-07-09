@@ -12,7 +12,7 @@ export function AdminCreateUserForm() {
 
   return (
     <form
-      className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] bg-white/5 border border-white/10 p-4"
+      className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] bg-muted/40 p-4"
       onSubmit={async (event) => {
         event.preventDefault()
         setPending(true)
@@ -32,19 +32,19 @@ export function AdminCreateUserForm() {
       <input
         name="name"
         placeholder="Név (opcionális)"
-        className="h-11 bg-black border border-white/10 px-3 text-sm text-white rounded-none"
+        className="h-11 bg-background border border-border px-3 text-sm text-foreground rounded-md"
       />
       <input
         name="email"
         type="email"
         required
         placeholder="Email *"
-        className="h-11 bg-black border border-white/10 px-3 text-sm text-white rounded-none"
+        className="h-11 bg-background border border-border px-3 text-sm text-foreground rounded-md"
       />
       <select
         name="role"
         defaultValue="ADMIN"
-        className="h-11 bg-black border border-white/10 px-3 text-sm text-white rounded-none uppercase"
+        className="h-11 bg-background border border-border px-3 text-sm text-foreground rounded-md uppercase"
       >
         <option value="ADMIN">ADMIN</option>
         <option value="USER">USER</option>
@@ -52,13 +52,13 @@ export function AdminCreateUserForm() {
       <Button
         type="submit"
         disabled={pending}
-        className="h-11 rounded-none bg-primary hover:bg-primary/80 text-white font-black uppercase tracking-widest text-[10px]"
+        className="h-11 rounded-md bg-primary hover:bg-primary/80 text-primary-foreground text-xs font-medium text-muted-foreground"
       >
         {pending ? "Mentés…" : "Hozzáadás"}
       </Button>
-      <p className="md:col-span-4 text-[11px] text-neutral-500">
+      <p className="md:col-span-4 text-xs text-muted-foreground">
         Google bejelentkezésnél ugyanazzal az email címmel a fiók automatikusan összekapcsolódik. Ha csak
-        az <code className="text-neutral-400">accounts</code> gyűjteményben szerepel a felhasználó, kattints
+        az <code className="text-muted-foreground">accounts</code> gyűjteményben szerepel a felhasználó, kattints
         a „Profil szinkron” gombra, vagy kérd meg, hogy jelentkezzen be újra.
       </p>
     </form>
@@ -88,7 +88,7 @@ export function AdminSyncAuthProfilesButton() {
           setPending(false)
         }
       }}
-      className="h-11 rounded-none border-white/20 text-white font-black uppercase tracking-widest text-[10px]"
+      className="h-11 rounded-md border-border text-foreground text-xs font-medium text-muted-foreground"
     >
       {pending ? "Szinkron…" : "Profil szinkron"}
     </Button>

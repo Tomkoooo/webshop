@@ -15,6 +15,12 @@ import { Button } from "@wse/core/components/ui/button"
 import { cn } from "@wse/core/lib/utils"
 import { DynamicLucideIcon, IconPicker } from "@wse/core/features/homepage-cms/components/primitives/IconPicker"
 import { PlainTextWithLinks } from "@wse/core/lib/linkify-plain-text"
+import { CmsEditableCard } from "@wse/core/features/template-cms/components/CmsEditableCard"
+import {
+  CmsListAddButton,
+  CmsListItemToolbar,
+  moveArrayItem,
+} from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
 
 interface StoryProps {
   title?: string
@@ -64,6 +70,18 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
 
   const displayAccordions = parsedAccordions || defaultAccordions
 
+  const patchAccordions = (next: Array<{ title: string; content: string }>) => {
+    cms.updateField("about", "accordions", next)
+  }
+
+  const patchCards = (next: Array<{ title: string; description: string; icon?: string }>) => {
+    cms.updateField("about", "cards", next)
+  }
+
+  const patchCard = (index: number, patch: Partial<{ title: string; description: string; icon?: string }>) => {
+    patchCards(displayCards.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+  }
+
   return (
     <section id="about" className="py-32 bg-background-dark overflow-hidden">
       <div className="container mx-auto px-6">
@@ -101,36 +119,41 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                   <AccordionItem key={index} value={`item-${index}`} className="border-border/40 bg-surface/40 px-6 rounded-none">
                     <AccordionTrigger className="text-foreground hover:text-primary-foreground font-heading font-black uppercase tracking-widest text-left no-underline py-6">
                       {cms.enabled ? (
-                        <input
+                        <EditableTextInline
+                          blockType="about"
+                          field="accordions"
                           value={item.title}
-                          onChange={(event) =>
-                            cms.updateField(
-                              "about",
-                              "accordions",
-                              displayAccordions.map((row: any, idx: number) =>
-                                idx === index ? { ...row, title: event.target.value } : row
+                          placeholder="Cím"
+                          onCommit={(value) =>
+                            patchAccordions(
+                              displayAccordions.map((row, idx) =>
+                                idx === index ? { ...row, title: value } : row
                               )
                             )
                           }
-                            className="h-8 w-full bg-surface border border-border px-2 text-foreground text-sm"
+                          className="text-sm font-black uppercase tracking-widest"
                         />
-                      ) : item.title}
+                      ) : (
+                        item.title
+                      )}
                     </AccordionTrigger>
                     <AccordionContent className="text-neutral-400 text-lg leading-relaxed pb-6 whitespace-pre-wrap">
                       {cms.enabled ? (
                         <div className="space-y-2">
-                          <textarea
+                          <EditableTextInline
+                            blockType="about"
+                            field="accordions"
                             value={item.content}
-                            onChange={(event) =>
-                              cms.updateField(
-                                "about",
-                                "accordions",
-                                displayAccordions.map((row: any, idx: number) =>
-                                  idx === index ? { ...row, content: event.target.value } : row
+                            multiline
+                            placeholder="Tartalom"
+                            onCommit={(value) =>
+                              patchAccordions(
+                                displayAccordions.map((row, idx) =>
+                                  idx === index ? { ...row, content: value } : row
                                 )
                               )
                             }
-                            className="w-full bg-surface border border-border px-2 py-1 text-sm text-foreground"
+                            className="text-sm text-neutral-400 min-h-20"
                           />
                           <Button type="button" size="xs" variant="destructive" onClick={helpers.remove}>
                             Törlés
@@ -159,49 +182,43 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
                     <div className="text-primary-foreground"><DynamicLucideIcon name={item.icon || "Shield"} className="w-10 h-10" /></div>
                   </div>
                   {cms.enabled ? (
-                    <div className="space-y-2 w-full">
-                      <IconPicker
-                        value={item.icon || "Shield"}
-                        triggerLabel="Ikon választás"
-                        onChange={(iconName) =>
-                          cms.updateField(
-                            "about",
-                            "cards",
-                            displayCards.map((row, idx) => (idx === i ? { ...row, icon: iconName } : row))
-                          )
-                        }
-                      />
-                      <input
+                    <CmsEditableCard
+                      className="w-full"
+                      toolbar={
+                        <CmsListItemToolbar
+                          canMoveUp={i > 0}
+                          canMoveDown={i < displayCards.length - 1}
+                          onMoveUp={() => patchCards(moveArrayItem(displayCards, i, -1))}
+                          onMoveDown={() => patchCards(moveArrayItem(displayCards, i, 1))}
+                          onRemove={() => patchCards(displayCards.filter((_, idx) => idx !== i))}
+                        />
+                      }
+                      footer={
+                        <IconPicker
+                          value={item.icon || "Shield"}
+                          triggerLabel="Ikon választás"
+                          onChange={(iconName) => patchCard(i, { icon: iconName })}
+                        />
+                      }
+                    >
+                      <EditableTextInline
+                        blockType="about"
+                        field="cards"
                         value={item.title}
-                        onChange={(event) =>
-                          cms.updateField(
-                            "about",
-                            "cards",
-                            displayCards.map((row, idx) => (idx === i ? { ...row, title: event.target.value } : row))
-                          )
-                        }
-                        className="h-8 w-full bg-surface border border-border px-2 text-foreground text-sm font-black uppercase"
+                        placeholder="Cím"
+                        onCommit={(value) => patchCard(i, { title: value })}
+                        className="text-sm font-black uppercase tracking-widest text-center"
                       />
-                      <textarea
+                      <EditableTextInline
+                        blockType="about"
+                        field="cards"
                         value={item.description}
-                        onChange={(event) =>
-                          cms.updateField(
-                            "about",
-                            "cards",
-                            displayCards.map((row, idx) => (idx === i ? { ...row, description: event.target.value } : row))
-                          )
-                        }
-                        className="w-full bg-surface border border-border px-2 py-1 text-sm text-foreground"
+                        multiline
+                        placeholder="Leírás"
+                        onCommit={(value) => patchCard(i, { description: value })}
+                        className="text-sm text-neutral-500 min-h-16 text-center"
                       />
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="destructive"
-                        onClick={() => cms.updateField("about", "cards", displayCards.filter((_, idx) => idx !== i))}
-                      >
-                        Kártya törlése
-                      </Button>
-                    </div>
+                    </CmsEditableCard>
                   ) : (
                     <>
                       <h3 className="text-foreground font-heading font-black mb-4 tracking-widest uppercase">{item.title}</h3>
@@ -215,19 +232,12 @@ export function Story({ title, content, accordions, cards }: StoryProps) {
             )})}
           </div>
           {cms.enabled ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
+            <CmsListAddButton
+              label="Kártya hozzáadása"
               onClick={() =>
-                cms.updateField("about", "cards", [
-                  ...displayCards,
-                  { icon: "Shield", title: "Új kártya", description: "Új leírás" },
-                ])
+                patchCards([...displayCards, { icon: "Shield", title: "Új kártya", description: "Új leírás" }])
               }
-            >
-              Kártya hozzáadása
-            </Button>
+            />
           ) : null}
         </div>
       </div>

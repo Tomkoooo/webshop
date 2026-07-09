@@ -4,6 +4,10 @@ import { useState } from "react"
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Copy, Plus, X } from "lucide-react"
 import { moveArrayItem } from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { Textarea } from "@wse/core/components/ui/textarea"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { cn } from "@wse/core/lib/utils"
 import type { CmsListItemFieldSpec } from "@wse/sdk/templates/types"
 
@@ -12,13 +16,11 @@ export type CmsListItemField = CmsListItemFieldSpec
 type Item = Record<string, unknown>
 
 type CmsListFieldProps = {
-  /** Array path in the page document (matches the on-canvas `CmsList` path). */
   path: string
   label: string
   items: Item[]
   fields: CmsListItemField[]
   onChange: (next: Item[]) => void
-  /** Item key used as the card title (defaults to the first field). */
   titleKey?: string
   createItem?: () => Item
   maxItems?: number
@@ -37,10 +39,12 @@ function scrollCanvasItemIntoView(path: string, index: number) {
   }, 1600)
 }
 
+const iconBtn =
+  "rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+
 /**
  * Structured list manager for the CMS sidebar: card list with reorder,
- * duplicate, delete, and a compact per-item form. Writes through the same
- * document path as the on-canvas `CmsList`, so both stay in sync.
+ * duplicate, delete, and a compact per-item form.
  */
 export function CmsListField({
   path,
@@ -67,8 +71,8 @@ export function CmsListField({
   return (
     <section className={cn("cms-admin-control space-y-2", className)}>
       <header className="flex items-center justify-between">
-        <h3 className="text-xs font-black uppercase tracking-widest text-white">{label}</h3>
-        <span className="text-[10px] text-neutral-500">{items.length} elem</span>
+        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
+        <span className="text-muted-foreground text-xs">{items.length} elem</span>
       </header>
 
       <div className="space-y-1.5">
@@ -76,7 +80,7 @@ export function CmsListField({
           const open = openIndex === index
           const title = String(item[headerKey ?? ""] ?? "") || `Elem ${index + 1}`
           return (
-            <div key={index} className="rounded-lg border border-white/10 bg-white/5">
+            <div key={index} className="rounded-lg bg-muted/40 shadow-sm">
               <div className="flex items-center gap-1 px-2 py-1.5">
                 <button
                   type="button"
@@ -87,18 +91,18 @@ export function CmsListField({
                   className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                 >
                   {open ? (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   )}
-                  <span className="truncate text-xs text-neutral-200">{title}</span>
+                  <span className="truncate text-xs text-foreground">{title}</span>
                 </button>
                 <button
                   type="button"
                   title="Fel"
                   disabled={index === 0}
                   onClick={() => onChange(moveArrayItem(items, index, -1))}
-                  className="rounded p-1 text-neutral-400 hover:bg-white/10 disabled:opacity-30"
+                  className={iconBtn}
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
                 </button>
@@ -107,7 +111,7 @@ export function CmsListField({
                   title="Le"
                   disabled={index === items.length - 1}
                   onClick={() => onChange(moveArrayItem(items, index, 1))}
-                  className="rounded p-1 text-neutral-400 hover:bg-white/10 disabled:opacity-30"
+                  className={iconBtn}
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
                 </button>
@@ -120,7 +124,7 @@ export function CmsListField({
                     next.splice(index + 1, 0, structuredClone(item))
                     onChange(next)
                   }}
-                  className="rounded p-1 text-neutral-400 hover:bg-white/10 disabled:opacity-30"
+                  className={iconBtn}
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
@@ -131,53 +135,49 @@ export function CmsListField({
                     onChange(items.filter((_, i) => i !== index))
                     setOpenIndex(null)
                   }}
-                  className="rounded p-1 text-red-400/80 hover:bg-red-500/10"
+                  className="rounded-md p-1 text-destructive/80 transition-colors hover:bg-destructive/10"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
 
               {open ? (
-                <div className="space-y-2 border-t border-white/10 px-2.5 py-2.5">
+                <div className="space-y-3 border-t border-border/40 px-2.5 py-2.5">
                   {fields.map((field) => {
                     const value = item[field.key]
                     if (field.type === "link") {
                       const link = (value ?? {}) as { label?: string; href?: string }
                       return (
-                        <div key={field.key} className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-neutral-500">
-                            {field.label}
-                          </span>
-                          <input
+                        <div key={field.key} className="space-y-2">
+                          <Label className={adminFieldLabel}>{field.label}</Label>
+                          <Input
                             value={link.label ?? ""}
                             placeholder="Felirat"
+                            className="h-8 text-xs"
                             onChange={(e) =>
                               setItemField(index, field.key, { ...link, label: e.target.value })
                             }
-                            className="w-full rounded border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
                           />
-                          <input
+                          <Input
                             value={link.href ?? ""}
                             placeholder="https://… vagy /oldal"
+                            className="h-8 text-xs"
                             onChange={(e) =>
                               setItemField(index, field.key, { ...link, href: e.target.value })
                             }
-                            className="w-full rounded border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
                           />
                         </div>
                       )
                     }
                     if (field.type === "image") {
                       return (
-                        <div key={field.key} className="space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-neutral-500">
-                            {field.label}
-                          </span>
-                          <input
+                        <div key={field.key} className="space-y-2">
+                          <Label className={adminFieldLabel}>{field.label}</Label>
+                          <Input
                             value={String(value ?? "")}
                             placeholder={field.placeholder ?? "/api/media/…"}
+                            className="h-8 text-xs"
                             onChange={(e) => setItemField(index, field.key, e.target.value)}
-                            className="w-full rounded border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
                           />
                           <UploadSheet
                             onUploaded={(next) => setItemField(index, field.key, next)}
@@ -188,32 +188,28 @@ export function CmsListField({
                     }
                     if (field.type === "multiline") {
                       return (
-                        <label key={field.key} className="block space-y-1">
-                          <span className="text-[10px] uppercase tracking-widest text-neutral-500">
-                            {field.label}
-                          </span>
-                          <textarea
+                        <div key={field.key} className="space-y-1.5">
+                          <Label className={adminFieldLabel}>{field.label}</Label>
+                          <Textarea
                             value={String(value ?? "")}
                             placeholder={field.placeholder}
                             rows={3}
+                            className="text-xs"
                             onChange={(e) => setItemField(index, field.key, e.target.value)}
-                            className="w-full rounded border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
                           />
-                        </label>
+                        </div>
                       )
                     }
                     return (
-                      <label key={field.key} className="block space-y-1">
-                        <span className="text-[10px] uppercase tracking-widest text-neutral-500">
-                          {field.label}
-                        </span>
-                        <input
+                      <div key={field.key} className="space-y-1.5">
+                        <Label className={adminFieldLabel}>{field.label}</Label>
+                        <Input
                           value={String(value ?? "")}
                           placeholder={field.placeholder}
+                          className="h-8 text-xs"
                           onChange={(e) => setItemField(index, field.key, e.target.value)}
-                          className="w-full rounded border border-white/15 bg-black/40 px-2 py-1 text-xs text-white"
                         />
-                      </label>
+                      </div>
                     )
                   })}
                 </div>
@@ -231,7 +227,7 @@ export function CmsListField({
             onChange([...items, factory()])
             setOpenIndex(items.length)
           }}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/20 py-2 text-xs text-neutral-300 hover:border-white/40 hover:text-white"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
           Új elem

@@ -51,7 +51,7 @@ export function PressPdfUploadField({ value, onChange }: Props) {
             type="button"
             variant="outline"
             disabled={uploading}
-            className="rounded-none border-white/10 h-11 uppercase text-[10px] font-black tracking-widest"
+            className="rounded-md h-11 text-sm font-medium"
             asChild
           >
             <span>{uploading ? "Feltöltés…" : "PDF feltöltése"}</span>
@@ -65,9 +65,9 @@ export function PressPdfUploadField({ value, onChange }: Props) {
         </label>
       </div>
       {value ? (
-        <p className="text-xs text-white/50">Aktív fájl: {value}</p>
+        <p className="text-xs text-muted-foreground">Aktív fájl: {value}</p>
       ) : null}
-      {error ? <p className="text-xs text-red-400">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   )
 }

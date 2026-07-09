@@ -6,6 +6,7 @@ import {
   type PressKitBlockType,
   type PressKitPageBlock,
 } from "../lib/page-content"
+import { Button } from "@wse/core/components/ui/button"
 
 export function PressKitBlockInserter({
   blocks,
@@ -21,20 +22,19 @@ export function PressKitBlockInserter({
   )
 
   return (
-    <div className="border border-dashed border-white/20 p-4 bg-black/50 rounded-lg">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400 mb-3">
-        Blokk hozzáadása
-      </p>
+    <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
+      <p className="text-sm font-medium text-muted-foreground mb-3">Blokk hozzáadása</p>
       <div className="flex flex-wrap gap-2">
         {types.map((type) => (
-          <button
+          <Button
             key={type}
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => onInsert([...blocks, createPressKitBlock(type)])}
-            className="px-3 h-8 border border-white/20 text-[10px] uppercase font-black tracking-widest text-white hover:border-primary hover:text-primary transition-colors"
           >
             {PRESS_KIT_BLOCK_LABELS[type]}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

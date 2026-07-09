@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import {
@@ -80,13 +84,12 @@ export function ShopVisualSurfaceEditor({
   }))
 
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25 space-y-3">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400">Bolt oldal beállítások</p>
-      <div className="flex flex-wrap gap-4 items-end text-xs text-neutral-200">
-        <label className="space-y-1">
-          <span className="text-neutral-500">Szűrők</span>
+    <CmsEditorSubtoolbar title="Bolt oldal beállítások">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Szűrők</Label>
           <select
-            className="h-9 rounded border border-white/15 bg-black/50 px-2"
+            className="h-9 rounded-md border-0 bg-background px-2 text-sm shadow-sm ring-1 ring-border/60"
             value={draft.filtersPosition}
             onChange={(e) =>
               setPath("filtersPosition", e.target.value as ShopContent["filtersPosition"])
@@ -95,11 +98,11 @@ export function ShopVisualSurfaceEditor({
             <option value="sidebar">Oldalsáv</option>
             <option value="top">Felül</option>
           </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-neutral-500">Oszlopok</span>
+        </div>
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Oszlopok</Label>
           <select
-            className="h-9 rounded border border-white/15 bg-black/50 px-2"
+            className="h-9 rounded-md border-0 bg-background px-2 text-sm shadow-sm ring-1 ring-border/60"
             value={draft.productGridColumns}
             onChange={(e) => setPath("productGridColumns", Number(e.target.value) as 2 | 3 | 4)}
           >
@@ -107,38 +110,38 @@ export function ShopVisualSurfaceEditor({
             <option value={3}>3</option>
             <option value={4}>4</option>
           </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-neutral-500">Laponként</span>
-          <input
+        </div>
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Laponként</Label>
+          <Input
             type="number"
             min={4}
             max={48}
-            className="h-9 w-20 rounded border border-white/15 bg-black/50 px-2"
+            className="h-9 w-20"
             value={draft.pageSize}
             onChange={(e) => setPath("pageSize", Number(e.target.value))}
           />
-        </label>
+        </div>
       </div>
       <div className="flex flex-wrap gap-3">
-        <label className="flex-1 min-w-[180px] space-y-1 text-xs">
-          <span className="text-neutral-500">SEO cím</span>
-          <input
-            className="w-full h-9 rounded border border-white/15 bg-black/50 px-2 text-white"
+        <div className="min-w-[180px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO cím</Label>
+          <Input
+            className="h-9"
             value={draft.meta.seoTitle}
             onChange={(e) => setPath("meta.seoTitle", e.target.value)}
           />
-        </label>
-        <label className="flex-1 min-w-[220px] space-y-1 text-xs">
-          <span className="text-neutral-500">SEO leírás</span>
-          <input
-            className="w-full h-9 rounded border border-white/15 bg-black/50 px-2 text-white"
+        </div>
+        <div className="min-w-[220px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO leírás</Label>
+          <Input
+            className="h-9"
             value={draft.meta.seoDescription}
             onChange={(e) => setPath("meta.seoDescription", e.target.value)}
           />
-        </label>
+        </div>
       </div>
-    </div>
+    </CmsEditorSubtoolbar>
   )
 
   return (

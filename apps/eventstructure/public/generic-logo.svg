@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-label="Generic webshop logo">
+  <rect width="320" height="96" rx="12" fill="#111827"/>
+  <circle cx="48" cy="48" r="24" fill="#2563EB"/>
+  <rect x="88" y="30" width="180" height="12" rx="6" fill="#E5E7EB"/>
+  <rect x="88" y="54" width="120" height="12" rx="6" fill="#9CA3AF"/>
+</svg>

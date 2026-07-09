@@ -110,7 +110,7 @@ export function MultiImageUpload({
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((img, index) => (
-          <div key={img} className="relative group aspect-square bg-black border border-white/10 rounded-2xl overflow-hidden transition-all hover:border-primary/40">
+          <div key={img} className="relative group aspect-square bg-background border border-border rounded-2xl overflow-hidden transition-all hover:border-primary/40">
             <FallbackImage
               src={mediaImageSrc(img)}
               alt={`Preview ${index}`} 
@@ -119,12 +119,12 @@ export function MultiImageUpload({
               className="w-full h-full object-cover" 
             />
             
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+            <div className="absolute inset-0 bg-background/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
               <div className="flex justify-end gap-1">
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-red-500 transition-colors"
+                  className="p-1.5 bg-background/60 backdrop-blur-md rounded-lg text-foreground hover:text-red-500 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -136,7 +136,7 @@ export function MultiImageUpload({
                     type="button"
                     onClick={() => moveImage(index, 'up')}
                     disabled={index === 0}
-                    className="p-1 bg-black/60 backdrop-blur-md rounded-md text-white disabled:opacity-30"
+                    className="p-1 bg-background/60 backdrop-blur-md rounded-md text-foreground disabled:opacity-30"
                   >
                     <GripVertical className="w-3 h-3 rotate-90" />
                   </button>
@@ -144,7 +144,7 @@ export function MultiImageUpload({
                     type="button"
                     onClick={() => moveImage(index, 'down')}
                     disabled={index === images.length - 1}
-                    className="p-1 bg-black/60 backdrop-blur-md rounded-md text-white disabled:opacity-30"
+                    className="p-1 bg-background/60 backdrop-blur-md rounded-md text-foreground disabled:opacity-30"
                   >
                     <GripVertical className="w-3 h-3 -rotate-90" />
                   </button>
@@ -155,7 +155,7 @@ export function MultiImageUpload({
                   onClick={() => setAsMain(index)}
                   className={cn(
                     "p-1.5 rounded-lg transition-colors",
-                    index === 0 ? "bg-white/20 text-white" : "bg-black/60 text-white hover:text-highlight"
+                    index === 0 ? "bg-white/20 text-foreground" : "bg-background/60 text-foreground hover:text-highlight"
                   )}
                   title={index === 0 ? "Elsődleges kép" : "Legyen elsődleges"}
                 >
@@ -165,7 +165,7 @@ export function MultiImageUpload({
             </div>
 
             {index === 0 && (
-              <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-md">
+              <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium text-muted-foreground rounded-md">
                 Fő kép
               </div>
             )}
@@ -174,17 +174,17 @@ export function MultiImageUpload({
           </div>
         ))}
 
-        <label className="relative aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-primary/40 transition-all">
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2">
-            {uploading ? <LoadingSpinner size="xs" /> : <Upload className="w-5 h-5 text-neutral-600" />}
+        <label className="relative aspect-square border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 hover:border-primary/40 transition-all">
+          <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center mb-2">
+            {uploading ? <LoadingSpinner size="xs" /> : <Upload className="w-5 h-5 text-muted-foreground" />}
           </div>
-          <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Képek hozzáadása</span>
+          <span className="text-sm text-muted-foreground">Képek hozzáadása</span>
           <input type="file" className="hidden" onChange={handleUpload} accept="image/*" multiple />
         </label>
       </div>
       
       {images.length > 0 && (
-        <p className="text-[10px] text-neutral-500 italic">
+        <p className="text-xs text-muted-foreground italic">
           Az első kép lesz a termék fő képe. Használja a csillag ikont a fő kép kiválasztásához, vagy a nyilakat a sorrend módosításához.
         </p>
       )}

@@ -1,5 +1,6 @@
 import { format } from "date-fns"
 import type { ITBookBooking } from "../models/TBookBooking"
+import { formatAttendeeFieldValue } from "./attendee-fields"
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Függőben",
@@ -24,8 +25,7 @@ function formatSelectionValue(value: unknown): string {
 }
 
 /**
- * Smart export rows: fixed columns + one dynamic column per selection key that
- * actually occurs in the filtered result set (e.g. `Opció: room_type`).
+ * Smart export rows: fixed columns + dynamic attendee columns + selection option columns.
  */
 export function buildBookingExportRows(bookings: ITBookBooking[]): Record<string, string>[] {
   const selectionKeys = new Set<string>()
@@ -40,12 +40,23 @@ export function buildBookingExportRows(bookings: ITBookBooking[]): Record<string
       Esemény: booking.eventName,
       Csoport: booking.groupName || "",
       Szállás: booking.hotelName || "—",
-      "Vásárló neve": booking.customer.name,
-      Email: booking.customer.email,
-      Telefon: booking.customer.phone,
+      "Kapcsolattartó neve": booking.customer.name,
+      "Kapcsolattartó email": booking.customer.email,
+      "Kapcsolattartó telefon": booking.customer.phone,
       Létszám: String(booking.guests),
       Éjszakák: booking.hotelName ? String(booking.nights) : "",
     }
+
+    const schema = booking.attendeeFieldSchema ?? []
+    booking.attendees?.forEach((attendee, index) => {
+      for (const field of schema) {
+        row[`Résztvevő ${index + 1}: ${field.label}`] = formatAttendeeFieldValue(
+          field,
+          attendee.fields[field.key]
+        )
+      }
+    })
+
     for (const key of orderedSelectionKeys) {
       row[`Opció: ${key}`] = formatSelectionValue(booking.selections?.[key])
     }

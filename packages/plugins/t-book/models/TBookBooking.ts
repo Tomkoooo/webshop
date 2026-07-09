@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookPriceQuote, TBookSelections } from "../lib/pricing-types"
+import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "../lib/attendee-fields"
 
 export type TBookBookingStatus =
   | "pending"
@@ -10,6 +11,8 @@ export type TBookBookingStatus =
   | "expired"
 
 export type TBookInvoiceStatus = "none" | "issued" | "failed" | "reversed"
+
+export type { TBookAttendeeFieldDef, TBookBookingAttendee } from "../lib/attendee-fields"
 
 export type TBookCustomer = {
   name: string
@@ -37,6 +40,10 @@ export interface ITBookBooking extends Document {
   hotelName: string
   customer: TBookCustomer
   billing: TBookBillingInfo | null
+  /** Snapshot of event attendee field schema at booking time (for stable admin labels). */
+  attendeeFieldSchema: TBookAttendeeFieldDef[]
+  /** Per-ticket participant data — one row per guest when schema is configured. */
+  attendees: TBookBookingAttendee[]
   guests: number
   nights: number
   selections: TBookSelections
@@ -94,6 +101,40 @@ const QuoteSchema = new Schema(
   { _id: false }
 )
 
+const AttendeeFieldChoiceSchema = new Schema(
+  {
+    value: { type: String, required: true },
+    label: { type: String, required: true },
+  },
+  { _id: false }
+)
+
+const AttendeeFieldDefSchema = new Schema(
+  {
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["text", "email", "phone", "number", "date", "select"],
+      required: true,
+    },
+    required: { type: Boolean, default: false },
+    helpText: { type: String, default: "" },
+    choices: { type: [AttendeeFieldChoiceSchema], default: undefined },
+    min: { type: Number },
+    max: { type: Number },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { _id: false }
+)
+
+const BookingAttendeeSchema = new Schema(
+  {
+    fields: { type: Schema.Types.Mixed, default: {} },
+  },
+  { _id: false }
+)
+
 const TBookBookingSchema = new Schema<ITBookBooking>(
   {
     groupId: { type: Schema.Types.ObjectId, ref: "TBookEventGroup", default: null, index: true },
@@ -104,6 +145,8 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     hotelName: { type: String, default: "" },
     customer: { type: CustomerSchema, required: true },
     billing: { type: BillingSchema, default: null },
+    attendeeFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
+    attendees: { type: [BookingAttendeeSchema], default: [] },
     guests: { type: Number, required: true, min: 1 },
     nights: { type: Number, default: 0, min: 0 },
     selections: { type: Schema.Types.Mixed, default: {} },

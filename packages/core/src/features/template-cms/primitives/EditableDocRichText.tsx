@@ -47,8 +47,8 @@ export function EditableDocRichText({ path, html, className }: Props) {
   if (!editor) return null
 
   return (
-    <div className="rounded-md border border-dashed border-white/25 bg-black/35 p-2">
-      <EditorContent editor={editor} className={className ?? "prose prose-invert max-w-none min-h-[140px] text-sm"} />
+    <div className="cms-admin-control rounded-lg bg-card/95 p-2 shadow-sm ring-2 ring-primary/25">
+      <EditorContent editor={editor} className={className ?? "prose max-w-none min-h-[140px] text-sm"} />
     </div>
   )
 }

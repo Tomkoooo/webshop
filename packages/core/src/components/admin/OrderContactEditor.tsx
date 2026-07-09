@@ -6,10 +6,9 @@ import { toast } from "sonner"
 import { updateOrderContactInfo } from "@wse/core/actions/admin-orders"
 import { Button } from "@wse/core/components/ui/button"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
-
-const inputClass =
-  "h-10 w-full bg-black border border-white/10 px-3 text-sm text-white placeholder:text-neutral-600 rounded-none focus:border-primary/60 focus:outline-none"
-const labelClass = "text-[9px] font-black uppercase tracking-widest text-neutral-500 mb-1 block"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
+import { adminFieldHint, adminInputClass } from "@wse/core/lib/admin-ui"
 
 type OrderContactEditorProps = {
   orderId: string
@@ -64,109 +63,83 @@ export function OrderContactEditor({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
-      <div>
-        <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-neutral-500">Számlázás</p>
+    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
+      <AdminPanel title="Számlázás">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor={`billing-name-${orderId}`}>
-              Név
-            </label>
+          <AdminFormField label="Név" className="sm:col-span-2">
             <input
               id={`billing-name-${orderId}`}
               value={billingName}
               onChange={(e) => setBillingName(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
               required
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor={`billing-email-${orderId}`}>
-              E-mail
-            </label>
+          </AdminFormField>
+          <AdminFormField label="E-mail">
             <input
               id={`billing-email-${orderId}`}
               type="email"
               value={billingEmail}
               onChange={(e) => setBillingEmail(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor={`billing-phone-${orderId}`}>
-              Telefon
-            </label>
+          </AdminFormField>
+          <AdminFormField label="Telefon">
             <input
               id={`billing-phone-${orderId}`}
               type="tel"
               value={billingPhone}
               onChange={(e) => setBillingPhone(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
             />
-          </div>
+          </AdminFormField>
         </div>
-      </div>
+      </AdminPanel>
 
-      <div>
-        <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-neutral-500">
-          Szállítás / kapcsolattartó
-        </p>
+      <AdminPanel title="Szállítás / kapcsolattartó">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor={`shipping-name-${orderId}`}>
-              Név
-            </label>
+          <AdminFormField label="Név" className="sm:col-span-2">
             <input
               id={`shipping-name-${orderId}`}
               value={shippingName}
               onChange={(e) => setShippingName(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
               required
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor={`shipping-email-${orderId}`}>
-              E-mail
-            </label>
+          </AdminFormField>
+          <AdminFormField label="E-mail">
             <input
               id={`shipping-email-${orderId}`}
               type="email"
               value={shippingEmail}
               onChange={(e) => setShippingEmail(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor={`shipping-phone-${orderId}`}>
-              Telefon
-            </label>
+          </AdminFormField>
+          <AdminFormField label="Telefon">
             <input
               id={`shipping-phone-${orderId}`}
               type="tel"
               value={shippingPhone}
               onChange={(e) => setShippingPhone(e.target.value)}
               disabled={disabled || saving}
-              className={inputClass}
+              className={adminInputClass}
             />
-          </div>
+          </AdminFormField>
         </div>
-      </div>
+      </AdminPanel>
 
-      <p className="text-[10px] italic text-neutral-500">
+      <p className={adminFieldHint}>
         A módosítások a Foxpost címkén is megjelennek — hiba esetén mentsd az adatokat, majd használd a „Címke
         újragenerálása” gombot.
       </p>
 
-      <Button
-        type="submit"
-        disabled={disabled || saving}
-        className="h-10 rounded-none bg-primary px-4 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
-      >
+      <Button type="submit" disabled={disabled || saving}>
         {saving ? <LoadingSpinner size="xs" className="mr-2" /> : null}
         Kapcsolati adatok mentése
       </Button>

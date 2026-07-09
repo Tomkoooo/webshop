@@ -74,15 +74,15 @@ export default async function ProductVisualPageEditor({
       <header className="flex flex-col gap-4">
         <Link
           href={`/admin/products/${id}`}
-          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white w-fit"
+          className="text-xs font-medium text-muted-foreground text-muted-foreground hover:text-foreground w-fit"
         >
           ← Termék szerkesztése
         </Link>
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Vizuális oldal: {productName}
           </h1>
-          <p className="mt-2 text-sm text-neutral-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             Termék: /products/{slug} · Piszkozat kulcs: {pageKey}
           </p>
         </div>

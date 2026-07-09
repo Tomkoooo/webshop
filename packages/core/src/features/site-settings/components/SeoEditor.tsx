@@ -26,7 +26,7 @@ function SeoImageField({
   return (
     <div className="space-y-2 md:col-span-2">
       <span className="text-xs uppercase tracking-widest text-neutral-400">{label}</span>
-      <p className="text-[11px] text-neutral-500">{description}</p>
+      <p className="text-xs text-neutral-500">{description}</p>
       {previewSrc ? (
         <FallbackImage
           src={previewSrc}

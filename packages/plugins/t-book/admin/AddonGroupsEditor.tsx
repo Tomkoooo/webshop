@@ -3,19 +3,18 @@
 import { useState } from "react"
 import { Button } from "@wse/core/components/ui/button"
 import { cn } from "@wse/core/lib/utils"
-import type { TBookAddonGroup } from "../lib/pricing-types"
-import { slugifyHotelKey } from "../lib/hotel-pricing"
+import type { TBookAddonGroup, TBookRoomType } from "../lib/pricing-types"
 import { TBookField, TBookInput } from "./t-book-admin-ui"
 import { OptionSchemaEditor } from "./OptionSchemaEditor"
 
 export function AddonGroupsEditor({
   groups,
   onChange,
-  roomTypeKeys = [],
+  roomTypes = [],
 }: {
   groups: TBookAddonGroup[]
   onChange: (groups: TBookAddonGroup[]) => void
-  roomTypeKeys?: string[]
+  roomTypes?: TBookRoomType[]
 }) {
   const [openKey, setOpenKey] = useState<string | null>(groups[0]?.key ?? null)
 
@@ -33,94 +32,88 @@ export function AddonGroupsEditor({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-neutral-500">
-        Csoportosítsd a felárakat (étkezés, akadálymentesség, parkolás…) — a vendég lépésről lépésre
-        tölti ki őket. A szobatípus már külön van kezelve.
-      </p>
+      <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground space-y-2">
+        <p>
+          <strong className="text-foreground">Foglalási szakasz</strong> — cím és rövid leírás, amit
+          a vendég lát (pl. „Plusz szolgáltatások”).
+        </p>
+        <p>
+          <strong className="text-foreground">Foglalási mező</strong> — egy konkrét kérdés a szakaszon
+          belül (pl. „Étkezés” választó, „Akadálymentesség” jelölőnégyzet).
+        </p>
+        <p>A szobatípus már külön lépésben van — ide csak extrák és felárak kerülnek.</p>
+      </div>
 
       {groups.length === 0 ? (
-        <p className="text-sm text-neutral-500 border border-dashed border-white/15 rounded-lg px-4 py-6 text-center">
-          Nincs felár-csoport — csak szobatípus alapár fog szerepelni a foglalásban.
+        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+          Nincs extrák szakasz — csak szobatípus alapár fog szerepelni a foglalásban.
         </p>
       ) : null}
 
       {groups.map((group, index) => {
-        const isOpen = openKey === group.key || (!openKey && index === 0)
+        const panelKey = group.key || `group-${index}`
+        const isOpen = openKey === panelKey || (!openKey && index === 0)
         const optionCount = group.options.length
         return (
-          <div
-            key={index}
-            className="border border-white/10 rounded-xl overflow-hidden bg-black/30"
-          >
+          <div key={panelKey} className="rounded-xl bg-card shadow-sm overflow-hidden">
             <button
               type="button"
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-white/5"
-              onClick={() => setOpenKey(isOpen ? null : group.key)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/40"
+              onClick={() => setOpenKey(isOpen ? null : panelKey)}
             >
               <div className="min-w-0">
-                <p className="font-bold text-white text-sm truncate">
-                  {group.label || "Névtelen csoport"}
+                <p className="font-semibold text-foreground text-sm truncate">
+                  {group.label || "Névtelen szakasz"}
                 </p>
-                <p className="text-[11px] text-neutral-500 mt-0.5">
-                  {optionCount} mező · kulcs: <code>{group.key || "—"}</code>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {optionCount} foglalási mező
+                  {group.description ? ` · ${group.description}` : ""}
                 </p>
               </div>
-              <span className={cn("text-neutral-500 text-xs", isOpen && "rotate-180")}>▼</span>
+              <span className={cn("text-muted-foreground text-xs", isOpen && "rotate-180")}>▼</span>
             </button>
 
             {isOpen ? (
-              <div className="border-t border-white/10 p-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <TBookField label="Csoport neve">
-                    <TBookInput
-                      value={group.label}
-                      onChange={(e) => {
-                        const label = e.target.value
-                        updateGroup(index, {
-                          label,
-                          key: group.key || slugifyHotelKey(label),
-                        })
-                      }}
-                      placeholder="Étkezés"
-                    />
-                  </TBookField>
-                  <TBookField label="Kulcs">
-                    <TBookInput
-                      value={group.key}
-                      onChange={(e) => updateGroup(index, { key: slugifyHotelKey(e.target.value) })}
-                      placeholder="meals"
-                    />
-                  </TBookField>
-                </div>
-                <TBookField label="Rövid leírás (opcionális)">
+              <div className="border-t border-border p-4 space-y-4">
+                <TBookField label="Szakasz címe (vendég látja)">
+                  <TBookInput
+                    value={group.label}
+                    onChange={(e) => updateGroup(index, { label: e.target.value })}
+                    placeholder="Pl. Étkezés és kényelem"
+                  />
+                </TBookField>
+                <TBookField label="Szakasz leírása (opcionális, vendég látja)">
                   <TBookInput
                     value={group.description ?? ""}
                     onChange={(e) => updateGroup(index, { description: e.target.value })}
-                    placeholder="Válassz étkezési csomagot"
+                    placeholder="Pl. Válassz étkezési csomagot és extra szolgáltatásokat"
                   />
                 </TBookField>
-                <OptionSchemaEditor
-                  options={group.options}
-                  onChange={(options) => updateGroup(index, { options })}
-                  roomTypeKeys={roomTypeKeys}
-                />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">Foglalási mezők ebben a szakaszban</p>
+                  <OptionSchemaEditor
+                    options={group.options}
+                    onChange={(options) => updateGroup(index, { options })}
+                    roomTypes={roomTypes}
+                  />
+                </div>
                 <div className="flex gap-2 pt-1">
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-8 text-neutral-400"
+                    className="h-8 text-muted-foreground"
                     disabled={index === 0}
                     onClick={() => moveGroup(index, -1)}
                   >
-                    Csoport fel
+                    Szakasz fel
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-8 text-red-300"
+                    className="h-8 text-red-600"
                     onClick={() => onChange(groups.filter((_, i) => i !== index))}
                   >
-                    Csoport törlése
+                    Szakasz törlése
                   </Button>
                 </div>
               </div>
@@ -132,24 +125,23 @@ export function AddonGroupsEditor({
       <Button
         type="button"
         variant="outline"
-        className="h-10 border-white/10 text-white font-bold"
+        className="h-10 font-bold"
         onClick={() => {
-          const key = `group_${groups.length + 1}`
           const next = [
             ...groups,
             {
-              key,
-              label: "Új felár-csoport",
+              key: "",
+              label: "Új szakasz",
               description: "",
               sortOrder: groups.length,
               options: [],
             },
           ]
           onChange(next)
-          setOpenKey(key)
+          setOpenKey(`group-${groups.length}`)
         }}
       >
-        + Felár-csoport
+        + Foglalási szakasz
       </Button>
     </div>
   )

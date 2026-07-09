@@ -4,6 +4,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react"
 import { campAdminApi } from "./camp-api"
 import { CampAdminLoading } from "./camp-admin-ui"
+import { adminTableHead, adminTableWrap } from "@wse/core/lib/admin-ui"
 
 type CampChildRow = {
   name: string
@@ -53,20 +54,20 @@ export function SessionRegistrationsTable({ sessionId }: { sessionId: string }) 
   }
 
   if (error) {
-    return <p className="text-red-400 text-sm">{error}</p>
+    return <p className="text-destructive text-sm">{error}</p>
   }
 
   if (rows.length === 0) {
     return (
-      <p className="text-neutral-500 text-sm italic">Még nincs fizetett jelentkezés ezen a turnuson.</p>
+      <p className="text-muted-foreground text-sm italic">Még nincs fizetett jelentkezés ezen a turnuson.</p>
     )
   }
 
   return (
-    <div className="overflow-x-auto border border-white/10 rounded-2xl">
+    <div className={adminTableWrap}>
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+          <tr className={`border-b border-border bg-muted/40 ${adminTableHead}`}>
             <th className="p-3">Vásárló</th>
             <th className="p-3 hidden md:table-cell">E-mail</th>
             <th className="p-3 hidden lg:table-cell">Telefon</th>
@@ -82,18 +83,16 @@ export function SessionRegistrationsTable({ sessionId }: { sessionId: string }) 
             const expanded = expandedId === r.id
             return (
               <Fragment key={r.id}>
-                <tr
-                  className="border-b border-white/5 hover:bg-white/[0.03] text-neutral-200"
-                >
-                  <td className="p-3 font-medium text-white">{r.buyerName}</td>
-                  <td className="p-3 hidden md:table-cell text-neutral-400">{r.buyerEmail}</td>
-                  <td className="p-3 hidden lg:table-cell text-neutral-400">{r.buyerPhone}</td>
+                <tr className="border-b border-border/60 hover:bg-muted/40">
+                  <td className="p-3 font-medium text-foreground">{r.buyerName}</td>
+                  <td className="p-3 hidden md:table-cell text-muted-foreground">{r.buyerEmail}</td>
+                  <td className="p-3 hidden lg:table-cell text-muted-foreground">{r.buyerPhone}</td>
                   <td className="p-3">{r.childCount}</td>
-                  <td className="p-3 hidden sm:table-cell text-neutral-400">{r.ticketTypeName}</td>
+                  <td className="p-3 hidden sm:table-cell text-muted-foreground">{r.ticketTypeName}</td>
                   <td className="p-3 whitespace-nowrap">
                     {r.totalHuf.toLocaleString("hu-HU")} Ft
                   </td>
-                  <td className="p-3 hidden md:table-cell text-neutral-500 text-xs whitespace-nowrap">
+                  <td className="p-3 hidden md:table-cell text-muted-foreground text-xs whitespace-nowrap">
                     {new Date(r.paidAt).toLocaleString("hu-HU")}
                   </td>
                   <td className="p-3">
@@ -101,7 +100,7 @@ export function SessionRegistrationsTable({ sessionId }: { sessionId: string }) 
                       <button
                         type="button"
                         onClick={() => setExpandedId(expanded ? null : r.id)}
-                        className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                        className="text-xs font-medium admin-link-accent"
                       >
                         {expanded ? "Bezár" : "Részletek"}
                       </button>
@@ -109,28 +108,28 @@ export function SessionRegistrationsTable({ sessionId }: { sessionId: string }) 
                   </td>
                 </tr>
                 {expanded && r.children.length > 0 ? (
-                  <tr className="border-b border-white/5 bg-black/40">
+                  <tr className="border-b border-border/60 bg-muted/30">
                     <td colSpan={8} className="p-4">
                       <ul className="space-y-3">
                         {r.children.map((child, idx) => (
                           <li
                             key={idx}
-                            className="text-xs text-neutral-300 border-l-2 border-white/20 pl-3"
+                            className="text-xs text-muted-foreground border-l-2 border-border pl-3"
                           >
-                            <p className="font-bold text-white">
+                            <p className="font-medium text-foreground">
                               {child.name}
                               {child.lastName ? ` ${child.lastName}` : ""}
                             </p>
-                            <p className="text-neutral-500 mt-0.5">
+                            <p className="mt-0.5">
                               Születés: {child.birthDate}
                               {child.diningOption ? ` · Étkezés: ${child.diningOption}` : ""}
                               {child.laptopRental ? " · Laptop bérlés" : ""}
                             </p>
                             {child.dietaryRequest ? (
-                              <p className="text-neutral-500">Étkezési kérés: {child.dietaryRequest}</p>
+                              <p>Étkezési kérés: {child.dietaryRequest}</p>
                             ) : null}
                             {child.allergies ? (
-                              <p className="text-neutral-500">Allergia: {child.allergies}</p>
+                              <p>Allergia: {child.allergies}</p>
                             ) : null}
                           </li>
                         ))}

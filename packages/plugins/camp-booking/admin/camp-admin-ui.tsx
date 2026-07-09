@@ -6,18 +6,24 @@ import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
 import { Button } from "@wse/core/components/ui/button"
+import { AdminKpiCard } from "@wse/core/components/admin/AdminKpiCard"
+import {
+  pluginAdminFieldLabel,
+  pluginAdminInputClass,
+  pluginAdminPageDescription,
+  pluginAdminPageHeader,
+  pluginAdminPageTitle,
+  pluginAdminSelectClass,
+} from "@wse/core/lib/plugin-admin-ui"
 
-export const campAdminInputClass =
-  "bg-black border-white/10 h-11 text-white rounded-none focus-visible:ring-primary"
-
-export const campAdminSelectClass =
-  "w-full h-11 bg-black border border-white/10 px-3 text-sm text-white rounded-none focus:outline-none focus:border-primary/50"
+export const campAdminInputClass = pluginAdminInputClass
+export const campAdminSelectClass = pluginAdminSelectClass
 
 export function CampAdminLoading({ label = "Betöltés…" }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-20 text-neutral-400">
+    <div className="flex flex-col items-center justify-center gap-4 py-20 text-muted-foreground">
       <LoadingSpinner size="lg" />
-      <p className="text-sm font-medium italic">{label}</p>
+      <p className="text-sm font-medium">{label}</p>
     </div>
   )
 }
@@ -32,10 +38,8 @@ export function CampAdminField({
   className?: string
 }) {
   return (
-    <div className={cn("space-y-2", className)}>
-      <Label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-        {label}
-      </Label>
+    <div className={cn("space-y-1.5", className)}>
+      <Label className={pluginAdminFieldLabel}>{label}</Label>
       {children}
     </div>
   )
@@ -56,20 +60,7 @@ export function CampKpiCard({
   subtitle?: string
   icon: ComponentType<{ className?: string }>
 }) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/30 transition-colors group">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-3 admin-icon-well rounded-xl group-hover:scale-110 transition-transform duration-300">
-          <Icon className="w-6 h-6 admin-icon-accent" />
-        </div>
-      </div>
-      <div>
-        <h3 className="text-white/40 text-sm font-medium mb-1 uppercase tracking-wider">{title}</h3>
-        <p className="text-3xl font-bold text-white">{value}</p>
-        {subtitle ? <p className="mt-2 text-xs font-bold text-neutral-500">{subtitle}</p> : null}
-      </div>
-    </div>
-  )
+  return <AdminKpiCard title={title} value={value} subtitle={subtitle} icon={Icon} />
 }
 
 export function CampAdminPageHeader({
@@ -82,17 +73,13 @@ export function CampAdminPageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-      <div>
-        <h1 className="text-4xl font-extrabold tracking-tight uppercase italic text-white">
-          {title}
-        </h1>
-        {description ? (
-          <p className="text-white/40 font-medium italic mt-2 max-w-2xl">{description}</p>
-        ) : null}
+    <header className={pluginAdminPageHeader}>
+      <div className="min-w-0 space-y-1">
+        <h1 className={pluginAdminPageTitle}>{title}</h1>
+        {description ? <p className={pluginAdminPageDescription}>{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2 shrink-0">{actions}</div> : null}
-    </div>
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+    </header>
   )
 }
 
@@ -101,12 +88,7 @@ export function CampAdminPrimaryButton({
   ...props
 }: React.ComponentProps<typeof Button>) {
   return (
-    <Button
-      type="button"
-      variant="krausz"
-      className="h-11 px-6 uppercase tracking-widest text-[10px] font-black"
-      {...props}
-    >
+    <Button type="button" className="h-10 px-5 font-semibold" {...props}>
       {children}
     </Button>
   )

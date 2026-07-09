@@ -8,6 +8,8 @@ import { Input } from "@wse/core/components/ui/input";
 import { cn, slugify } from "@wse/core/lib/utils";
 import { deriveNetFromGross, netToGross } from "@wse/core/lib/pricing";
 import { AdminFormField } from "@wse/core/components/admin/AdminFormField";
+import { Card, CardContent } from "@wse/core/components/ui/card";
+import { adminAlertWarning, adminFieldHint, adminInputClass } from "@wse/core/lib/admin-ui";
 import {
   deriveVariantGrossBounds,
   hasVariantPriceOverride,
@@ -419,15 +421,16 @@ export function ProductVariantsEditor({
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-none p-6 md:p-8 space-y-8">
+    <Card className="shadow-sm">
+      <CardContent className="space-y-6 pt-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-heading font-black italic uppercase tracking-wider text-white">Variánsok</h2>
+        <h2 className="text-lg font-semibold">Variánsok</h2>
         <button
           type="button"
           onClick={() => setEnabled((prev) => !prev)}
           className={cn(
-            "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-            enabled ? "bg-primary" : "bg-neutral-800"
+            "w-14 h-7 rounded-md p-1 transition-colors duration-200 focus:outline-none",
+            enabled ? "bg-primary" : "bg-muted"
           )}
         >
           <div
@@ -454,16 +457,13 @@ export function ProductVariantsEditor({
       />
 
       {!enabled ? (
-        <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+        <p className="text-sm text-muted-foreground">
           Variánsok kikapcsolva. A termék egyetlen változatként jelenik meg.
         </p>
       ) : (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-white/10 p-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-neutral-500 block uppercase tracking-[0.2em]">
-                ÁFA kulcs (%) — minden variánsra
-              </label>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 items-end gap-4 rounded-lg bg-muted/40 p-4 md:grid-cols-2">
+            <AdminFormField label="ÁFA kulcs (%) — minden variánsra">
               <Input
                 type="number"
                 name="vatPercent"
@@ -472,10 +472,10 @@ export function ProductVariantsEditor({
                 step={1}
                 value={vatPercent}
                 onChange={(e) => onVatChange(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                className="bg-black border-white/5 h-11 text-white font-black tracking-widest focus-visible:ring-primary rounded-none"
+                className={adminInputClass}
               />
-            </div>
-            <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest self-end pb-2">
+            </AdminFormField>
+            <p className={adminFieldHint}>
               A bruttó ár a vevő által fizetett összeg. A nettó a számlázáshoz kerül mentésre.
             </p>
           </div>
@@ -495,7 +495,7 @@ export function ProductVariantsEditor({
           />
 
           {uniqueNumberedVariants?.enabled ? (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+            <p className="text-sm text-primary">
               Egyedi sorszámos készlet mód aktív — max {uniqueNumberedVariants.maxQuantityPerLine} db / sor.
             </p>
           ) : null}
@@ -516,12 +516,10 @@ export function ProductVariantsEditor({
             />
           ) : null}
 
-          <div className="flex items-center justify-between border border-white/10 p-4">
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 p-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-white">
-                Kötelező variáns választás
-              </p>
-              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
+              <p className="text-sm font-medium text-foreground">Kötelező variáns választás</p>
+              <p className={adminFieldHint}>
                 Ha bekapcsolt, a vevő nem teheti az alapterméket kosárba variáns nélkül.
               </p>
             </div>
@@ -529,8 +527,8 @@ export function ProductVariantsEditor({
               type="button"
               onClick={() => setRequireVariantSelection((prev) => !prev)}
               className={cn(
-                "w-14 h-7 rounded-none p-1 transition-colors duration-200 focus:outline-none",
-                requireVariantSelection ? "bg-primary" : "bg-neutral-800"
+                "w-14 h-7 rounded-md p-1 transition-colors duration-200 focus:outline-none",
+                requireVariantSelection ? "bg-primary" : "bg-muted"
               )}
             >
               <div
@@ -544,11 +542,9 @@ export function ProductVariantsEditor({
 
           {!numberedMode ? (
           <div className="space-y-4">
-            <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-              Opció dimenziók
-            </p>
+            <p className="text-sm font-medium text-foreground">Opció dimenziók</p>
             {options.map((option, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div key={index} className="grid grid-cols-1 gap-3 md:grid-cols-12">
                 <Input
                   value={option.name}
                   onChange={(event) =>
@@ -557,7 +553,7 @@ export function ProductVariantsEditor({
                     )
                   }
                   placeholder="Pl. Méret"
-                  className="md:col-span-3 bg-black border-white/5 h-11 text-white rounded-none"
+                  className={cn(adminInputClass, "md:col-span-3")}
                 />
                 <Input
                   value={option.valuesText}
@@ -567,15 +563,15 @@ export function ProductVariantsEditor({
                     )
                   }
                   placeholder="Pl. 3x20, 4x30, 5x40"
-                  className="md:col-span-8 bg-black border-white/5 h-11 text-white rounded-none"
+                  className={cn(adminInputClass, "md:col-span-8")}
                 />
                 <Button
                   type="button"
                   onClick={() => setOptions((prev) => prev.filter((_, i) => i !== index))}
                   variant="ghost"
-                  className="md:col-span-1 h-11 text-rose-500 hover:text-white hover:bg-rose-500/20 rounded-none"
+                  className="h-9 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 md:col-span-1"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="size-4" />
                 </Button>
               </div>
             ))}
@@ -584,18 +580,18 @@ export function ProductVariantsEditor({
                 type="button"
                 onClick={() => setOptions((prev) => [...prev, { name: "", valuesText: "" }])}
                 variant="outline"
-                className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
+                size="sm"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="mr-2 size-4" />
                 Opció hozzáadása
               </Button>
               <Button
                 type="button"
                 onClick={generateCombinations}
                 variant="outline"
-                className="h-10 rounded-none admin-action-outline hover:bg-white/10"
+                size="sm"
               >
-                <WandSparkles className="w-4 h-4 mr-2" />
+                <WandSparkles className="mr-2 size-4" />
                 Variánsok generálása
               </Button>
             </div>
@@ -604,13 +600,11 @@ export function ProductVariantsEditor({
 
           {variants.length > 0 ? (
             <>
-              <div className="border border-white/10 p-4 space-y-4">
+              <div className="space-y-4 rounded-lg bg-muted/40 p-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                   <div>
-                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                      Tömeges módosítás
-                    </p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    <p className="text-sm font-medium text-foreground">Tömeges módosítás</p>
+                    <p className={adminFieldHint}>
                       Csak a kitöltött mezők íródnak rá az összes variánsra.
                     </p>
                   </div>
@@ -618,24 +612,24 @@ export function ProductVariantsEditor({
                     <Button
                       type="button"
                       variant="outline"
+                      size="sm"
                       onClick={clearAllVariantPriceOverrides}
-                      className="h-10 rounded-none border-white/10 text-white hover:bg-white/5"
                     >
                       Árak vissza alapárra
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
+                      size="sm"
                       onClick={() => setAllVariantsActive(false)}
-                      className="h-10 rounded-none border-white/10 text-white hover:bg-white/5 text-[10px] font-black uppercase tracking-widest"
                     >
                       Összes kikapcsolása
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
+                      size="sm"
                       onClick={() => setAllVariantsActive(true)}
-                      className="h-10 rounded-none border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest"
                     >
                       Összes bekapcsolása
                     </Button>
@@ -648,7 +642,7 @@ export function ProductVariantsEditor({
                       value={bulkNetPrice}
                       onChange={(event) => updateBulkNetPrice(event.target.value)}
                       placeholder="Nem módosítja"
-                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                      className={adminInputClass}
                     />
                   </AdminFormField>
                   <AdminFormField label="Bruttó ár (Ft)">
@@ -657,7 +651,7 @@ export function ProductVariantsEditor({
                       value={bulkGrossPrice}
                       onChange={(event) => updateBulkGrossPrice(event.target.value)}
                       placeholder="Nem módosítja"
-                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                      className={adminInputClass}
                     />
                   </AdminFormField>
                   <AdminFormField label="Kedvezmény (%)">
@@ -666,7 +660,7 @@ export function ProductVariantsEditor({
                       value={bulkDiscount}
                       onChange={(event) => setBulkDiscount(event.target.value)}
                       placeholder="Nem módosítja"
-                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                      className={adminInputClass}
                     />
                   </AdminFormField>
                   <AdminFormField label="Készlet (db)">
@@ -675,15 +669,11 @@ export function ProductVariantsEditor({
                       value={bulkStock}
                       onChange={(event) => setBulkStock(event.target.value)}
                       placeholder="Nem módosítja"
-                      className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                      className={adminInputClass}
                     />
                   </AdminFormField>
                   <div className="flex items-end">
-                    <Button
-                      type="button"
-                      onClick={applyBulkValues}
-                      className="h-11 w-full rounded-none bg-primary text-white"
-                    >
+                    <Button type="button" onClick={applyBulkValues} className="w-full">
                       Alkalmazás
                     </Button>
                   </div>
@@ -697,11 +687,11 @@ export function ProductVariantsEditor({
                       value={numberedListSearch}
                       onChange={(e) => setNumberedListSearch(e.target.value)}
                       placeholder="Keresés sorszámra…"
-                      className="mb-2 h-10 rounded-none border-white/5 bg-black text-white text-sm"
+                      className={cn(adminInputClass, "mb-2 h-10")}
                     />
                   ) : null}
                   {listVariants.length === 0 ? (
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 px-2">
+                    <p className="px-2 text-sm text-muted-foreground">
                       {numberedMode ? "Nincs találat." : "Nincs variáns."}
                     </p>
                   ) : null}
@@ -711,36 +701,35 @@ export function ProductVariantsEditor({
                       type="button"
                       onClick={() => setActiveVariantId(variant.id)}
                       className={cn(
-                        "w-full text-left px-3 py-2 border text-[10px] font-black uppercase tracking-widest transition-colors",
-                        activeVariant?.id === variant.id ? "admin-item-selected" : "admin-item-idle"
+                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                        activeVariant?.id === variant.id
+                          ? "bg-primary/10 text-foreground ring-1 ring-primary/30"
+                          : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                       )}
                     >
-                      <span className="block">{attributesToLabel(variant.attributes) || variant.id}</span>
-                      <span className="mt-1 block text-[9px] text-neutral-500">
+                      <span className="block font-medium">{attributesToLabel(variant.attributes) || variant.id}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
                         {formatHuf(variantGrossForDisplay(variant, vatPercent, defaultGrossPrice, defaultNetPrice))} ·{" "}
-                        {Number(variant.stock) || 0} DB
-                        {variant.isActive === false ? " · INAKTÍV" : ""}
+                        {Number(variant.stock) || 0} db
+                        {variant.isActive === false ? " · inaktív" : ""}
                       </span>
                     </button>
                   ))}
                 </div>
                 {activeVariant ? (
-                  <div key={activeVariant.id} className="xl:col-span-8 border border-white/10 p-4 space-y-4 bg-black/20">
+                  <div key={activeVariant.id} className="space-y-4 rounded-lg bg-muted/40 p-4 xl:col-span-8">
                     <div className="flex flex-wrap justify-between gap-3">
                       <div>
-                        <p className="text-xs text-white font-black uppercase tracking-widest">
+                        <p className="text-sm font-medium text-foreground">
                           {attributesToLabel(activeVariant.attributes) || activeVariant.id}
                         </p>
-                        <p className="text-[10px] text-neutral-500 uppercase tracking-widest">{activeVariant.id}</p>
+                        <p className="text-xs text-muted-foreground">{activeVariant.id}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
                           type="button"
                           variant={activeVariant.isDefault ? "default" : "outline"}
-                          className={cn(
-                            "h-9 rounded-none text-[10px] font-black uppercase tracking-widest",
-                            activeVariant.isDefault ? "bg-primary text-white" : "border-white/10 text-white hover:bg-white/5"
-                          )}
+                          size="sm"
                           onClick={() =>
                             setVariants((prev) =>
                               prev.map((item) => ({ ...item, isDefault: item.id === activeVariant.id }))
@@ -752,7 +741,8 @@ export function ProductVariantsEditor({
                         <Button
                           type="button"
                           variant="ghost"
-                          className="h-9 rounded-none text-rose-500 hover:text-white hover:bg-rose-500/20"
+                          size="sm"
+                          className="text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
                           onClick={() => {
                             const next = variants.filter((item) => item.id !== activeVariant.id);
                             setVariants(next);
@@ -764,24 +754,20 @@ export function ProductVariantsEditor({
                       </div>
                     </div>
 
-                    <div className="border border-white/10 bg-black/30 p-4 space-y-3">
+                    <div className="space-y-3 rounded-lg bg-background/60 p-4">
                       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                            Egyedi ár
-                          </p>
-                          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                          <p className="text-sm font-medium text-foreground">Egyedi ár</p>
+                          <p className={adminFieldHint}>
                             Üresen hagyva ez a variáns az alap termék árát használja.
                           </p>
                         </div>
                         <div className="text-left md:text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                            Vevőnek érvényes bruttó
-                          </p>
-                          <p className="text-sm font-black uppercase tracking-widest text-white">
+                          <p className={adminFieldHint}>Vevőnek érvényes bruttó</p>
+                          <p className="text-sm font-semibold tabular-nums text-foreground">
                             {formatHuf(activeVariantEffectiveGross)}
                           </p>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                          <p className={adminFieldHint}>
                             {activeVariantUsesBasePrice ? "Alapárból örökölve" : "Egyedi variánsárból"}
                           </p>
                         </div>
@@ -804,7 +790,7 @@ export function ProductVariantsEditor({
                               });
                             }}
                             placeholder="Alapár"
-                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                            className={adminInputClass}
                           />
                         </AdminFormField>
                         <AdminFormField label="Bruttó ár (Ft)">
@@ -823,7 +809,7 @@ export function ProductVariantsEditor({
                               });
                             }}
                             placeholder="Alapár"
-                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                            className={adminInputClass}
                           />
                         </AdminFormField>
                         <div className="md:col-span-2">
@@ -831,7 +817,7 @@ export function ProductVariantsEditor({
                             type="button"
                             variant="outline"
                             onClick={() => clearVariantPriceOverride(activeVariant.id)}
-                            className="h-11 w-full rounded-none border-white/10 text-white hover:bg-white/5"
+                            className="w-full"
                           >
                             Alapár használata
                           </Button>
@@ -839,21 +825,19 @@ export function ProductVariantsEditor({
                       </div>
                     </div>
 
-                    <div className="border border-white/10 bg-black/30 p-4 space-y-3">
+                    <div className={cn(adminAlertWarning, "space-y-3")}>
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                            Első X darab egyedi ára
-                          </p>
-                          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                          <p className="text-sm font-medium text-foreground">Első X darab egyedi ára</p>
+                          <p className={adminFieldHint}>
                             Variánsonként külön limit. A foglalt és eladott darabokat a rendelési folyamat kezeli.
                           </p>
-                          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                          <p className={cn(adminFieldHint, "mt-2")}>
                             Maradt: {activeLimitedRemaining} · Felhasználva: {activeLimitedClaimed} · Foglalt:{" "}
                             {activeLimitedReserved} · Eladott: {activeLimitedSold}
                           </p>
                         </div>
-                        <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-neutral-400">
+                        <label className="flex items-center gap-2 text-sm text-foreground">
                           <input
                             type="checkbox"
                             checked={Boolean(activeLimited.enabled)}
@@ -866,8 +850,8 @@ export function ProductVariantsEditor({
                       </div>
 
                       {isEdit && productId ? (
-                        <div className="flex flex-col gap-2 border border-white/10 bg-black/20 p-3 md:flex-row md:items-center md:justify-between">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3 md:flex-row md:items-center md:justify-between">
+                          <p className={adminFieldHint}>
                             Teszt rendelések után itt nullázható csak ennek a variánsnak a limit számlálója.
                           </p>
                           <Button
@@ -875,16 +859,14 @@ export function ProductVariantsEditor({
                             variant="outline"
                             disabled={isResettingLimiter}
                             onClick={() => resetActiveVariantLimiter(activeVariant.id)}
-                            className="h-10 shrink-0 rounded-none border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                            className="h-10 shrink-0"
                           >
                             {isResettingLimiter ? "Nullázás..." : "Limit számláló nullázása"}
                           </Button>
                         </div>
                       ) : null}
                       {limiterResetMessage ? (
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300">
-                          {limiterResetMessage}
-                        </p>
+                        <p className="text-sm text-amber-900">{limiterResetMessage}</p>
                       ) : null}
 
                       <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-3">
@@ -898,7 +880,7 @@ export function ProductVariantsEditor({
                               })
                             }
                             placeholder="Pl. 412"
-                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                            className={adminInputClass}
                           />
                         </AdminFormField>
                         <AdminFormField label="Limitált nettó ár (Ft)">
@@ -913,7 +895,7 @@ export function ProductVariantsEditor({
                               });
                             }}
                             placeholder="Egyedi nettó"
-                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                            className={adminInputClass}
                           />
                         </AdminFormField>
                         <AdminFormField label="Limitált bruttó ár (Ft)">
@@ -928,7 +910,7 @@ export function ProductVariantsEditor({
                               });
                             }}
                             placeholder="Egyedi bruttó"
-                            className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                            className={adminInputClass}
                           />
                         </AdminFormField>
                       </div>
@@ -948,7 +930,7 @@ export function ProductVariantsEditor({
                               )
                             )
                           }
-                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          className={adminInputClass}
                         />
                       </AdminFormField>
                       <AdminFormField label="Készlet (db)">
@@ -964,7 +946,7 @@ export function ProductVariantsEditor({
                               )
                             )
                           }
-                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          className={adminInputClass}
                         />
                       </AdminFormField>
                       <AdminFormField label="SKU">
@@ -977,12 +959,12 @@ export function ProductVariantsEditor({
                               )
                             )
                           }
-                          className="h-11 w-full rounded-none border-white/5 bg-black text-white"
+                          className={adminInputClass}
                         />
                       </AdminFormField>
                     </div>
 
-                    <div className="space-y-3">
+                    <AdminFormField label="Név felülírása (opcionális)">
                       <Input
                         value={activeVariant.nameOverride || ""}
                         onChange={(event) =>
@@ -992,9 +974,13 @@ export function ProductVariantsEditor({
                             )
                           )
                         }
-                        className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="Név felülírása (opcionális)"
+                        className={adminInputClass}
                       />
+                    </AdminFormField>
+                    <AdminFormField
+                      label="Leírás felülírása (opcionális)"
+                      hint="HTML. Sorszámos terméknél felülírja a közös sorszámos leírást."
+                    >
                       <textarea
                         value={activeVariant.descriptionOverride || ""}
                         onChange={(event) =>
@@ -1005,63 +991,65 @@ export function ProductVariantsEditor({
                           )
                         }
                         rows={3}
-                        className="w-full bg-black border-white/5 text-white rounded-none p-3 text-sm resize-y min-h-[88px]"
-                        placeholder="Leírás felülírása (opcionális, HTML). Sorszámos terméknél felülírja a közös sorszámos leírást."
+                        className={cn(adminInputClass, "min-h-[88px] resize-y py-2")}
                       />
-                    </div>
+                    </AdminFormField>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Input
-                        value={activeVariant.seo?.title || ""}
-                        onChange={(event) =>
-                          setVariants((prev) =>
-                            prev.map((item) =>
-                              item.id === activeVariant.id
-                                ? { ...item, seo: { ...item.seo, title: event.target.value } }
-                                : item
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <AdminFormField label="SEO cím">
+                        <Input
+                          value={activeVariant.seo?.title || ""}
+                          onChange={(event) =>
+                            setVariants((prev) =>
+                              prev.map((item) =>
+                                item.id === activeVariant.id
+                                  ? { ...item, seo: { ...item.seo, title: event.target.value } }
+                                  : item
+                              )
                             )
-                          )
-                        }
-                        className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="SEO cím"
-                      />
-                      <Input
-                        value={activeVariant.seo?.description || ""}
-                        onChange={(event) =>
-                          setVariants((prev) =>
-                            prev.map((item) =>
-                              item.id === activeVariant.id
-                                ? { ...item, seo: { ...item.seo, description: event.target.value } }
-                                : item
+                          }
+                          className={adminInputClass}
+                        />
+                      </AdminFormField>
+                      <AdminFormField label="SEO leírás">
+                        <Input
+                          value={activeVariant.seo?.description || ""}
+                          onChange={(event) =>
+                            setVariants((prev) =>
+                              prev.map((item) =>
+                                item.id === activeVariant.id
+                                  ? { ...item, seo: { ...item.seo, description: event.target.value } }
+                                  : item
+                              )
                             )
-                          )
-                        }
-                        className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="SEO leírás"
-                      />
-                      <Input
-                        value={(activeVariant.seo?.keywords || []).join(", ")}
-                        onChange={(event) =>
-                          setVariants((prev) =>
-                            prev.map((item) =>
-                              item.id === activeVariant.id
-                                ? {
-                                    ...item,
-                                    seo: {
-                                      ...item.seo,
-                                      keywords: event.target.value
-                                        .split(",")
-                                        .map((keyword) => keyword.trim())
-                                        .filter(Boolean),
-                                    },
-                                  }
-                                : item
+                          }
+                          className={adminInputClass}
+                        />
+                      </AdminFormField>
+                      <AdminFormField label="SEO kulcsszavak">
+                        <Input
+                          value={(activeVariant.seo?.keywords || []).join(", ")}
+                          onChange={(event) =>
+                            setVariants((prev) =>
+                              prev.map((item) =>
+                                item.id === activeVariant.id
+                                  ? {
+                                      ...item,
+                                      seo: {
+                                        ...item.seo,
+                                        keywords: event.target.value
+                                          .split(",")
+                                          .map((keyword) => keyword.trim())
+                                          .filter(Boolean),
+                                      },
+                                    }
+                                  : item
+                              )
                             )
-                          )
-                        }
-                        className="bg-black border-white/5 h-11 text-white rounded-none"
-                        placeholder="SEO kulcsszavak"
-                      />
+                          }
+                          className={adminInputClass}
+                        />
+                      </AdminFormField>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1079,7 +1067,7 @@ export function ProductVariantsEditor({
                       />
                       <label
                         htmlFor={`variant-active-${activeVariant.id}`}
-                        className="text-xs font-black uppercase tracking-widest text-neutral-400"
+                        className="text-sm text-foreground"
                       >
                         Aktív variáns
                       </label>
@@ -1089,18 +1077,16 @@ export function ProductVariantsEditor({
               </div>
 
               {requireVariantSelection && variants.length > 0 ? (
-                <div className="border border-white/10 bg-black/30 p-4 space-y-3">
-                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                    Összes variáns — összesítő
-                  </p>
-                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                <div className="space-y-3 rounded-lg bg-muted/40 p-4">
+                  <p className="text-sm font-medium text-foreground">Összes variáns — összesítő</p>
+                  <p className={adminFieldHint}>
                     Az árak variánsonként szerkeszthetők fent. Itt az összes aktív variáns
                     készlete és ártartománya látszik.
                   </p>
-                  <dl className="grid grid-cols-2 md:grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                  <dl className="grid grid-cols-2 gap-4 text-sm text-muted-foreground md:grid-cols-3">
                     <div>
                       <dt>Bruttó tartomány</dt>
-                      <dd className="text-white text-sm mt-1">
+                      <dd className="mt-1 text-base text-foreground">
                         {grossBounds.min <= 0 && grossBounds.max <= 0
                           ? "—"
                           : grossBounds.min === grossBounds.max
@@ -1110,23 +1096,24 @@ export function ProductVariantsEditor({
                     </div>
                     <div>
                       <dt>Összes készlet</dt>
-                      <dd className="text-white text-sm mt-1">{totalStock} DB</dd>
+                      <dd className="mt-1 text-base text-foreground">{totalStock} db</dd>
                     </div>
                     <div>
                       <dt>Max kedvezmény</dt>
-                      <dd className="text-white text-sm mt-1">{maxDiscount}%</dd>
+                      <dd className="mt-1 text-base text-foreground">{maxDiscount}%</dd>
                     </div>
                   </dl>
                 </div>
               ) : null}
             </>
           ) : (
-            <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+            <p className="text-sm text-muted-foreground">
               Adj meg opciókat, majd generáld a variánsokat.
             </p>
           )}
         </div>
       )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

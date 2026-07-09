@@ -1,9 +1,8 @@
 import fs from "fs/promises"
 import path from "path"
-
-const GUIDE_ROOT = path.join(process.cwd(), "docs/admin-user-guide")
+import { resolveAdminGuideRoot } from "@wse/core/lib/admin-guide/resolve-guide-root"
 
 export async function loadGuideSectionMarkdown(relativeFile: string): Promise<string> {
-  const filePath = path.join(GUIDE_ROOT, relativeFile)
+  const filePath = path.join(resolveAdminGuideRoot(), relativeFile)
   return fs.readFile(filePath, "utf8")
 }

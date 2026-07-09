@@ -15,10 +15,10 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => vo
           key={tab}
           type="button"
           onClick={() => onChange(tab)}
-          className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             mode === tab
-              ? "border-amber-400/50 bg-amber-500/15 text-amber-200"
-              : "border-white/10 text-neutral-500 hover:border-white/25"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {tab === "upload" ? "Feltöltés" : "URL / link"}
@@ -75,7 +75,7 @@ export function TBookGalleryField({
         <MultiImageUpload currentImages={value} onUpload={onChange} aspect={4 / 3} />
       ) : (
         <textarea
-          className="w-full min-h-24 bg-black border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
+          className="w-full min-h-24 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
           value={value.join("\n")}
           onChange={(e) =>
             onChange(

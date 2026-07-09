@@ -11,6 +11,14 @@ export interface ITBookEventGroup extends Document {
   defaultBookingOptions: TBookOptionDef[]
   defaultPriceBasis: TBookPriceBasis
   defaultVatPercent: number
+  /** Show this group on the public tBook integrations directory. */
+  listOnTBookSite: boolean
+  /** Public card title (defaults to group name when empty). */
+  listingTitle: string
+  /** Link to the customer booking page. */
+  listingUrl: string
+  /** Cover image for the public directory card. */
+  listingImage: string
   /** SHA-256 hash of the group API key. The plaintext is shown to the admin once. */
   apiKeyHash: string
   /** Non-secret display hint, e.g. `tbk_ab12…89ef`. */
@@ -72,6 +80,10 @@ const TBookEventGroupSchema = new Schema<ITBookEventGroup>(
     defaultBookingOptions: { type: [OptionDefSchema], default: [] },
     defaultPriceBasis: { type: String, enum: ["net", "gross"], default: "net" },
     defaultVatPercent: { type: Number, default: 27, min: 0, max: 100 },
+    listOnTBookSite: { type: Boolean, default: false },
+    listingTitle: { type: String, default: "" },
+    listingUrl: { type: String, default: "" },
+    listingImage: { type: String, default: "" },
     apiKeyHash: { type: String, required: true, index: true },
     apiKeyHint: { type: String, required: true },
     apiKeyCreatedAt: { type: Date, required: true },

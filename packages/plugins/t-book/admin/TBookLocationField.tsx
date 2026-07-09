@@ -72,7 +72,7 @@ export function TBookLocationField({
         <Button
           type="button"
           variant="outline"
-          className="h-9 border-white/10 text-white text-xs font-bold"
+          className="h-9 text-xs"
           disabled={geocoding}
           onClick={() => void geocode()}
         >
@@ -81,7 +81,7 @@ export function TBookLocationField({
         <Button
           type="button"
           variant="outline"
-          className="h-9 border-white/10 text-white text-xs font-bold"
+          className="h-9 text-xs"
           onClick={useCoordsEmbed}
         >
           Google Maps embed koordinátákból
@@ -111,14 +111,14 @@ export function TBookLocationField({
       </div>
       <TBookField label="Térkép embed (iframe src vagy teljes iframe kód)">
         <textarea
-          className="w-full min-h-20 bg-black border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
+          className="w-full min-h-20 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
           value={location.mapEmbedUrl}
           onChange={(e) => patch({ mapEmbedUrl: normalizeMapEmbedUrl(e.target.value) })}
           placeholder='https://www.google.com/maps/embed?pb=… vagy <iframe src="…">'
         />
       </TBookField>
       {location.mapEmbedUrl ? (
-        <div className="rounded-xl overflow-hidden border border-white/10 aspect-video bg-black">
+        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-muted">
           <iframe
             title="Térkép előnézet"
             src={normalizeMapEmbedUrl(location.mapEmbedUrl)}

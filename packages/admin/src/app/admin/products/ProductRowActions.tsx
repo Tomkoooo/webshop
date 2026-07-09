@@ -75,7 +75,7 @@ export function ProductRowActions({
 
   if (isDeleted) {
     return (
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-1">
         <Dialog
           open={restoreOpen}
           onOpenChange={(open) => {
@@ -84,14 +84,8 @@ export function ProductRowActions({
           }}
         >
           <DialogTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-none border border-transparent text-neutral-500 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400"
-              title="Visszaállítás"
-            >
-              <RotateCcw className="w-4 h-4" />
+            <Button type="button" variant="ghost" size="icon" title="Visszaállítás">
+              <RotateCcw className="size-4" />
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -101,26 +95,13 @@ export function ProductRowActions({
                 A termék visszakerül az admin listába, de inaktív és rejtett marad, amíg újra nem publikálod.
               </DialogDescription>
             </DialogHeader>
-            <p className="border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white">
-              {productName}
-            </p>
-            {error ? <p className="text-sm font-bold text-rose-400">{error}</p> : null}
+            <p className="bg-muted rounded-md border px-3 py-2 font-mono text-sm">{productName}</p>
+            {error ? <p className="text-destructive text-sm">{error}</p> : null}
             <DialogFooter className="gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRestoreOpen(false)}
-                disabled={isRestoring}
-                className="rounded-none border-white/10 text-white hover:bg-white/5"
-              >
+              <Button type="button" variant="outline" onClick={() => setRestoreOpen(false)} disabled={isRestoring}>
                 Mégse
               </Button>
-              <Button
-                type="button"
-                onClick={handleRestore}
-                disabled={isRestoring}
-                className="rounded-none bg-emerald-600 text-white hover:bg-emerald-700"
-              >
+              <Button type="button" onClick={handleRestore} disabled={isRestoring}>
                 {isRestoring ? "Visszaállítás..." : "Biztonságos visszaállítás"}
               </Button>
             </DialogFooter>
@@ -131,27 +112,17 @@ export function ProductRowActions({
   }
 
   return (
-    <div className="flex justify-end gap-3">
-      <Link href={`/products/${productSlug}`} target="_blank">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-none border border-transparent text-neutral-500 transition-all hover:border-white/30 hover:bg-white/10 hover:text-white"
-          title="Megtekintés"
-        >
-          <ExternalLink className="w-4 h-4" />
-        </Button>
-      </Link>
-      <Link href={`/admin/products/${productId}`}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-none border border-transparent text-neutral-500 transition-all hover:border-white/10 hover:bg-white/10 hover:text-white"
-          title="Szerkesztés"
-        >
-          <Edit2 className="w-4 h-4" />
-        </Button>
-      </Link>
+    <div className="flex justify-end gap-1">
+      <Button variant="ghost" size="icon" asChild title="Megtekintés">
+        <Link href={`/products/${productSlug}`} target="_blank">
+          <ExternalLink className="size-4" />
+        </Link>
+      </Button>
+      <Button variant="ghost" size="icon" asChild title="Szerkesztés">
+        <Link href={`/admin/products/${productId}`}>
+          <Edit2 className="size-4" />
+        </Link>
+      </Button>
       <Dialog
         open={deleteOpen}
         onOpenChange={(open) => {
@@ -160,14 +131,8 @@ export function ProductRowActions({
         }}
       >
         <DialogTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="rounded-none border border-transparent text-neutral-500 transition-all hover:border-rose-500/20 hover:bg-rose-500/10 hover:text-rose-500"
-            title="Törlés"
-          >
-            <Trash2 className="w-4 h-4" />
+          <Button type="button" variant="ghost" size="icon" className="text-destructive" title="Törlés">
+            <Trash2 className="size-4" />
           </Button>
         </DialogTrigger>
         <DialogContent>
@@ -179,32 +144,23 @@ export function ProductRowActions({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm text-white">
-              {productName}
-            </p>
+            <p className="bg-muted rounded-md border px-3 py-2 font-mono text-sm">{productName}</p>
             <Input
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               placeholder="Terméknév pontosan"
-              className="h-11 rounded-none border-white/10 bg-black text-white"
             />
-            {error ? <p className="text-sm font-bold text-rose-400">{error}</p> : null}
+            {error ? <p className="text-destructive text-sm">{error}</p> : null}
           </div>
           <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteOpen(false)}
-              disabled={isDeleting}
-              className="rounded-none border-white/10 text-white hover:bg-white/5"
-            >
+            <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)} disabled={isDeleting}>
               Mégse
             </Button>
             <Button
               type="button"
+              variant="destructive"
               onClick={handleDelete}
               disabled={!deleteConfirmed || isDeleting}
-              className="rounded-none bg-rose-600 text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isDeleting ? "Törlés..." : "Termék törlése"}
             </Button>

@@ -23,7 +23,7 @@ export async function SiteContactChannelsPanel() {
       </p>
 
       <div className="space-y-2">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-violet-300">
+        <h3 className="text-xs font-medium text-muted-foreground text-violet-300">
           E-mailek (egyetlen forrás)
         </h3>
         {contactEmails.length > 0 ? (
@@ -35,12 +35,12 @@ export async function SiteContactChannelsPanel() {
             ))}
           </ul>
         ) : (
-          <p className="text-amber-200/90 text-xs">Még nincs e-mail cím — add hozzá alább.</p>
+          <p className="text-amber-900/90 text-xs">Még nincs e-mail cím — add hozzá alább.</p>
         )}
       </div>
 
       <div className="space-y-2 pt-2 border-t border-white/10">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-300/90">
+        <h3 className="text-xs font-medium text-muted-foreground text-emerald-800/90">
           Új rendelés értesítések
         </h3>
         {newOrderNotificationEmails.length > 0 ? (
@@ -57,7 +57,7 @@ export async function SiteContactChannelsPanel() {
       </div>
 
       <div className="space-y-2 pt-2 border-t border-white/10">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-amber-300/90">
+        <h3 className="text-xs font-medium text-muted-foreground text-amber-800/90">
           Számlázási hiba értesítések
         </h3>
         {invoiceErrorAlertEmails.length > 0 ? (
@@ -76,7 +76,7 @@ export async function SiteContactChannelsPanel() {
 
       <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-white/10">
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">
+          <h3 className="text-xs font-medium text-muted-foreground text-neutral-500 mb-1">
             Telefon (megjelenítés)
           </h3>
           <p className="text-neutral-300">
@@ -88,7 +88,7 @@ export async function SiteContactChannelsPanel() {
           </p>
         </div>
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">
+          <h3 className="text-xs font-medium text-muted-foreground text-neutral-500 mb-1">
             Cím (megjelenítés)
           </h3>
           <p className="text-neutral-300">

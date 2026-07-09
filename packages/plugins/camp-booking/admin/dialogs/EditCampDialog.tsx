@@ -81,9 +81,9 @@ export function EditCampDialog({ campId, children, onSaved }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-black border-white/10 text-white rounded-none sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className=" sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
+          <DialogTitle>
             Tábor szerkesztése
           </DialogTitle>
         </DialogHeader>
@@ -124,7 +124,7 @@ export function EditCampDialog({ campId, children, onSaved }: Props) {
                 onChange={(e) => setCamp({ ...camp, sortOrder: Number(e.target.value) })}
               />
             </CampAdminField>
-            <label className="flex items-center gap-3 text-sm text-neutral-300">
+            <label className="flex items-center gap-3 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={camp.isPublished}
@@ -133,13 +133,13 @@ export function EditCampDialog({ campId, children, onSaved }: Props) {
               />
               Közzétéve
             </label>
-            {error ? <p className="text-red-400 text-sm">{error}</p> : null}
+            {error ? <p className="text-destructive text-sm">{error}</p> : null}
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
-                variant="krausz"
+                variant="default"
                 disabled={saving}
-                className="flex-1 h-11 uppercase tracking-widest text-[10px] font-black"
+                className="flex-1 h-11 font-semibold"
               >
                 {saving ? "Mentés…" : "Mentés"}
               </Button>
@@ -147,14 +147,14 @@ export function EditCampDialog({ campId, children, onSaved }: Props) {
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
-                className="h-11 border-white/10 text-white rounded-none"
+                className="h-11"
               >
                 Mégse
               </Button>
             </div>
           </form>
         ) : error ? (
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-destructive text-sm">{error}</p>
         ) : null}
       </DialogContent>
     </Dialog>

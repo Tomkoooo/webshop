@@ -9,7 +9,7 @@ function staticPageAdminLabel(slug: string): string {
     .join(" ")
 }
 
-export type EditableNavCategory = "landing" | "shop" | "static" | "flow" | "camp"
+export type EditableNavCategory = "landing" | "shop" | "static" | "flow" | "camp" | "tbook"
 
 /** `homepage-blocks` uses {@link VisualHomepageEditor}; `surface-json` uses template JSON surface + chrome. */
 export type CmsAdminEditorKind = "homepage-blocks" | "surface-json"
@@ -32,7 +32,8 @@ const FLOW_META: Record<FlowRouteKey, string> = {
 export function listEditablePages(
   template: TemplateModule,
   shopEnabled: boolean,
-  campBookingEnabled = false
+  campBookingEnabled = false,
+  tBookEnabled = false
 ): EditablePageNavItem[] {
   const pages: EditablePageNavItem[] = []
 
@@ -107,6 +108,28 @@ export function listEditablePages(
         pageKey: `page:${entry.adminSegment}`,
         label: entry.label,
         category: "camp",
+        editorKind: "surface-json",
+      })
+    }
+  }
+
+  if (tBookEnabled && template.tBookPages) {
+    const tBookMeta: Array<{
+      key: keyof NonNullable<TemplateModule["tBookPages"]>
+      adminSegment: string
+      label: string
+    }> = [
+      { key: "jegyek", adminSegment: "jegyek", label: "Jegyek / események" },
+      { key: "foglalas", adminSegment: "tbook-foglalas", label: "Foglalás" },
+      { key: "foglalasSiker", adminSegment: "tbook-foglalas-siker", label: "Foglalás siker" },
+    ]
+    for (const entry of tBookMeta) {
+      if (!template.tBookPages[entry.key]) continue
+      pages.push({
+        adminSegment: entry.adminSegment,
+        pageKey: `page:${entry.adminSegment}`,
+        label: entry.label,
+        category: "tbook",
         editorKind: "surface-json",
       })
     }

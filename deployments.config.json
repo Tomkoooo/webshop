@@ -71,6 +71,26 @@
       "defaultTemplateId": "keramia-fogfeherites",
       "enabledPlugins": [],
       "pluginConfig": {}
+    },
+    {
+      "key": "eventstructure",
+      "label": "Event Structure",
+      "allowedTemplates": ["eventstructure"],
+      "defaultTemplateId": "eventstructure",
+      "enabledPlugins": [],
+      "pluginConfig": {}
+    },
+    {
+      "key": "world-darts-festival",
+      "label": "World Darts Festival",
+      "allowedTemplates": ["world-darts-festival"],
+      "defaultTemplateId": "world-darts-festival",
+      "enabledPlugins": ["t-book"],
+      "pluginConfig": {
+        "t-book": {
+          "currency": "HUF"
+        }
+      }
     }
   ],
   "hostMap": {

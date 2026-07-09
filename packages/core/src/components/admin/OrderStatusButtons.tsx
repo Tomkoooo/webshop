@@ -27,7 +27,7 @@ type OrderStatusButtonsProps = {
 
 function statusButtonClasses(status: (typeof STATUSES)[number], isActive: boolean) {
   if (!isActive) {
-    return "border-white/5 text-neutral-500 hover:text-white hover:bg-white/5"
+    return "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
   }
   switch (status.color) {
     case "amber":
@@ -41,7 +41,7 @@ function statusButtonClasses(status: (typeof STATUSES)[number], isActive: boolea
     case "rose":
       return "border-rose-500 bg-rose-500/20 text-rose-500 shadow-lg shadow-rose-500/10"
     default:
-      return "border-white/10 bg-white/5 text-neutral-500"
+      return "border-border bg-muted/50 text-muted-foreground"
   }
 }
 
@@ -74,7 +74,7 @@ export function OrderStatusButtons({ orderId, currentStatus, onUpdated }: OrderS
     <div className="space-y-3">
       {isUpdating ? (
         <p
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 animate-pulse"
+          className="flex items-center gap-2 text-xs font-medium text-muted-foreground text-muted-foreground animate-pulse"
           role="status"
           aria-live="polite"
         >
@@ -101,7 +101,7 @@ export function OrderStatusButtons({ orderId, currentStatus, onUpdated }: OrderS
               disabled={isUpdating}
               onClick={() => void handleStatusClick(status.value)}
               className={cn(
-                "w-full h-14 rounded-none border text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                "w-full h-14 rounded-md border text-xs font-medium text-muted-foreground transition-all duration-300",
                 statusButtonClasses(status, isActive),
                 isLoadingThis && "ring-1 ring-white/30"
               )}

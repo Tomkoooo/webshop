@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Printer } from "lucide-react";
 import { Button } from "@wse/core/components/ui/button";
+import { Card, CardContent } from "@wse/core/components/ui/card";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import type { ParcelLockerProvider } from "@wse/core/lib/parcel-locker";
 import { orderNeedsParcelLabel } from "@wse/core/lib/parcel-locker";
+import { adminFieldHint } from "@wse/core/lib/admin-ui";
 
 type GlsParcelPoint = {
   id?: string;
@@ -95,12 +97,12 @@ function GenerateLabelButton({
           if (result.success) onUpdated?.();
         });
       }}
-      className="h-10 admin-action-outline rounded-none uppercase tracking-widest text-[10px] font-black"
+      className="h-10"
     >
       {isPending ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
-        <Printer className="w-4 h-4 mr-2" />
+        <Printer className="mr-2 h-4 w-4" />
       )}
       {isPending ? pendingLabel : label}
     </Button>
@@ -134,151 +136,142 @@ export function OrderParcelPanel({
 
   if (provider === "gls") {
     return (
-      <div className="rounded border border-white/10 bg-black/40 p-4 space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-widest admin-text-accent">GLS</p>
-        <p className="text-[11px] text-neutral-300">
-          <span className="text-white">{glsParcelPoint?.name}</span>
-          {glsParcelPoint?.id ? (
-            <span className="block text-neutral-500 mt-1">ID: {glsParcelPoint.id}</span>
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <p className="text-sm font-medium text-foreground">GLS</p>
+          <p className="text-sm text-foreground">
+            <span>{glsParcelPoint?.name}</span>
+            {glsParcelPoint?.id ? (
+              <span className="mt-1 block text-muted-foreground">ID: {glsParcelPoint.id}</span>
+            ) : null}
+          </p>
+          {glsParcelPoint?.contact ? (
+            <p className={adminFieldHint}>
+              {glsParcelPoint.contact.postalCode} {glsParcelPoint.contact.city}{" "}
+              {glsParcelPoint.contact.address}
+            </p>
+          ) : null}
+          {parcelManagerEnabled && glsParcelPoint?.id ? (
+            <GenerateLabelButton
+              label="GLS címke generálása"
+              pendingLabel="GLS címke készül..."
+              onGenerate={generateGlsAction}
+              onResult={setLastResult}
+              onUpdated={onUpdated}
+            />
+          ) : null}
+          {successMessage ? (
+            <p className="text-sm text-emerald-800">{successMessage}</p>
+          ) : null}
+          {glsLabel?.parcelNumber ? (
+            <div className="space-y-1 text-sm text-foreground">
+              <p>
+                Csomagszám: <span className="font-medium">{glsLabel.parcelNumber}</span>
+              </p>
+              {glsLabel.generatedAt ? (
+                <p>
+                  Generálva:{" "}
+                  <span className="font-medium">
+                    {format(new Date(glsLabel.generatedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
+                  </span>
+                </p>
+              ) : null}
+              {glsLabel.labelUrl ? (
+                <a
+                  href={glsLabel.labelUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex text-primary hover:underline"
+                >
+                  Címke megnyitása
+                </a>
+              ) : null}
+            </div>
+          ) : needsLabel ? (
+            <p className="text-sm text-amber-800">Címke hiányzik</p>
+          ) : null}
+          {glsError ? (
+            <p className="text-sm text-rose-600">GLS hiba: {glsError}</p>
+          ) : null}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <p className="text-sm font-medium text-foreground">Foxpost</p>
+        <p className="text-sm text-foreground">
+          <span>{foxpostParcelPoint?.name}</span>
+          {foxpostParcelPoint?.id ? (
+            <span className="mt-1 block text-muted-foreground">Automata: {foxpostParcelPoint.id}</span>
           ) : null}
         </p>
-        {glsParcelPoint?.contact ? (
-          <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
-            {glsParcelPoint.contact.postalCode} {glsParcelPoint.contact.city}{" "}
-            {glsParcelPoint.contact.address}
-          </p>
+        <p className={adminFieldHint}>
+          {foxpostParcelPoint?.zip} {foxpostParcelPoint?.city} {foxpostParcelPoint?.address}
+        </p>
+        {foxpostParcelPoint?.findme ? (
+          <p className="text-xs text-muted-foreground">{foxpostParcelPoint.findme}</p>
         ) : null}
-        {parcelManagerEnabled && glsParcelPoint?.id ? (
+        {foxpostParcelPoint?.load ? (
+          <p className="text-xs text-muted-foreground">Telítettség: {foxpostParcelPoint.load}</p>
+        ) : null}
+        {parcelManagerEnabled && foxpostParcelPoint?.id ? (
           <GenerateLabelButton
-            label="GLS címke generálása"
-            pendingLabel="GLS címke készül..."
-            onGenerate={generateGlsAction}
+            label="Foxpost csomag + címke"
+            pendingLabel="Foxpost címke készül..."
+            onGenerate={generateFoxpostAction}
             onResult={setLastResult}
             onUpdated={onUpdated}
           />
         ) : null}
         {successMessage ? (
-          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-            {successMessage}
-          </p>
+          <p className="text-sm text-emerald-800">{successMessage}</p>
         ) : null}
-        {glsLabel?.parcelNumber ? (
-          <div className="text-[10px] font-black uppercase tracking-widest text-neutral-300 space-y-1">
+        {foxpostShipment?.clFoxId ? (
+          <div className="space-y-1 text-sm text-foreground">
             <p>
-              Csomagszám: <span className="text-white">{glsLabel.parcelNumber}</span>
+              CLFOX: <span className="font-medium">{foxpostShipment.clFoxId}</span>
             </p>
-            {glsLabel.generatedAt ? (
+            {foxpostShipment.refCode ? (
+              <p>
+                Ref: <span className="font-medium">{foxpostShipment.refCode}</span>
+              </p>
+            ) : null}
+            {foxpostShipment.trackingStatus ? (
+              <p>
+                Státusz: <span className="font-medium">{foxpostShipment.trackingStatus}</span>
+              </p>
+            ) : null}
+            {foxpostShipment.generatedAt ? (
               <p>
                 Generálva:{" "}
-                <span className="text-white">
-                  {format(new Date(glsLabel.generatedAt), "yyyy. MMMM dd. HH:mm", { locale: hu })}
+                <span className="font-medium">
+                  {format(new Date(foxpostShipment.generatedAt), "yyyy. MMMM dd. HH:mm", {
+                    locale: hu,
+                  })}
                 </span>
               </p>
             ) : null}
-            {glsLabel.labelUrl ? (
+            {foxpostShipment.labelUrl ? (
               <a
-                href={glsLabel.labelUrl}
+                href={foxpostShipment.labelUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex admin-link-accent"
+                className="inline-flex text-primary hover:underline"
               >
                 Címke megnyitása
               </a>
             ) : null}
           </div>
         ) : needsLabel ? (
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-            Címke hiányzik
-          </p>
+          <p className="text-sm text-amber-800">Csomag/címke hiányzik</p>
         ) : null}
-        {glsError ? (
-          <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
-            GLS hiba: {glsError}
-          </p>
+        {foxpostError ? (
+          <p className="text-sm text-rose-600">Foxpost hiba: {foxpostError}</p>
         ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded border border-white/10 bg-black/40 p-4 space-y-3">
-      <p className="text-[10px] font-black uppercase tracking-widest admin-text-accent">Foxpost</p>
-      <p className="text-[11px] text-neutral-300">
-        <span className="text-white">{foxpostParcelPoint?.name}</span>
-        {foxpostParcelPoint?.id ? (
-          <span className="block text-neutral-500 mt-1">Automata: {foxpostParcelPoint.id}</span>
-        ) : null}
-      </p>
-      <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
-        {foxpostParcelPoint?.zip} {foxpostParcelPoint?.city} {foxpostParcelPoint?.address}
-      </p>
-      {foxpostParcelPoint?.findme ? (
-        <p className="text-[10px] text-neutral-500">{foxpostParcelPoint.findme}</p>
-      ) : null}
-      {foxpostParcelPoint?.load ? (
-        <p className="text-[10px] text-neutral-500">Telítettség: {foxpostParcelPoint.load}</p>
-      ) : null}
-      {parcelManagerEnabled && foxpostParcelPoint?.id ? (
-        <GenerateLabelButton
-          label="Foxpost csomag + címke"
-          pendingLabel="Foxpost címke készül..."
-          onGenerate={generateFoxpostAction}
-          onResult={setLastResult}
-          onUpdated={onUpdated}
-        />
-      ) : null}
-      {successMessage ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-          {successMessage}
-        </p>
-      ) : null}
-      {foxpostShipment?.clFoxId ? (
-        <div className="text-[10px] font-black uppercase tracking-widest text-neutral-300 space-y-1">
-          <p>
-            CLFOX: <span className="text-white">{foxpostShipment.clFoxId}</span>
-          </p>
-          {foxpostShipment.refCode ? (
-            <p>
-              Ref: <span className="text-white">{foxpostShipment.refCode}</span>
-            </p>
-          ) : null}
-          {foxpostShipment.trackingStatus ? (
-            <p>
-              Státusz: <span className="text-white">{foxpostShipment.trackingStatus}</span>
-            </p>
-          ) : null}
-          {foxpostShipment.generatedAt ? (
-            <p>
-              Generálva:{" "}
-              <span className="text-white">
-                {format(new Date(foxpostShipment.generatedAt), "yyyy. MMMM dd. HH:mm", {
-                  locale: hu,
-                })}
-              </span>
-            </p>
-          ) : null}
-          {foxpostShipment.labelUrl ? (
-            <a
-              href={foxpostShipment.labelUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex admin-link-accent"
-            >
-              Címke megnyitása
-            </a>
-          ) : null}
-        </div>
-      ) : needsLabel ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-          Csomag/címke hiányzik
-        </p>
-      ) : null}
-      {foxpostError ? (
-        <p className="text-[10px] font-black uppercase tracking-widest text-rose-400">
-          Foxpost hiba: {foxpostError}
-        </p>
-      ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
-

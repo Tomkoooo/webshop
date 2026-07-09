@@ -17,6 +17,86 @@ export function slugifyHotelKey(value: string): string {
     .replace(/^_+|_+$/g, "")
 }
 
+function uniqueKey(base: string, used: Set<string>, fallback: string): string {
+  const slug = slugifyHotelKey(base) || fallback
+  if (!used.has(slug)) {
+    used.add(slug)
+    return slug
+  }
+  let index = 2
+  while (used.has(`${slug}_${index}`)) index += 1
+  const key = `${slug}_${index}`
+  used.add(key)
+  return key
+}
+
+function resolveKey(
+  label: string,
+  currentKey: string | undefined,
+  used: Set<string>,
+  fallback: string
+): string {
+  if (currentKey && /^[a-z0-9_]+$/.test(currentKey) && !used.has(currentKey)) {
+    used.add(currentKey)
+    return currentKey
+  }
+  return uniqueKey(label, used, fallback)
+}
+
+function resolveChoiceValue(
+  label: string,
+  currentValue: string | undefined,
+  used: Set<string>,
+  fallback: string
+): string {
+  if (currentValue && /^[a-z0-9_]+$/.test(currentValue) && !used.has(currentValue)) {
+    used.add(currentValue)
+    return currentValue
+  }
+  return uniqueKey(label, used, fallback)
+}
+
+/**
+ * Assigns stable internal keys from labels before save. Moderators only edit
+ * names; keys are generated automatically and kept unique within a hotel.
+ */
+export function assignPricingKeys(pricing: TBookHotelPricing): TBookHotelPricing {
+  const roomKeys = new Set<string>()
+  const roomTypes = pricing.roomTypes.map((room, index) => ({
+    ...room,
+    key: resolveKey(room.label, room.key, roomKeys, `room_${index + 1}`),
+  }))
+
+  const groupKeys = new Set<string>()
+  const optionKeys = new Set<string>()
+
+  const addonGroups = pricing.addonGroups.map((group, groupIndex) => {
+    const groupKey = resolveKey(group.label, group.key, groupKeys, `section_${groupIndex + 1}`)
+    const options = group.options.map((option, optionIndex) => {
+      const optionKey = resolveKey(
+        option.label,
+        option.key,
+        optionKeys,
+        `field_${groupIndex + 1}_${optionIndex + 1}`
+      )
+      const choiceValues = new Set<string>()
+      const choices = option.choices?.map((choice, choiceIndex) => ({
+        ...choice,
+        value: resolveChoiceValue(
+          choice.label,
+          choice.value,
+          choiceValues,
+          `choice_${choiceIndex + 1}`
+        ),
+      }))
+      return { ...option, key: optionKey, choices }
+    })
+    return { ...group, key: groupKey, options }
+  })
+
+  return { ...pricing, roomTypes, addonGroups }
+}
+
 /** Normalizes legacy flat `baseRate + options[]` into room types + grouped add-ons. */
 export function normalizeHotelPricing(raw: TBookHotelPricing): TBookHotelPricing {
   if (raw.roomTypes?.length) {

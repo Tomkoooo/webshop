@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -92,13 +93,10 @@ export function FlowShellVisualSurfaceEditor({
   }))
 
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400 mb-2">Folyamat oldal felirat</p>
-      <p className="text-xs text-neutral-500">
-        A működő kosár/pénztár/fiók UI előnézet a lenti ablakban. A fejléc szövege szerkeszthető közvetlenül
-        az oldalon.
-      </p>
-    </div>
+    <CmsEditorSubtoolbar
+      title="Folyamat oldal felirat"
+      description="A működő kosár/pénztár/fiók UI előnézet a lenti ablakban. A fejléc szövege szerkeszthető közvetlenül az oldalon."
+    />
   )
 
   return (

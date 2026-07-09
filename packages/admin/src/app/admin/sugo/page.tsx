@@ -31,6 +31,7 @@ export default async function AdminSugoPage() {
   const sections = await loadVisibleGuideSections(ctx)
 
   const campBookingEnabled = enabledPluginIds.has("camp-booking")
+  const tBookEnabled = enabledPluginIds.has("t-book")
   const cmsTablesBySectionId = new Map<string, string>()
 
   await Promise.all(
@@ -38,7 +39,7 @@ export default async function AdminSugoPage() {
       const sectionId = TEMPLATE_SECTION_IDS[templateId]
       if (!sectionId) return
       const template = await loadTemplateModule(templateId)
-      const pages = listEditablePages(template, shopEnabled, campBookingEnabled)
+      const pages = listEditablePages(template, shopEnabled, campBookingEnabled, tBookEnabled)
       cmsTablesBySectionId.set(sectionId, buildCmsPagesMarkdownTable(editablePagesToRows(pages)))
     })
   )

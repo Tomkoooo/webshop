@@ -28,23 +28,23 @@ function ApiKeyRevealDialog({
 }) {
   return (
     <Dialog open={Boolean(apiKey)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-black border-white/10 text-white sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>API kulcs</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <p className="text-sm text-amber-300">
+          <p className="text-sm text-amber-800">
             Ez a kulcs csak most látható — mentsd el biztonságos helyre. A rendszer csak a
             hash-ét tárolja.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm break-all">
+            <code className="flex-1 rounded-lg bg-muted px-3 py-2 text-sm break-all">
               {apiKey}
             </code>
             <Button
               type="button"
               variant="outline"
-              className="border-white/10 text-white shrink-0"
+              className="shrink-0"
               onClick={() => {
                 if (apiKey) void navigator.clipboard.writeText(apiKey)
                 toast.success("Kulcs vágólapra másolva")
@@ -110,7 +110,7 @@ export function GroupsAdmin() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <TBookPageHeader
         title="Eseménycsoportok"
-        description="Csoportonként külön API kulcs, közös szállások és események."
+        description="Csoportonként külön API-kulcs, közös szállások és események. A tBook listához a csoport beállításainál add meg a linket és képet."
         actions={
           <TBookPrimaryButton asChild>
             <Link href="/admin/plugins/t-book/groups/new">+ Új csoport</Link>
@@ -127,11 +127,11 @@ export function GroupsAdmin() {
           {groups.map((g) => (
             <li
               key={g.id}
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
             >
               <Link href={`/admin/plugins/t-book/groups/${g.id}`} className="min-w-0 flex-1 group">
                 <div className="flex items-center gap-3">
-                  <p className="font-bold text-white truncate group-hover:text-amber-200 transition-colors">
+                  <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                     {g.name}
                   </p>
                   <TBookStatusBadge status={g.status} labels={TBOOK_STATUS_LABELS} />
@@ -142,28 +142,29 @@ export function GroupsAdmin() {
                     dangerouslySetInnerHTML={{ __html: g.description }}
                   />
                 ) : null}
-                <p className="text-xs text-neutral-600 mt-2 font-mono">
-                  API: {g.apiKeyHint} · {g.defaultBookingOptions?.length ?? 0} csoport-opció ·{" "}
-                  {g.defaultVatPercent ?? 27}% ÁFA
+                <p className="text-xs text-muted-foreground mt-2 font-mono">
+                  API: {g.apiKeyHint}
+                  {g.listOnTBookSite ? " · tBook listán" : ""}
+                  {g.listingUrl ? ` · ${g.listingUrl}` : ""}
                 </p>
               </Link>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Link
                   href={`/admin/plugins/t-book/groups/${g.id}`}
-                  className="inline-flex h-9 items-center px-3 border border-amber-500/30 rounded-lg text-amber-200 text-xs font-bold hover:bg-amber-500/10"
+                  className="inline-flex h-9 items-center px-3 rounded-lg border border-primary/30 text-primary text-xs font-medium hover:bg-primary/5"
                 >
                   Megnyitás →
                 </Link>
                 <Link
                   href={`/admin/plugins/t-book/groups/${g.id}/edit`}
-                  className="inline-flex h-9 items-center px-3 border border-white/10 rounded-lg text-white text-xs font-bold hover:bg-white/5"
+                  className="inline-flex h-9 items-center px-3 rounded-lg border border-border text-xs font-medium hover:bg-muted"
                 >
                   Beállítások
                 </Link>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 border-white/10 text-white text-xs font-bold"
+                  className="h-9 text-xs"
                   onClick={() => void rotateKey(g)}
                 >
                   Új API kulcs

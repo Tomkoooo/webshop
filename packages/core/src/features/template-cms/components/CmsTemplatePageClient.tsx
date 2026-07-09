@@ -1,6 +1,18 @@
 "use client"
 
-import { VisualHomepageEditor } from "@wse/core/features/homepage-cms/components/editor/VisualHomepageEditor"
+import dynamic from "next/dynamic"
+import { CmsEditorLoading } from "@wse/core/features/template-cms/components/CmsEditorLoading"
+import type { VisualHomepageEditor } from "@wse/core/features/homepage-cms/components/editor/VisualHomepageEditor"
+
+const VisualHomepageEditorLazy = dynamic(
+  () =>
+    import("@wse/core/features/homepage-cms/components/editor/VisualHomepageEditor").then(
+      (mod) => mod.VisualHomepageEditor
+    ),
+  {
+    loading: () => <CmsEditorLoading label="Főoldal szerkesztő betöltése…" />,
+  }
+)
 
 /** Homepage block CMS entry: delegates to {@link VisualHomepageEditor}. */
 export type CmsTemplatePageClientProps = Parameters<typeof VisualHomepageEditor>[0] & {
@@ -9,5 +21,5 @@ export type CmsTemplatePageClientProps = Parameters<typeof VisualHomepageEditor>
 }
 
 export function CmsTemplatePageClient({ hydrationKey, ...props }: CmsTemplatePageClientProps) {
-  return <VisualHomepageEditor key={hydrationKey} {...props} />
+  return <VisualHomepageEditorLazy key={hydrationKey} {...props} />
 }

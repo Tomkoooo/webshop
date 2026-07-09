@@ -4,18 +4,12 @@ import Media from "@wse/core/models/Media"
 import { mediaBufferFromDoc } from "@wse/core/lib/media-buffer"
 import type { MediaFilePayload } from "@wse/core/services/media"
 
-const MEDIA_CACHE_TTL_MS = 1000 * 60 * 5
-const MEDIA_CACHE_MAX_ENTRIES = 100
-const mediaPayloadCache = new Map<string, { expiresAt: number; payload: MediaFilePayload }>()
+/** Media rows are immutable once stored — cache payloads for the process lifetime. */
+const MEDIA_CACHE_MAX_ENTRIES = 500
+const mediaPayloadCache = new Map<string, MediaFilePayload>()
 
 function getCachedPayload(filename: string): MediaFilePayload | null {
-  const cached = mediaPayloadCache.get(filename)
-  if (!cached) return null
-  if (Date.now() >= cached.expiresAt) {
-    mediaPayloadCache.delete(filename)
-    return null
-  }
-  return cached.payload
+  return mediaPayloadCache.get(filename) ?? null
 }
 
 function setCachedPayload(filename: string, payload: MediaFilePayload) {
@@ -23,10 +17,7 @@ function setCachedPayload(filename: string, payload: MediaFilePayload) {
     const oldest = mediaPayloadCache.keys().next().value
     if (oldest) mediaPayloadCache.delete(oldest)
   }
-  mediaPayloadCache.set(filename, {
-    expiresAt: Date.now() + MEDIA_CACHE_TTL_MS,
-    payload,
-  })
+  mediaPayloadCache.set(filename, payload)
 }
 
 function guessMimeFromExt(ext: string): string {
@@ -61,7 +52,7 @@ export async function getMediaFilePayload(filename: string): Promise<MediaFilePa
     buffer,
     mimeType: doc.mimeType || guessMimeFromExt(path.extname(safe)),
     size: buffer.length,
-    etag: `"${safe}-${doc.size || buffer.length}-${new Date(doc.updatedAt).getTime()}"`,
+    etag: `"media-${safe}"`,
     lastModified: doc.updatedAt,
   }
   setCachedPayload(safe, payload)

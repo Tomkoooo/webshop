@@ -6,7 +6,10 @@ import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
+import { Card, CardContent } from "@wse/core/components/ui/card"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
 import { cn } from "@wse/core/lib/utils"
+import { adminFieldLabel, adminInputClass } from "@wse/core/lib/admin-ui"
 import type { ProductSuggestionSettings, SuggestionSource } from "@wse/core/lib/product-suggestion-settings-schema"
 import { FixedProductsSourcePicker } from "@wse/core/components/admin/FixedProductsSourcePicker"
 
@@ -83,7 +86,7 @@ export function ProductSuggestionsAdminForm({
   }
 
   return (
-    <div className="space-y-10 max-w-3xl">
+    <div className="max-w-3xl space-y-8">
       <div className="flex items-center gap-3">
         <input
           id="ps-enabled"
@@ -92,7 +95,7 @@ export function ProductSuggestionsAdminForm({
           checked={settings.enabled}
           onChange={(e) => setSettings((s) => ({ ...s, enabled: e.target.checked }))}
         />
-        <Label htmlFor="ps-enabled" className="text-white font-black uppercase tracking-widest text-xs cursor-pointer">
+        <Label htmlFor="ps-enabled" className={cn(adminFieldLabel, "cursor-pointer")}>
           Javaslatok bekapcsolva
         </Label>
       </div>
@@ -109,34 +112,32 @@ export function ProductSuggestionsAdminForm({
         <Label
           htmlFor="ps-show-cart"
           className={cn(
-            "font-black uppercase tracking-widest text-xs cursor-pointer",
-            settings.enabled ? "text-white" : "text-neutral-600 cursor-not-allowed"
+            adminFieldLabel,
+            "cursor-pointer",
+            !settings.enabled && "cursor-not-allowed text-muted-foreground"
           )}
         >
           Kosár tételeinek megjelenítése a modálban (pénztár előtt)
         </Label>
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-neutral-400 text-[10px] font-black uppercase tracking-widest">Modál címe</Label>
+      <AdminFormField label="Modál címe">
         <Input
           value={settings.modalTitle ?? ""}
           onChange={(e) => setSettings((s) => ({ ...s, modalTitle: e.target.value }))}
-          className="rounded-none border-white/10 bg-white/5 text-white"
+          className={adminInputClass}
         />
-      </div>
+      </AdminFormField>
 
-      <div className="space-y-2">
-        <Label className="text-neutral-400 text-[10px] font-black uppercase tracking-widest">Segéd szöveg</Label>
+      <AdminFormField label="Segéd szöveg">
         <Input
           value={settings.modalHelper ?? ""}
           onChange={(e) => setSettings((s) => ({ ...s, modalHelper: e.target.value }))}
-          className="rounded-none border-white/10 bg-white/5 text-white"
+          className={adminInputClass}
         />
-      </div>
+      </AdminFormField>
 
-      <div className="space-y-2">
-        <Label className="text-neutral-400 text-[10px] font-black uppercase tracking-widest">Max. javaslat (modálban)</Label>
+      <AdminFormField label="Max. javaslat (modálban)">
         <Input
           type="number"
           min={1}
@@ -145,18 +146,17 @@ export function ProductSuggestionsAdminForm({
           onChange={(e) =>
             setSettings((s) => ({ ...s, maxSuggestions: Math.min(24, Math.max(1, Number(e.target.value) || 1)) }))
           }
-          className="rounded-none border-white/10 bg-white/5 text-white w-32"
+          className={cn(adminInputClass, "w-32")}
         />
-      </div>
+      </AdminFormField>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-white font-black uppercase tracking-widest text-xs">Források (sorrendben egyesítve)</Label>
+          <p className={adminFieldLabel}>Források (sorrendben egyesítve)</p>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-none border-white/10 text-white text-[10px] font-black uppercase"
             onClick={() =>
               setSettings((s) => ({
                 ...s,
@@ -164,186 +164,186 @@ export function ProductSuggestionsAdminForm({
               }))
             }
           >
-            <Plus className="w-4 h-4 mr-1" /> Szabály
+            <Plus className="mr-1 h-4 w-4" /> Szabály
           </Button>
         </div>
 
         {settings.sources.length === 0 ? (
-          <p className="text-sm text-neutral-500">Nincs szabály — a pénztár felé nem jelenik meg modál.</p>
+          <p className="text-sm text-muted-foreground">Nincs szabály — a pénztár felé nem jelenik meg modál.</p>
         ) : (
-          <ul className="space-y-6">
+          <ul className="space-y-4">
             {settings.sources.map((src, index) => (
-              <li key={index} className="glass-card border-white/10 p-6 space-y-4">
-                <div className="flex flex-wrap gap-3 items-end justify-between">
-                  <div className="space-y-2 grow min-w-[200px]">
-                    <Label className="text-neutral-500 text-[10px] font-black uppercase">Típus</Label>
-                    <select
-                      className="w-full h-10 px-3 rounded-none border border-white/10 bg-[#0A0A0B] text-white text-sm"
-                      value={src.type}
-                      onChange={(e) => {
-                        const t = e.target.value as SuggestionSource["type"]
-                        updateSource(index, emptySource(t))
-                      }}
-                    >
-                      {SOURCE_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                      {t === "random_catalog" && "Véletlen — a teljes bolt"}
-                      {t === "random_price_range" && "Véletlen — nettó ár között"}
-                      {t === "category" && "Egy kategória termékei"}
-                      {t === "fixed_products" && "Kézzel kiválasztott termékek"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-rose-500 hover:bg-rose-500/10 shrink-0"
-                    onClick={() =>
-                      setSettings((s) => ({
-                        ...s,
-                        sources: s.sources.filter((_, i) => i !== index),
-                      }))
-                    }
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                {src.type === "random_catalog" && (
-                  <div className="space-y-2">
-                    <Label className="text-neutral-500 text-[10px] font-black uppercase">Darab ebből a szabályból (üres = automatikus arány)</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      placeholder="auto"
-                      value={src.take ?? ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        updateSource(
-                          index,
-                          v === ""
-                            ? { type: "random_catalog" }
-                            : { type: "random_catalog", take: Math.min(50, Math.max(1, Number(v) || 1)) }
-                        )
-                      }}
-                      className="rounded-none border-white/10 bg-white/5 text-white w-32"
-                    />
-                  </div>
-                )}
-
-                {src.type === "random_price_range" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-neutral-500 text-[10px] font-black uppercase">Min. nettó (Ft)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={src.minNet}
-                        onChange={(e) =>
-                          updateSource(index, {
-                            ...src,
-                            minNet: Math.max(0, Number(e.target.value) || 0),
-                          })
+              <li key={index}>
+                <Card>
+                  <CardContent className="space-y-4 p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <AdminFormField label="Típus" className="min-w-[200px] grow">
+                        <select
+                          className={adminInputClass}
+                          value={src.type}
+                          onChange={(e) => {
+                            const t = e.target.value as SuggestionSource["type"]
+                            updateSource(index, emptySource(t))
+                          }}
+                        >
+                          {SOURCE_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {t === "random_catalog" && "Véletlen — a teljes bolt"}
+                              {t === "random_price_range" && "Véletlen — nettó ár között"}
+                              {t === "category" && "Egy kategória termékei"}
+                              {t === "fixed_products" && "Kézzel kiválasztott termékek"}
+                            </option>
+                          ))}
+                        </select>
+                      </AdminFormField>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-rose-500 hover:bg-rose-500/10"
+                        onClick={() =>
+                          setSettings((s) => ({
+                            ...s,
+                            sources: s.sources.filter((_, i) => i !== index),
+                          }))
                         }
-                        className="rounded-none border-white/10 bg-white/5 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-neutral-500 text-[10px] font-black uppercase">Max. nettó (Ft)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={src.maxNet}
-                        onChange={(e) =>
-                          updateSource(index, {
-                            ...src,
-                            maxNet: Math.max(0, Number(e.target.value) || 0),
-                          })
-                        }
-                        className="rounded-none border-white/10 bg-white/5 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-neutral-500 text-[10px] font-black uppercase">Darab (opcionális)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={50}
-                        placeholder="auto"
-                        value={src.take ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          updateSource(
-                            index,
-                            v === ""
-                              ? { type: "random_price_range", minNet: src.minNet, maxNet: src.maxNet }
-                              : {
-                                  type: "random_price_range",
-                                  minNet: src.minNet,
-                                  maxNet: src.maxNet,
-                                  take: Math.min(50, Math.max(1, Number(v) || 1)),
-                                }
-                          )
-                        }}
-                        className="rounded-none border-white/10 bg-white/5 text-white"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {src.type === "category" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-neutral-500 text-[10px] font-black uppercase">Kategória</Label>
-                      <select
-                        className="w-full h-10 px-3 rounded-none border border-white/10 bg-[#0A0A0B] text-white text-sm"
-                        value={src.categoryId}
-                        onChange={(e) => updateSource(index, { ...src, categoryId: e.target.value })}
                       >
-                        <option value="">— válassz —</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {"—".repeat(c.depth)} {c.name}
-                          </option>
-                        ))}
-                      </select>
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-neutral-500 text-[10px] font-black uppercase">Darab (opcionális)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={50}
-                        placeholder="auto"
-                        value={src.take ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          updateSource(
-                            index,
-                            v === ""
-                              ? { type: "category", categoryId: src.categoryId }
-                              : {
-                                  type: "category",
-                                  categoryId: src.categoryId,
-                                  take: Math.min(50, Math.max(1, Number(v) || 1)),
-                                }
-                          )
-                        }}
-                        className="rounded-none border-white/10 bg-white/5 text-white"
-                      />
-                    </div>
-                  </div>
-                )}
 
-                {src.type === "fixed_products" && (
-                  <FixedProductsSourcePicker
-                    productIds={src.productIds}
-                    onChange={(ids) => updateSource(index, { type: "fixed_products", productIds: ids })}
-                  />
-                )}
+                    {src.type === "random_catalog" && (
+                      <AdminFormField
+                        label="Darab ebből a szabályból"
+                        hint="Üres = automatikus arány"
+                      >
+                        <Input
+                          type="number"
+                          min={1}
+                          max={50}
+                          placeholder="auto"
+                          value={src.take ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            updateSource(
+                              index,
+                              v === ""
+                                ? { type: "random_catalog" }
+                                : { type: "random_catalog", take: Math.min(50, Math.max(1, Number(v) || 1)) }
+                            )
+                          }}
+                          className={cn(adminInputClass, "w-32")}
+                        />
+                      </AdminFormField>
+                    )}
+
+                    {src.type === "random_price_range" && (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <AdminFormField label="Min. nettó (Ft)">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={src.minNet}
+                            onChange={(e) =>
+                              updateSource(index, {
+                                ...src,
+                                minNet: Math.max(0, Number(e.target.value) || 0),
+                              })
+                            }
+                            className={adminInputClass}
+                          />
+                        </AdminFormField>
+                        <AdminFormField label="Max. nettó (Ft)">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={src.maxNet}
+                            onChange={(e) =>
+                              updateSource(index, {
+                                ...src,
+                                maxNet: Math.max(0, Number(e.target.value) || 0),
+                              })
+                            }
+                            className={adminInputClass}
+                          />
+                        </AdminFormField>
+                        <AdminFormField label="Darab (opcionális)">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={50}
+                            placeholder="auto"
+                            value={src.take ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              updateSource(
+                                index,
+                                v === ""
+                                  ? { type: "random_price_range", minNet: src.minNet, maxNet: src.maxNet }
+                                  : {
+                                      type: "random_price_range",
+                                      minNet: src.minNet,
+                                      maxNet: src.maxNet,
+                                      take: Math.min(50, Math.max(1, Number(v) || 1)),
+                                    }
+                              )
+                            }}
+                            className={adminInputClass}
+                          />
+                        </AdminFormField>
+                      </div>
+                    )}
+
+                    {src.type === "category" && (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <AdminFormField label="Kategória">
+                          <select
+                            className={adminInputClass}
+                            value={src.categoryId}
+                            onChange={(e) => updateSource(index, { ...src, categoryId: e.target.value })}
+                          >
+                            <option value="">— válassz —</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {"—".repeat(c.depth)} {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </AdminFormField>
+                        <AdminFormField label="Darab (opcionális)">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={50}
+                            placeholder="auto"
+                            value={src.take ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              updateSource(
+                                index,
+                                v === ""
+                                  ? { type: "category", categoryId: src.categoryId }
+                                  : {
+                                      type: "category",
+                                      categoryId: src.categoryId,
+                                      take: Math.min(50, Math.max(1, Number(v) || 1)),
+                                    }
+                              )
+                            }}
+                            className={adminInputClass}
+                          />
+                        </AdminFormField>
+                      </div>
+                    )}
+
+                    {src.type === "fixed_products" && (
+                      <FixedProductsSourcePicker
+                        productIds={src.productIds}
+                        onChange={(ids) => updateSource(index, { type: "fixed_products", productIds: ids })}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
@@ -351,17 +351,15 @@ export function ProductSuggestionsAdminForm({
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
-        <Button
-          type="button"
-          variant="krausz"
-          className="h-12 px-8 rounded-none font-black uppercase tracking-widest text-xs"
-          disabled={saving}
-          onClick={() => void save()}
-        >
-          {saving ? <LoadingSpinner size="xs" className="mr-2 shrink-0" /> : <Save className="w-4 h-4 mr-2" />}
+        <Button type="button" disabled={saving} onClick={() => void save()}>
+          {saving ? <LoadingSpinner size="xs" className="mr-2 shrink-0" /> : <Save className="mr-2 h-4 w-4" />}
           Mentés
         </Button>
-        {message ? <span className={cn("text-sm", message === "Elmentve." ? "text-emerald-400" : "text-rose-400")}>{message}</span> : null}
+        {message ? (
+          <span className={cn("text-sm", message === "Elmentve." ? "text-emerald-800" : "text-rose-600")}>
+            {message}
+          </span>
+        ) : null}
       </div>
     </div>
   )

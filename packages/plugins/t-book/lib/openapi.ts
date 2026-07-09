@@ -57,6 +57,38 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
       schemas: {
         PriceQuote: quote,
         Selections: selections,
+        AttendeeField: {
+          type: "object",
+          properties: {
+            key: { type: "string" },
+            label: { type: "string" },
+            type: {
+              type: "string",
+              enum: ["text", "email", "phone", "number", "date", "select"],
+            },
+            required: { type: "boolean" },
+            helpText: { type: "string" },
+            choices: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: { value: { type: "string" }, label: { type: "string" } },
+              },
+            },
+            min: { type: "number" },
+            max: { type: "number" },
+          },
+        },
+        AttendeePayload: {
+          type: "object",
+          required: ["fields"],
+          properties: {
+            fields: {
+              type: "object",
+              additionalProperties: { oneOf: [{ type: "string" }, { type: "number" }] },
+            },
+          },
+        },
         Event: {
           type: "object",
           properties: {
@@ -77,6 +109,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
             ticketFeeHuf: { type: "number" },
             ticketFeeMode: { type: "string", enum: ["per_person", "per_booking"] },
             heroImage: { type: "string" },
+            attendeeFieldSchema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/AttendeeField" },
+              description:
+                "Eseményenként konfigurálható résztvevői mezők — minden jegyhez külön kitöltendő.",
+            },
           },
         },
         Hotel: {
@@ -202,6 +240,8 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                     guests: { type: "integer", minimum: 1 },
                     customer: {
                       type: "object",
+                      description:
+                        "Kapcsolattartó (fizető / szervező) — ezzel a személlyel tartják a kapcsolatot.",
                       required: ["name", "email", "phone"],
                       properties: {
                         name: { type: "string" },
@@ -209,6 +249,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                         phone: { type: "string" },
                         note: { type: "string" },
                       },
+                    },
+                    attendees: {
+                      type: "array",
+                      description:
+                        "Egy elem minden jegyhez / résztvevőhöz, ha az esemény `attendeeFieldSchema`-t definiál.",
+                      items: { $ref: "#/components/schemas/AttendeePayload" },
                     },
                     billing: {
                       type: ["object", "null"],

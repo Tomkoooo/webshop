@@ -11,6 +11,8 @@
     "./theme/theme-token-keys": "./src/theme/theme-token-keys.ts",
     "./theme/tokens": "./src/theme/tokens.ts",
     "./theme/*": "./src/theme/*.ts",
+    "./admin": "./src/admin/index.ts",
+    "./admin/*": "./src/admin/*.ts",
     "./contracts": "./src/contracts.ts"
   },
   "peerDependencies": {

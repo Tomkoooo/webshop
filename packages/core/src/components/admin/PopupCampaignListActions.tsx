@@ -30,7 +30,7 @@ export function PopupCampaignCreateButton() {
   }
 
   return (
-    <Button variant="krausz" className="h-12 px-6" onClick={create} disabled={loading}>
+    <Button variant="default" className="h-12 px-6" onClick={create} disabled={loading}>
       {loading ? <LoadingSpinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
       Új popup
     </Button>

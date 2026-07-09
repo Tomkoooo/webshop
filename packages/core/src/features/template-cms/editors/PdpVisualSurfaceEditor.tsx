@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
+import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -92,16 +96,19 @@ export function PdpVisualSurfaceEditor({
   }
 
   const toolbar = (
-    <div className="px-4 py-3 border-b border-white/10 bg-black/25 space-y-3">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-400">
-        {editorTitle}
-        {editorSubtitle ? ` · ${editorSubtitle}` : ""}
-      </p>
-      <div className="flex flex-wrap gap-4 items-end text-xs text-neutral-200">
-        <label className="space-y-1">
-          <span className="text-neutral-500">Bevezető helye</span>
+    <CmsEditorSubtoolbar
+      title={
+        <>
+          {editorTitle}
+          {editorSubtitle ? ` · ${editorSubtitle}` : ""}
+        </>
+      }
+    >
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Bevezető helye</Label>
           <select
-            className="h-9 rounded border border-white/15 bg-black/50 px-2"
+            className="h-9 rounded-md border-0 bg-background px-2 text-sm shadow-sm ring-1 ring-border/60"
             value={draft.introPlacement}
             onChange={(e) =>
               setPath("introPlacement", e.target.value as PdpContent["introPlacement"])
@@ -110,19 +117,19 @@ export function PdpVisualSurfaceEditor({
             <option value="aboveGrid">Rács felett</option>
             <option value="belowHero">Hős alatt</option>
           </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-neutral-500">Galéria</span>
+        </div>
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Galéria</Label>
           <select
-            className="h-9 rounded border border-white/15 bg-black/50 px-2"
+            className="h-9 rounded-md border-0 bg-background px-2 text-sm shadow-sm ring-1 ring-border/60"
             value={draft.galleryStyle}
             onChange={(e) => setPath("galleryStyle", e.target.value as PdpContent["galleryStyle"])}
           >
             <option value="thumbs">Bélyegképek</option>
             <option value="carousel">Körhinta</option>
           </select>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={draft.showRelatedProducts}
@@ -130,7 +137,7 @@ export function PdpVisualSurfaceEditor({
           />
           Kapcsolódó termékek
         </label>
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={draft.showRecentlyViewed}
@@ -140,24 +147,24 @@ export function PdpVisualSurfaceEditor({
         </label>
       </div>
       <div className="flex flex-wrap gap-3">
-        <label className="flex-1 min-w-[160px] space-y-1 text-xs">
-          <span className="text-neutral-500">Kosár gomb felirata</span>
-          <input
-            className="w-full h-9 rounded border border-white/15 bg-black/50 px-2 text-white"
+        <div className="min-w-[160px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>Kosár gomb felirata</Label>
+          <Input
+            className="h-9"
             value={draft.ctaLabel}
             onChange={(e) => setPath("ctaLabel", e.target.value)}
           />
-        </label>
-        <label className="flex-1 min-w-[160px] space-y-1 text-xs">
-          <span className="text-neutral-500">Elfogyott felirat</span>
-          <input
-            className="w-full h-9 rounded border border-white/15 bg-black/50 px-2 text-white"
+        </div>
+        <div className="min-w-[160px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>Elfogyott felirat</Label>
+          <Input
+            className="h-9"
             value={draft.outOfStockLabel}
             onChange={(e) => setPath("outOfStockLabel", e.target.value)}
           />
-        </label>
+        </div>
       </div>
-    </div>
+    </CmsEditorSubtoolbar>
   )
 
   const hasProduct = Boolean(pdpDeps.product)

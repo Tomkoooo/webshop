@@ -37,6 +37,8 @@ portainer.stack.yml
 portainer.stack.*.yml
 docker-compose.local.yml
 docker-compose.*.local.yml
+# Local deployment inventory (domains, GHCR tags, stacks — operator-maintained)
+deployments.registry.local.md
 
 .v1.env
 

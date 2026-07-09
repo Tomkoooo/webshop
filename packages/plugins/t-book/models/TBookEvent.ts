@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookStatus } from "../lib/schemas"
 import type { TBookPriceBasis } from "../lib/vat"
+import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 export interface ITBookEvent extends Document {
   /** Optional container group — events can also be standalone. */
@@ -23,6 +24,8 @@ export interface ITBookEvent extends Document {
   capacity: number | null
   soldGuestCount: number
   heroImage: string
+  /** Per-participant data fields collected at booking (name, age, nationality, etc.). */
+  attendeeFieldSchema: TBookAttendeeFieldDef[]
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -49,6 +52,37 @@ const TBookEventSchema = new Schema<ITBookEvent>(
     capacity: { type: Number, default: null },
     soldGuestCount: { type: Number, default: 0, min: 0 },
     heroImage: { type: String, default: "" },
+    attendeeFieldSchema: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true },
+            type: {
+              type: String,
+              enum: ["text", "email", "phone", "number", "date", "select"],
+              required: true,
+            },
+            required: { type: Boolean, default: false },
+            helpText: { type: String, default: "" },
+            choices: {
+              type: [
+                new Schema(
+                  { value: { type: String, required: true }, label: { type: String, required: true } },
+                  { _id: false }
+                ),
+              ],
+              default: undefined,
+            },
+            min: { type: Number },
+            max: { type: Number },
+            sortOrder: { type: Number, default: 0 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },
   },

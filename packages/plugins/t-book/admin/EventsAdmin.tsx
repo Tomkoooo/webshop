@@ -124,28 +124,28 @@ export function EventsAdmin({ path }: { path: string[] }) {
           {events.map((event, index) => (
             <li
               key={event.id}
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-white/10 rounded-2xl p-5 bg-white/5 hover:border-white/25 transition-colors"
+              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <p className="font-bold text-white">{event.name}</p>
+                  <p className="font-semibold text-foreground">{event.name}</p>
                   <TBookStatusBadge status={event.status} labels={TBOOK_STATUS_LABELS} />
                   {event.groupId ? (
                     <Link
                       href={`/admin/plugins/t-book/groups/${event.groupId}`}
-                      className="text-[11px] text-amber-300/80 border border-amber-500/20 rounded-full px-2 py-0.5 hover:bg-amber-500/10"
+                      className="text-xs text-amber-800/80 border border-amber-500/20 rounded-full px-2 py-0.5 hover:bg-amber-500/10"
                     >
                       {groupName(event.groupId)}
                     </Link>
                   ) : null}
                 </div>
-                <p className="text-xs text-neutral-500 mt-1.5">
+                <p className="text-xs text-muted-foreground mt-1.5">
                   {new Date(event.startDate).toLocaleDateString("hu-HU")} –{" "}
                   {new Date(event.endDate).toLocaleDateString("hu-HU")}
                   {event.location?.address ? ` · ${event.location.address}` : ""}
                 </p>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Jegy: <span className="text-white font-bold">{formatHuf(event.ticketFeeHuf)}</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Jegy: <span className="text-foreground font-semibold">{formatHuf(event.ticketFeeHuf)}</span>
                   {event.ticketPriceBasis === "net" ? " nettó" : " bruttó"}
                   {event.ticketFeeMode === "per_person" ? " / fő" : " / foglalás"}
                   {event.capacity != null ? ` · kapacitás: ${event.capacity} fő` : ""}
@@ -177,7 +177,7 @@ export function EventsAdmin({ path }: { path: string[] }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 border-white/10 text-white text-xs font-bold"
+                  className="h-9 text-xs"
                   onClick={() => {
                     setEditing(event)
                     setDialogOpen(true)
@@ -191,7 +191,7 @@ export function EventsAdmin({ path }: { path: string[] }) {
                       ? `/admin/plugins/t-book/groups/${event.groupId}/hotels`
                       : `/admin/plugins/t-book/events/${event.id}/hotels`
                   }
-                  className="text-xs font-bold uppercase tracking-widest admin-link-accent"
+                  className="text-xs font-medium admin-link-accent"
                 >
                   {event.groupId ? "Csoport szállások →" : "Szállások & árazás →"}
                 </Link>

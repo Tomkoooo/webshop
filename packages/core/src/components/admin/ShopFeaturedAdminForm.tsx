@@ -2,8 +2,12 @@
 
 import * as React from "react"
 import { Button } from "@wse/core/components/ui/button"
-import { Label } from "@wse/core/components/ui/label"
+import { Input } from "@wse/core/components/ui/input"
+import { Card, CardContent } from "@wse/core/components/ui/card"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
 import { cn } from "@wse/core/lib/utils"
+import { adminInputClass } from "@wse/core/lib/admin-ui"
 import { ProductPickerModal } from "@wse/core/features/homepage-cms/components/editor/ProductPickerModal"
 import type { ShopFeaturedSettings } from "@wse/core/services/shop-featured-settings"
 import type { FeaturedProductsMode } from "@wse/core/models/ShopFeaturedSetting"
@@ -93,16 +97,15 @@ export function ShopFeaturedAdminForm({ initial, categories }: ShopFeaturedAdmin
   }
 
   return (
-    <div className="max-w-3xl space-y-10 rounded-none border border-white/10 bg-white/[0.03] p-8 text-white">
-      <section className="space-y-4">
-        <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">Megjelenítési mód</p>
+    <div className="max-w-3xl space-y-8">
+      <AdminPanel title="Megjelenítési mód">
         <div className="space-y-2">
           {MODES.map((m) => (
             <label
               key={m.value}
               className={cn(
-                "flex cursor-pointer gap-3 border px-4 py-3 transition-colors",
-                mode === m.value ? "border-white/40 bg-white/10" : "border-white/15 hover:border-white/25"
+                "flex cursor-pointer gap-3 rounded-lg px-4 py-3 transition-colors",
+                mode === m.value ? "bg-muted shadow-sm ring-1 ring-primary/30" : "hover:bg-muted/50"
               )}
             >
               <input
@@ -113,174 +116,159 @@ export function ShopFeaturedAdminForm({ initial, categories }: ShopFeaturedAdmin
                 className="mt-1"
               />
               <span>
-                <span className="text-sm font-bold uppercase tracking-wider">{m.label}</span>
-                <span className="mt-1 block text-xs text-neutral-400">{m.hint}</span>
+                <span className="text-sm font-medium">{m.label}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{m.hint}</span>
               </span>
             </label>
           ))}
         </div>
-      </section>
+      </AdminPanel>
 
-      <section className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="max-items" className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-            Max. termék a főoldalon
-          </Label>
-          <input
+      <div className="grid gap-6 sm:grid-cols-2">
+        <AdminFormField label="Max. termék a főoldalon">
+          <Input
             id="max-items"
             type="number"
             min={1}
             max={48}
             value={maxItems}
             onChange={(e) => setMaxItems(Math.min(48, Math.max(1, Number(e.target.value) || 1)))}
-            className="h-10 w-full border border-white/15 bg-black/40 px-3 font-mono text-sm"
+            className={adminInputClass}
           />
-        </div>
+        </AdminFormField>
         {mode === "byCategory" ? (
-          <div className="space-y-2">
-            <Label htmlFor="per-cat" className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-              Max. / kategória (0 = nincs külön limit)
-            </Label>
-            <input
+          <AdminFormField label="Max. / kategória (0 = nincs külön limit)">
+            <Input
               id="per-cat"
               type="number"
               min={0}
               max={48}
               value={perCategoryLimit}
               onChange={(e) => setPerCategoryLimit(Math.max(0, Number(e.target.value) || 0))}
-              className="h-10 w-full border border-white/15 bg-black/40 px-3 font-mono text-sm"
+              className={adminInputClass}
             />
-          </div>
+          </AdminFormField>
         ) : null}
-      </section>
+      </div>
 
       {mode === "manual" ? (
-        <section className="space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">Terméklista (sorrend)</p>
-          <p className="text-sm text-neutral-400">
-            A fenti lista sorrendje = megjelenítési sorrend. Terméknél a „Kiemelt lista index” tovább finomítható
-            kategória módban.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setPickerOpen(true)}
-            className="rounded-none border-white/20 font-black uppercase tracking-widest"
-          >
+        <AdminPanel
+          title="Terméklista (sorrend)"
+          description="A fenti lista sorrendje = megjelenítési sorrend. Terméknél a „Kiemelt lista index” tovább finomítható kategória módban."
+        >
+          <Button type="button" variant="outline" onClick={() => setPickerOpen(true)}>
             Termékek kiválasztása
           </Button>
-          <ol className="space-y-1 border border-white/10 p-3 font-mono text-xs">
-            {manualProductIds.length === 0 ? (
-              <li className="text-neutral-500">Nincs kiválasztott termék</li>
-            ) : (
-              manualProductIds.map((id, index) => (
-                <li key={id} className="flex items-center justify-between gap-2 text-neutral-300">
-                  <span>
-                    {index + 1}. {id}
-                  </span>
-                  <span className="flex gap-1">
-                    <button
-                      type="button"
-                      className="border border-white/20 px-2 py-0.5 hover:bg-white/10"
-                      onClick={() => setManualProductIds((prev) => moveId(prev, index, -1))}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-white/20 px-2 py-0.5 hover:bg-white/10"
-                      onClick={() => setManualProductIds((prev) => moveId(prev, index, 1))}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-red-500/40 px-2 py-0.5 text-red-300 hover:bg-red-500/10"
-                      onClick={() => setManualProductIds((prev) => prev.filter((x) => x !== id))}
-                    >
-                      ×
-                    </button>
-                  </span>
-                </li>
-              ))
-            )}
-          </ol>
-        </section>
+          <Card>
+            <CardContent className="p-3">
+              <ol className="space-y-1 font-mono text-xs">
+                {manualProductIds.length === 0 ? (
+                  <li className="text-muted-foreground">Nincs kiválasztott termék</li>
+                ) : (
+                  manualProductIds.map((id, index) => (
+                    <li key={id} className="flex items-center justify-between gap-2 text-foreground">
+                      <span>
+                        {index + 1}. {id}
+                      </span>
+                      <span className="flex gap-1">
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 hover:bg-muted"
+                          onClick={() => setManualProductIds((prev) => moveId(prev, index, -1))}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 hover:bg-muted"
+                          onClick={() => setManualProductIds((prev) => moveId(prev, index, 1))}
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 text-rose-600 hover:bg-rose-500/10"
+                          onClick={() => setManualProductIds((prev) => prev.filter((x) => x !== id))}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ol>
+            </CardContent>
+          </Card>
+        </AdminPanel>
       ) : null}
 
       {mode === "byCategory" ? (
-        <section className="space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-            Kategória sorrend (pl. B előbb, mint A)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <select
-              className="h-10 min-w-[200px] border border-white/15 bg-black/40 px-3 text-sm"
-              defaultValue=""
-              onChange={(e) => {
-                addCategory(e.target.value)
-                e.target.value = ""
-              }}
-            >
-              <option value="">Kategória hozzáadása…</option>
-              {categories
-                .filter((c) => !orderedCategoryIds.includes(c.id))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <ol className="space-y-1 border border-white/10 p-3 text-sm">
-            {orderedCategoryIds.length === 0 ? (
-              <li className="text-neutral-500">Adj hozzá kategóriákat a sorrendhez.</li>
-            ) : (
-              orderedCategoryIds.map((id, index) => (
-                <li key={id} className="flex items-center justify-between gap-2">
-                  <span>
-                    {index + 1}. {categoryById.get(id) ?? id}
-                  </span>
-                  <span className="flex gap-1">
-                    <button
-                      type="button"
-                      className="border border-white/20 px-2 py-0.5 text-xs hover:bg-white/10"
-                      onClick={() => setOrderedCategoryIds((prev) => moveId(prev, index, -1))}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-white/20 px-2 py-0.5 text-xs hover:bg-white/10"
-                      onClick={() => setOrderedCategoryIds((prev) => moveId(prev, index, 1))}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      className="border border-red-500/40 px-2 py-0.5 text-xs text-red-300"
-                      onClick={() => setOrderedCategoryIds((prev) => prev.filter((x) => x !== id))}
-                    >
-                      ×
-                    </button>
-                  </span>
-                </li>
-              ))
-            )}
-          </ol>
-        </section>
+        <AdminPanel title="Kategória sorrend" description="Pl. B előbb, mint A">
+          <select
+            className={cn(adminInputClass, "h-10 min-w-[200px]")}
+            defaultValue=""
+            onChange={(e) => {
+              addCategory(e.target.value)
+              e.target.value = ""
+            }}
+          >
+            <option value="">Kategória hozzáadása…</option>
+            {categories
+              .filter((c) => !orderedCategoryIds.includes(c.id))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+          <Card>
+            <CardContent className="p-3">
+              <ol className="space-y-1 text-sm">
+                {orderedCategoryIds.length === 0 ? (
+                  <li className="text-muted-foreground">Adj hozzá kategóriákat a sorrendhez.</li>
+                ) : (
+                  orderedCategoryIds.map((id, index) => (
+                    <li key={id} className="flex items-center justify-between gap-2">
+                      <span>
+                        {index + 1}. {categoryById.get(id) ?? id}
+                      </span>
+                      <span className="flex gap-1">
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 text-xs hover:bg-muted"
+                          onClick={() => setOrderedCategoryIds((prev) => moveId(prev, index, -1))}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 text-xs hover:bg-muted"
+                          onClick={() => setOrderedCategoryIds((prev) => moveId(prev, index, 1))}
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md px-2 py-0.5 text-xs text-rose-600"
+                          onClick={() => setOrderedCategoryIds((prev) => prev.filter((x) => x !== id))}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ol>
+            </CardContent>
+          </Card>
+        </AdminPanel>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-4">
-        <Button
-          type="button"
-          disabled={busy}
-          onClick={() => void save()}
-          className="rounded-none bg-primary font-black uppercase tracking-widest"
-        >
+        <Button type="button" disabled={busy} onClick={() => void save()}>
           Mentés
         </Button>
-        {message ? <span className="text-sm text-neutral-300">{message}</span> : null}
+        {message ? <span className="text-sm text-foreground">{message}</span> : null}
       </div>
 
       <ProductPickerModal

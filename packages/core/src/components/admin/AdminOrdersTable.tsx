@@ -4,12 +4,16 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Calendar, Download, Eye, Package, Printer, ShoppingCart, Tag, User } from "lucide-react"
+import { Calendar, Download, Eye, Package, Printer, Tag, User } from "lucide-react"
 import { format } from "date-fns"
 import { hu } from "date-fns/locale"
 import { bulkGenerateParcelLabels, bulkUpdateOrderStatuses } from "@wse/core/actions/admin-orders"
+import { AdminDataTable, type AdminDataTableColumn } from "@wse/core/components/admin/AdminDataTable"
+import { AdminOrderStatusBadge } from "@wse/core/components/admin/AdminOrderStatusBadge"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
 import { Button } from "@wse/core/components/ui/button"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
+import { adminFilterInput } from "@wse/core/lib/admin-ui"
 import { cn } from "@wse/core/lib/utils"
 import { formatOrderNumberLabel } from "@wse/core/lib/order-number"
 import { formatHuf, totalsBreakdownForOrderSnapshot } from "@wse/core/lib/pricing"
@@ -70,28 +74,6 @@ type AdminOrdersTableProps = {
   exportQuery?: string
 }
 
-function getStatusStyle(status: string) {
-  switch (status) {
-    case "pending": return "bg-amber-500/10 border-amber-500 text-amber-500"
-    case "processing": return "bg-blue-500/10 border-blue-500 text-blue-500"
-    case "shipped": return "bg-purple-500/10 border-purple-500 text-purple-500"
-    case "delivered": return "bg-emerald-500/10 border-emerald-500 text-emerald-500"
-    case "cancelled": return "bg-rose-500/10 border-rose-500 text-rose-500"
-    default: return "bg-white/5 border-white/10 text-neutral-500"
-  }
-}
-
-function getStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    pending: "FÜGGŐBEN",
-    processing: "FELDOLGOZÁS ALATT",
-    shipped: "SZÁLLÍTVA",
-    delivered: "KÉZBESÍTVE",
-    cancelled: "TÖRÖLVE",
-  }
-  return labels[status] || status.toUpperCase()
-}
-
 function parseFilename(contentDisposition: string | null): string | null {
   if (!contentDisposition) return null
   const match = contentDisposition.match(/filename="([^"]+)"/i)
@@ -134,6 +116,7 @@ export function AdminOrdersTable({
   const selectedCount = selectedVisibleIds.length
   const allVisibleSelected = visibleOrderIds.length > 0 && selectedCount === visibleOrderIds.length
   const partiallySelected = selectedCount > 0 && !allVisibleSelected
+  const busy = isUpdating || isGeneratingLabels
 
   const toggleOrder = (orderId: string) => {
     setSelectedIds((current) => {
@@ -257,24 +240,178 @@ export function AdminOrdersTable({
     }
   }
 
+  const columns = useMemo((): AdminDataTableColumn<AdminOrder>[] => {
+    return [
+      {
+        id: "select",
+        header: (
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            aria-checked={partiallySelected ? "mixed" : allVisibleSelected}
+            disabled={orders.length === 0 || busy}
+            onChange={toggleAllVisible}
+            className="h-4 w-4 rounded-md accent-primary disabled:opacity-40"
+            aria-label="Összes látható rendelés kijelölése"
+            title="Összes látható rendelés kijelölése"
+          />
+        ),
+        headerClassName: "w-12",
+        className: "w-12",
+        cell: (order) => {
+          const orderId = String(order._id)
+          return (
+            <input
+              type="checkbox"
+              checked={selectedIds.has(orderId)}
+              disabled={busy}
+              onChange={() => toggleOrder(orderId)}
+              onClick={(event) => event.stopPropagation()}
+              className="h-4 w-4 rounded-md accent-primary disabled:opacity-40"
+              aria-label={`${formatOrderNumberLabel(order._id)} rendelés kijelölése`}
+            />
+          )
+        },
+      },
+      {
+        id: "id",
+        header: "Azonosító / Dátum",
+        cell: (order) => (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{formatOrderNumberLabel(order._id)}</span>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="size-3" />
+              <span className="text-xs">
+                {format(new Date(order.createdAt), "yyyy. LLLL dd. HH:mm", { locale: hu })}
+              </span>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "customer",
+        header: "Vásárló",
+        cell: (order) => (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <User className="size-3 text-muted-foreground" />
+              <span className="text-sm font-medium">{order.billingInfo.name}</span>
+            </div>
+            {getOrderDeliveryLocationHint(order) ? (
+              <span className="text-xs text-muted-foreground">{getOrderDeliveryLocationHint(order)}</span>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "items",
+        header: "Termékek",
+        cell: (order) => {
+          const totalUnits = order.items.reduce((sum, item) => sum + item.quantity, 0)
+          return (
+            <div className="flex items-center gap-2 text-sm tabular-nums">
+              <Package className="size-4 text-muted-foreground" />
+              <span>
+                {totalUnits} db
+                <span className="text-muted-foreground"> · {order.items.length} tétel</span>
+              </span>
+            </div>
+          )
+        },
+      },
+      {
+        id: "shipping",
+        header: "Szállítás",
+        cell: (order) => (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm">{getOrderShippingTypeLabel(order)}</span>
+            {orderNeedsParcelLabel(order) ? (
+              <span className="text-xs text-amber-700">Címke hiányzik</span>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Állapot",
+        cell: (order) => <AdminOrderStatusBadge status={order.status} />,
+      },
+      {
+        id: "invoice",
+        header: "Számla",
+        cell: (order) => (
+          <div className="space-y-0.5 text-xs">
+            <p className={order.invoiceId ? "font-medium text-emerald-800" : "text-muted-foreground"}>
+              {order.invoiceId ? "Van számla" : "Nincs számla"}
+            </p>
+            {order.invoiceId ? <p className="text-muted-foreground">{order.invoiceId}</p> : null}
+            {order.invoiceStatus ? (
+              <p className="text-muted-foreground">{order.invoiceStatus}</p>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "total",
+        header: "Összeg",
+        cell: (order) => {
+          const breakdown = totalsBreakdownForOrderSnapshot(order)
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-base font-semibold tabular-nums">{formatHuf(breakdown.gross)}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
+              </span>
+              {Number(order.discount || 0) > 0 ? (
+                <div className="mt-0.5 flex items-center gap-1 text-xs text-primary">
+                  <Tag className="size-3" />
+                  <span>Kedvezményes</span>
+                </div>
+              ) : null}
+            </div>
+          )
+        },
+      },
+      {
+        id: "actions",
+        header: <span className="sr-only">Műveletek</span>,
+        headerClassName: "text-right",
+        className: "text-right",
+        cell: (order) => (
+          <Link href={`/admin/orders/${order._id}`} onClick={(event) => event.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="size-9 text-muted-foreground hover:text-foreground" title="Megtekintés">
+              <Eye className="size-4" />
+            </Button>
+          </Link>
+        ),
+      },
+    ]
+  }, [
+    allVisibleSelected,
+    busy,
+    orders.length,
+    partiallySelected,
+    selectedIds,
+    toggleAllVisible,
+    toggleOrder,
+  ])
+
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 border border-white/10 bg-white/5 p-4 text-white md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-              Tömeges státusz módosítás
-            </p>
-            <p className="mt-1 text-sm font-bold italic text-white/70">
-              {selectedCount > 0 ? `${selectedCount} rendelés kijelölve` : "Jelöljön ki rendeléseket a listából."}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+      <AdminPanel
+        title="Tömeges státusz módosítás"
+        description={
+          selectedCount > 0
+            ? `${selectedCount} rendelés kijelölve`
+            : "Jelöljön ki rendeléseket a listából."
+        }
+        actions={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <select
               value={bulkStatus}
               onChange={(event) => setBulkStatus(event.target.value as OrderStatusValue)}
-              disabled={selectedCount === 0 || isUpdating || isGeneratingLabels}
-              className="h-12 min-w-52 rounded-none border border-white/10 bg-black px-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-50"
+              disabled={selectedCount === 0 || busy}
+              className={cn(adminFilterInput, "min-w-48 disabled:opacity-50")}
             >
               {STATUSES.map((status) => (
                 <option key={status.value} value={status.value}>
@@ -284,208 +421,67 @@ export function AdminOrdersTable({
             </select>
             <Button
               type="button"
-              disabled={selectedCount === 0 || isUpdating || isGeneratingLabels}
+              disabled={selectedCount === 0 || busy}
               onClick={() => void handleBulkUpdate()}
-              className="h-12 rounded-none bg-primary px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-primary/80"
             >
-              {isUpdating ? <LoadingSpinner size="xs" className="shrink-0" /> : null}
+              {isUpdating ? <LoadingSpinner size="xs" className="mr-2 shrink-0" /> : null}
               Státusz frissítése
             </Button>
           </div>
-        </div>
+        }
+      >
+        <span className="sr-only">Tömeges státusz módosítás</span>
+      </AdminPanel>
 
-        {parcelManagerEnabled ? (
-          <div className="flex flex-col gap-3 border border-white/10 bg-white/5 p-4 text-white md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
-                Tömeges címke kezelés
-              </p>
-              <p className="mt-1 text-sm font-bold italic text-white/70">
-                Csak a hiányzó GLS/Foxpost címkék készülnek. A ZIP a már generált PDF-eket tartalmazza.
-              </p>
-            </div>
+      {parcelManagerEnabled ? (
+        <AdminPanel
+          title="Tömeges címke kezelés"
+          description="Csak a hiányzó GLS/Foxpost címkék készülnek. A ZIP a már generált PDF-eket tartalmazza."
+          actions={
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                disabled={selectedCount === 0 || isGeneratingLabels || isUpdating || isDownloadingLabelsZip}
+                disabled={selectedCount === 0 || busy || isDownloadingLabelsZip}
                 onClick={() => void handleBulkGenerateLabels()}
-                className="h-12 rounded-none border-white/10 bg-black px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
               >
                 {isGeneratingLabels ? (
                   <LoadingSpinner size="xs" className="mr-2 shrink-0" />
                 ) : (
-                  <Printer className="mr-2 h-4 w-4" />
+                  <Printer className="mr-2 size-4" />
                 )}
                 Címkék generálása (kijelöltek)
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                disabled={selectedCount === 0 || isDownloadingLabelsZip || isUpdating || isGeneratingLabels}
+                disabled={selectedCount === 0 || isDownloadingLabelsZip || busy}
                 onClick={() => void handleDownloadSelectedLabelsZip()}
-                className="h-12 rounded-none border-white/10 bg-black px-6 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
               >
                 {isDownloadingLabelsZip ? (
                   <LoadingSpinner size="xs" className="mr-2 shrink-0" />
                 ) : (
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 size-4" />
                 )}
                 Címkék ZIP (kijelöltek)
               </Button>
             </div>
-          </div>
-        ) : null}
-      </div>
+          }
+        >
+          <span className="sr-only">Tömeges címke kezelés</span>
+        </AdminPanel>
+      ) : null}
 
-      <div className="bg-white/5 border border-white/10 rounded-none overflow-hidden text-white shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[980px]">
-            <thead>
-              <tr className="border-b border-white/5 bg-white/5">
-                <th className="px-6 py-5">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    aria-checked={partiallySelected ? "mixed" : allVisibleSelected}
-                    disabled={orders.length === 0 || isUpdating || isGeneratingLabels}
-                    onChange={toggleAllVisible}
-                    className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary disabled:opacity-40"
-                    aria-label="Összes látható rendelés kijelölése"
-                    title="Összes látható rendelés kijelölése"
-                  />
-                </th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Azonosító / Dátum</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Vásárló</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Termékek</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Szállítás</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Állapot</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Számla</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500">Összeg</th>
-                <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-neutral-500 text-right">Műveletek</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-20 text-center text-white/20 italic">
-                    <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-5" />
-                    Még nem érkezett rendelés.
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order) => {
-                  const orderId = String(order._id)
-                  const breakdown = totalsBreakdownForOrderSnapshot(order)
-                  const isSelected = selectedIds.has(orderId)
-
-                  return (
-                    <tr
-                      key={orderId}
-                      className={cn(
-                        "hover:bg-white/5 transition-all duration-300 group",
-                        isSelected && "bg-primary/5"
-                      )}
-                    >
-                      <td className="px-6 py-6 align-middle">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={isUpdating || isGeneratingLabels}
-                          onChange={() => toggleOrder(orderId)}
-                          className="h-4 w-4 rounded-none border-white/20 bg-black accent-primary disabled:opacity-40"
-                          aria-label={`${formatOrderNumberLabel(order._id)} rendelés kijelölése`}
-                        />
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col">
-                          <span className="font-heading font-black text-white uppercase tracking-wider text-base">{formatOrderNumberLabel(order._id)}</span>
-                          <div className="flex items-center gap-1.5 mt-1 text-neutral-500">
-                            <Calendar className="w-3 h-3" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">
-                              {format(new Date(order.createdAt), "yyyy. LLLL dd. HH:mm", { locale: hu })}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <User className="w-3 h-3 admin-icon-accent" />
-                            <span className="font-bold text-white uppercase tracking-tight italic">{order.billingInfo.name}</span>
-                          </div>
-                          <span className="text-[10px] text-neutral-600 font-black tracking-widest uppercase mt-0.5">
-                            {getOrderDeliveryLocationHint(order)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-neutral-700" />
-                          <span className="font-black text-white text-sm tracking-widest">{order.items.reduce((sum, item) => sum + item.quantity, 0)} DB</span>
-                          <span className="text-[10px] text-neutral-600 font-black tracking-widest">({order.items.length} TÉTEL)</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">
-                            {getOrderShippingTypeLabel(order)}
-                          </span>
-                          {orderNeedsParcelLabel(order) ? (
-                            <span className="text-[9px] font-black uppercase tracking-widest text-amber-400">
-                              Címke hiányzik
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <span className={cn(
-                          "inline-block px-3 py-1.5 border font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-300 shadow-sm",
-                          getStatusStyle(order.status)
-                        )}>
-                          {getStatusLabel(order.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="text-[10px] font-black uppercase tracking-widest space-y-1">
-                          <p className={order.invoiceId ? "text-emerald-400" : "text-neutral-500"}>
-                            {order.invoiceId ? "VAN SZÁMLA" : "NINCS SZÁMLA"}
-                          </p>
-                          <p className="text-neutral-400">{order.invoiceId || "-"}</p>
-                          <p className="text-neutral-600">{order.invoiceStatus || "pending"}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col">
-                          <span className="font-black text-white text-lg tracking-tighter">
-                            {formatHuf(breakdown.gross)}
-                          </span>
-                          <span className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
-                            Nettó {formatHuf(breakdown.net)} · ÁFA {formatHuf(breakdown.vat)}
-                          </span>
-                          {Number(order.discount || 0) > 0 ? (
-                            <div className="flex items-center gap-1 mt-1 text-highlight">
-                              <Tag className="w-3 h-3" />
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em]">KEDVEZMÉNYES</span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-6 py-6 text-right">
-                        <Link href={`/admin/orders/${order._id}`}>
-                          <Button variant="ghost" size="icon" className="w-12 h-12 hover:bg-white/10 text-neutral-500 hover:text-white rounded-none border border-transparent hover:border-white/30 transition-all shadow-lg" title="Megtekintés">
-                            <Eye className="w-5 h-5" />
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <AdminDataTable
+        columns={columns}
+        rows={orders}
+        getRowKey={(order) => String(order._id)}
+        emptyMessage="Még nem érkezett rendelés."
+        rowClassName={(order) =>
+          cn("border-0", selectedIds.has(String(order._id)) && "bg-primary/5")
+        }
+        className="min-w-[980px]"
+      />
     </div>
   )
 }

@@ -1,7 +1,7 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { PopupCampaignService } from "@wse/core/services/popup-campaign"
 import { PopupCampaignForm } from "@wse/core/components/admin/PopupCampaignForm"
+import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
 
 export const dynamic = "force-dynamic"
 
@@ -13,19 +13,12 @@ export default async function AdminPopupCampaignEditPage({ params }: Props) {
   if (!campaign) notFound()
 
   return (
-    <div className="space-y-8">
-      <div>
-        <Link
-          href="/admin/cms/popups"
-          className="text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white"
-        >
-          ← Popup bannerek
-        </Link>
-        <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-white">
-          {campaign.name}
-        </h1>
-      </div>
+    <AdminPageScaffold
+      backHref="/admin/cms/popups"
+      backLabel="Popup bannerek"
+      title={campaign.name}
+    >
       <PopupCampaignForm campaign={campaign} />
-    </div>
+    </AdminPageScaffold>
   )
 }

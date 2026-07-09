@@ -2,8 +2,11 @@
 
 import * as React from "react"
 import { Button } from "@wse/core/components/ui/button"
-import { Label } from "@wse/core/components/ui/label"
+import { Input } from "@wse/core/components/ui/input"
+import { AdminFormField } from "@wse/core/components/admin/AdminFormField"
+import { AdminPanel } from "@wse/core/components/admin/AdminPanel"
 import { cn } from "@wse/core/lib/utils"
+import { adminFieldHint, adminInputClass } from "@wse/core/lib/admin-ui"
 import {
   formatAllowedCountriesList,
   normalizeIso2,
@@ -89,103 +92,82 @@ export function ShopTradingAdminForm({ initial }: ShopTradingAdminFormProps) {
   }
 
   return (
-    <div className="max-w-3xl space-y-10 rounded-none border border-white/10 bg-white/[0.03] p-8 text-white">
-      <section className="space-y-3">
-        <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-          Szállítás engedélyezett országai
-        </p>
-        <p className="text-sm text-neutral-400">
-          Üres mező = nincs korlát (mindenhova szállítható). Lista megadása esetén a pénztár csak ezekhez enged szállítási címet
-          és GLS országkódot.
-        </p>
-        <Label htmlFor="ship-countries" className="sr-only">
-          Szállítás ISO országkódok
-        </Label>
-        <textarea
-          id="ship-countries"
-          value={shippingText}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShippingText(e.target.value)}
-          rows={3}
-          className={cn(
-            "min-h-[4.5rem] w-full rounded-none border border-white/15 bg-black/40 px-3 py-2 font-mono text-sm text-white shadow-xs outline-none placeholder:text-neutral-600",
-            "focus-visible:border-white/30 focus-visible:ring-1 focus-visible:ring-white/20"
-          )}
-          placeholder="pl. HU, AT, SK vagy egy soronként"
-        />
-        <div className="text-[11px] text-neutral-400">
-          <span className="font-black uppercase tracking-widest text-neutral-500">Értelmezett: </span>
+    <div className="max-w-3xl space-y-8">
+      <AdminPanel
+        title="Szállítás engedélyezett országai"
+        description="Üres mező = nincs korlát (mindenhova szállítható). Lista megadása esetén a pénztár csak ezekhez enged szállítási címet és GLS országkódot."
+      >
+        <AdminFormField label="ISO országkódok">
+          <textarea
+            id="ship-countries"
+            value={shippingText}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShippingText(e.target.value)}
+            rows={3}
+            className={cn(adminInputClass, "min-h-[4.5rem] resize-y py-2 font-mono")}
+            placeholder="pl. HU, AT, SK vagy egy soronként"
+          />
+        </AdminFormField>
+        <p className={adminFieldHint}>
+          Értelmezett:{" "}
           {shipPreview.codes.length
             ? `${formatAllowedCountriesList(shipPreview.codes)} (${shipPreview.codes.join(", ")})`
             : "üres lista — korlát nélkül"}
-        </div>
+        </p>
         {shipPreview.warnings.map((w) => (
-          <p key={w} className="text-[11px] text-amber-400/90">
+          <p key={w} className="text-xs text-amber-800">
             {w}
           </p>
         ))}
-      </section>
+      </AdminPanel>
 
-      <section className="space-y-3">
-        <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-          Számlázás engedélyezett országai
-        </p>
-        <p className="text-sm text-neutral-400">
-          Üres = minden ország. Lista esetén a számlázási cím országa csak a felsorolt ISO2 kódok közül lehet.
-        </p>
-        <Label htmlFor="inv-countries" className="sr-only">
-          Számlázás ISO országkódok
-        </Label>
-        <textarea
-          id="inv-countries"
-          value={invoiceText}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInvoiceText(e.target.value)}
-          rows={3}
-          className={cn(
-            "min-h-[4.5rem] w-full rounded-none border border-white/15 bg-black/40 px-3 py-2 font-mono text-sm text-white shadow-xs outline-none placeholder:text-neutral-600",
-            "focus-visible:border-white/30 focus-visible:ring-1 focus-visible:ring-white/20"
-          )}
-          placeholder="pl. csak HU"
-        />
-        <div className="text-[11px] text-neutral-400">
-          <span className="font-black uppercase tracking-widest text-neutral-500">Értelmezett: </span>
+      <AdminPanel
+        title="Számlázás engedélyezett országai"
+        description="Üres = minden ország. Lista esetén a számlázási cím országa csak a felsorolt ISO2 kódok közül lehet."
+      >
+        <AdminFormField label="ISO országkódok">
+          <textarea
+            id="inv-countries"
+            value={invoiceText}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInvoiceText(e.target.value)}
+            rows={3}
+            className={cn(adminInputClass, "min-h-[4.5rem] resize-y py-2 font-mono")}
+            placeholder="pl. csak HU"
+          />
+        </AdminFormField>
+        <p className={adminFieldHint}>
+          Értelmezett:{" "}
           {invPreview.codes.length
             ? `${formatAllowedCountriesList(invPreview.codes)} (${invPreview.codes.join(", ")})`
             : "üres lista — korlát nélkül"}
-        </div>
+        </p>
         {invPreview.warnings.map((w) => (
-          <p key={w} className="text-[11px] text-amber-400/90">
+          <p key={w} className="text-xs text-amber-800">
             {w}
           </p>
         ))}
-      </section>
+      </AdminPanel>
 
-      <section className="space-y-3">
-        <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
-          Foglalási idő maximuma
-        </p>
-        <p className="text-sm text-neutral-400">
-          Stripe fizetésnél eddig tartjuk a készletet. Üres mező = env/default beállítás. Stripe miatt minimum 30 perc.
-        </p>
-        <input
-          type="number"
-          min={30}
-          value={reservationMinutes}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReservationMinutes(e.target.value)}
-          className="h-10 w-full max-w-xs rounded-none border border-white/15 bg-black/40 px-3 py-2 font-mono text-sm text-white shadow-xs outline-none placeholder:text-neutral-600 focus-visible:border-white/30 focus-visible:ring-1 focus-visible:ring-white/20"
-          placeholder="pl. 60"
-        />
-      </section>
+      <AdminPanel
+        title="Foglalási idő maximuma"
+        description="Stripe fizetésnél eddig tartjuk a készletet. Üres mező = env/default beállítás. Stripe miatt minimum 30 perc."
+      >
+        <AdminFormField label="Perc">
+          <Input
+            type="number"
+            min={30}
+            value={reservationMinutes}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReservationMinutes(e.target.value)}
+            className={cn(adminInputClass, "max-w-xs")}
+            placeholder="pl. 60"
+          />
+        </AdminFormField>
+      </AdminPanel>
 
       <div className="flex flex-wrap items-center gap-4">
-        <Button
-          type="button"
-          disabled={busy}
-          onClick={() => void save()}
-          className="rounded-none bg-primary font-black uppercase tracking-widest"
-        >
+        <Button type="button" disabled={busy} onClick={() => void save()}>
           Mentés
         </Button>
-        {message ? <span className="text-sm text-neutral-300">{message}</span> : null}
+        {message ? <span className="text-sm text-foreground">{message}</span> : null}
       </div>
     </div>
   )

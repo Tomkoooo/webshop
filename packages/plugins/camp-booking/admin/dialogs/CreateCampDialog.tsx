@@ -61,9 +61,9 @@ export function CreateCampDialog({ children, onCreated }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-black border-white/10 text-white rounded-none sm:max-w-[520px]">
+      <DialogContent className=" sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-heading font-black uppercase italic tracking-wider text-white">
+          <DialogTitle>
             Új tábor
           </DialogTitle>
         </DialogHeader>
@@ -86,7 +86,7 @@ export function CreateCampDialog({ children, onCreated }: Props) {
           <CampAdminField label="Sorrend">
             <CampAdminInput name="sortOrder" type="number" defaultValue={0} min={0} />
           </CampAdminField>
-          <label className="flex items-center gap-3 text-sm text-neutral-300">
+          <label className="flex items-center gap-3 text-sm text-foreground">
             <input
               type="checkbox"
               name="isPublished"
@@ -94,13 +94,13 @@ export function CreateCampDialog({ children, onCreated }: Props) {
             />
             Közzététel azonnal
           </label>
-          {error ? <p className="text-red-400 text-sm">{error}</p> : null}
+          {error ? <p className="text-destructive text-sm">{error}</p> : null}
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
-              variant="krausz"
+              variant="default"
               disabled={saving}
-              className="flex-1 h-11 uppercase tracking-widest text-[10px] font-black"
+              className="flex-1 h-11 font-semibold"
             >
               {saving ? "Mentés…" : "Tábor létrehozása"}
             </Button>
@@ -108,7 +108,7 @@ export function CreateCampDialog({ children, onCreated }: Props) {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="h-11 border-white/10 text-white rounded-none"
+              className="h-11"
             >
               Mégse
             </Button>

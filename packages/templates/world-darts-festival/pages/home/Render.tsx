@@ -1,0 +1,396 @@
+"use client"
+
+import Link from "next/link"
+import { useState } from "react"
+import { ChevronDown } from "lucide-react"
+import { CmsImage } from "@wse/cms-bridge"
+import { ContactInquiryForm } from "@wse/core/components/site-contact/ContactInquiryForm"
+import { EditableDocText } from "@wse/core/features/template-cms/primitives/EditableDocText"
+import { CmsListAddButton, CmsListItemToolbar } from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
+import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
+import { cn } from "@wse/core/lib/utils"
+import type { RenderProps, HomePageDeps } from "@wse/sdk/templates/types"
+import type { HomeContent } from "./schema"
+
+function SectionHeading({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <h2 className={cn("text-2xl font-bold tracking-tight sm:text-3xl", className)}>{children}</h2>
+  )
+}
+
+function ScheduleDay({
+  index,
+  date,
+  title,
+  items,
+}: {
+  index: number
+  date: string
+  title: string
+  items: string[]
+}) {
+  const [open, setOpen] = useState(index === 0)
+  const panelId = `schedule-day-${index}`
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-surface overflow-hidden">
+      <button
+        type="button"
+        id={`${panelId}-btn`}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex min-h-14 w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-muted/30"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <div>
+          <p className="text-sm font-medium text-primary">
+            <EditableDocText path={`schedule.days.${index}.date`} value={date} />
+          </p>
+          <p className="font-semibold">
+            <EditableDocText path={`schedule.days.${index}.title`} value={title} />
+          </p>
+        </div>
+        <ChevronDown className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open ? (
+        <ul id={panelId} role="region" aria-labelledby={`${panelId}-btn`} className="space-y-2 border-t border-border/60 px-5 py-4">
+          {items.map((item, itemIndex) => (
+            <li key={itemIndex} className="flex items-start gap-2 text-sm text-muted-foreground">
+              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+              <EditableDocText
+                path={`schedule.days.${index}.items.${itemIndex}`}
+                value={item}
+                multiline
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
+export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageDeps>) {
+  const c = content
+  const edit = useSurfaceDocEdit()
+  const contactEmails = deps?.siteContact?.emails ?? []
+
+  return (
+    <div className="bg-background text-foreground">
+      {/* Hero */}
+      <section className="relative min-h-[min(90svh,720px)] flex items-end overflow-hidden">
+        <CmsImage
+          path="hero.heroImage"
+          src={c.hero.heroImage}
+          alt={c.hero.title}
+          className="absolute inset-0"
+          frameClassName="size-full"
+          imageClassName="size-full object-cover"
+          fill
+          usageLabel="Hero kép"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 pt-32 sm:pb-16">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
+            <EditableDocText path="hero.tagline" value={c.hero.tagline} />
+          </p>
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+            <EditableDocText path="hero.title" value={c.hero.title} multiline />
+          </h1>
+          <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+            <EditableDocText path="hero.subtitle" value={c.hero.subtitle} multiline />
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href={c.hero.primaryCtaHref}
+              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              <EditableDocText path="hero.primaryCtaLabel" value={c.hero.primaryCtaLabel} />
+            </Link>
+            <Link
+              href={c.hero.secondaryCtaHref}
+              className="inline-flex min-h-11 items-center rounded-lg border border-border bg-background/80 px-6 py-2.5 text-sm font-semibold backdrop-blur hover:bg-muted"
+            >
+              <EditableDocText path="hero.secondaryCtaLabel" value={c.hero.secondaryCtaLabel} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Festival intro */}
+      <section className="border-y border-border/60 bg-surface py-16">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-2">
+          <div className="space-y-4">
+            <SectionHeading>
+              <EditableDocText path="festival.title" value={c.festival.title} />
+            </SectionHeading>
+            <p className="text-muted-foreground leading-relaxed">
+              <EditableDocText path="festival.body" value={c.festival.body} multiline />
+            </p>
+            <Link
+              href={c.festival.ctaHref}
+              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              <EditableDocText path="festival.ctaLabel" value={c.festival.ctaLabel} />
+            </Link>
+          </div>
+          <CmsImage
+            path="festival.image"
+            src={c.festival.image}
+            alt={c.festival.title}
+            className="aspect-video w-full overflow-hidden rounded-2xl"
+            frameClassName="size-full"
+            imageClassName="size-full object-cover"
+            width={800}
+            height={450}
+            usageLabel="Fesztivál kép"
+          />
+        </div>
+      </section>
+
+      {/* Info cards */}
+      <section className="py-16">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 md:grid-cols-2">
+          {c.infoCards.map((card, index) => (
+            <article
+              key={index}
+              className="relative flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm"
+            >
+              {edit.enabled ? (
+                <CmsListItemToolbar
+                  onRemove={() =>
+                    edit.setPath(
+                      "infoCards",
+                      c.infoCards.filter((_, i) => i !== index)
+                    )
+                  }
+                />
+              ) : null}
+              <h3 className="text-xl font-semibold">
+                <EditableDocText path={`infoCards.${index}.title`} value={card.title} />
+              </h3>
+              <p className="mt-2 flex-1 text-sm text-muted-foreground">
+                <EditableDocText path={`infoCards.${index}.body`} value={card.body} multiline />
+              </p>
+              <Link
+                href={card.ctaHref}
+                className="mt-4 inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
+              >
+                <EditableDocText path={`infoCards.${index}.ctaLabel`} value={card.ctaLabel} />
+              </Link>
+            </article>
+          ))}
+          {edit.enabled ? (
+            <CmsListAddButton
+              label="Info kártya hozzáadása"
+              onClick={() =>
+                edit.setPath("infoCards", [
+                  ...c.infoCards,
+                  {
+                    title: "New section",
+                    body: "Description",
+                    ctaLabel: "Learn more",
+                    ctaHref: "/jegyek",
+                  },
+                ])
+              }
+            />
+          ) : null}
+        </div>
+      </section>
+
+      {/* Venue */}
+      <section id="venue" className="scroll-mt-24 border-y border-border/60 bg-muted/20 py-16">
+        <div className="mx-auto max-w-6xl px-4">
+          <SectionHeading className="mb-8">
+            <EditableDocText path="venue.heading" value={c.venue.heading} />
+          </SectionHeading>
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">
+                <EditableDocText path="venue.name" value={c.venue.name} />
+              </h3>
+              <p className="text-muted-foreground">
+                <EditableDocText path="venue.body" value={c.venue.body} multiline />
+              </p>
+            </div>
+            <div className="space-y-4 rounded-2xl border border-border bg-surface p-6">
+              <h3 className="font-semibold">
+                <EditableDocText path="venue.accessHeading" value={c.venue.accessHeading} />
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                <EditableDocText path="venue.accessBody" value={c.venue.accessBody} multiline />
+              </p>
+              <a
+                href={c.venue.mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
+              >
+                <EditableDocText path="venue.mapLabel" value={c.venue.mapLabel} />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Schedule */}
+      <section id="schedule" className="scroll-mt-24 py-16">
+        <div className="mx-auto max-w-3xl space-y-6 px-4">
+          <SectionHeading>
+            <EditableDocText path="schedule.heading" value={c.schedule.heading} />
+          </SectionHeading>
+          <div className="space-y-3">
+            {c.schedule.days.map((day, index) => (
+              <div key={index} className="relative">
+                {edit.enabled ? (
+                  <CmsListItemToolbar
+                    onRemove={() =>
+                      edit.setPath(
+                        "schedule.days",
+                        c.schedule.days.filter((_, i) => i !== index)
+                      )
+                    }
+                  />
+                ) : null}
+                <ScheduleDay index={index} date={day.date} title={day.title} items={day.items} />
+              </div>
+            ))}
+            {edit.enabled ? (
+              <CmsListAddButton
+                label="Nap hozzáadása"
+                onClick={() =>
+                  edit.setPath("schedule.days", [
+                    ...c.schedule.days,
+                    { date: "New date", title: "Event", items: ["Schedule item"] },
+                  ])
+                }
+              />
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      {/* Fees */}
+      <section className="border-y border-border/60 bg-surface py-16">
+        <div className="mx-auto max-w-3xl px-4">
+          <SectionHeading className="mb-8 text-center">
+            <EditableDocText path="fees.heading" value={c.fees.heading} />
+          </SectionHeading>
+          <ul className="space-y-3">
+            {c.fees.items.map((item, index) => (
+              <li
+                key={index}
+                className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-5 py-4"
+              >
+                {edit.enabled ? (
+                  <CmsListItemToolbar
+                    onRemove={() =>
+                      edit.setPath(
+                        "fees.items",
+                        c.fees.items.filter((_, i) => i !== index)
+                      )
+                    }
+                  />
+                ) : null}
+                <span className="font-medium">
+                  <EditableDocText path={`fees.items.${index}.label`} value={item.label} />
+                </span>
+                <div className="flex items-center gap-3">
+                  {item.badge ? (
+                    <span className="rounded-full bg-muted px-3 py-0.5 text-xs font-medium text-foreground">
+                      <EditableDocText path={`fees.items.${index}.badge`} value={item.badge} />
+                    </span>
+                  ) : null}
+                  <span className="font-semibold text-primary">
+                    <EditableDocText path={`fees.items.${index}.price`} value={item.price} />
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {edit.enabled ? (
+            <div className="mt-4">
+              <CmsListAddButton
+                label="Díj hozzáadása"
+                onClick={() =>
+                  edit.setPath("fees.items", [
+                    ...c.fees.items,
+                    { label: "New fee", price: "€0", badge: "" },
+                  ])
+                }
+              />
+            </div>
+          ) : null}
+          <div className="mt-8 text-center">
+            <Link
+              href={c.fees.ctaHref}
+              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-8 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              <EditableDocText path="fees.ctaLabel" value={c.fees.ctaLabel} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Sponsors */}
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-4 text-center">
+          <SectionHeading className="mb-10">
+            <EditableDocText path="sponsors.heading" value={c.sponsors.heading} />
+          </SectionHeading>
+          <div className="flex flex-wrap items-center justify-center gap-8">
+            {c.sponsors.logos.map((logo, index) => (
+              <div key={index} className="relative">
+                {edit.enabled ? (
+                  <CmsListItemToolbar
+                    onRemove={() =>
+                      edit.setPath(
+                        "sponsors.logos",
+                        c.sponsors.logos.filter((_, i) => i !== index)
+                      )
+                    }
+                  />
+                ) : null}
+                <CmsImage
+                  path={`sponsors.logos.${index}.image`}
+                  src={logo.image}
+                  alt={logo.name}
+                  className="h-12 w-auto opacity-80 grayscale transition hover:opacity-100 hover:grayscale-0"
+                  frameClassName="inline-block"
+                  imageClassName="h-12 w-auto object-contain"
+                  width={160}
+                  height={48}
+                  usageLabel="Partner logo"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className="scroll-mt-24 border-t border-border/60 bg-muted/20 py-16">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2">
+          <div className="space-y-4">
+            <SectionHeading>
+              <EditableDocText path="contact.heading" value={c.contact.heading} />
+            </SectionHeading>
+            <p className="text-muted-foreground">
+              <EditableDocText path="contact.body" value={c.contact.body} multiline />
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <ContactInquiryForm
+              contactEmails={contactEmails}
+              nameLabel={c.contact.nameLabel}
+              emailLabel={c.contact.emailLabel}
+              messageLabel={c.contact.messageLabel}
+              sendButtonLabel={c.contact.sendButtonLabel}
+            />
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}

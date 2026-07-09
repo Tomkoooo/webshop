@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import type { CampDashboardStats } from "./camp-api"
 import { CampAdminLoading, CampKpiCard } from "./camp-admin-ui"
+import { adminLinkAccent, adminSectionTitle } from "@wse/core/lib/admin-ui"
 
 type Props = {
   stats: CampDashboardStats | null
@@ -29,7 +30,7 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
   }
 
   if (error) {
-    return <p className="text-red-400 text-sm">{error}</p>
+    return <p className="text-destructive text-sm">{error}</p>
   }
 
   if (!stats) return null
@@ -97,23 +98,23 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
       ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[320px]">
+        <div className="rounded-xl bg-card shadow-sm p-6 min-h-[320px]">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2 text-white">
+            <h2 className={`${adminSectionTitle} flex items-center gap-2`}>
               <span className="w-1.5 h-6 admin-section-marker rounded-full" />
               Legutóbbi regisztrációk
             </h2>
             {variant === "home" ? (
               <Link
                 href="/admin/plugins/camp-booking/stats"
-                className="text-[10px] font-black uppercase tracking-widest admin-link-accent"
+                className="text-xs font-medium text-muted-foreground admin-link-accent"
               >
                 Részletes statisztikák
               </Link>
             ) : null}
           </div>
           {stats.recentRegistrations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-white/20">
+            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
               <Users className="w-12 h-12 mb-4 opacity-10" />
               <p className="italic text-sm">Még nincs fizetett regisztráció.</p>
             </div>
@@ -122,20 +123,20 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
               {stats.recentRegistrations.map((r, i) => (
                 <li
                   key={`${r.paidAt}-${i}`}
-                  className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/25 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="font-heading font-black text-white uppercase tracking-wider text-sm truncate">
+                    <p className="font-medium text-foreground text-sm truncate">
                       {r.buyerName}
                     </p>
-                    <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {r.campTitle} · {r.sessionLabel} · {r.childCount} gyerek
                     </p>
-                    <p className="text-[10px] text-neutral-600 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {format(new Date(r.paidAt), "yyyy. MM. dd. HH:mm", { locale: hu })}
                     </p>
                   </div>
-                  <span className="font-black text-white text-sm shrink-0 ml-3">
+                  <span className="font-semibold text-foreground text-sm shrink-0 ml-3">
                     {r.totalHuf.toLocaleString("hu-HU")} Ft
                   </span>
                 </li>
@@ -144,9 +145,9 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
           )}
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[320px]">
+        <div className="rounded-xl bg-card shadow-sm p-6 min-h-[320px]">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold italic uppercase tracking-wider flex items-center gap-2 text-white">
+            <h2 className={`${adminSectionTitle} flex items-center gap-2`}>
               <span className="w-1.5 h-6 admin-section-marker rounded-full" />
               {variant === "home" ? "Gyors műveletek" : "Összefoglaló"}
             </h2>
@@ -162,7 +163,7 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center justify-between p-4 bg-white/5 border border-white/5 hover:border-white/25 text-sm font-bold uppercase tracking-widest text-neutral-300 hover:text-white transition-colors"
+                  className={`flex items-center justify-between p-4 rounded-lg bg-muted/40 hover:bg-muted/60 text-sm font-medium text-foreground transition-colors ${adminLinkAccent}`}
                 >
                   {item.label}
                   <ArrowRight className="w-4 h-4 shrink-0 opacity-50" />
@@ -170,15 +171,15 @@ export function CampDashboardView({ stats, loading, error, variant }: Props) {
               ))}
             </nav>
           ) : (
-            <div className="space-y-4 text-sm text-neutral-400">
+            <div className="space-y-4 text-sm text-muted-foreground">
               <p>
-                Közzétett táborok: <strong className="text-white">{stats.publishedCamps}</strong>
+                Közzétett táborok: <strong className="text-foreground">{stats.publishedCamps}</strong>
               </p>
               <p>
                 Közzétett turnusok:{" "}
-                <strong className="text-white">{stats.publishedSessions}</strong>
+                <strong className="text-foreground">{stats.publishedSessions}</strong>
               </p>
-              <p className="flex items-center gap-2 pt-4 border-t border-white/10">
+              <p className="flex items-center gap-2 pt-4 border-t border-border">
                 <Mail className="w-4 h-4 admin-icon-accent" />
                 <Link href="/admin/contact" className="admin-link-accent hover:underline">
                   Kapcsolatfelvételi üzenetek megnyitása

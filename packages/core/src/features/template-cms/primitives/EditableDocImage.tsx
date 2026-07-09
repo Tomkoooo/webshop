@@ -3,6 +3,7 @@
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
 import { MediaFillFrame } from "@wse/core/components/common/MediaFillFrame"
+import { Input } from "@wse/core/components/ui/input"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { cn } from "@wse/core/lib/utils"
 import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
@@ -85,11 +86,11 @@ export function EditableDocImage({
           allowRectangleCrop={flexibleCrop}
           allowSkipCrop={flexibleCrop}
         />
-        <input
+        <Input
           value={src}
           onChange={(event) => cms.setPath(path, event.target.value)}
           placeholder="/api/media/..."
-          className="w-full border border-dashed border-white/20 bg-transparent px-2 py-1 text-xs text-white focus:border-primary-foreground/50 focus:outline-none"
+          className="h-8 text-xs"
         />
       </div>
     </div>

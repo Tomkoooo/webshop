@@ -118,7 +118,7 @@ export function PressKitVisualEditor() {
       <header className="border-b border-border px-4 py-4">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <span className="font-semibold tracking-tight">{brandName || "Márka"}</span>
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">Sajtóanyagok</span>
+          <span className="text-xs text-muted-foreground">Sajtóanyagok</span>
         </div>
       </header>
       <PressKitPageRender
@@ -131,7 +131,7 @@ export function PressKitVisualEditor() {
   )
 
   return (
-    <div className="cms-editor-chrome -mx-4 -mt-4 min-h-[calc(100vh-4rem)] text-white md:-mx-8">
+    <div className="cms-editor-chrome -mx-4 -mt-4 min-h-[calc(100vh-4rem)] text-foreground md:-mx-8">
       <TopBar
         dirty={dirty || pdfDirty}
         device={device}
@@ -169,15 +169,15 @@ export function PressKitVisualEditor() {
           <Link
             href="/sajto"
             target="_blank"
-            className="px-3 h-9 border border-white/20 text-white text-xs uppercase inline-flex items-center"
+            className="px-3 h-9 border border-border text-xs font-medium inline-flex items-center rounded-md hover:bg-muted"
           >
             Éles portál
           </Link>
         }
       />
 
-      <div className="px-4 py-3 border-b border-white/10 bg-black/25 text-xs text-neutral-400">
-        <p className="text-[10px] uppercase tracking-widest text-neutral-500 mb-1">
+      <div className="px-4 py-3 border-b border-border bg-muted/40 text-sm text-muted-foreground">
+        <p className="text-sm font-medium text-foreground mb-1">
           Sajtóportál — vizuális szerkesztő
         </p>
         <p>
@@ -201,7 +201,7 @@ export function PressKitVisualEditor() {
             pdfSettings={pdfSettings}
             onChange={applyPdfPatch}
           />
-          <p className="text-[11px] text-neutral-500 leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             A képernyőképek teljes blokkolása nem lehetséges — használj vízjelet a PDF-nél.
           </p>
         </aside>
@@ -214,18 +214,18 @@ export function PressKitVisualEditor() {
       </div>
 
       {reviewOpen ? (
-        <div className="fixed inset-0 z-[100] bg-black/95 overflow-auto p-4 md:p-8">
+        <div className="fixed inset-0 z-[100] bg-background/95 overflow-auto p-4 md:p-8">
           <div className="flex justify-between items-center mb-6 max-w-5xl mx-auto">
-            <h2 className="text-xl font-black uppercase tracking-wider">Előnézet</h2>
+            <h2 className="text-xl font-semibold text-foreground">Előnézet</h2>
             <button
               type="button"
               onClick={() => setReviewOpen(false)}
-              className="px-4 h-10 border border-white/20 text-xs uppercase"
+              className="px-4 h-10 border border-border rounded-md text-sm font-medium hover:bg-muted"
             >
               Bezárás (Esc)
             </button>
           </div>
-          <div className="max-w-5xl mx-auto rounded-xl border border-white/10 overflow-hidden bg-background">
+          <div className="max-w-5xl mx-auto rounded-xl shadow-sm overflow-hidden bg-background">
             {previewShell}
           </div>
         </div>
