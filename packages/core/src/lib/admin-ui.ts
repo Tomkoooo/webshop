@@ -3,6 +3,8 @@
  * Surfaces are border-light: shadow + whitespace, not boxed outlines.
  */
 
+import { cn } from "@wse/core/lib/utils"
+
 export const adminShell = "admin-shell"
 
 export const adminPage = "flex flex-col gap-6"
@@ -76,6 +78,12 @@ export const adminNavItemActive =
 export const adminNavGroupLabel = ""
 export const adminInputClass =
   "flex h-9 w-full rounded-md border-0 bg-background px-3 py-1 text-sm shadow-sm ring-1 ring-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-ring/50"
+
+/** Inline CMS fields on storefront preview (works on light and dark hero backgrounds). */
+export const cmsInlineFieldClass =
+  "w-full rounded-md border-0 bg-background/90 px-2 py-1 text-sm text-foreground shadow-sm ring-1 ring-dashed ring-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+
+export const cmsInlineTextareaClass = cn(cmsInlineFieldClass, "min-h-[96px] resize-y")
 
 export function adminOrderStatusClass(status: string): string {
   switch (status) {

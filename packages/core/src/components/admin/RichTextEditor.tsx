@@ -541,7 +541,7 @@ const MenuBar = ({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.preventDefault()
                 }}
-                className="h-7 w-20 rounded-md border border-border bg-background px-2 text-xs font-bold text-foreground outline-none focus:border-white/40"
+                className="h-7 w-20 rounded-md border-0 bg-background px-2 text-xs font-bold text-foreground ring-1 ring-border/60 outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <span>px</span>
             </label>

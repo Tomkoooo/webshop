@@ -1,9 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import type { HomepageBlock } from "@wse/core/features/homepage-cms/types/block-types"
 import { ProductPickerModal } from "@wse/core/features/homepage-cms/components/editor/ProductPickerModal"
 import { InspectorTabs } from "./InspectorTabs"
+import { Button } from "@wse/core/components/ui/button"
+import { Checkbox } from "@wse/core/components/ui/checkbox"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 
 type Props = {
   selectedBlock: HomepageBlock | null
@@ -14,59 +18,41 @@ type Props = {
 
 export function InspectorPanel({ selectedBlock, onFieldChange, onDelete, onDuplicate }: Props) {
   const [openProductPicker, setOpenProductPicker] = useState(false)
-  const selectedProducts = useMemo(() => {
-    if (!selectedBlock || selectedBlock.type !== "productGrid") return []
-    return Array.isArray(selectedBlock.data.selectedProductIds)
+  const selectedProducts =
+    selectedBlock?.type === "productGrid" && Array.isArray(selectedBlock.data.selectedProductIds)
       ? (selectedBlock.data.selectedProductIds as string[])
       : []
-  }, [selectedBlock])
 
   return (
-    <aside className="w-[360px] border-l border-white/10 p-4 bg-black/60 overflow-auto sticky top-[72px] self-start max-h-[calc(100vh-72px)]">
-      <div className="space-y-3">
-        <h3 className="text-white uppercase tracking-wider text-xs font-bold">
-          {selectedBlock ? `${selectedBlock.type} inspector` : "Inspector"}
+    <aside className="sticky top-[72px] w-[360px] max-h-[calc(100vh-72px)] shrink-0 self-start overflow-auto rounded-xl bg-card p-4 shadow-sm">
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-foreground">
+          {selectedBlock ? `${selectedBlock.type} szerkesztő` : "Blokk beállítások"}
         </h3>
         {selectedBlock ? (
-          <label className="flex items-center justify-between gap-3 border border-white/15 px-3 py-2 text-xs uppercase tracking-widest text-neutral-300">
-            <span>Block visible</span>
-            <input
-              type="checkbox"
+          <label className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+            <Label className={adminFieldLabel}>Blokk látható</Label>
+            <Checkbox
               checked={selectedBlock.enabled !== false}
-              onChange={(event) => onFieldChange("enabled", event.target.checked)}
+              onCheckedChange={(checked) => onFieldChange("enabled", checked === true)}
             />
           </label>
         ) : null}
         <InspectorTabs selectedBlock={selectedBlock} onFieldChange={onFieldChange} />
         {selectedBlock?.type === "productGrid" ? (
           <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setOpenProductPicker(true)}
-              className="w-full h-10 border border-white/20 text-white text-xs uppercase"
-            >
-              Pick featured products
-            </button>
-            <p className="text-xs text-neutral-400">{selectedProducts.length} termék kiválasztva (sorrend = megjelenítés)</p>
-            <p className="text-xs text-neutral-500">
-              Üres lista esetén a Webshop → Kiemelt termékek beállítások érvényesek.
-            </p>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setOpenProductPicker(true)}>
+              Kiemelt termékek kiválasztása
+            </Button>
+            <p className="text-xs text-muted-foreground">{selectedProducts.length} termék kiválasztva</p>
           </div>
         ) : null}
-        <button
-          type="button"
-          onClick={onDuplicate}
-          className="w-full h-10 border border-white/20 text-white text-xs uppercase"
-        >
-          Duplicate block
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="w-full h-10 border border-red-500 text-red-300 text-xs uppercase"
-        >
-          Remove block
-        </button>
+        <Button type="button" variant="outline" className="w-full" onClick={onDuplicate}>
+          Blokk duplikálása
+        </Button>
+        <Button type="button" variant="outline" className="w-full text-destructive hover:bg-destructive/10" onClick={onDelete}>
+          Blokk törlése
+        </Button>
       </div>
       {selectedBlock ? (
         <ProductPickerModal

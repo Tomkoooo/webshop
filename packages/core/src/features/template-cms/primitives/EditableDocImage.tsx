@@ -1,9 +1,14 @@
 "use client"
 
+import { useState } from "react"
+import { ImageIcon } from "lucide-react"
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
 import { MediaFillFrame } from "@wse/core/components/common/MediaFillFrame"
+import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { cn } from "@wse/core/lib/utils"
 import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
@@ -38,6 +43,7 @@ export function EditableDocImage({
   const cms = useSurfaceDocEdit()
   const resolved = mediaImageSrc(src)
   const useFill = fill || Boolean(frameClassName)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const imageNode = useFill ? (
     <FallbackImage
@@ -70,29 +76,63 @@ export function EditableDocImage({
   )
 
   if (!cms.enabled) {
-    return framedImage
+    return <div className={className}>{framedImage}</div>
   }
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      {framedImage}
-      <div className="cms-admin-control relative z-10 space-y-2">
-        <UploadSheet
-          onUploaded={(next) => cms.setPath(path, next)}
-          label="Kép feltöltése"
-          usageLabel={usageLabel}
-          recommendedSize={{ width, height }}
-          aspect={width / height}
-          allowRectangleCrop={flexibleCrop}
-          allowSkipCrop={flexibleCrop}
-        />
-        <Input
-          value={src}
-          onChange={(event) => cms.setPath(path, event.target.value)}
-          placeholder="/api/media/..."
-          className="h-8 text-xs"
-        />
+    <div className={cn("group relative", className)}>
+      <div
+        className={cn(
+          "relative",
+          panelOpen && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+        )}
+      >
+        {framedImage}
+        <div className="cms-admin-control absolute inset-x-2 bottom-2 flex justify-end opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="h-8 gap-1.5 shadow-md"
+            onClick={() => setPanelOpen((open) => !open)}
+          >
+            <ImageIcon className="size-3.5" />
+            {panelOpen ? "Bezárás" : "Kép szerkesztése"}
+          </Button>
+        </div>
       </div>
+
+      {panelOpen ? (
+        <div className="cms-admin-control relative z-20 mt-2 space-y-2 rounded-lg bg-card p-3 shadow-sm ring-1 ring-border/60">
+          {usageLabel ? (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{usageLabel}</span>
+              {` · javasolt ${width}×${height}px`}
+            </p>
+          ) : null}
+          <UploadSheet
+            onUploaded={(next) => {
+              cms.setPath(path, next)
+              setPanelOpen(false)
+            }}
+            label="Kép feltöltése"
+            usageLabel={usageLabel}
+            recommendedSize={{ width, height }}
+            aspect={width / height}
+            allowRectangleCrop={flexibleCrop}
+            allowSkipCrop={flexibleCrop}
+          />
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Kép URL</Label>
+            <Input
+              value={src}
+              onChange={(event) => cms.setPath(path, event.target.value)}
+              placeholder="/api/media/..."
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

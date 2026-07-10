@@ -23,17 +23,25 @@ export function TBookEventList({
   apiKey,
   apiBase,
   copy,
+  initialEvents,
+  initialError = null,
 }: {
   apiKey: string
   apiBase?: string
   copy: Copy
+  /** When set, events were loaded on the server — no browser API call needed. */
+  initialEvents?: TBookPublicEvent[]
+  initialError?: string | null
 }) {
-  const [events, setEvents] = useState<TBookPublicEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const serverProvided = initialEvents !== undefined
+  const [events, setEvents] = useState<TBookPublicEvent[]>(initialEvents ?? [])
+  const [loading, setLoading] = useState(!serverProvided)
+  const [error, setError] = useState<string | null>(initialError)
 
   useEffect(() => {
-    if (!apiKey.trim()) {
+    if (serverProvided) return
+    const normalizedKey = apiKey.trim()
+    if (!normalizedKey) {
       setLoading(false)
       setError("A tBook API kulcs nincs beállítva. Add meg a CMS-ben a főoldal integrációs beállításainál.")
       return
@@ -43,7 +51,7 @@ export function TBookEventList({
       setLoading(true)
       setError(null)
       try {
-        const res = await listEvents(apiKey.trim(), apiBase)
+        const res = await listEvents(normalizedKey, apiBase)
         if (!cancelled) setEvents(res.events)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Nem sikerült betölteni az eseményeket.")
@@ -54,7 +62,7 @@ export function TBookEventList({
     return () => {
       cancelled = true
     }
-  }, [apiKey, apiBase])
+  }, [apiKey, apiBase, serverProvided])
 
   if (loading) {
     return (

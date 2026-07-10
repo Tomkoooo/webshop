@@ -3,6 +3,27 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto"
 export const TBOOK_API_KEY_PREFIX = "tbk_"
 export const TBOOK_API_KEY_HEADER = "x-tbook-api-key"
 
+/**
+ * Browser `fetch` headers must be ISO-8859-1 — pasted keys often include BOM, spaces,
+ * or invisible Unicode from copy/paste. Strip those before sending as a header value.
+ */
+export function normalizeTBookApiKey(raw: string | null | undefined): string {
+  if (!raw) return ""
+  return raw
+    .replace(/^\uFEFF/, "")
+    .replace(/\s+/g, "")
+    .replace(/[^\x00-\x7F]/g, "")
+    .trim()
+}
+
+export function isValidTBookApiKeyFormat(key: string): boolean {
+  const normalized = normalizeTBookApiKey(key)
+  return (
+    normalized.startsWith(TBOOK_API_KEY_PREFIX) &&
+    normalized.length > TBOOK_API_KEY_PREFIX.length + 8
+  )
+}
+
 /** Generates a new plaintext API key (shown to the admin once). */
 export function generateApiKey(): string {
   return `${TBOOK_API_KEY_PREFIX}${randomBytes(24).toString("hex")}`

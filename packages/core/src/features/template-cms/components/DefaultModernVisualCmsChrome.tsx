@@ -6,6 +6,7 @@ import { TopBar } from "@wse/core/features/homepage-cms/components/editor/TopBar
 import { DevicePreview } from "@wse/core/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/components/CmsChromeBrandingToolbar"
 import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/CmsReviewOverlay"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
 import type { ChromeNavItem, TemplateModule } from "@wse/sdk/templates/types"
 import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars"
@@ -123,7 +124,11 @@ export function DefaultModernVisualCmsChrome({
     }
   }, [templateId])
 
-  const mod = useTemplateModule(templateId)
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
+
+  if (templateLoadError) {
+    return <CmsEditorErrorState title="Sablon nem tölthető" description={templateLoadError} />
+  }
 
   if (!mod) {
     return (
@@ -205,7 +210,7 @@ export function DefaultModernVisualCmsChrome({
   const mainReview = renderMain(ctxReview)
 
   return (
-    <div className="cms-editor-chrome min-h-screen">
+    <div className="cms-editor-chrome -mx-4 min-h-[calc(100dvh-8rem)] md:-mx-0">
       <TopBar
         dirty={dirty}
         device={device}
@@ -232,7 +237,7 @@ export function DefaultModernVisualCmsChrome({
             <div className="min-w-0 flex-1">
               <DevicePreview device={device}>
                 <div
-                  className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
+                  className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
                   style={themeTokensToCssVars(themeSettings)}
                 >
                   {wrapLayout("edit", mainEdit)}

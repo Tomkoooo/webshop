@@ -4,6 +4,10 @@ import { useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import type { ContactEmailEntry } from "@wse/core/lib/contact-emails"
 
 function newEntry(): ContactEmailEntry {
@@ -12,6 +16,57 @@ function newEntry(): ContactEmailEntry {
     label: "",
     email: "",
   }
+}
+
+function EmailRow({
+  label,
+  email,
+  onLabelChange,
+  onEmailChange,
+  onRemove,
+  canRemove,
+  labelPlaceholder = "pl. Értékesítés",
+  emailPlaceholder = "ertekesites@example.com",
+}: {
+  label: string
+  email: string
+  onLabelChange?: (value: string) => void
+  onEmailChange: (value: string) => void
+  onRemove: () => void
+  canRemove: boolean
+  labelPlaceholder?: string
+  emailPlaceholder?: string
+}) {
+  return (
+    <div className="grid items-end gap-3 rounded-lg bg-muted/40 p-4 md:grid-cols-[1fr_1fr_auto]">
+      {onLabelChange ? (
+        <div className="space-y-1.5">
+          <Label className={adminFieldLabel}>Megjelenő név</Label>
+          <Input value={label} onChange={(e) => onLabelChange(e.target.value)} placeholder={labelPlaceholder} />
+        </div>
+      ) : null}
+      <div className={onLabelChange ? "space-y-1.5" : "space-y-1.5 md:col-span-2"}>
+        <Label className={adminFieldLabel}>E-mail cím</Label>
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => onEmailChange(e.target.value)}
+          placeholder={emailPlaceholder}
+        />
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        disabled={!canRemove}
+        onClick={onRemove}
+        className="text-destructive hover:bg-destructive/10"
+        aria-label="E-mail törlése"
+      >
+        <Trash2 className="size-4" />
+      </Button>
+    </div>
+  )
 }
 
 export function ContactEmailsEditor({
@@ -37,247 +92,150 @@ export function ContactEmailsEditor({
   const [saving, setSaving] = useState(false)
 
   return (
-    <div className="space-y-10">
-      <p className="text-sm text-neutral-400 max-w-2xl">
+    <div className="space-y-6">
+      <p className="max-w-2xl text-sm text-muted-foreground">
         Ez az egyetlen hely, ahonnan a weboldal e-mail címeit veszi (kapcsolat szekció, lábléc, űrlap). Több
         cím esetén a látogató kiválaszthatja a címzettet.
       </p>
 
-      <div className="space-y-3">
-        {entries.map((entry, index) => (
-          <div
-            key={entry.id}
-            className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end bg-white/5 border border-white/10 p-4"
-          >
-            <label className="space-y-1 block">
-              <span className="text-[10px] uppercase tracking-widest text-neutral-400">Megjelenő név</span>
-              <input
-                value={entry.label}
-                onChange={(event) =>
-                  setEntries((prev) =>
-                    prev.map((row, idx) =>
-                      idx === index ? { ...row, label: event.target.value } : row
-                    )
-                  )
-                }
-                placeholder="pl. Értékesítés"
-                className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
-              />
-            </label>
-            <label className="space-y-1 block">
-              <span className="text-[10px] uppercase tracking-widest text-neutral-400">E-mail cím</span>
-              <input
-                type="email"
-                value={entry.email}
-                onChange={(event) =>
-                  setEntries((prev) =>
-                    prev.map((row, idx) =>
-                      idx === index ? { ...row, email: event.target.value } : row
-                    )
-                  )
-                }
-                placeholder="ertekesites@example.com"
-                className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
-              />
-            </label>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={entries.length <= 1}
-              onClick={() => setEntries((prev) => prev.filter((_, idx) => idx !== index))}
-              className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
-              aria-label="E-mail törlése"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setEntries((prev) => [...prev, newEntry()])}
-          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Új e-mail
-        </Button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Kapcsolati e-mailek</CardTitle>
+          <CardDescription>Megjelenő név és cím párok a honlapon.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {entries.map((entry, index) => (
+            <EmailRow
+              key={entry.id}
+              label={entry.label}
+              email={entry.email}
+              onLabelChange={(value) =>
+                setEntries((prev) =>
+                  prev.map((row, idx) => (idx === index ? { ...row, label: value } : row))
+                )
+              }
+              onEmailChange={(value) =>
+                setEntries((prev) =>
+                  prev.map((row, idx) => (idx === index ? { ...row, email: value } : row))
+                )
+              }
+              onRemove={() => setEntries((prev) => prev.filter((_, idx) => idx !== index))}
+              canRemove={entries.length > 1}
+            />
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={() => setEntries((prev) => [...prev, newEntry()])}>
+            <Plus className="size-4" />
+            Új e-mail
+          </Button>
+        </CardContent>
+      </Card>
 
       {showShopOrderEmails ? (
-      <div className="space-y-4 pt-6 border-t border-white/10">
-        <div className="space-y-2">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
-            Új rendelés értesítések
-          </h3>
-          <p className="text-sm text-neutral-400 max-w-2xl">
-            Ide küldünk e-mailt minden sikeresen létrejött rendelésről. Üres lista esetén nem megy belső új rendelés
-            értesítés.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {newOrderEmails.map((email, index) => (
-            <div
-              key={`new-order-${index}`}
-              className="grid gap-3 md:grid-cols-[1fr_auto] items-end bg-white/5 border border-emerald-500/20 p-4"
-            >
-              <label className="space-y-1 block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-400">E-mail cím</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) =>
-                    setNewOrderEmails((prev) =>
-                      prev.map((row, idx) => (idx === index ? event.target.value : row))
-                    )
-                  }
-                  placeholder="rendelesek@example.com"
-                  className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
-                />
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={newOrderEmails.length <= 1}
-                onClick={() => setNewOrderEmails((prev) => prev.filter((_, idx) => idx !== index))}
-                className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
-                aria-label="Új rendelés értesítési e-mail törlése"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setNewOrderEmails((prev) => [...prev, ""])}
-          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Új rendelés értesítő
-        </Button>
-      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Új rendelés értesítések</CardTitle>
+            <CardDescription>
+              Ide küldünk e-mailt minden sikeresen létrejött rendelésről. Üres lista esetén nem megy belső értesítés.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {newOrderEmails.map((email, index) => (
+              <EmailRow
+                key={`new-order-${index}`}
+                label=""
+                email={email}
+                onEmailChange={(value) =>
+                  setNewOrderEmails((prev) => prev.map((row, idx) => (idx === index ? value : row)))
+                }
+                onRemove={() => setNewOrderEmails((prev) => prev.filter((_, idx) => idx !== index))}
+                canRemove={newOrderEmails.length > 1}
+                emailPlaceholder="rendelesek@example.com"
+              />
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => setNewOrderEmails((prev) => [...prev, ""])}>
+              <Plus className="size-4" />
+              Új rendelés értesítő
+            </Button>
+          </CardContent>
+        </Card>
       ) : null}
 
-      <div className="space-y-4 pt-6 border-t border-white/10">
-        <div className="space-y-2">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
-            Számlázási hiba értesítések
-          </h3>
-          <p className="text-sm text-neutral-400 max-w-2xl">
-            Ide érkeznek az automatikus számlázás sikertelen próbálkozásairól küldött „INVOICE ERROR” levelek.
-            Üres lista esetén az első kapcsolati e-mail (vagy a környezeti{" "}
-            <code className="text-neutral-500">INVOICE_ERROR_ALERT_EMAIL</code>) marad az alapértelmezett.
-          </p>
-        </div>
-
-        <div className="space-y-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>Számlázási hiba értesítések</CardTitle>
+          <CardDescription>
+            Automatikus számlázás sikertelen próbálkozásairól küldött „INVOICE ERROR” levelek címzettjei.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {invoiceAlertEmails.map((email, index) => (
-            <div
+            <EmailRow
               key={`invoice-alert-${index}`}
-              className="grid gap-3 md:grid-cols-[1fr_auto] items-end bg-white/5 border border-amber-500/20 p-4"
-            >
-              <label className="space-y-1 block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-400">E-mail cím</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) =>
-                    setInvoiceAlertEmails((prev) =>
-                      prev.map((row, idx) => (idx === index ? event.target.value : row))
-                    )
-                  }
-                  placeholder="szamlazas@example.com"
-                  className="w-full h-10 px-3 bg-black border border-white/20 text-white text-sm"
-                />
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={invoiceAlertEmails.length <= 1}
-                onClick={() =>
-                  setInvoiceAlertEmails((prev) => prev.filter((_, idx) => idx !== index))
-                }
-                className="h-10 rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-30"
-                aria-label="Értesítési e-mail törlése"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+              label=""
+              email={email}
+              onEmailChange={(value) =>
+                setInvoiceAlertEmails((prev) => prev.map((row, idx) => (idx === index ? value : row)))
+              }
+              onRemove={() => setInvoiceAlertEmails((prev) => prev.filter((_, idx) => idx !== index))}
+              canRemove={invoiceAlertEmails.length > 1}
+              emailPlaceholder="szamlazas@example.com"
+            />
           ))}
-        </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setInvoiceAlertEmails((prev) => [...prev, ""])}>
+            <Plus className="size-4" />
+            Új számlázási értesítő
+          </Button>
+        </CardContent>
+      </Card>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setInvoiceAlertEmails((prev) => [...prev, ""])}
-          className="rounded-md border-white/20 text-white hover:bg-white/10 h-11 text-xs font-medium text-muted-foreground"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Új számlázási értesítő
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3 pt-2">
-        <Button
-          type="button"
-          disabled={saving}
-          onClick={async () => {
-            const valid = entries.filter((row) => row.email.trim())
-            if (valid.length === 0) {
-              toast.error("Legalább egy érvényes kapcsolati e-mail cím szükséges.")
+      <Button
+        type="button"
+        disabled={saving}
+        onClick={async () => {
+          const valid = entries.filter((row) => row.email.trim())
+          if (valid.length === 0) {
+            toast.error("Legalább egy érvényes kapcsolati e-mail cím szükséges.")
+            return
+          }
+          const validInvoiceAlerts = invoiceAlertEmails.map((row) => row.trim()).filter((row) => row.length > 0)
+          const validNewOrderEmails = newOrderEmails.map((row) => row.trim()).filter((row) => row.length > 0)
+          setSaving(true)
+          try {
+            const response = await fetch("/api/admin/contact-emails", {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                entries: valid,
+                invoiceErrorAlertEmails: validInvoiceAlerts,
+                newOrderNotificationEmails: validNewOrderEmails,
+              }),
+            })
+            if (!response.ok) {
+              toast.error("Mentés sikertelen.")
               return
             }
-            const validInvoiceAlerts = invoiceAlertEmails
-              .map((row) => row.trim())
-              .filter((row) => row.length > 0)
-            const validNewOrderEmails = newOrderEmails
-              .map((row) => row.trim())
-              .filter((row) => row.length > 0)
-            setSaving(true)
-            try {
-              const response = await fetch("/api/admin/contact-emails", {
-                method: "PUT",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                  entries: valid,
-                  invoiceErrorAlertEmails: validInvoiceAlerts,
-                  newOrderNotificationEmails: validNewOrderEmails,
-                }),
-              })
-              if (!response.ok) {
-                toast.error("Mentés sikertelen.")
-                return
-              }
-              const data = (await response.json()) as {
-                entries: ContactEmailEntry[]
-                invoiceErrorAlertEmails: string[]
-                newOrderNotificationEmails: string[]
-              }
-              setEntries(data.entries.length > 0 ? data.entries : [newEntry()])
-              setInvoiceAlertEmails(
-                data.invoiceErrorAlertEmails.length > 0 ? data.invoiceErrorAlertEmails : [""]
-              )
-              setNewOrderEmails(
-                data.newOrderNotificationEmails.length > 0 ? data.newOrderNotificationEmails : [""]
-              )
-              toast.success("Kapcsolat és értesítési e-mailek mentve.")
-            } catch {
-              toast.error("Mentés sikertelen.")
-            } finally {
-              setSaving(false)
+            const data = (await response.json()) as {
+              entries: ContactEmailEntry[]
+              invoiceErrorAlertEmails: string[]
+              newOrderNotificationEmails: string[]
             }
-          }}
-          className="rounded-md bg-primary hover:bg-primary/85 text-white h-11 text-xs font-medium text-muted-foreground min-w-[160px]"
-        >
-          {saving ? "Mentés…" : "Mentés"}
-        </Button>
-      </div>
+            setEntries(data.entries.length > 0 ? data.entries : [newEntry()])
+            setInvoiceAlertEmails(
+              data.invoiceErrorAlertEmails.length > 0 ? data.invoiceErrorAlertEmails : [""]
+            )
+            setNewOrderEmails(
+              data.newOrderNotificationEmails.length > 0 ? data.newOrderNotificationEmails : [""]
+            )
+            toast.success("Kapcsolat és értesítési e-mailek mentve.")
+          } catch {
+            toast.error("Mentés sikertelen.")
+          } finally {
+            setSaving(false)
+          }
+        }}
+      >
+        {saving ? "Mentés…" : "Mentés"}
+      </Button>
     </div>
   )
 }

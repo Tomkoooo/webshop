@@ -6,6 +6,8 @@ import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-
 import { getTBookListContent } from "@wse/core/lib/tbook-page-content"
 import { TBookEventList } from "@wse/plugin-t-book/storefront/TBookEventList"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
+import { fetchPublicEventsForStorefront } from "@wse/plugin-t-book/lib/fetch-public-events"
+import { resolveTBookApiBase } from "@wse/plugin-t-book/storefront/tbook-public-api"
 
 export default async function JegyekPage() {
   const enabled = await PluginService.isEnabled("t-book")
@@ -15,6 +17,8 @@ export default async function JegyekPage() {
   const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id)
   const listCopy = await getTBookListContent(chrome.template.manifest.id)
   const apiKey = siteConfig?.tbookApiKey ?? ""
+  const apiBase = resolveTBookApiBase(process.env.NEXT_PUBLIC_TBOOK_API_BASE)
+  const { events, error: eventsError } = await fetchPublicEventsForStorefront(apiKey, apiBase)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
@@ -44,6 +48,8 @@ export default async function JegyekPage() {
               perPerson: listCopy.perPerson,
               perBooking: listCopy.perBooking,
             }}
+            initialEvents={events}
+            initialError={eventsError}
           />
         </div>
       </main>

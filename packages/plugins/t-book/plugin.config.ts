@@ -22,7 +22,7 @@ export const tBook = definePlugin({
     primaryWhenShopDisabled: true,
     statsSegment: "stats",
     navItems: [
-      { label: "Kezdőlap", segment: "" },
+      { label: "Áttekintés", segment: "" },
       { label: "Eseménycsoportok", segment: "groups" },
       { label: "Események", segment: "events" },
       { label: "Foglalások", segment: "bookings" },

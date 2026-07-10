@@ -37,14 +37,14 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
   }
 
   return (
-    <section className="py-20 border-b border-white/10 bg-black/20">
+    <section className="py-16 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 space-y-4">
         <EditableHeading value={block.data.title} onChange={(value) => onPatch("title", value)} editMode className="text-3xl text-white font-black" />
         <EditableText value={block.data.subtitle} onChange={(value) => onPatch("subtitle", value)} editMode className="text-neutral-400" />
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-widest text-neutral-400">Előny kártyák</p>
+          <p className="text-xs font-medium text-muted-foreground">Előny kártyák</p>
           {cards.map((card, index) => (
-            <div key={`feature-card-${index}`} className="grid md:grid-cols-4 gap-2 border border-white/10 p-3">
+            <div key={`feature-card-${index}`} className="grid md:grid-cols-4 gap-2 rounded-lg bg-muted/40 p-3 ring-1 ring-border/40">
               <input
                 value={card.title}
                 onChange={(event) =>
@@ -53,7 +53,7 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                     cards.map((item, idx) => (idx === index ? { ...item, title: event.target.value } : item))
                   )
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Cím"
               />
               <input
@@ -64,7 +64,7 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                     cards.map((item, idx) => (idx === index ? { ...item, description: event.target.value } : item))
                   )
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white md:col-span-2"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60 md:col-span-2"
                 placeholder="Leírás"
               />
               <div className="flex gap-2">
@@ -76,7 +76,7 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                       cards.map((item, idx) => (idx === index ? { ...item, icon: event.target.value || undefined } : item))
                     )
                   }
-                  className="flex-1 h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                  className="flex-1 h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 >
                   <option value="">Nincs ikon</option>
                   {ICON_OPTIONS.map((icon) => (
@@ -89,7 +89,7 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                   type="button"
                   onClick={() => moveCard(index, -1)}
                   disabled={index === 0}
-                  className="px-3 h-9 border border-white/20 text-white text-xs uppercase disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Fel
                 </button>
@@ -97,14 +97,14 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
                   type="button"
                   onClick={() => moveCard(index, 1)}
                   disabled={index === cards.length - 1}
-                  className="px-3 h-9 border border-white/20 text-white text-xs uppercase disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Le
                 </button>
                 <button
                   type="button"
                   onClick={() => onPatch("cards", cards.filter((_, idx) => idx !== index))}
-                  className="px-3 h-9 border border-red-500/60 text-red-200 text-xs uppercase"
+                  className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40"
                 >
                   Törlés
                 </button>
@@ -114,7 +114,7 @@ export function FeaturesBlockEditor({ block, onPatch }: Props) {
           <button
             type="button"
             onClick={() => onPatch("cards", [...cards, { title: "Új előny", description: "Írd le röviden.", icon: "Star" }])}
-            className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+            className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
           >
             Kártya hozzáadása
           </button>

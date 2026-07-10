@@ -9,6 +9,11 @@ import {
   THEME_TYPOGRAPHY_KEYS,
   type ThemeTypography,
 } from "@wse/sdk/theme/typography"
+import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { Textarea } from "@wse/core/components/ui/textarea"
 import { mergeThemeTokens, parseThemeJsonInput } from "@wse/core/lib/parse-theme-json"
 import type { ThemeTokens } from "@wse/core/services/theme"
 
@@ -103,19 +108,15 @@ export function ThemeEditor({
 
   return (
     <div className="space-y-6">
-      <section className="border border-white/20 bg-black/70 p-4 space-y-3">
-        <div>
-          <h3 className="text-xs uppercase tracking-widest text-white">Import palette</h3>
-          <p className="mt-1 text-xs text-neutral-400 max-w-2xl">
-            Upload a <code className="text-neutral-300">.json</code> file or paste palette JSON below, then
-            click Apply. Keys: <code className="text-neutral-300">primary</code>,{" "}
-            <code className="text-neutral-300">primaryForeground</code>, nested{" "}
-            <code className="text-neutral-300">{`{ "colors": { ... } }`}</code> or{" "}
-            <code className="text-neutral-300">{`{ "defaultTheme": { ... } }`}</code>. Preview updates
-            immediately; use Save theme to persist.
-          </p>
-        </div>
-        <textarea
+      <Card>
+        <CardHeader>
+          <CardTitle>Paletta importálása</CardTitle>
+          <CardDescription>
+            JSON fájl vagy beillesztett paletta — az előnézet azonnal frissül; a mentéshez használd a „Téma mentése” gombot.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+        <Textarea
           value={jsonInput}
           onChange={(event) => setJsonInput(event.target.value)}
           onKeyDown={(event) => {
@@ -126,23 +127,18 @@ export function ThemeEditor({
           }}
           rows={8}
           spellCheck={false}
-          placeholder={`Paste palette JSON, e.g.\n{\n  "primary": "#2C2416",\n  "primaryForeground": "#FAF6EF"\n}`}
-          className="w-full min-h-[140px] font-mono text-sm bg-black border border-white/20 text-white p-3 focus:outline-none focus:border-primary/60"
+          placeholder={`{\n  "primary": "#2C2416",\n  "primaryForeground": "#FAF6EF"\n}`}
+          className="min-h-[140px] font-mono text-sm"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => applyImportedJson(jsonInput)}
-            className="px-3 h-9 bg-primary text-white text-xs uppercase"
-          >
-            Apply pasted JSON
-          </button>
-          <label
-            htmlFor={fileInputId}
-            className="px-3 h-9 border border-white/20 text-white text-xs uppercase inline-flex items-center cursor-pointer hover:border-primary/50"
-          >
-            Choose JSON file…
-          </label>
+          <Button type="button" size="sm" onClick={() => applyImportedJson(jsonInput)}>
+            Beillesztett JSON alkalmazása
+          </Button>
+          <Button type="button" size="sm" variant="outline" asChild>
+            <label htmlFor={fileInputId} className="cursor-pointer">
+              JSON fájl kiválasztása…
+            </label>
+          </Button>
           <input
             id={fileInputId}
             type="file"
@@ -153,29 +149,20 @@ export function ThemeEditor({
               e.target.value = ""
             }}
           />
-          <button
-            type="button"
-            onClick={() => setJsonInput("")}
-            className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
-          >
-            Clear
-          </button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setJsonInput("")}>
+            Törlés
+          </Button>
         </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <p className="text-xs text-neutral-400 max-w-3xl bg-card shadow-sm p-3">
-        <strong className="text-neutral-200">primary</strong> — gombok háttere (
-        <code className="text-neutral-300">bg-primary</code>). Boltban ne használd ikonokra, szövegre,
-        keretekre — helyette{" "}
-        <code className="text-neutral-300">text-primary-foreground</code>,{" "}
-        <code className="text-neutral-300">border-primary-foreground/35</code>, vagy{" "}
-        <code className="text-neutral-300">text-secondary-foreground</code> (lásd{" "}
-        <code className="text-neutral-300">storefront-ui.ts</code>). Admin:{" "}
-        <code className="text-neutral-300">admin-value</code>,{" "}
-        <code className="text-neutral-300">admin-headline-accent</code>.{" "}
-        <strong className="text-neutral-200">primaryForeground</strong> — szöveg primary gombokon és
-        storefront kiemelések. <strong className="text-neutral-200">secondaryForeground</strong> — finomabb
-        hover/link. <strong className="text-neutral-200">foreground</strong> — fő szöveg és árak.
+      <p className="text-xs text-muted-foreground max-w-3xl rounded-lg bg-muted/40 p-3">
+        <strong className="text-foreground">primary</strong> — gombok háttere (
+        <code>bg-primary</code>). Boltban ne használd ikonokra, szövegre,
+        keretekre — helyette <code>text-primary-foreground</code>,{" "}
+        <code>border-primary-foreground/35</code>, vagy <code>text-secondary-foreground</code>.{" "}
+        <strong className="text-foreground">primaryForeground</strong> — szöveg primary gombokon.
+        <strong className="text-foreground"> foreground</strong> — fő szöveg és árak.
       </p>
 
       {contrastIssues.length > 0 ? (
@@ -201,14 +188,14 @@ export function ThemeEditor({
       ) : null}
 
       {THEME_ROLE_GROUPS.map((group) => (
-        <section key={group.id} className="space-y-3">
-          <h3 className="text-xs uppercase tracking-widest text-white border-b border-white/10 pb-1">
-            {group.label}
-          </h3>
-          <div className="grid md:grid-cols-2 gap-3">
+        <Card key={group.id}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{group.label}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
             {group.tokens.map((key) => (
-              <label key={key} className="space-y-1">
-                <span className="text-xs uppercase tracking-widest text-neutral-400">{key}</span>
+              <div key={key} className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">{key}</Label>
                 <div className="flex gap-2">
                   <input
                     type="color"
@@ -216,36 +203,36 @@ export function ThemeEditor({
                     onChange={(event) =>
                       setTheme((prev) => ({ ...prev, [key]: event.target.value }))
                     }
+                    className="size-9 shrink-0 cursor-pointer rounded-md border-0 bg-transparent"
                   />
-                  <input
+                  <Input
                     value={theme[key as keyof ThemeTokens]}
                     onChange={(event) =>
                       setTheme((prev) => ({ ...prev, [key]: event.target.value }))
                     }
-                    className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm"
+                    className="font-mono text-sm"
                   />
                 </div>
-              </label>
+              </div>
             ))}
-          </div>
-        </section>
+          </CardContent>
+        </Card>
       ))}
 
-      <section className="space-y-3">
-        <h3 className="text-xs uppercase tracking-widest text-white border-b border-white/10 pb-1">
-          Typography
-        </h3>
-        <p className="text-xs text-neutral-400 max-w-2xl">
-          Fonts and heading scale apply as CSS variables next to the colors. Leave a field empty to
-          use the template default.
-        </p>
-        <div className="grid md:grid-cols-2 gap-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tipográfia</CardTitle>
+          <CardDescription>
+            Betűtípusok és méretek CSS változóként — üres mező = sablon alapértelmezés.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
           {THEME_TYPOGRAPHY_KEYS.map((key) => (
-            <label key={key} className="space-y-1">
-              <span className="text-xs uppercase tracking-widest text-neutral-400">
+            <div key={key} className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
                 {TYPOGRAPHY_LABELS[key]}
-              </span>
-              <input
+              </Label>
+              <Input
                 value={typography[key] ?? ""}
                 placeholder={DEFAULT_THEME_TYPOGRAPHY[key]}
                 onChange={(event) =>
@@ -256,16 +243,17 @@ export function ThemeEditor({
                     return next
                   })
                 }
-                className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm font-mono"
+                className="font-mono text-sm"
               />
-            </label>
+            </div>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(JSON.stringify(theme, null, 2))
@@ -274,20 +262,16 @@ export function ThemeEditor({
               toast.error("Clipboard not available")
             }
           }}
-          className="px-3 h-10 border border-white/20 text-white text-xs uppercase"
         >
-          Copy as JSON
-        </button>
-        <button
+          Másolás JSON-ként
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setTheme(resetBaseline)} title={resetHelpText}>
+          Előnézet alapállapot
+        </Button>
+        <Button
           type="button"
-          onClick={() => setTheme(resetBaseline)}
-          className="px-3 h-10 border border-white/20 text-white text-xs uppercase"
-          title={resetHelpText}
-        >
-          Preview baseline
-        </button>
-        <button
-          type="button"
+          variant="outline"
+          className="text-amber-700 hover:text-amber-800"
           onClick={async () => {
             try {
               const res = await fetch("/api/admin/theme", { method: "DELETE" })
@@ -304,12 +288,11 @@ export function ThemeEditor({
               toast.error("Could not reset theme on server")
             }
           }}
-          className="px-3 h-10 border border-amber-500/40 text-amber-100 text-xs uppercase"
           title="Writes to disk: storefront uses template or engine baseline until you customise again"
         >
-          Reset to default & save
-        </button>
-        <button
+          Visszaállítás és mentés
+        </Button>
+        <Button
           type="button"
           onClick={async () => {
             const res = await fetch("/api/admin/theme", {
@@ -332,13 +315,12 @@ export function ThemeEditor({
               toast.warning(issues.map((issue) => issue.message).join(" "))
             }
           }}
-          className="px-3 h-10 bg-primary text-white text-xs uppercase"
         >
-          Save theme
-        </button>
+          Téma mentése
+        </Button>
       </div>
 
-      {resetHelpText ? <p className="text-xs text-neutral-500 max-w-xl">{resetHelpText}</p> : null}
+      {resetHelpText ? <p className="text-xs text-muted-foreground max-w-xl">{resetHelpText}</p> : null}
     </div>
   )
 }

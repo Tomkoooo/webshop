@@ -501,6 +501,11 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
   color: var(--foreground);
 }
 
+.admin-storefront-preview {
+  contain: layout style;
+  isolation: isolate;
+}
+
 .cms-editor-toolbar,
 .cms-editor-branding,
 .cms-editor-subtoolbar {

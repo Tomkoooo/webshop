@@ -2,6 +2,8 @@
 
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
+import { Input } from "@wse/core/components/ui/input"
+import { adminInputClass } from "@wse/core/lib/admin-ui"
 
 type Props = {
   src: string
@@ -12,9 +14,7 @@ type Props = {
   width?: number
   height?: number
   usageLabel?: string
-  /** Enables free rectangle crop and full-image upload in the editor (for banners and logos). */
   flexibleCrop?: boolean
-  /** Renders upload controls below the preview so parent overflow-hidden does not clip them. */
   separateControls?: boolean
 }
 
@@ -30,18 +30,18 @@ function EditableImageControls({
     <div className="cms-admin-control relative z-10 space-y-2">
       <UploadSheet
         onUploaded={onChange}
-        label="Upload image"
+        label="Kép feltöltése"
         usageLabel={usageLabel}
         recommendedSize={{ width: width ?? 1200, height: height ?? 800 }}
         aspect={(width ?? 1200) / (height ?? 800)}
         allowRectangleCrop={flexibleCrop}
         allowSkipCrop={flexibleCrop}
       />
-      <input
+      <Input
         value={src}
         onChange={(event) => onChange(event.target.value)}
         placeholder="/api/media/..."
-        className="w-full border border-dashed border-white/20 bg-transparent px-2 py-1 text-xs text-white focus:border-primary-foreground/50 focus:outline-none"
+        className={`${adminInputClass} h-8 text-xs`}
       />
     </div>
   )

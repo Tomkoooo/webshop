@@ -52,7 +52,7 @@ export function AboutBlockEditor({
   const isPricingBlock = block.id === "pricing-info"
 
   return (
-    <section className="py-20 border-b border-white/10 bg-black/20">
+    <section className="py-16 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 space-y-4">
         <EditableHeading
           value={block.data.title}
@@ -63,7 +63,7 @@ export function AboutBlockEditor({
 
         {isStoryBlock ? (
           <>
-            <p className="text-xs uppercase tracking-widest text-emerald-300/90">
+            <p className="text-xs uppercase tracking-widest text-emerald-800/90">
               Történet blokk (kép, szöveg, gomb)
             </p>
             <EditableText
@@ -76,11 +76,11 @@ export function AboutBlockEditor({
             <input
               value={block.data.boxHeading ?? ""}
               onChange={(e) => onPatch("boxHeading", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-sm text-white"
+              className="w-full h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
               placeholder="Doboz címsor (pl. Alkoss, játssz, programozz!)"
             />
             <div className="flex flex-wrap items-start gap-4">
-              <div className="relative w-40 h-40 border border-white/20 bg-black/40 overflow-hidden">
+              <div className="relative w-40 h-40 rounded-lg bg-muted/40 ring-1 ring-border/40 overflow-hidden">
                 {image ? (
                   <FallbackImage
                     src={mediaImageSrc(image)}
@@ -104,7 +104,7 @@ export function AboutBlockEditor({
                   </button>
                 ) : null}
               </div>
-              <label className="inline-flex items-center gap-2 px-3 h-9 border border-white/20 text-white text-xs uppercase cursor-pointer">
+              <label className="inline-flex items-center gap-2 inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60 cursor-pointer">
                 <Upload className="h-4 w-4" />
                 {uploading ? "Feltöltés…" : "Kép feltöltése"}
                 <input
@@ -120,26 +120,26 @@ export function AboutBlockEditor({
               <input
                 value={block.data.ctaLabel ?? ""}
                 onChange={(e) => onPatch("ctaLabel", e.target.value)}
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Gomb felirat (pl. Jelentkezés)"
               />
               <input
                 value={block.data.ctaHref ?? ""}
                 onChange={(e) => onPatch("ctaHref", e.target.value)}
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Gomb link (pl. /jegyvasarlas)"
               />
             </div>
             <input
               value={block.data.bannerText ?? ""}
               onChange={(e) => onPatch("bannerText", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-sm text-white"
+              className="w-full h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
               placeholder="Zöld sáv szövege alul"
             />
             <input
               value={block.data.bannerHref ?? ""}
               onChange={(e) => onPatch("bannerHref", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-xs text-white font-mono"
+              className="w-full h-9 rounded-md border-0 bg-background/90 px-3 font-mono text-xs text-foreground ring-1 ring-border/60"
               placeholder="Facebook esemény URL (zöld sáv + oldalsó tab)"
             />
           </>
@@ -163,7 +163,7 @@ export function AboutBlockEditor({
 
         {isFaqBlock ? (
           <>
-        <p className="text-xs uppercase tracking-widest text-neutral-400 pt-4">
+        <p className="text-xs font-medium text-muted-foreground pt-4">
           Gyakori kérdések (accordion)
         </p>
         {block.data.accordions.map((item, index) => (
@@ -178,7 +178,7 @@ export function AboutBlockEditor({
                   )
                 )
               }
-              className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+              className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
               placeholder="Kérdés (cím)"
             />
             <div className="flex gap-2">
@@ -192,7 +192,7 @@ export function AboutBlockEditor({
                     )
                   )
                 }
-                className="flex-1 min-h-[72px] px-2 py-1 bg-black border border-white/20 text-sm text-white resize-y"
+                className="flex-1 min-h-[72px] resize-y rounded-md border-0 bg-background/90 px-3 py-2 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Válasz (tartalom)"
               />
               <button
@@ -203,7 +203,7 @@ export function AboutBlockEditor({
                     block.data.accordions.filter((_, idx) => idx !== index)
                   )
                 }
-                className="px-3 h-9 border border-red-500/60 text-red-200 text-xs uppercase shrink-0 self-start"
+                className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40 shrink-0 self-start"
               >
                 Törlés
               </button>
@@ -218,7 +218,7 @@ export function AboutBlockEditor({
               { title: "Új kérdés", content: "Válasz szövege…" },
             ])
           }
-          className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+          className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
         >
           Kérdés hozzáadása
         </button>
@@ -227,7 +227,7 @@ export function AboutBlockEditor({
 
         {isStoryBlock ? null : !isFaqBlock && !isPricingBlock ? (
           <>
-            <p className="text-xs uppercase tracking-widest text-neutral-500 pt-4">
+            <p className="text-xs text-muted-foreground pt-4">
               Kártyák (opcionális, régi elrendezés)
             </p>
             {block.data.cards.map((item, index) => (
@@ -242,7 +242,7 @@ export function AboutBlockEditor({
                       )
                     )
                   }
-                  className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                  className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                   placeholder="Cím"
                 />
                 <input
@@ -255,7 +255,7 @@ export function AboutBlockEditor({
                       )
                     )
                   }
-                  className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                  className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                   placeholder="Leírás"
                 />
                 <div className="flex gap-2">
@@ -271,7 +271,7 @@ export function AboutBlockEditor({
                         )
                       )
                     }
-                    className="flex-1 h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                    className="flex-1 h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                   >
                     <option value="">Nincs ikon</option>
                     {ICON_OPTIONS.map((icon) => (
@@ -288,7 +288,7 @@ export function AboutBlockEditor({
                         block.data.cards.filter((_, idx) => idx !== index)
                       )
                     }
-                    className="px-3 h-9 border border-red-500/60 text-red-200 text-xs uppercase"
+                    className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40"
                   >
                     Törlés
                   </button>
@@ -303,7 +303,7 @@ export function AboutBlockEditor({
                   { title: "Új kártya", description: "Kártya leírás", icon: "Shield" },
                 ])
               }
-              className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+              className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
             >
               Kártya hozzáadása
             </button>

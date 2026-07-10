@@ -1,5 +1,6 @@
 import type { ChromeNavItem } from "@wse/sdk/templates/types"
 import { z } from "zod"
+import { normalizeTBookApiKey } from "./api-key"
 
 const navLinkSchema = z.object({
   label: z.string(),
@@ -28,7 +29,9 @@ export function extractTBookHomeChrome(content: unknown): TBookHomeChromeConfig 
       ? (content as { chrome: unknown }).chrome
       : {}
   )
-  return parsed.success ? parsed.data : { nav: [], tbookApiKey: "" }
+  return parsed.success
+    ? { ...parsed.data, tbookApiKey: normalizeTBookApiKey(parsed.data.tbookApiKey) }
+    : { nav: [], tbookApiKey: "" }
 }
 
 export function navItemsFromTBookChrome(config: TBookHomeChromeConfig): ChromeNavItem[] {

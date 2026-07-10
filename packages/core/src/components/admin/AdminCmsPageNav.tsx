@@ -22,9 +22,9 @@ export function AdminCmsPageNav({
   settingsSections?: SettingsSectionLink[]
 }) {
   return (
-    <nav className="flex flex-col gap-3 sm:items-end">
+    <nav className="flex flex-col gap-2">
       {showSettingsLink ? (
-        <div className="flex flex-wrap justify-end gap-1 rounded-lg bg-muted/40 p-1">
+        <div className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
           <Link
             href="/admin/cms/settings"
             className={cn(
@@ -48,7 +48,7 @@ export function AdminCmsPageNav({
           ))}
         </div>
       ) : null}
-      <div className="flex flex-wrap justify-end gap-1 rounded-lg bg-muted/40 p-1">
+      <div className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
         {editablePages.map((p) => {
           const isActive = p.adminSegment === activeSegment
           return (

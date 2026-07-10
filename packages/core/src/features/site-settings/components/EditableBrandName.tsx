@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@wse/core/lib/utils"
+import { cmsInlineFieldClass } from "@wse/core/lib/admin-ui"
 
 export function EditableBrandName({
   value,
@@ -24,10 +25,7 @@ export function EditableBrandName({
         id={id}
         value={value}
         onChange={(event) => void onChange(event.target.value)}
-        className={cn(
-          "h-9 px-2 bg-transparent border border-dashed border-white/20 text-white text-sm",
-          inputClassName
-        )}
+        className={cn(cmsInlineFieldClass, "h-9", inputClassName)}
       />
     </div>
   )

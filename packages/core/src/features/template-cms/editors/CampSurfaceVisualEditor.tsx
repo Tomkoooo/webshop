@@ -8,11 +8,13 @@ import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
+import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
+import { CmsEditorTemplateLoading } from "@wse/core/features/template-cms/components/CmsEditorTemplateLoading"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@wse/core/templates/registry"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import type { TemplateModule } from "@wse/sdk/templates/types"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
@@ -66,12 +68,7 @@ export function CampSurfaceVisualEditor({
   void seo
   void themeResetBaseline
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const campKey = CAMP_PAGE_KEY_MAP[pageKey]
-  const def = campKey ? mod.campPages?.[campKey] : undefined
-  if (!def) throw new Error(`Camp page '${pageKey}' is not registered on template '${mod.manifest.id}'`)
-
-  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps?: unknown }>
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -85,6 +82,29 @@ export function CampSurfaceVisualEditor({
     dirty,
     markSynced,
   })
+
+  if (templateLoadError) {
+    return (
+      <CmsEditorErrorState title="Tábor szerkesztő nem elérhető" description={templateLoadError} />
+    )
+  }
+
+  if (!mod) {
+    return <CmsEditorTemplateLoading />
+  }
+
+  const campKey = CAMP_PAGE_KEY_MAP[pageKey]
+  const def = campKey ? mod.campPages?.[campKey] : undefined
+  if (!def) {
+    return (
+      <CmsEditorErrorState
+        title="Tábor oldal nem szerkeszthető"
+        description={`A '${pageKey}' oldal nincs regisztrálva a '${mod.manifest.id}' sablonon.`}
+      />
+    )
+  }
+
+  const RenderCmp = def.Render as ComponentType<{ content: unknown; deps?: unknown }>
 
   const categoriesMapped = homepageDeps.categories.map((c) => ({
     id: c.id,

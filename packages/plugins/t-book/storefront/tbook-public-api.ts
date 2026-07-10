@@ -1,4 +1,5 @@
-/** Default API root; override per-call for split deploys (tester UI → admin API). */
+import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "../lib/api-key"
+
 export function resolveTBookApiBase(override?: string): string {
   const trimmed = override?.replace(/\/$/, "")
   if (trimmed) return trimmed
@@ -112,11 +113,16 @@ async function tbookFetch<T>(
   init?: RequestInit,
   apiBase?: string
 ): Promise<T> {
+  const key = normalizeTBookApiKey(apiKey)
+  if (!key) {
+    throw new Error("A tBook API kulcs üres vagy érvénytelen.")
+  }
+
   const res = await fetch(`${resolveTBookApiBase(apiBase)}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "X-TBook-Api-Key": apiKey,
+      [TBOOK_API_KEY_HEADER]: key,
       ...(init?.headers ?? {}),
     },
   })

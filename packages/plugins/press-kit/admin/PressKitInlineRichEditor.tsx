@@ -27,7 +27,7 @@ export function PressKitInlineRichEditor({ path, html, className, minHeight }: P
       variant="mail"
       value={html || "<p></p>"}
       onChange={(next) => cms.setPath(path, next)}
-      className="border border-dashed border-white/25"
+      className="border border-dashed border-primary/35 ring-1 ring-border/60"
       editorClassName={minHeight ?? "min-h-[200px]"}
     />
   )

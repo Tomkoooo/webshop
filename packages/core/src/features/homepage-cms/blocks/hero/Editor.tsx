@@ -82,17 +82,17 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
   }
 
   return (
-    <section className="py-20 border-b border-white/10 bg-black/20">
+    <section className="py-16 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 text-left space-y-4">
-        <p className="text-xs uppercase tracking-widest text-neutral-400">Hero slides</p>
+        <p className="text-xs font-medium text-muted-foreground">Hero slides</p>
         {slides.map((slide, slideIndex) => (
-          <div key={`hero-slide-${slideIndex}`} className="space-y-4 border border-white/10 p-4">
+          <div key={`hero-slide-${slideIndex}`} className="space-y-4 rounded-lg bg-muted/40 p-4 ring-1 ring-border/40">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-widest text-white">Hero {slideIndex + 1}</p>
+              <p className="text-xs font-semibold text-foreground">Hero {slideIndex + 1}</p>
               <button
                 type="button"
                 onClick={() => patchSlides(slides.filter((_, idx) => idx !== slideIndex))}
-                className="px-3 h-8 border border-red-500/60 text-red-200 text-xs uppercase"
+                className="inline-flex h-8 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40"
               >
                 Remove hero
               </button>
@@ -112,7 +112,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
             />
             <div className="grid md:grid-cols-2 gap-2">
               <label className="space-y-1">
-                <span className="text-xs uppercase tracking-widest text-neutral-400">Hero duration (seconds)</span>
+                <span className="text-xs font-medium text-muted-foreground">Hero duration (seconds)</span>
                 <input
                   type="number"
                   min={1}
@@ -125,11 +125,11 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                       )
                     )
                   }
-                  className="h-9 w-full px-2 bg-black border border-white/20 text-sm text-white"
+                  className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs uppercase tracking-widest text-neutral-400">Image duration (seconds)</span>
+                <span className="text-xs font-medium text-muted-foreground">Image duration (seconds)</span>
                 <input
                   type="number"
                   min={1}
@@ -142,14 +142,14 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                       )
                     )
                   }
-                  className="h-9 w-full px-2 bg-black border border-white/20 text-sm text-white"
+                  className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 />
               </label>
             </div>
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-widest text-neutral-400">Slide images</p>
+              <p className="text-xs font-medium text-muted-foreground">Slide images</p>
               {slide.images.map((image, imageIndex) => (
-                <div key={`hero-slide-${slideIndex}-image-${imageIndex}`} className="space-y-2 border border-white/10 p-3">
+                <div key={`hero-slide-${slideIndex}-image-${imageIndex}`} className="space-y-2 rounded-lg bg-muted/40 p-3 ring-1 ring-border/40">
                   <EditableImage
                     src={image}
                     alt={slide.title}
@@ -167,7 +167,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                       )
                     }
                     usageLabel={`Hero ${slideIndex + 1} - image ${imageIndex + 1}`}
-                    className="w-full h-52 object-cover border border-white/10"
+                    className="w-full h-52 object-cover ring-1 ring-border/40"
                   />
                   <button
                     type="button"
@@ -178,7 +178,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                         )
                       )
                     }
-                    className="px-3 h-8 border border-red-500/60 text-red-200 text-xs uppercase"
+                    className="inline-flex h-8 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40"
                   >
                     Remove image
                   </button>
@@ -193,7 +193,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                     )
                   )
                 }
-                className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+                className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
               >
                 Add image
               </button>
@@ -204,7 +204,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                 onChange={(event) =>
                   patchSlides(slides.map((item, idx) => (idx === slideIndex ? { ...item, primaryCtaLabel: event.target.value } : item)))
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Elsődleges gomb felirat"
               />
               <input
@@ -212,7 +212,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                 onChange={(event) =>
                   patchSlides(slides.map((item, idx) => (idx === slideIndex ? { ...item, primaryCtaHref: event.target.value } : item)))
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Elsődleges gomb link"
               />
               <input
@@ -220,7 +220,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                 onChange={(event) =>
                   patchSlides(slides.map((item, idx) => (idx === slideIndex ? { ...item, secondaryCtaLabel: event.target.value } : item)))
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Másodlagos gomb felirat"
               />
               <input
@@ -228,12 +228,12 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                 onChange={(event) =>
                   patchSlides(slides.map((item, idx) => (idx === slideIndex ? { ...item, secondaryCtaHref: event.target.value } : item)))
                 }
-                className="h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Másodlagos gomb link"
               />
             </div>
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-widest text-neutral-400">Jelvények</p>
+              <p className="text-xs font-medium text-muted-foreground">Jelvények</p>
               {slide.badges.map((badge, badgeIndex) => (
                 <div key={`hero-slide-${slideIndex}-badge-${badgeIndex}`} className="flex gap-2">
                   <input
@@ -247,7 +247,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                         )
                       )
                     }
-                    className="flex-1 h-9 px-2 bg-black border border-white/20 text-sm text-white"
+                    className="flex-1 h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                   />
                   <button
                     type="button"
@@ -258,7 +258,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                         )
                       )
                     }
-                    className="px-3 h-9 border border-red-500/60 text-red-200 text-xs uppercase"
+                    className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-destructive ring-1 ring-destructive/40"
                   >
                     Törlés
                   </button>
@@ -273,7 +273,7 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
                     )
                   )
                 }
-                className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+                className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
               >
                 Jelvény hozzáadása
               </button>
@@ -283,11 +283,11 @@ export function HeroBlockEditor({ block, onPatch, onPatchData }: Props) {
         <button
           type="button"
           onClick={() => patchSlides([...slides, createSlide()])}
-          className="px-3 h-9 border border-white/20 text-white text-xs uppercase"
+          className="inline-flex h-9 items-center rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60"
         >
           Add hero
         </button>
-        <div className="text-[11px] text-neutral-500">
+        <div className="text-xs text-neutral-500">
           Tip: remove the top "Hero logo" uploader and manage hero visuals only here in the Hero block.
         </div>
       </div>

@@ -6,8 +6,8 @@ export function HomeRender({ content }: RenderProps<HomeContent, HomePageDeps>) 
   const alt = content.meta.seoTitle || "Event Structure"
 
   return (
-    <main className="fixed inset-0 flex min-h-svh w-full items-center justify-center bg-background">
-      <div className="relative aspect-video h-auto max-h-svh w-full max-w-[min(100vw,calc(100svh*16/9))]">
+    <main className="relative flex min-h-[min(90svh,720px)] w-full items-center justify-center bg-background">
+      <div className="relative aspect-video h-auto max-h-[min(90svh,720px)] w-full max-w-[min(100%,calc(min(90svh,720px)*16/9))]">
         <CmsImage
           path="heroImage"
           src={content.heroImage}

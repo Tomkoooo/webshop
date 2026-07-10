@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@wse/core/lib/utils"
+import { cmsInlineFieldClass, cmsInlineTextareaClass } from "@wse/core/lib/admin-ui"
 
 type Props = {
   value: string
@@ -27,14 +28,9 @@ export function EditableText({
     return (
       <textarea
         value={value}
-        onChange={(event) => {
-          onChange(event.target.value)
-        }}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={cn(
-          "w-full min-h-[96px] bg-transparent border border-dashed border-white/20 px-2 py-1 text-white focus:outline-none focus:border-primary-foreground/50",
-          className
-        )}
+        className={cn(cmsInlineTextareaClass, className)}
       />
     )
   }
@@ -42,14 +38,9 @@ export function EditableText({
   return (
     <input
       value={value}
-      onChange={(event) => {
-        onChange(event.target.value)
-      }}
+      onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className={cn(
-        "w-full bg-transparent border border-dashed border-white/20 px-2 py-1 text-white focus:outline-none focus:border-primary-foreground/50",
-        className
-      )}
+      className={cn(cmsInlineFieldClass, className)}
     />
   )
 }

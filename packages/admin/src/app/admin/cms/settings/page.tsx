@@ -26,7 +26,7 @@ export default async function CmsSiteSettingsPage({
   const section = parseCmsSiteSettingsSection(sectionParam, sections)
   const showShopOrderEmails = shouldShowShopOrderContactEmails(isShopEnabled())
 
-  const dbActiveTemplate = await TemplateService.getDbActive()
+  const template = await TemplateService.getActive()
   const [
     theme,
     seo,
@@ -36,7 +36,7 @@ export default async function CmsSiteSettingsPage({
     invoiceErrorAlertEmails,
     newOrderNotificationEmails,
   ] = await Promise.all([
-    ThemeService.getMergedForTemplate(dbActiveTemplate),
+    ThemeService.getMergedForTemplate(template),
     SeoSettingsService.get(),
     BrandingSettingsService.get(),
     FooterSettingsService.get(),
@@ -45,8 +45,8 @@ export default async function CmsSiteSettingsPage({
     ContactEmailsService.listNewOrderNotificationEmails(),
   ])
 
-  const themeResetBaseline = getEffectiveThemeBase(dbActiveTemplate)
-  const themeResetHelpText = dbActiveTemplate.defaultTheme
+  const themeResetBaseline = getEffectiveThemeBase(template)
+  const themeResetHelpText = template.defaultTheme
     ? "Visszaállítja a sablon alap színeit."
     : "Visszaállítja a motor alapértelmezett palettáját."
 
@@ -57,7 +57,7 @@ export default async function CmsSiteSettingsPage({
         section={section}
         sections={sections}
         showShopOrderEmails={showShopOrderEmails}
-        templateName={dbActiveTemplate.manifest.name}
+        templateName={template.manifest.name}
         initialTheme={theme}
         themeResetBaseline={themeResetBaseline}
         themeResetHelpText={themeResetHelpText}

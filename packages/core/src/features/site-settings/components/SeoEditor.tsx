@@ -5,6 +5,13 @@ import { toast } from "sonner"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
+import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { Checkbox } from "@wse/core/components/ui/checkbox"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { Textarea } from "@wse/core/components/ui/textarea"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { mediaImageSrc } from "@wse/core/lib/images"
 
 function SeoImageField({
@@ -24,16 +31,18 @@ function SeoImageField({
 }) {
   const previewSrc = mediaImageSrc(value)
   return (
-    <div className="space-y-2 md:col-span-2">
-      <span className="text-xs uppercase tracking-widest text-neutral-400">{label}</span>
-      <p className="text-xs text-neutral-500">{description}</p>
+    <div className="space-y-3 md:col-span-2">
+      <div className="space-y-1">
+        <Label className={adminFieldLabel}>{label}</Label>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
       {previewSrc ? (
         <FallbackImage
           src={previewSrc}
           alt={label}
           width={recommendedSize.width}
           height={recommendedSize.height}
-          className="max-h-40 w-auto border border-white/20 bg-white/5 object-contain"
+          className="max-h-40 w-auto rounded-md bg-muted object-contain ring-1 ring-border/60"
         />
       ) : null}
       <UploadSheet
@@ -45,10 +54,9 @@ function SeoImageField({
         allowRectangleCrop
         allowSkipCrop
       />
-      <input
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm"
         placeholder="URL vagy feltöltés után automatikus"
       />
     </div>
@@ -67,72 +75,59 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
   }
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-3">
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">Alap meta</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">siteTitle</span>
-            <input
-              value={state.siteTitle}
-              onChange={(e) => patch("siteTitle", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm"
-            />
-          </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">siteDescription</span>
-            <textarea
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Alap meta</CardTitle>
+          <CardDescription>Oldalcím, leírás és indexelési beállítások.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Oldal címe</Label>
+            <Input value={state.siteTitle} onChange={(e) => patch("siteTitle", e.target.value)} />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Oldal leírása</Label>
+            <Textarea
               value={state.siteDescription}
               onChange={(e) => patch("siteDescription", e.target.value)}
-              className="w-full min-h-[72px] px-2 py-2 bg-black border border-white/20 text-white text-sm"
+              rows={3}
             />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">defaultLocale</span>
-            <input
-              value={state.defaultLocale}
-              onChange={(e) => patch("defaultLocale", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">canonicalBaseUrl</span>
-            <input
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Alapértelmezett nyelv</Label>
+            <Input value={state.defaultLocale} onChange={(e) => patch("defaultLocale", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Kanonikus URL</Label>
+            <Input
               value={state.canonicalBaseUrl}
               onChange={(e) => patch("canonicalBaseUrl", e.target.value)}
               placeholder="https://shop.example.com"
-              className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm"
             />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={state.robotsIndex} onCheckedChange={(v) => patch("robotsIndex", v === true)} />
+            Keresők indexelhetik
           </label>
-          <label className="flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-400">
-            <input
-              type="checkbox"
-              checked={state.robotsIndex}
-              onChange={(e) => patch("robotsIndex", e.target.checked)}
-            />
-            robotsIndex
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={state.robotsFollow} onCheckedChange={(v) => patch("robotsFollow", v === true)} />
+            Keresők követhetik a linkeket
           </label>
-          <label className="flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-400">
-            <input
-              type="checkbox"
-              checked={state.robotsFollow}
-              onChange={(e) => patch("robotsFollow", e.target.checked)}
-            />
-            robotsFollow
-          </label>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="space-y-3 border-t border-white/10 pt-6">
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">Megosztási képek</h3>
-        <p className="text-xs text-neutral-500 max-w-2xl">
-          Ezek jelennek meg, ha valaki linket oszt (Facebook, LinkedIn, iMessage, X / Twitter). A{" "}
-          <code className="text-neutral-400">layout.tsx</code> Open Graph és Twitter meta mezőibe kerülnek.
-        </p>
-        <div className="grid md:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Megosztási képek</CardTitle>
+          <CardDescription>
+            Facebook, LinkedIn, iMessage és X előnézet képei (Open Graph és Twitter meta).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
           <SeoImageField
-            label="Open Graph kép (og:image)"
-            description="Ajánlott: 1200×630 px (1.91:1). Közösségi feed előnézet."
+            label="Open Graph kép"
+            description="Ajánlott: 1200×630 px (1.91:1)."
             value={state.ogImage}
             onChange={(url) => patch("ogImage", url)}
             recommendedSize={{ width: 1200, height: 630 }}
@@ -140,20 +135,20 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
           />
           <SeoImageField
             label="Twitter / X kártya kép"
-            description="Ajánlott: 1200×600 px vagy ugyanaz mint az OG. summary_large_image."
+            description="Ajánlott: 1200×600 px vagy ugyanaz mint az OG."
             value={state.twitterImage}
             onChange={(url) => patch("twitterImage", url)}
             recommendedSize={{ width: 1200, height: 600 }}
             aspect={2}
           />
-          <div className="space-y-2">
-            <span className="text-xs uppercase tracking-widest text-neutral-400">Favicon</span>
+          <div className="space-y-3">
+            <Label className={adminFieldLabel}>Favicon</Label>
             <FallbackImage
               src={mediaImageSrc(state.favicon)}
               alt="favicon"
               width={40}
               height={40}
-              className="w-10 h-10 border border-white/20 bg-white"
+              className="size-10 rounded-md bg-muted ring-1 ring-border/60"
             />
             <UploadSheet
               onUploaded={(url) => patch("favicon", url)}
@@ -162,16 +157,12 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
               recommendedSize={{ width: 512, height: 512 }}
               aspect={1}
             />
-            <input
-              value={state.favicon}
-              onChange={(e) => patch("favicon", e.target.value)}
-              className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm"
-            />
+            <Input value={state.favicon} onChange={(e) => patch("favicon", e.target.value)} />
           </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <button
+      <Button
         type="button"
         onClick={async () => {
           const response = await fetch("/api/admin/seo", {
@@ -188,10 +179,9 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
           onSaved?.(updated)
           toast.success("SEO mentve")
         }}
-        className="px-3 h-10 bg-primary text-white text-xs uppercase"
       >
         SEO mentése
-      </button>
+      </Button>
     </div>
   )
 }

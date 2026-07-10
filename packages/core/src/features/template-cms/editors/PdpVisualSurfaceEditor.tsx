@@ -11,11 +11,13 @@ import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
+import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
+import { CmsEditorTemplateLoading } from "@wse/core/features/template-cms/components/CmsEditorTemplateLoading"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@wse/core/templates/registry"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import type { PdpContent } from "@wse/template-default-modern/pages/pdp/schema"
 import type { PdpPageDeps } from "@wse/sdk/templates/types"
@@ -64,8 +66,7 @@ export function PdpVisualSurfaceEditor({
   editorSubtitle?: string
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const PdpRender = mod.pages.pdp.Render
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -79,6 +80,16 @@ export function PdpVisualSurfaceEditor({
     dirty,
     markSynced,
   })
+
+  if (templateLoadError) {
+    return <CmsEditorErrorState title="Termékoldal szerkesztő nem elérhető" description={templateLoadError} />
+  }
+
+  if (!mod) {
+    return <CmsEditorTemplateLoading />
+  }
+
+  const PdpRender = mod.pages.pdp.Render
 
   const categoriesMapped = homepageDeps.categories.map((c) => ({
     id: c.id,

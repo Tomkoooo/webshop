@@ -8,8 +8,7 @@ import { listEditablePages } from "@wse/core/templates/cms-pages"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { getAccessibleCmsSiteSettingsSections } from "@wse/core/lib/admin-settings-access"
 import { CmsEditorLoading } from "@wse/core/features/template-cms/components/CmsEditorLoading"
-import { AdminCmsPageNav } from "@wse/core/components/admin/AdminCmsPageNav"
-import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
+import { CmsVisualEditorPageLayout } from "@wse/core/features/template-cms/components/CmsVisualEditorPageLayout"
 import { PluginService } from "@wse/core/services/plugin"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import { BrandingSettingsService } from "@wse/core/services/branding-settings"
@@ -50,7 +49,6 @@ export default async function CmsPageEditor({
 }) {
   const { pageKey } = await params
   const template = await TemplateService.getActive()
-  const dbActiveTemplate = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
   const campBookingEnabled = await PluginService.isEnabled("camp-booking")
   const tBookEnabled = await PluginService.isEnabled("t-book")
@@ -65,10 +63,10 @@ export default async function CmsPageEditor({
     BrandingSettingsService.get(),
     FooterSettingsService.get(),
     SeoSettingsService.get(),
-    ThemeService.getMergedForTemplate(dbActiveTemplate),
+    ThemeService.getMergedForTemplate(template),
   ])
 
-  const themeResetBaseline = getEffectiveThemeBase(dbActiveTemplate)
+  const themeResetBaseline = getEffectiveThemeBase(template)
 
   if (entry.editorKind === "homepage-blocks") {
     if (template.pages.home.cmsPageKind !== "homepage-blocks") notFound()
@@ -109,23 +107,10 @@ export default async function CmsPageEditor({
     )
 
     return (
-      <AdminPageScaffold
-        backHref="/admin/cms"
-        backLabel="CMS áttekintés"
-        title={entry.label}
-        description={
-          <>
-            Sablon: <code>{template.manifest.name}</code> · Kulcs: <code>{fullPageKey}</code>
-            <span className="ml-2 text-primary">· Blokkos főoldal</span>
-          </>
-        }
-        actions={
-          <AdminCmsPageNav
-            editablePages={editablePages}
-            activeSegment={pageKey}
-            settingsSections={cmsSettingsSections}
-          />
-        }
+      <CmsVisualEditorPageLayout
+        editablePages={editablePages}
+        activeSegment={pageKey}
+        settingsSections={cmsSettingsSections}
       >
         <Suspense fallback={<CmsEditorLoading label="Főoldal szerkesztő betöltése…" />}>
           <CmsTemplatePageClient
@@ -139,7 +124,7 @@ export default async function CmsPageEditor({
             dependencies={dependencies}
           />
         </Suspense>
-      </AdminPageScaffold>
+      </CmsVisualEditorPageLayout>
     )
   }
 
@@ -161,13 +146,9 @@ export default async function CmsPageEditor({
 
       return (
         <SurfacePageLayout
-          label={entry.label}
-          subtitle="Főoldal · JSON felület"
           editablePages={editablePages}
           settingsSections={cmsSettingsSections}
           pageKey={pageKey}
-          manifestName={template.manifest.name}
-          fullPageKey={fullPageKey}
         >
           <Suspense fallback={<CmsEditorLoading />}>
             <HomeVisualSurfaceEditor
@@ -197,13 +178,9 @@ export default async function CmsPageEditor({
       const shopDeps = await getShopCmsPreviewDeps(template, initialDraft.pageSize, shopEnabled)
       return (
         <SurfacePageLayout
-          label={entry.label}
-          subtitle="Bolt · szerkesztő"
           editablePages={editablePages}
           settingsSections={cmsSettingsSections}
           pageKey={pageKey}
-          manifestName={template.manifest.name}
-          fullPageKey={fullPageKey}
         >
           <Suspense fallback={<CmsEditorLoading />}>
             <ShopVisualSurfaceEditor
@@ -234,13 +211,9 @@ export default async function CmsPageEditor({
       const initialDraft = initialDraftUnknown as PdpContent
       return (
         <SurfacePageLayout
-          label={entry.label}
-          subtitle="Termék oldal · keret szerkesztő"
           editablePages={editablePages}
           settingsSections={cmsSettingsSections}
           pageKey={pageKey}
-          manifestName={template.manifest.name}
-          fullPageKey={fullPageKey}
         >
           <Suspense fallback={<CmsEditorLoading />}>
             <PdpVisualSurfaceEditor
@@ -272,13 +245,9 @@ export default async function CmsPageEditor({
 
         return (
           <SurfacePageLayout
-            label={entry.label}
-            subtitle="Folyamat oldal · keret szerkesztő"
             editablePages={editablePages}
             settingsSections={cmsSettingsSections}
             pageKey={pageKey}
-            manifestName={template.manifest.name}
-            fullPageKey={fullPageKey}
           >
             <Suspense fallback={<CmsEditorLoading />}>
               <FlowShellVisualSurfaceEditor
@@ -307,13 +276,9 @@ export default async function CmsPageEditor({
         )
         return (
           <SurfacePageLayout
-            label={entry.label}
-            subtitle={`Statikus lap · /${staticSlug}`}
             editablePages={editablePages}
             settingsSections={cmsSettingsSections}
             pageKey={pageKey}
-            manifestName={template.manifest.name}
-            fullPageKey={fullPageKey}
           >
             <Suspense fallback={<CmsEditorLoading />}>
               <StaticPageVisualSurfaceEditor
@@ -342,13 +307,9 @@ export default async function CmsPageEditor({
         )
         return (
           <SurfacePageLayout
-            label={entry.label}
-            subtitle="Tábor foglalás · szövegek"
             editablePages={editablePages}
             settingsSections={cmsSettingsSections}
             pageKey={pageKey}
-            manifestName={template.manifest.name}
-            fullPageKey={fullPageKey}
           >
             <Suspense fallback={<CmsEditorLoading />}>
               <CampSurfaceVisualEditor
@@ -376,13 +337,9 @@ export default async function CmsPageEditor({
         )
         return (
           <SurfacePageLayout
-            label={entry.label}
-            subtitle="tBook foglalás · szövegek"
             editablePages={editablePages}
             settingsSections={cmsSettingsSections}
             pageKey={pageKey}
-            manifestName={template.manifest.name}
-            fullPageKey={fullPageKey}
           >
             <Suspense fallback={<CmsEditorLoading />}>
               <TBookSurfaceVisualEditor
@@ -410,44 +367,23 @@ export default async function CmsPageEditor({
 }
 
 function SurfacePageLayout({
-  label,
-  subtitle,
   editablePages,
   settingsSections,
   pageKey,
-  manifestName,
-  fullPageKey,
   children,
 }: {
-  label: string
-  subtitle: string
   editablePages: ReturnType<typeof listEditablePages>
   settingsSections: Array<{ id: string; label: string }>
   pageKey: string
-  manifestName: string
-  fullPageKey: string
   children: ReactNode
 }) {
   return (
-    <AdminPageScaffold
-      backHref="/admin/cms"
-      backLabel="CMS áttekintés"
-      title={label}
-      description={
-        <>
-          Sablon: <code>{manifestName}</code> · Kulcs: <code>{fullPageKey}</code>
-          <span className="ml-2 text-primary">· {subtitle}</span>
-        </>
-      }
-      actions={
-        <AdminCmsPageNav
-          editablePages={editablePages}
-          activeSegment={pageKey}
-          settingsSections={settingsSections}
-        />
-      }
+    <CmsVisualEditorPageLayout
+      editablePages={editablePages}
+      activeSegment={pageKey}
+      settingsSections={settingsSections}
     >
       {children}
-    </AdminPageScaffold>
+    </CmsVisualEditorPageLayout>
   )
 }

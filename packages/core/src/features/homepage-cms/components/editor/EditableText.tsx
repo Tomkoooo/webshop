@@ -1,6 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Button } from "@wse/core/components/ui/button"
+import { Label } from "@wse/core/components/ui/label"
+import { cmsInlineTextareaClass } from "@wse/core/lib/admin-ui"
 
 type Props = {
   label: string
@@ -20,44 +23,45 @@ export function EditableText({ label, value, onChange }: Props) {
     return (
       <button
         type="button"
-        className="w-full text-left p-2 border border-dashed border-white/20 text-white hover:border-primary-foreground/40"
+        className="w-full rounded-lg bg-muted/40 p-3 text-left ring-1 ring-dashed ring-border/60 transition-colors hover:ring-primary/40"
         onClick={() => setEditing(true)}
       >
-        <span className="text-[10px] uppercase tracking-widest text-neutral-400">{label}</span>
-        <p className="text-sm mt-1">{value || "Click to edit"}</p>
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <p className="mt-1 text-sm text-foreground">{value || "Kattints a szerkesztéshez"}</p>
       </button>
     )
   }
 
   return (
-    <div className="space-y-2">
-      <label className="text-[10px] uppercase tracking-widest text-neutral-400">{label}</label>
+    <div className="space-y-2 rounded-lg bg-card p-3 shadow-sm ring-1 ring-border/60">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <textarea
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        className="w-full min-h-[96px] p-2 bg-black border border-white/20 text-white"
+        className={cmsInlineTextareaClass}
       />
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => {
             onChange(draft)
             setEditing(false)
           }}
-          className="px-3 py-1 text-xs bg-primary text-white"
         >
-          Save
-        </button>
-        <button
+          Mentés
+        </Button>
+        <Button
           type="button"
+          size="sm"
+          variant="outline"
           onClick={() => {
             setDraft(value)
             setEditing(false)
           }}
-          className="px-3 py-1 text-xs border border-white/20 text-white"
         >
-          Cancel
-        </button>
+          Mégse
+        </Button>
       </div>
     </div>
   )

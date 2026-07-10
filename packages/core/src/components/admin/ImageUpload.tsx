@@ -72,7 +72,7 @@ export function ImageUpload({
 
   return (
     <div className="space-y-4">
-      <div className="relative group aspect-square w-full max-w-[240px] bg-background border border-border rounded-2xl overflow-hidden flex items-center justify-center transition-all hover:border-white/40">
+      <div className="relative group aspect-square w-full max-w-[240px] overflow-hidden rounded-2xl bg-muted ring-1 ring-border/60 flex items-center justify-center transition-all hover:ring-primary/40">
         {preview ? (
           <>
             <FallbackImage

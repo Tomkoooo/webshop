@@ -6,6 +6,7 @@ import { TBookEventService } from "../services/event-service"
 import { TBookBookingService } from "../services/booking-service"
 import { TBookCheckoutService } from "../services/checkout-service"
 import { extractApiKeyFromRequest, hashApiKey } from "../lib/api-key"
+import { fetchPublicEventsForStorefront } from "../lib/fetch-public-events"
 import { checkRateLimit, clientKeyFromRequest } from "../lib/rate-limit"
 import { parseBookingFilters } from "../lib/booking-query"
 import { buildBookingCsv, buildBookingExcelBuffer } from "../lib/booking-export"
@@ -262,6 +263,20 @@ async function handleTBookAdminApi(
   if (segment === "dashboard" && method === "GET" && path.length === 1) {
     const stats = await TBookEventService.getDashboardStats()
     return json({ ok: true, stats })
+  }
+
+  if (segment === "connection-test" && method === "POST" && path.length === 1) {
+    const body = await request.json()
+    const apiKey = String(body.apiKey ?? "")
+    const apiBaseOverride =
+      typeof body.apiBase === "string" && body.apiBase.trim()
+        ? body.apiBase.trim()
+        : process.env.NEXT_PUBLIC_TBOOK_API_BASE
+    const { events, error } = await fetchPublicEventsForStorefront(apiKey, apiBaseOverride || undefined)
+    if (error) {
+      return json({ ok: false, error, eventCount: 0 })
+    }
+    return json({ ok: true, eventCount: events.length })
   }
 
   if (segment === "geocode" && method === "POST" && path.length === 1) {

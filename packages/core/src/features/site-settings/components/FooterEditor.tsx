@@ -1,107 +1,139 @@
 "use client"
 
 import { useState } from "react"
+import { Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
+import { Button } from "@wse/core/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
+import { Checkbox } from "@wse/core/components/ui/checkbox"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 
 export function FooterEditor({ initial }: { initial: FooterSettings }) {
   const [state, setState] = useState<FooterSettings>(initial)
   const socialLabels: Record<string, string> = {
-    facebook: "Facebook oldal URL",
-    instagram: "Instagram profil URL",
-    twitter: "Twitter/X URL",
-    youtube: "YouTube csatorna URL",
+    facebook: "Facebook",
+    instagram: "Instagram",
+    twitter: "Twitter / X",
+    youtube: "YouTube",
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-3">
-        <label className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">tagline</span>
-          <input value={state.tagline} onChange={(event) => setState((prev) => ({ ...prev, tagline: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">quickLinksTitle</span>
-          <input value={state.quickLinksTitle} onChange={(event) => setState((prev) => ({ ...prev, quickLinksTitle: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">contactTitle</span>
-          <input value={state.contactTitle} onChange={(event) => setState((prev) => ({ ...prev, contactTitle: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">newsletterLabel</span>
-          <input value={state.newsletterLabel} onChange={(event) => setState((prev) => ({ ...prev, newsletterLabel: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">newsletterPlaceholder</span>
-          <input value={state.newsletterPlaceholder} onChange={(event) => setState((prev) => ({ ...prev, newsletterPlaceholder: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1 md:col-span-2">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">copyrightText</span>
-          <input value={state.copyrightText} onChange={(event) => setState((prev) => ({ ...prev, copyrightText: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-        </label>
-        <label className="space-y-1 md:col-span-2">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">paymentMethodsNote</span>
-          <input value={state.paymentMethodsNote ?? ""} onChange={(event) => setState((prev) => ({ ...prev, paymentMethodsNote: event.target.value }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="Fizetés: bankkártya (Stripe)" />
-        </label>
-      </div>
-
-      <div className="space-y-2 border border-white/10 p-4 rounded-lg">
-        <p className="text-xs uppercase tracking-widest text-neutral-400">Szervező blokk (Mineshow lábléc)</p>
-        <div className="grid md:grid-cols-2 gap-3">
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-[10px] text-neutral-500">Cím</span>
-            <input value={state.organizerSection?.title ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, title: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-          </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-[10px] text-neutral-500">Cégnév</span>
-            <input value={state.organizerSection?.companyName ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, companyName: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-          </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-[10px] text-neutral-500">Székhely</span>
-            <input value={state.organizerSection?.registeredAddress ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, registeredAddress: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-          </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-[10px] text-neutral-500">Levelezési cím</span>
-            <input value={state.organizerSection?.mailingAddress ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, mailingAddress: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-          </label>
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-[10px] text-neutral-500">Nyitvatartás</span>
-            <input value={state.organizerSection?.openingHours ?? ""} onChange={(event) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, openingHours: event.target.value } }))} className="w-full h-9 px-2 bg-black border border-white/20 text-white text-sm" />
-          </label>
-        </div>
-        <p className="text-[10px] text-neutral-500">A tábor helyszíne a főoldal Kapcsolat szekciójában szerkeszthető.</p>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-widest text-neutral-400">quickLinks</p>
-        {state.quickLinks.map((item, index) => (
-          <div key={`${item.label}-${index}`} className="flex gap-2">
-            <input value={item.label} onChange={(event) => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.map((current, idx) => (idx === index ? { ...current, label: event.target.value } : current)) }))} className="h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="Label" />
-            <input value={item.href} onChange={(event) => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.map((current, idx) => (idx === index ? { ...current, href: event.target.value } : current)) }))} className="flex-1 h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="Href" />
-            <button type="button" onClick={() => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.filter((_, idx) => idx !== index) }))} className="px-3 h-9 border border-red-500/60 text-red-200 text-xs uppercase">Remove</button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Lábléc szövegek</CardTitle>
+          <CardDescription>Címek, feliratok és jogi sor a láblécben.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Szlogen</Label>
+            <Input value={state.tagline} onChange={(e) => setState((prev) => ({ ...prev, tagline: e.target.value }))} />
           </div>
-        ))}
-        <button type="button" onClick={() => setState((prev) => ({ ...prev, quickLinks: [...prev.quickLinks, { label: "Uj link", href: "#" }] }))} className="px-3 h-9 border border-white/20 text-white text-xs uppercase">Add link</button>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-widest text-neutral-400">socialLinks</p>
-        {state.socialLinks.map((item, index) => (
-          <div key={item.platform} className="grid grid-cols-1 gap-2 items-center md:grid-cols-[180px_1fr_auto]">
-            <span className="text-xs uppercase tracking-widest text-neutral-300">
-              {socialLabels[item.platform] || item.platform}
-            </span>
-            <input value={item.url} onChange={(event) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, url: event.target.value } : current)) }))} className="h-9 px-2 bg-black border border-white/20 text-white text-sm" placeholder="https://..." />
-            <label className="flex items-center gap-2 text-xs uppercase text-neutral-300">
-              <input type="checkbox" checked={item.enabled} onChange={(event) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, enabled: event.target.checked } : current)) }))} />
-              Enabled
-            </label>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Gyors linkek címe</Label>
+            <Input value={state.quickLinksTitle} onChange={(e) => setState((prev) => ({ ...prev, quickLinksTitle: e.target.value }))} />
           </div>
-        ))}
-      </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Kapcsolat címe</Label>
+            <Input value={state.contactTitle} onChange={(e) => setState((prev) => ({ ...prev, contactTitle: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Hírlevél felirat</Label>
+            <Input value={state.newsletterLabel} onChange={(e) => setState((prev) => ({ ...prev, newsletterLabel: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Hírlevél mező szövege</Label>
+            <Input value={state.newsletterPlaceholder} onChange={(e) => setState((prev) => ({ ...prev, newsletterPlaceholder: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Copyright sor</Label>
+            <Input value={state.copyrightText} onChange={(e) => setState((prev) => ({ ...prev, copyrightText: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Fizetési módok megjegyzés</Label>
+            <Input
+              value={state.paymentMethodsNote ?? ""}
+              onChange={(e) => setState((prev) => ({ ...prev, paymentMethodsNote: e.target.value }))}
+              placeholder="Fizetés: bankkártya (Stripe)"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      <button
+      <Card>
+        <CardHeader>
+          <CardTitle>Szervező blokk</CardTitle>
+          <CardDescription>Opcionális Mineshow / tábor lábléc adatok.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Cím</Label>
+            <Input value={state.organizerSection?.title ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, title: e.target.value } }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Cégnév</Label>
+            <Input value={state.organizerSection?.companyName ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, companyName: e.target.value } }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Székhely</Label>
+            <Input value={state.organizerSection?.registeredAddress ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, registeredAddress: e.target.value } }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Levelezési cím</Label>
+            <Input value={state.organizerSection?.mailingAddress ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, mailingAddress: e.target.value } }))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Nyitvatartás</Label>
+            <Input value={state.organizerSection?.openingHours ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, openingHours: e.target.value } }))} />
+          </div>
+          <p className="text-xs text-muted-foreground">A tábor helyszíne a főoldal Kapcsolat szekciójában szerkeszthető.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Gyors linkek</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {state.quickLinks.map((item, index) => (
+            <div key={`${item.label}-${index}`} className="flex flex-wrap gap-2">
+              <Input value={item.label} placeholder="Felirat" className="w-36" onChange={(e) => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.map((current, idx) => (idx === index ? { ...current, label: e.target.value } : current)) }))} />
+              <Input value={item.href} placeholder="/oldal vagy https://…" className="min-w-[12rem] flex-1" onChange={(e) => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.map((current, idx) => (idx === index ? { ...current, href: e.target.value } : current)) }))} />
+              <Button type="button" variant="outline" size="sm" className="text-destructive" onClick={() => setState((prev) => ({ ...prev, quickLinks: prev.quickLinks.filter((_, idx) => idx !== index) }))}>
+                <Trash2 className="size-3.5" />
+                Törlés
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={() => setState((prev) => ({ ...prev, quickLinks: [...prev.quickLinks, { label: "Új link", href: "#" }] }))}>
+            <Plus className="size-3.5" />
+            Link hozzáadása
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Közösségi média</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {state.socialLinks.map((item, index) => (
+            <div key={item.platform} className="grid gap-3 md:grid-cols-[140px_1fr_auto] md:items-center">
+              <Label className={adminFieldLabel}>{socialLabels[item.platform] || item.platform}</Label>
+              <Input value={item.url} placeholder="https://…" onChange={(e) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, url: e.target.value } : current)) }))} />
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={item.enabled} onCheckedChange={(v) => setState((prev) => ({ ...prev, socialLinks: prev.socialLinks.map((current, idx) => (idx === index ? { ...current, enabled: v === true } : current)) }))} />
+                Aktív
+              </label>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Button
         type="button"
         onClick={async () => {
           const response = await fetch("/api/admin/footer", {
@@ -110,15 +142,14 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
             body: JSON.stringify(state),
           })
           if (!response.ok) {
-            toast.error("Footer save failed")
+            toast.error("Lábléc mentése sikertelen")
             return
           }
-          toast.success("Footer saved")
+          toast.success("Lábléc mentve")
         }}
-        className="px-3 h-10 bg-primary text-white text-xs uppercase"
       >
-        Save footer
-      </button>
+        Lábléc mentése
+      </Button>
     </div>
   )
 }

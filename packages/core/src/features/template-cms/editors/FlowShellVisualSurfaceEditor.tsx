@@ -8,12 +8,14 @@ import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
+import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
+import { CmsEditorTemplateLoading } from "@wse/core/features/template-cms/components/CmsEditorTemplateLoading"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { FlowRouteInteractivePreview } from "@wse/core/features/flow-cms/FlowRouteInteractivePreview"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@wse/core/templates/registry"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import type { FlowRouteKey } from "@wse/sdk/templates/types"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
@@ -58,19 +60,7 @@ export function FlowShellVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const flowDef = mod.flowPages![flowRoute]!
-  const FlowShellPreviewPassthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>
-  const Wrapper = flowDef.Wrapper ?? FlowShellPreviewPassthrough
-  const Shell = flowDef.shell!.Shell
-
-  const flowDeps = {
-    branding: {
-      brandName: branding.brandName,
-      logoNav: branding.logoNav,
-      logoFooter: branding.logoFooter,
-    },
-  }
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -84,6 +74,27 @@ export function FlowShellVisualSurfaceEditor({
     dirty,
     markSynced,
   })
+
+  if (templateLoadError) {
+    return <CmsEditorErrorState title="Folyamat szerkesztő nem elérhető" description={templateLoadError} />
+  }
+
+  if (!mod) {
+    return <CmsEditorTemplateLoading />
+  }
+
+  const flowDef = mod.flowPages![flowRoute]!
+  const FlowShellPreviewPassthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  const Wrapper = flowDef.Wrapper ?? FlowShellPreviewPassthrough
+  const Shell = flowDef.shell!.Shell
+
+  const flowDeps = {
+    branding: {
+      brandName: branding.brandName,
+      logoNav: branding.logoNav,
+      logoFooter: branding.logoFooter,
+    },
+  }
 
   const categoriesMapped = homepageDeps.categories.map((c) => ({
     id: c.id,

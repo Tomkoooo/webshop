@@ -1,6 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Button } from "@wse/core/components/ui/button"
+import { Checkbox } from "@wse/core/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@wse/core/components/ui/dialog"
+import { Input } from "@wse/core/components/ui/input"
 
 type ProductItem = {
   id: string
@@ -40,32 +50,28 @@ export function ProductPickerModal({ open, selected, onClose, onApply }: Props) 
     }
   }, [open, query, page])
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-[#111] border border-white/15 p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-white font-bold uppercase text-sm tracking-widest">Termékek kiválasztása</h3>
-          <button type="button" onClick={onClose} className="text-white/80 hover:text-white">
-            Bezárás
-          </button>
-        </div>
-        <input
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Termékek kiválasztása</DialogTitle>
+        </DialogHeader>
+        <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Termék keresése..."
-          className="w-full h-10 px-3 bg-black border border-white/20 text-white"
+          placeholder="Termék keresése…"
         />
-        <div className="max-h-[360px] overflow-auto space-y-2">
+        <div className="max-h-[360px] space-y-2 overflow-auto">
           {items.map((item) => {
             const checked = localSelected.includes(item.id)
             return (
-              <label key={item.id} className="flex items-center gap-3 border border-white/10 p-2 text-white">
-                <input
-                  type="checkbox"
+              <label
+                key={item.id}
+                className="flex cursor-pointer items-center gap-3 rounded-lg bg-muted/40 p-3"
+              >
+                <Checkbox
                   checked={checked}
-                  onChange={() =>
+                  onCheckedChange={() =>
                     setLocalSelected((prev) =>
                       checked ? prev.filter((id) => id !== item.id) : [...prev, item.id]
                     )
@@ -76,31 +82,30 @@ export function ProductPickerModal({ open, selected, onClose, onApply }: Props) 
             )
           })}
         </div>
-        <div className="flex justify-between">
-          <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} className="px-3 h-8 border border-white/20 text-xs">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <Button type="button" variant="outline" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))}>
             Előző
-          </button>
-          <span className="text-xs text-neutral-400">Oldal: {page}</span>
-          <button type="button" onClick={() => setPage((prev) => prev + 1)} className="px-3 h-8 border border-white/20 text-xs">
+          </Button>
+          <span>Oldal: {page}</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => setPage((prev) => prev + 1)}>
             Következő
-          </button>
+          </Button>
         </div>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-3 h-9 border border-white/20 text-white text-xs uppercase">
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             Mégse
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => {
               onApply(localSelected)
               onClose()
             }}
-            className="px-3 h-9 bg-primary text-white text-xs uppercase"
           >
-            Alkalmaz
-          </button>
-        </div>
-      </div>
-    </div>
+            Alkalmaz ({localSelected.length})
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

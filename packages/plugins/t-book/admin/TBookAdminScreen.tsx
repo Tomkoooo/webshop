@@ -1,6 +1,5 @@
 "use client"
 
-import { TBookAdminLanding } from "./TBookAdminLanding"
 import { TBookDashboard } from "./TBookDashboard"
 import { GroupsAdmin } from "./GroupsAdmin"
 import { GroupAdminRouter } from "./GroupAdminRouter"
@@ -29,5 +28,5 @@ export function TBookAdminScreen({
     return <TBookDashboard />
   }
 
-  return <TBookAdminLanding />
+  return <TBookDashboard />
 }

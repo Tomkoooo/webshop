@@ -51,11 +51,11 @@ export function GalleryBlockEditor({ block, onPatch }: Props) {
   }
 
   return (
-    <section className="py-20 border-b border-white/10 bg-black/20">
+    <section className="py-16 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 space-y-4">
         <EditableHeading value={block.data.title} onChange={(value) => onPatch("title", value)} editMode className="text-3xl text-white font-black" />
         <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 border border-white/20 px-3 text-xs uppercase text-white hover:border-primary-foreground/40">
+          <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-background px-3 text-xs font-medium text-foreground ring-1 ring-border/60 hover:border-primary-foreground/40">
             <Upload className="h-4 w-4" />
             {uploading ? "Uploading..." : "Upload images"}
             <input
@@ -74,7 +74,7 @@ export function GalleryBlockEditor({ block, onPatch }: Props) {
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item, index) => (
-            <div key={`gallery-item-${index}`} className="space-y-3 border border-white/10 p-3">
+            <div key={`gallery-item-${index}`} className="space-y-3 rounded-lg bg-muted/40 p-3 ring-1 ring-border/40">
               <FallbackImage
                 src={mediaImageSrc(item.image)}
                 alt={item.caption || `Gallery image ${index + 1}`}
@@ -91,7 +91,7 @@ export function GalleryBlockEditor({ block, onPatch }: Props) {
                     items.map((current, idx) => (idx === index ? { ...current, caption: event.target.value } : current))
                   )
                 }
-                className="h-9 w-full bg-black border border-white/20 px-2 text-sm text-white"
+                className="h-9 w-full rounded-md border-0 bg-background/90 px-3 text-sm text-foreground ring-1 ring-border/60"
                 placeholder="Caption / alt text"
               />
               <div className="flex flex-wrap gap-2">
@@ -124,7 +124,7 @@ export function GalleryBlockEditor({ block, onPatch }: Props) {
           ))}
         </div>
         {items.length === 0 ? (
-          <div className="flex min-h-40 items-center justify-center border border-dashed border-white/20 p-6 text-center text-sm text-neutral-500">
+          <div className="flex min-h-40 items-center justify-center border border-dashed border-border/60 p-6 text-center text-sm text-neutral-500">
             Upload images to build the gallery.
           </div>
         ) : null}

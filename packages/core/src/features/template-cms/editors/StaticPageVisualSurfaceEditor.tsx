@@ -10,6 +10,8 @@ import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
+import { CmsEditorTemplateLoading } from "@wse/core/features/template-cms/components/CmsEditorTemplateLoading"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
@@ -63,7 +65,7 @@ export function StaticPageVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = useTemplateModule(templateId)
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -78,17 +80,22 @@ export function StaticPageVisualSurfaceEditor({
     markSynced,
   })
 
+  if (templateLoadError) {
+    return <CmsEditorErrorState title="Oldal szerkesztő nem elérhető" description={templateLoadError} />
+  }
+
   if (!mod) {
-    return (
-      <div className="rounded-xl bg-muted/40 px-6 py-10 text-sm text-muted-foreground">
-        Sablon betöltése…
-      </div>
-    )
+    return <CmsEditorTemplateLoading />
   }
 
   const def = mod.staticPages[slug]
   if (!def) {
-    throw new Error(`Static page '${slug}' is not registered on template '${mod.manifest.id}'`)
+    return (
+      <CmsEditorErrorState
+        title="Statikus oldal nem szerkeszthető"
+        description={`A '/${slug}' oldal nincs regisztrálva a '${mod.manifest.id}' sablonon.`}
+      />
+    )
   }
 
   const RenderCmp = def.Render as ComponentType<{ content: unknown; deps: StaticPageDeps }>

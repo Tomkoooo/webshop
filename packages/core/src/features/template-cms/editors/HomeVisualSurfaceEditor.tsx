@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
@@ -7,15 +8,18 @@ import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
+import { Button } from "@wse/core/components/ui/button"
 import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
+import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
+import { CmsEditorTemplateLoading } from "@wse/core/features/template-cms/components/CmsEditorTemplateLoading"
+import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import {
   discardTemplatePageDraft,
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
-import { FALLBACK_TEMPLATE_ID, getTemplateById } from "@wse/core/templates/registry"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import { extractTBookHomeChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { HomePageDeps } from "@wse/sdk/templates/types"
@@ -63,17 +67,8 @@ export function HomeVisualSurfaceEditor({
   homepageDeps: HomepageDeps
 }) {
   const router = useRouter()
-  const mod = getTemplateById(templateId) ?? getTemplateById(FALLBACK_TEMPLATE_ID)!
-  const HomeRender = mod.pages.home.Render
-  const campaignFallback =
-    mod.manifest.id.startsWith("keramia-")
-      ? (mod.pages.home.defaultContent as CampaignPageContent)
-      : null
-
-  const normalizeDraft = (value: Record<string, unknown>) => {
-    if (!campaignFallback) return value
-    return normalizeCampaignContent(value, campaignFallback) as Record<string, unknown>
-  }
+  const { mod, error: templateLoadError } = useTemplateModule(templateId)
+  const [testingConnection, setTestingConnection] = useState(false)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -87,6 +82,27 @@ export function HomeVisualSurfaceEditor({
     dirty,
     markSynced,
   })
+
+  if (templateLoadError) {
+    return (
+      <CmsEditorErrorState title="Főoldal szerkesztő nem elérhető" description={templateLoadError} />
+    )
+  }
+
+  if (!mod) {
+    return <CmsEditorTemplateLoading />
+  }
+
+  const HomeRender = mod.pages.home.Render
+  const campaignFallback =
+    mod.manifest.id.startsWith("keramia-")
+      ? (mod.pages.home.defaultContent as CampaignPageContent)
+      : null
+
+  const normalizeDraft = (value: Record<string, unknown>) => {
+    if (!campaignFallback) return value
+    return normalizeCampaignContent(value, campaignFallback) as Record<string, unknown>
+  }
 
   const homeDeps: HomePageDeps = {
     templateId,
@@ -123,8 +139,8 @@ export function HomeVisualSurfaceEditor({
 
   const toolbar = (
     <CmsEditorSubtoolbar
-      title={`Főoldal felület: ${pageLabel}`}
-      description="Kattintással szerkeszthető szövegek és képek — előnézet mód a jobb oldali eszközöknél."
+      title={`Főoldal: ${pageLabel}`}
+      description="Kattintással szerkeszthető szövegek és képek."
     >
       <div className="flex flex-wrap gap-3">
         <div className="min-w-[180px] flex-1 space-y-1.5">
@@ -146,15 +162,63 @@ export function HomeVisualSurfaceEditor({
         {templateId === "world-darts-festival" ? (
           <div className="min-w-[280px] flex-1 space-y-1.5">
             <Label className={adminFieldLabel}>tBook API kulcs (tbk_…)</Label>
-            <Input
-              className="h-9 font-mono text-xs"
-              type="password"
-              value={
-                (draft as { chrome?: { tbookApiKey?: string } }).chrome?.tbookApiKey ?? ""
-              }
-              onChange={(e) => setPath("chrome.tbookApiKey", e.target.value)}
-              placeholder="tbk_…"
-            />
+            <div className="flex flex-wrap gap-2">
+              <Input
+                className="h-9 min-w-[200px] flex-1 font-mono text-xs"
+                type="password"
+                value={
+                  (draft as { chrome?: { tbookApiKey?: string } }).chrome?.tbookApiKey ?? ""
+                }
+                onChange={(e) => setPath("chrome.tbookApiKey", e.target.value)}
+                placeholder="tbk_…"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9"
+                disabled={testingConnection}
+                onClick={() => {
+                  const apiKey =
+                    (draft as { chrome?: { tbookApiKey?: string } }).chrome?.tbookApiKey ?? ""
+                  if (!apiKey.trim()) {
+                    toast.error("Add meg az API kulcsot a teszteléshez.")
+                    return
+                  }
+                  setTestingConnection(true)
+                  void fetch("/api/plugins/t-book/admin/connection-test", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ apiKey }),
+                  })
+                    .then(async (res) => {
+                      const data = (await res.json()) as {
+                        ok?: boolean
+                        eventCount?: number
+                        error?: string
+                      }
+                      if (!res.ok || !data.ok) {
+                        throw new Error(data.error ?? "Kapcsolat teszt sikertelen.")
+                      }
+                      toast.success(
+                        `Kapcsolat rendben — ${data.eventCount ?? 0} aktív esemény érhető el.`
+                      )
+                    })
+                    .catch((err) => {
+                      toast.error(
+                        err instanceof Error ? err.message : "Kapcsolat teszt sikertelen."
+                      )
+                    })
+                    .finally(() => setTestingConnection(false))
+                }}
+              >
+                {testingConnection ? "Tesztelés…" : "Kapcsolat teszt"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A kulcs csak <strong>közzététel</strong> után jelenik meg az éles /jegyek oldalon.
+              Mentés után használd a „Közzététel” gombot.
+            </p>
           </div>
         ) : null}
       </div>

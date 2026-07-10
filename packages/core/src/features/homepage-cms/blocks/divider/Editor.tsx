@@ -10,7 +10,7 @@ type Props = {
 
 export function DividerBlockEditor({ block, onPatch }: Props) {
   return (
-    <section className="py-8 border-b border-white/10 bg-black/20">
+    <section className="py-8 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 space-y-2">
         <div className="h-px bg-white/10" />
         <EditableText value={block.data.label} onChange={(value) => onPatch("label", value)} editMode placeholder="Divider label (optional)" className="text-xs text-neutral-400" />

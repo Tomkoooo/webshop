@@ -12,7 +12,7 @@ type Props = {
 
 export function CtaBlockEditor({ block, onPatch }: Props) {
   return (
-    <section className="py-20 border-b border-white/10 bg-black/20">
+    <section className="py-16 border-b border-border/40 bg-muted/20">
       <div className="container mx-auto px-4 text-center space-y-4">
         <EditableHeading value={block.data.title} onChange={(value) => onPatch("title", value)} editMode className="text-3xl text-white font-black" />
         <EditableText value={block.data.description} onChange={(value) => onPatch("description", value)} editMode className="text-neutral-400" />

@@ -32,8 +32,8 @@ export function EditableRichText({ html, onChange, editMode }: Props) {
   if (!editor) return null
 
   return (
-    <div className="border border-white/10 bg-black/40 p-3">
-      <EditorContent editor={editor} className="prose prose-invert max-w-none min-h-[120px]" />
+    <div className="rounded-lg bg-muted/40 p-3 ring-1 ring-border/60">
+      <EditorContent editor={editor} className="prose max-w-none min-h-[120px] dark:prose-invert" />
     </div>
   )
 }
