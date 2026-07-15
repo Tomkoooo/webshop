@@ -22,6 +22,10 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        A kapcsolati e-mailek, telefon és cím a <strong>Kapcsolat</strong> szakaszban szerkeszthetők. Itt a
+        lábléc feliratait, linkjeit és közösségi média beállításait módosíthatod.
+      </p>
       <Card>
         <CardHeader>
           <CardTitle>Lábléc szövegek</CardTitle>

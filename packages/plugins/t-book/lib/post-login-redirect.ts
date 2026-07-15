@@ -1,16 +1,23 @@
 import { auth } from "@wse/core/auth"
 import { isMultiTenantAdminEnabled } from "@wse/core/lib/site-features"
-import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import dbConnect from "@wse/core/lib/db"
 import User from "@wse/core/models/User"
 import { TBookOrgService } from "../services/org-service"
-import { activeOrgCookieOptions } from "../lib/org-cookie"
 import { listUserOrganizationIds } from "../lib/org-auth"
 
-export async function resolveTBookPostLoginRedirect(callbackUrl?: string | null): Promise<string> {
+export type TBookPostLoginTarget = {
+  redirectPath: string
+  /** When set, callers in a Route Handler should persist this as the active-org cookie. */
+  autoSelectOrgId: string | null
+}
+
+export async function resolveTBookPostLoginTarget(
+  callbackUrl?: string | null
+): Promise<TBookPostLoginTarget> {
   const session = await auth()
-  if (!session?.user?.id) return "/auth/admin-login"
+  if (!session?.user?.id) {
+    return { redirectPath: "/auth/admin-login", autoSelectOrgId: null }
+  }
 
   const safeCallback =
     callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
@@ -18,7 +25,7 @@ export async function resolveTBookPostLoginRedirect(callbackUrl?: string | null)
       : null
 
   if (!isMultiTenantAdminEnabled()) {
-    return safeCallback ?? "/admin"
+    return { redirectPath: safeCallback ?? "/admin", autoSelectOrgId: null }
   }
 
   await dbConnect()
@@ -32,20 +39,26 @@ export async function resolveTBookPostLoginRedirect(callbackUrl?: string | null)
   const orgIds = await listUserOrganizationIds(session.user.id)
 
   if (safeCallback && !safeCallback.startsWith("/admin/org/select")) {
-    return safeCallback
+    return { redirectPath: safeCallback, autoSelectOrgId: null }
   }
 
-  if (isSystemAdmin && orgIds.length === 0) return "/admin"
-  if (orgIds.length === 1) {
-    const jar = await cookies()
-    jar.set(activeOrgCookieOptions(orgIds[0]!))
-    return "/admin"
+  if (isSystemAdmin && orgIds.length === 0) {
+    return { redirectPath: "/admin", autoSelectOrgId: null }
   }
-  if (orgIds.length > 1) return "/admin/org/select"
-  if (isSystemAdmin) return "/admin"
-  return "/auth/no-admin-access"
+  if (orgIds.length === 1) {
+    return { redirectPath: "/admin", autoSelectOrgId: orgIds[0]! }
+  }
+  if (orgIds.length > 1) {
+    return { redirectPath: "/admin/org/select", autoSelectOrgId: null }
+  }
+  if (isSystemAdmin) {
+    return { redirectPath: "/admin", autoSelectOrgId: null }
+  }
+  return { redirectPath: "/auth/no-admin-access", autoSelectOrgId: null }
 }
 
-export async function redirectTBookAfterAdminLogin(callbackUrl?: string | null): Promise<never> {
-  redirect(await resolveTBookPostLoginRedirect(callbackUrl))
+/** Redirect path only — safe from Route Handlers and JSON APIs (no cookie writes). */
+export async function resolveTBookPostLoginRedirect(callbackUrl?: string | null): Promise<string> {
+  const { redirectPath } = await resolveTBookPostLoginTarget(callbackUrl)
+  return redirectPath
 }

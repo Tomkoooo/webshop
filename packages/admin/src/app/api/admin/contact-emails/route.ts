@@ -14,21 +14,32 @@ const schema = z.object({
   entries: z.array(entrySchema),
   invoiceErrorAlertEmails: z.array(z.string().email()).optional(),
   newOrderNotificationEmails: z.array(z.string().email()).optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
 })
 
 export async function GET() {
   await requireAdmin()
-  const [entries, invoiceErrorAlertEmails, newOrderNotificationEmails] = await Promise.all([
-    ContactEmailsService.list(),
-    ContactEmailsService.listInvoiceErrorAlertEmails(),
-    ContactEmailsService.listNewOrderNotificationEmails(),
-  ])
-  return NextResponse.json({ entries, invoiceErrorAlertEmails, newOrderNotificationEmails })
+  const [entries, invoiceErrorAlertEmails, newOrderNotificationEmails, displayChannels] =
+    await Promise.all([
+      ContactEmailsService.list(),
+      ContactEmailsService.listInvoiceErrorAlertEmails(),
+      ContactEmailsService.listNewOrderNotificationEmails(),
+      ContactEmailsService.getDisplayChannels(),
+    ])
+  return NextResponse.json({
+    entries,
+    invoiceErrorAlertEmails,
+    newOrderNotificationEmails,
+    phone: displayChannels.phone,
+    address: displayChannels.address,
+  })
 }
 
 export async function PUT(request: Request) {
   await requireAdmin()
-  const { entries, invoiceErrorAlertEmails, newOrderNotificationEmails } = schema.parse(await request.json())
+  const { entries, invoiceErrorAlertEmails, newOrderNotificationEmails, phone, address } =
+    schema.parse(await request.json())
   const saved = await ContactEmailsService.save(entries)
   const savedInvoiceAlerts =
     invoiceErrorAlertEmails !== undefined ?
@@ -38,10 +49,19 @@ export async function PUT(request: Request) {
     newOrderNotificationEmails !== undefined ?
       await ContactEmailsService.saveNewOrderNotificationEmails(newOrderNotificationEmails)
     : await ContactEmailsService.listNewOrderNotificationEmails()
+  const savedDisplayChannels =
+    phone !== undefined || address !== undefined ?
+      await ContactEmailsService.saveDisplayChannels({
+        phone: phone ?? "",
+        address: address ?? "",
+      })
+    : await ContactEmailsService.getDisplayChannels()
   revalidatePath("/", "layout")
   return NextResponse.json({
     entries: saved,
     invoiceErrorAlertEmails: savedInvoiceAlerts,
     newOrderNotificationEmails: savedNewOrderNotifications,
+    phone: savedDisplayChannels.phone,
+    address: savedDisplayChannels.address,
   })
 }

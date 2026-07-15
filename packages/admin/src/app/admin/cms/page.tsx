@@ -35,7 +35,7 @@ export default async function AdminCmsHub() {
   const shopEnabled = isShopEnabled()
   const campBookingEnabled = await PluginService.isEnabled("camp-booking")
   const tBookEnabled = await PluginService.isEnabled("t-book")
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const pages = listEditablePages(template, shopEnabled, campBookingEnabled, tBookEnabled)
   const cmsSettingsSections = getAccessibleCmsSiteSettingsSections(shopEnabled)
 

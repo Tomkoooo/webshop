@@ -7,7 +7,6 @@ import { ContactEmailsService } from "@wse/core/services/contact-emails"
 import { getEffectiveThemeBase, ThemeService } from "@wse/core/services/theme"
 import { parseCmsSiteSettingsSection } from "@wse/core/features/template-cms/cms-site-settings"
 import { CmsSiteSettingsClient } from "@wse/core/features/template-cms/components/CmsSiteSettingsClient"
-import { SiteContactChannelsPanel } from "@wse/core/features/site-settings/components/SiteContactChannelsPanel"
 import {
   getAccessibleCmsSiteSettingsSections,
   shouldShowShopOrderContactEmails,
@@ -26,13 +25,14 @@ export default async function CmsSiteSettingsPage({
   const section = parseCmsSiteSettingsSection(sectionParam, sections)
   const showShopOrderEmails = shouldShowShopOrderContactEmails(isShopEnabled())
 
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const [
     theme,
     seo,
     branding,
     footer,
     contactEmails,
+    contactDisplayChannels,
     invoiceErrorAlertEmails,
     newOrderNotificationEmails,
   ] = await Promise.all([
@@ -41,6 +41,7 @@ export default async function CmsSiteSettingsPage({
     BrandingSettingsService.get(),
     FooterSettingsService.get(),
     ContactEmailsService.list(),
+    ContactEmailsService.getDisplayChannels(),
     ContactEmailsService.listInvoiceErrorAlertEmails(),
     ContactEmailsService.listNewOrderNotificationEmails(),
   ])
@@ -52,7 +53,6 @@ export default async function CmsSiteSettingsPage({
 
   return (
     <Suspense fallback={<div className="text-muted-foreground text-sm">Betöltés…</div>}>
-      {section === "contact" ? <SiteContactChannelsPanel /> : null}
       <CmsSiteSettingsClient
         section={section}
         sections={sections}
@@ -65,6 +65,8 @@ export default async function CmsSiteSettingsPage({
         initialBranding={branding}
         initialFooter={footer}
         initialContactEmails={contactEmails}
+        initialContactPhone={contactDisplayChannels.phone}
+        initialContactAddress={contactDisplayChannels.address}
         initialInvoiceErrorAlertEmails={invoiceErrorAlertEmails}
         initialNewOrderNotificationEmails={newOrderNotificationEmails}
       />

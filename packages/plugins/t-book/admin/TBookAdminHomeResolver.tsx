@@ -1,9 +1,5 @@
-import { cookies } from "next/headers"
 import { resolveAdminAccess } from "@wse/core/lib/admin-access"
-import {
-  activeOrgCookieOptions,
-  getActiveOrganizationIdFromCookie,
-} from "@wse/plugin-t-book/lib/org-cookie"
+import { getActiveOrganizationIdFromCookie } from "@wse/plugin-t-book/lib/org-cookie"
 import { TBookDashboard } from "./TBookDashboard"
 import { TBookOrgSelectScreen } from "./TBookOrgSelectScreen"
 import { TBookSystemAdminScreen } from "./TBookSystemAdminScreen"
@@ -16,13 +12,7 @@ import { TBookSystemAdminScreen } from "./TBookSystemAdminScreen"
  */
 export async function TBookAdminHomeResolver() {
   const access = await resolveAdminAccess()
-  let activeOrgId = await getActiveOrganizationIdFromCookie()
-
-  if (!activeOrgId && access.organizationIds.length === 1) {
-    activeOrgId = access.organizationIds[0]!
-    const jar = await cookies()
-    jar.set(activeOrgCookieOptions(activeOrgId))
-  }
+  const activeOrgId = await getActiveOrganizationIdFromCookie()
 
   const canUseActiveOrg =
     Boolean(activeOrgId) &&

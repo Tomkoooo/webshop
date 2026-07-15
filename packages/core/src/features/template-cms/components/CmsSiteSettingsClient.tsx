@@ -40,6 +40,8 @@ type Props = {
   initialBranding: CmsBrandingToolbarState
   initialFooter: FooterSettings
   initialContactEmails: ContactEmailEntry[]
+  initialContactPhone: string
+  initialContactAddress: string
   initialInvoiceErrorAlertEmails: string[]
   initialNewOrderNotificationEmails: string[]
 }
@@ -56,6 +58,8 @@ export function CmsSiteSettingsClient({
   initialBranding,
   initialFooter,
   initialContactEmails,
+  initialContactPhone,
+  initialContactAddress,
   initialInvoiceErrorAlertEmails,
   initialNewOrderNotificationEmails,
 }: Props) {
@@ -140,6 +144,8 @@ export function CmsSiteSettingsClient({
             {section === "contact" ? (
               <ContactEmailsEditor
                 initial={initialContactEmails}
+                initialPhone={initialContactPhone}
+                initialAddress={initialContactAddress}
                 initialInvoiceErrorAlertEmails={initialInvoiceErrorAlertEmails}
                 initialNewOrderNotificationEmails={initialNewOrderNotificationEmails}
                 showShopOrderEmails={showShopOrderEmails}

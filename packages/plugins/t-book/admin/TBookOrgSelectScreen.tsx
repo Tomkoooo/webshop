@@ -20,10 +20,17 @@ export function TBookOrgSelectScreen() {
   useEffect(() => {
     void tbookOrgApi
       .myOrganizations()
-      .then((res) => setOrganizations(res.organizations))
+      .then(async (res) => {
+        setOrganizations(res.organizations)
+        if (res.organizations.length === 1) {
+          await tbookOrgApi.switchOrg(res.organizations[0]!.id)
+          router.replace("/admin")
+          router.refresh()
+        }
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [router])
 
   async function selectOrg(id: string) {
     await tbookOrgApi.switchOrg(id)

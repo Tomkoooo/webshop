@@ -80,4 +80,26 @@ export class ContactEmailsService {
     )
     return [...new Set(normalized)]
   }
+
+  static async getDisplayChannels(): Promise<{ phone: string; address: string }> {
+    const content = await ShopContentService.getAll()
+    return {
+      phone: content.contact_phone?.trim() ?? "",
+      address: content.contact_address?.trim() ?? "",
+    }
+  }
+
+  static async saveDisplayChannels(fields: {
+    phone: string
+    address: string
+  }): Promise<{ phone: string; address: string }> {
+    const normalized = {
+      phone: fields.phone.trim(),
+      address: fields.address.trim(),
+    }
+    await dbConnect()
+    await ShopContentService.update("contact_phone", normalized.phone, "contact")
+    await ShopContentService.update("contact_address", normalized.address, "contact")
+    return normalized
+  }
 }

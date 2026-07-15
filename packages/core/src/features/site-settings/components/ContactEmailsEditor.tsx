@@ -71,11 +71,15 @@ function EmailRow({
 
 export function ContactEmailsEditor({
   initial,
+  initialPhone = "",
+  initialAddress = "",
   initialInvoiceErrorAlertEmails,
   initialNewOrderNotificationEmails,
   showShopOrderEmails = true,
 }: {
   initial: ContactEmailEntry[]
+  initialPhone?: string
+  initialAddress?: string
   initialInvoiceErrorAlertEmails: string[]
   initialNewOrderNotificationEmails: string[]
   showShopOrderEmails?: boolean
@@ -83,6 +87,8 @@ export function ContactEmailsEditor({
   const [entries, setEntries] = useState<ContactEmailEntry[]>(
     initial.length > 0 ? initial : [newEntry()]
   )
+  const [phone, setPhone] = useState(initialPhone)
+  const [address, setAddress] = useState(initialAddress)
   const [invoiceAlertEmails, setInvoiceAlertEmails] = useState<string[]>(
     initialInvoiceErrorAlertEmails.length > 0 ? initialInvoiceErrorAlertEmails : [""]
   )
@@ -94,9 +100,34 @@ export function ContactEmailsEditor({
   return (
     <div className="space-y-6">
       <p className="max-w-2xl text-sm text-muted-foreground">
-        Ez az egyetlen hely, ahonnan a weboldal e-mail címeit veszi (kapcsolat szekció, lábléc, űrlap). Több
-        cím esetén a látogató kiválaszthatja a címzettet.
+        Egy helyen szerkesztheted a honlapon megjelenő kapcsolati adatokat: e-mail címek, telefon és cím
+        (lábléc, kapcsolat szekció, űrlap). A lábléc szövegeit és linkjeit a „Lábléc” szakaszban állíthatod.
       </p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Telefon és cím</CardTitle>
+          <CardDescription>Megjelenik a láblécben és a kapcsolati blokkokban.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Telefon</Label>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+36 30 123 4567"
+            />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className={adminFieldLabel}>Cím</Label>
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="1234 Budapest, Példa utca 1."
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -206,6 +237,8 @@ export function ContactEmailsEditor({
               headers: { "content-type": "application/json" },
               body: JSON.stringify({
                 entries: valid,
+                phone,
+                address,
                 invoiceErrorAlertEmails: validInvoiceAlerts,
                 newOrderNotificationEmails: validNewOrderEmails,
               }),
@@ -216,17 +249,21 @@ export function ContactEmailsEditor({
             }
             const data = (await response.json()) as {
               entries: ContactEmailEntry[]
+              phone: string
+              address: string
               invoiceErrorAlertEmails: string[]
               newOrderNotificationEmails: string[]
             }
             setEntries(data.entries.length > 0 ? data.entries : [newEntry()])
+            setPhone(data.phone ?? "")
+            setAddress(data.address ?? "")
             setInvoiceAlertEmails(
               data.invoiceErrorAlertEmails.length > 0 ? data.invoiceErrorAlertEmails : [""]
             )
             setNewOrderEmails(
               data.newOrderNotificationEmails.length > 0 ? data.newOrderNotificationEmails : [""]
             )
-            toast.success("Kapcsolat és értesítési e-mailek mentve.")
+            toast.success("Kapcsolati adatok mentve.")
           } catch {
             toast.error("Mentés sikertelen.")
           } finally {

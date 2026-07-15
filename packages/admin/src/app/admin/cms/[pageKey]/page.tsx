@@ -48,7 +48,7 @@ export default async function CmsPageEditor({
   params: Promise<{ pageKey: string }>
 }) {
   const { pageKey } = await params
-  const template = await TemplateService.getActive()
+  const template = await TemplateService.getDbActive()
   const shopEnabled = isShopEnabled()
   const campBookingEnabled = await PluginService.isEnabled("camp-booking")
   const tBookEnabled = await PluginService.isEnabled("t-book")
