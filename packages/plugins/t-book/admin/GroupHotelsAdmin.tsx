@@ -150,7 +150,8 @@ export function GroupHotelsAdmin({ groupId }: { groupId: string }) {
         <ul className="space-y-3">
           {hotels.map((hotel) => {
             const pricing = normalizeHotelPricing(hotel.pricing)
-            const addonCount = pricing.addonGroups.reduce((sum, g) => sum + g.options.length, 0)
+            const addonCount = pricing.extrasSection?.options.length ?? 0
+            const packageCount = pricing.packages?.length ?? 0
             return (
               <li
                 key={hotel.id}
@@ -168,8 +169,8 @@ export function GroupHotelsAdmin({ groupId }: { groupId: string }) {
                       : ""}
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                    foglalási szakasz ({addonCount} mező)
+                    {pricing.roomTypes.length} szobatípus · {packageCount} csomag ·{" "}
+                    {addonCount} extra opció
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">

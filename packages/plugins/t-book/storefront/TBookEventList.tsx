@@ -8,6 +8,7 @@ import {
   listEvents,
   type TBookPublicEvent,
 } from "./tbook-public-api"
+import { formatEventSchedule } from "../lib/event-schedule"
 
 type Copy = {
   pageTitle: string
@@ -134,8 +135,12 @@ export function TBookEventList({
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <Calendar className="size-3.5" aria-hidden />
-                    {new Date(event.startDate).toLocaleDateString("hu-HU")} –{" "}
-                    {new Date(event.endDate).toLocaleDateString("hu-HU")}
+                    {formatEventSchedule(
+                      event.startDate,
+                      event.endDate,
+                      event.startTime,
+                      event.endTime
+                    )}
                   </span>
                   {event.location.address ? (
                     <span className="inline-flex items-center gap-1">
@@ -145,7 +150,7 @@ export function TBookEventList({
                   ) : null}
                 </div>
                 <p className="text-sm font-semibold text-primary">
-                  {formatHuf(event.ticketFeeHuf, currency)} {feeLabel}
+                  {formatHuf(event.ticketFeeHuf, event.currency ?? currency)} {feeLabel}
                 </p>
                 <Link
                   href={`/foglalas/${event.id}`}

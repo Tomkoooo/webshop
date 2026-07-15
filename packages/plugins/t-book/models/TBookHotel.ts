@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookHotelPricing } from "../lib/pricing-types"
 import type { TBookStatus } from "../lib/schemas"
+import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 export interface ITBookHotel extends Document {
   organizationId?: Types.ObjectId | null
@@ -15,6 +16,10 @@ export interface ITBookHotel extends Document {
   contactEmail: string
   contactPhone: string
   gallery: string[]
+  /** ISO 4217 currency for hotel pricing (defaults from org on create). */
+  currency: string
+  /** Extra registration fields collected when this hotel is selected. */
+  registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
   status: TBookStatus
   sortOrder: number
@@ -66,6 +71,27 @@ const OptionDefSchema = new Schema(
   { _id: false }
 )
 
+const PackageDealSchema = new Schema(
+  {
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    nights: { type: Number, required: true, min: 1 },
+    priceHuf: { type: Number, required: true, min: 0 },
+    roomTypeKey: { type: String, default: null },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { _id: false }
+)
+
+const ExtrasSectionSchema = new Schema(
+  {
+    label: { type: String, required: true },
+    description: { type: String, default: "" },
+    options: { type: [OptionDefSchema], default: [] },
+  },
+  { _id: false }
+)
+
 const RoomTypeSchema = new Schema(
   {
     key: { type: String, required: true },
@@ -87,6 +113,33 @@ const AddonGroupSchema = new Schema(
   { _id: false }
 )
 
+const RegistrationFieldChoiceSchema = new Schema(
+  {
+    value: { type: String, required: true },
+    label: { type: String, required: true },
+  },
+  { _id: false }
+)
+
+const RegistrationFieldDefSchema = new Schema(
+  {
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["text", "email", "phone", "number", "date", "select"],
+      required: true,
+    },
+    required: { type: Boolean, default: false },
+    helpText: { type: String, default: "" },
+    choices: { type: [RegistrationFieldChoiceSchema], default: undefined },
+    min: { type: Number },
+    max: { type: Number },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { _id: false }
+)
+
 const TBookHotelSchema = new Schema<ITBookHotel>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
@@ -99,10 +152,14 @@ const TBookHotelSchema = new Schema<ITBookHotel>(
     contactEmail: { type: String, default: "" },
     contactPhone: { type: String, default: "" },
     gallery: { type: [String], default: [] },
+    currency: { type: String, default: "HUF" },
+    registrationFieldSchema: { type: [RegistrationFieldDefSchema], default: [] },
     pricing: {
       priceBasis: { type: String, enum: ["net", "gross"], default: "net" },
       vatPercent: { type: Number, default: 27, min: 0, max: 100 },
       roomTypes: { type: [RoomTypeSchema], default: [] },
+      packages: { type: [PackageDealSchema], default: [] },
+      extrasSection: { type: ExtrasSectionSchema, default: null },
       addonGroups: { type: [AddonGroupSchema], default: [] },
       baseRateHuf: { type: Number, min: 0 },
       baseRateMode: {

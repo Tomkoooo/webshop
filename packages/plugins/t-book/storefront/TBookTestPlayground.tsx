@@ -34,15 +34,17 @@ function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelecti
   const selections: TBookSelections = {}
   const firstRoom = hotel.pricing.roomTypes[0]
   if (firstRoom) selections[ROOM_TYPE_SELECTION_KEY] = firstRoom.key
-  for (const group of hotel.pricing.addonGroups) {
-    for (const option of group.options) {
-      if (option.defaultValue != null) selections[option.key] = option.defaultValue
-      else if (option.type === "checkbox") selections[option.key] = false
-      else if (option.type === "number") selections[option.key] = option.min ?? 0
-      else if (option.type === "select" && option.choices?.[0])
-        selections[option.key] = option.choices[0].value
-      else if (option.type === "multiselect") selections[option.key] = []
-    }
+  const options =
+    hotel.pricing.extrasSection?.options ??
+    hotel.pricing.addonGroups?.flatMap((group) => group.options) ??
+    []
+  for (const option of options) {
+    if (option.defaultValue != null) selections[option.key] = option.defaultValue
+    else if (option.type === "checkbox") selections[option.key] = false
+    else if (option.type === "number") selections[option.key] = option.min ?? 0
+    else if (option.type === "select" && option.choices?.[0])
+      selections[option.key] = option.choices[0].value
+    else if (option.type === "multiselect") selections[option.key] = []
   }
   return selections
 }
@@ -487,7 +489,24 @@ export function TBookTestPlayground({
                 </label>
               </div>
 
-              {selectedHotel.pricing.addonGroups.map((group) => (
+              {selectedHotel.pricing.extrasSection ? (
+                <div className="space-y-3 rounded-xl border border-white/10 p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                    {selectedHotel.pricing.extrasSection.label}
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {selectedHotel.pricing.extrasSection.options.map((option) => (
+                      <OptionField
+                        key={option.key}
+                        option={option}
+                        value={selections[option.key]}
+                        visible={optionVisible(option, selections)}
+                        onChange={(v) => patchSelection(option.key, v)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : selectedHotel.pricing.addonGroups?.map((group) => (
                 <div key={group.key} className="space-y-3 rounded-xl border border-white/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
                     {group.label}

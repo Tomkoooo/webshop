@@ -18,14 +18,25 @@ export interface ITBookEvent extends Document {
   }
   startDate: Date
   endDate: Date
+  /** Optional start time on the first day (`HH:mm`, 24h). */
+  startTime: string | null
+  /** Optional end time on the last day (`HH:mm`, 24h). */
+  endTime: string | null
+  /** ISO 4217 currency for ticket pricing (defaults from org on create). */
+  currency: string
   ticketFeeHuf: number
-  ticketFeeMode: "per_person" | "per_booking"
+  ticketFeeMode: "per_person" | "per_booking" | "per_team"
+  registrationUnit: "person" | "team"
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
   /** null = unlimited. */
   capacity: number | null
   soldGuestCount: number
   heroImage: string
+  /** Banner image for voucher PDF header (falls back to heroImage). */
+  voucherHeaderImage: string
+  /** When false, no vouchers are issued for this event. */
+  vouchersEnabled: boolean
   /** Per-participant data fields collected at booking (name, age, nationality, etc.). */
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   status: TBookStatus
@@ -48,13 +59,23 @@ const TBookEventSchema = new Schema<ITBookEvent>(
     },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
+    startTime: { type: String, default: null },
+    endTime: { type: String, default: null },
+    currency: { type: String, default: "HUF" },
     ticketFeeHuf: { type: Number, required: true, min: 0 },
-    ticketFeeMode: { type: String, enum: ["per_person", "per_booking"], default: "per_person" },
+    ticketFeeMode: {
+      type: String,
+      enum: ["per_person", "per_booking", "per_team"],
+      default: "per_person",
+    },
+    registrationUnit: { type: String, enum: ["person", "team"], default: "person" },
     ticketPriceBasis: { type: String, enum: ["net", "gross"], default: "net" },
     ticketVatPercent: { type: Number, default: 27, min: 0, max: 100 },
     capacity: { type: Number, default: null },
     soldGuestCount: { type: Number, default: 0, min: 0 },
     heroImage: { type: String, default: "" },
+    voucherHeaderImage: { type: String, default: "" },
+    vouchersEnabled: { type: Boolean, default: true },
     attendeeFieldSchema: {
       type: [
         new Schema(

@@ -6,6 +6,8 @@ import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
 import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
 import { CmsNavChromeSidebar } from "@wse/core/features/template-cms/components/CmsNavChromeSidebar"
+import { CmsFooterChromeSidebar } from "@wse/core/features/template-cms/components/CmsFooterChromeSidebar"
+import { CmsSectionsSidebar } from "@wse/core/features/template-cms/components/CmsSectionsSidebar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
@@ -26,6 +28,10 @@ import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome 
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
 import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
+import {
+  WDF_SECTION_LABELS,
+  type WdfHomeSectionId,
+} from "@wse/template-world-darts-festival/lib/wdf-home-sections"
 import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
 import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
@@ -136,15 +142,58 @@ export function HomeVisualSurfaceEditor({
   }
 
   const structureSidebar =
-    templateId === "world-darts-festival" ? (
-      <CmsNavChromeSidebar draft={draft} setPath={setPath} />
-    ) : (
-      buildListFieldsSidebar({
-        specs: mod.pages.home.listFields,
-        draft,
-        setPath,
-      })
-    )
+    templateId === "world-darts-festival"
+      ? null
+      : buildListFieldsSidebar({
+          specs: mod.pages.home.listFields,
+          draft,
+          setPath,
+        })
+
+  const wdfChromePanels =
+    templateId === "world-darts-festival"
+      ? (ctx: {
+          footerSettings: FooterSettings
+          setFooterSettings: React.Dispatch<React.SetStateAction<FooterSettings>>
+        }) => {
+          const normalized = normalizeDraft(draft) as HomeContent
+          return [
+            {
+              id: "nav",
+              label: "Navigáció",
+              content: <CmsNavChromeSidebar draft={draft} setPath={setPath} />,
+            },
+            {
+              id: "footer",
+              label: "Lábléc",
+              content: (
+                <CmsFooterChromeSidebar
+                  settings={ctx.footerSettings}
+                  onChange={async (next) => {
+                    ctx.setFooterSettings(next)
+                    await fetch("/api/admin/footer", {
+                      method: "PUT",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify(next),
+                    })
+                  }}
+                />
+              ),
+            },
+            {
+              id: "sections",
+              label: "Szekciók",
+              content: (
+                <CmsSectionsSidebar<WdfHomeSectionId>
+                  layout={normalized.sectionLayout}
+                  labels={WDF_SECTION_LABELS}
+                  onChange={(next) => setPath("sectionLayout", next)}
+                />
+              ),
+            },
+          ]
+        }
+      : undefined
 
   const eventNavItems =
     templateId === "world-darts-festival"
@@ -159,7 +208,16 @@ export function HomeVisualSurfaceEditor({
   const toolbar = (
     <CmsEditorSubtoolbar
       title={`Főoldal: ${pageLabel}`}
-      description="Kattintással szerkeszthető szövegek és képek."
+      description={
+        templateId === "world-darts-festival" ? (
+          <>
+            Aktív sablon: <strong>{mod.manifest.name}</strong> — kattintással szerkeszthető szövegek és
+            képek. A navigáció, lábléc és szekciók a szerkesztő panelekből érhetők el.
+          </>
+        ) : (
+          "Kattintással szerkeszthető szövegek és képek."
+        )
+      }
     >
       <div className="flex flex-wrap gap-3">
         <div className="min-w-[180px] flex-1 space-y-1.5">
@@ -290,6 +348,8 @@ export function HomeVisualSurfaceEditor({
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
+      buildChromePanels={wdfChromePanels}
+      footerCmsEditable={templateId !== "world-darts-festival"}
       structureSidebar={structureSidebar}
       navItems={eventNavItems}
       navCta={eventNavCta}

@@ -1,6 +1,7 @@
 "use client"
 
 import type { ComponentType, ReactNode } from "react"
+import { Calendar } from "lucide-react"
 import { cn } from "@wse/core/lib/utils"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { Input } from "@wse/core/components/ui/input"
@@ -49,8 +50,25 @@ export function TBookInput(props: React.ComponentProps<typeof Input>) {
   return <Input {...props} className={cn(tBookInputClass, props.className)} />
 }
 
-export function TBookDateInput(props: React.ComponentProps<typeof Input>) {
-  return <Input {...props} type="date" className={cn(tBookInputClass, props.className)} />
+export function TBookDateInput({ className, ...props }: React.ComponentProps<typeof Input>) {
+  return (
+    <div className="relative">
+      <Input
+        {...props}
+        type="date"
+        className={cn(
+          tBookInputClass,
+          "pr-10",
+          "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
+          className
+        )}
+      />
+      <Calendar
+        className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+    </div>
+  )
 }
 
 export function TBookSelect(props: React.ComponentProps<"select">) {

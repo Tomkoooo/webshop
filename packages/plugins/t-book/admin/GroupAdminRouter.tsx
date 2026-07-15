@@ -3,6 +3,7 @@
 import { GroupDetailAdmin } from "./GroupDetailAdmin"
 import { GroupFormPage } from "./GroupFormPage"
 import { GroupHotelsAdmin } from "./GroupHotelsAdmin"
+import { GroupEventsAdmin } from "./GroupEventsAdmin"
 import { HotelFormPage } from "./HotelFormPage"
 import { EventFormPage } from "./EventFormPage"
 
@@ -32,9 +33,10 @@ export function GroupAdminRouter({ path }: { path: string[] }) {
     if (path[2] === "new") {
       return <EventFormPage groupId={groupId} />
     }
-    if (path[2] && path[3] === "edit") {
+    if (path[2]) {
       return <EventFormPage groupId={groupId} eventId={path[2]} />
     }
+    return <GroupEventsAdmin groupId={groupId} />
   }
 
   return <GroupDetailAdmin groupId={groupId} />

@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
 import {
   tBookAdminApi,
-  formatHuf,
+  formatMoney,
   TBOOK_STATUS_LABELS,
   type AdminEvent,
   type AdminHotel,
@@ -29,16 +29,19 @@ import {
 import { TBookWizard } from "./TBookWizard"
 import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookGalleryField } from "./TBookMediaField"
-import { TBookNetPriceField } from "./TBookNetPriceField"
+import { TBookVatSettingsField } from "./TBookVatSettingsField"
 import { RoomTypesEditor } from "./RoomTypesEditor"
-import { AddonGroupsEditor } from "./AddonGroupsEditor"
+import { PackageDealsEditor } from "./PackageDealsEditor"
+import { ExtrasSectionEditor } from "./ExtrasSectionEditor"
+import { CurrencySelect } from "./CurrencySelect"
+import { normalizeTBookCurrency } from "../lib/currency"
 import { HotelComplexitySummary } from "./HotelComplexitySummary"
 import { PricingPreview } from "./PricingPreview"
 
 const HOTEL_STEPS = [
   { id: "info", title: "Szállás adatai" },
   { id: "rooms", title: "Szobatípusok" },
-  { id: "addons", title: "Felár-csoportok" },
+  { id: "addons", title: "Extrák és felárak" },
   { id: "review", title: "Összegzés" },
 ]
 
@@ -50,6 +53,7 @@ type HotelDraft = {
   contactEmail: string
   contactPhone: string
   gallery: string[]
+  currency: string
   status: "draft" | "active" | "archived"
   pricing: TBookHotelPricing
 }
@@ -60,7 +64,8 @@ const emptyPricing = (): TBookHotelPricing => ({
   roomTypes: [
     { key: "standard", label: "Standard szoba", baseRateHuf: 0, sortOrder: 0 },
   ],
-  addonGroups: [],
+  packages: [],
+  extrasSection: null,
 })
 
 function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
@@ -73,6 +78,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
       contactEmail: "",
       contactPhone: "",
       gallery: [],
+      currency: "HUF",
       status: "draft",
       pricing: emptyPricing(),
     }
@@ -86,6 +92,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
     contactEmail: hotel.contactEmail,
     contactPhone: hotel.contactPhone,
     gallery: hotel.gallery,
+    currency: normalizeTBookCurrency(hotel.currency),
     status: hotel.status,
     pricing: normalizeHotelPricing(hotel.pricing),
   }
@@ -263,13 +270,17 @@ function HotelEditor({
             ) : null}
 
             {step === 1 ? (
-              <div className="space-y-4">
-                <TBookNetPriceField
-                  label="Szobatípusok ÁFA beállítása"
-                  amount={0}
+              <div className="space-y-6">
+                <TBookField label="Szállás pénzneme">
+                  <CurrencySelect
+                    value={draft.currency}
+                    onValueChange={(currency) => patch({ currency })}
+                  />
+                </TBookField>
+                <TBookVatSettingsField
+                  label="ÁFA beállítások (minden szobatípusra)"
                   priceBasis={(draft.pricing.priceBasis ?? "net") as TBookPriceBasis}
                   vatPercent={draft.pricing.vatPercent ?? TBOOK_DEFAULT_VAT_PERCENT}
-                  onAmountChange={() => {}}
                   onPriceBasisChange={(priceBasis) => patchPricing({ priceBasis })}
                   onVatPercentChange={(vatPercent) => patchPricing({ vatPercent })}
                 />
@@ -277,14 +288,22 @@ function HotelEditor({
                   roomTypes={draft.pricing.roomTypes}
                   onChange={(roomTypes) => patchPricing({ roomTypes })}
                   priceBasisLabel={priceBasisLabel}
+                  currency={draft.currency}
+                />
+                <PackageDealsEditor
+                  packages={draft.pricing.packages ?? []}
+                  onChange={(packages) => patchPricing({ packages })}
+                  roomTypes={roomTypes}
+                  currency={draft.currency}
+                  priceBasisLabel={priceBasisLabel}
                 />
               </div>
             ) : null}
 
             {step === 2 ? (
-              <AddonGroupsEditor
-                groups={draft.pricing.addonGroups}
-                onChange={(addonGroups) => patchPricing({ addonGroups })}
+              <ExtrasSectionEditor
+                section={draft.pricing.extrasSection ?? null}
+                onChange={(extrasSection) => patchPricing({ extrasSection })}
                 roomTypes={roomTypes}
               />
             ) : null}
@@ -302,12 +321,14 @@ function HotelEditor({
                   <p className="text-neutral-400 text-xs">{draft.address || "Nincs cím"}</p>
                   <p className="text-neutral-300 text-xs">
                     {draft.pricing.roomTypes.length} szobatípus ·{" "}
-                    {draft.pricing.addonGroups.length} foglalási szakasz
+                    {(draft.pricing.packages ?? []).length} csomagajánlat
+                    {draft.pricing.extrasSection ? " · extrák szakasz" : ""}
                   </p>
                   <ul className="text-xs text-neutral-500 space-y-1">
                     {draft.pricing.roomTypes.map((room) => (
                       <li key={room.key}>
-                        {room.label}: {formatHuf(room.baseRateHuf)} / fő / éj ({priceBasisLabel})
+                        {room.label}: {formatMoney(room.baseRateHuf, draft.currency)} / fő / éj (
+                        {priceBasisLabel})
                       </li>
                     ))}
                   </ul>
@@ -324,8 +345,10 @@ function HotelEditor({
             ticketFeeMode={event.ticketFeeMode}
             ticketPriceBasis={event.ticketPriceBasis}
             ticketVatPercent={event.ticketVatPercent}
+            ticketCurrency={event.currency}
+            hotelCurrency={draft.currency}
             defaultNights={eventNightsOf(event)}
-            pricing={draft.pricing}
+            pricing={previewPricing}
           />
         </div>
       </div>
@@ -431,10 +454,8 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
         <ul className="space-y-3">
           {hotels.map((hotel) => {
             const pricing = normalizeHotelPricing(hotel.pricing)
-            const addonCount = pricing.addonGroups.reduce(
-              (sum, g) => sum + g.options.length,
-              0
-            )
+            const addonCount = pricing.extrasSection?.options.length ?? 0
+            const packageCount = pricing.packages?.length ?? 0
             return (
               <li
                 key={hotel.id}
@@ -452,8 +473,8 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
                       : ""}
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                    foglalási szakasz ({addonCount} mező)
+                    {pricing.roomTypes.length} szobatípus · {packageCount} csomag ·{" "}
+                    {addonCount} extra opció
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">

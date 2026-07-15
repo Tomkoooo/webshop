@@ -25,6 +25,7 @@ export function useTemplateModule(templateId: string): TemplateModuleState {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset error when template id changes
     setLoadError(null)
     if (syncMod) return
     let cancelled = false

@@ -24,7 +24,10 @@ import {
   normalizeAttendeeFieldSchema,
   normalizeAttendeePayload,
   validateAttendees,
+  type TBookAttendeeFieldDef,
 } from "../lib/attendee-fields"
+import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
+import { mergeRegistrationFieldSchemas } from "../lib/registration-fields"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -71,6 +74,8 @@ export class TBookBookingService {
     const groupOptions = group?.defaultBookingOptions ?? []
 
     let hotelName = ""
+    let hotelCurrency: string | undefined
+    let hotelRegistrationFields: TBookAttendeeFieldDef[] = []
     let accommodation = null
     let nights = 0
     const selections: TBookSelections = (parsed.selections ?? {}) as TBookSelections
@@ -95,6 +100,8 @@ export class TBookBookingService {
 
       accommodation = hotel.pricing
       hotelName = hotel.name
+      hotelCurrency = normalizeTBookCurrency(hotel.currency)
+      hotelRegistrationFields = hotel.registrationFieldSchema ?? []
       nights = parsed.nights ?? eventNights(event)
     } else if (groupOptions.length > 0) {
       const errors = validateSelections(groupOptions, selections)
@@ -102,6 +109,9 @@ export class TBookBookingService {
         throw new Error(errors.map((e) => e.message).join(" "))
       }
     }
+
+    const eventCurrency = normalizeTBookCurrency(event.currency)
+    resolveBookingCurrency(eventCurrency, hotelCurrency)
 
     const quote = calculateBookingQuote({
       ticketFeeHuf: event.ticketFeeHuf,
@@ -117,7 +127,19 @@ export class TBookBookingService {
       selections,
     })
 
-    return { event, quote, hotelName, nights, selections }
+    return {
+      event,
+      quote,
+      hotelName,
+      nights,
+      selections,
+      currency: eventCurrency,
+      hotelCurrency,
+      registrationFieldSchema: mergeRegistrationFieldSchemas(
+        event.attendeeFieldSchema,
+        hotelRegistrationFields
+      ),
+    }
   }
 
   /**
@@ -129,7 +151,8 @@ export class TBookBookingService {
     opts?: { groupId?: mongoose.Types.ObjectId }
   ): Promise<ITBookBooking> {
     const parsed = createBookingSchema.parse(input)
-    const { event, quote, hotelName, nights, selections } = await TBookBookingService.quote(
+    const { event, quote, hotelName, nights, selections, currency, registrationFieldSchema } =
+      await TBookBookingService.quote(
       {
         eventId: parsed.eventId,
         guests: parsed.guests,
@@ -156,12 +179,17 @@ export class TBookBookingService {
       }
     }
 
-    const attendeeFieldSchema = normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? [])
-    const attendeeIssues = validateAttendees(attendeeFieldSchema, parsed.guests, parsed.attendees)
+    const registrationUnit = event.registrationUnit ?? "person"
+    const attendeeIssues = validateAttendees(
+      registrationFieldSchema,
+      parsed.guests,
+      parsed.attendees,
+      registrationUnit
+    )
     if (attendeeIssues.length > 0) {
       throw new Error(attendeeIssues.map((issue) => issue.message).join(" "))
     }
-    const attendees = normalizeAttendeePayload(attendeeFieldSchema, parsed.attendees)
+    const attendees = normalizeAttendeePayload(registrationFieldSchema, parsed.attendees)
 
     const group = event.groupId
       ? await TBookEventGroup.findById(event.groupId).lean()
@@ -182,13 +210,14 @@ export class TBookBookingService {
         note: parsed.customer.note?.trim() ?? "",
       },
       billing: parsed.billing ?? null,
-      attendeeFieldSchema,
+      attendeeFieldSchema: registrationFieldSchema,
       attendees,
       guests: parsed.guests,
       nights,
       selections,
       quote,
       totalHuf: quote.totalHuf,
+      currency,
       status: "pending",
     })
   }
@@ -267,6 +296,16 @@ export class TBookBookingService {
     }
     booking.status = nextStatus
     await booking.save()
+
+    if (nextStatus === "cancelled") {
+      const { voidVouchersForBooking } = await import("./voucher-service")
+      void voidVouchersForBooking(id)
+    }
+
+    if (nextStatus === "paid" || nextStatus === "confirmed") {
+      const { issueVouchersForBooking } = await import("./voucher-service")
+      void issueVouchersForBooking(id)
+    }
   }
 
   /** Distinct option keys/values across bookings of an event — powers smart filters. */

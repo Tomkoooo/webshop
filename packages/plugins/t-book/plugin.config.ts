@@ -26,6 +26,7 @@ export const tBook = definePlugin({
       { label: "Eseménycsoportok", segment: "groups" },
       { label: "Események", segment: "events" },
       { label: "Foglalások", segment: "bookings" },
+      { label: "Beléptetés", segment: "scanner" },
     ],
     Screen: TBookAdminScreen,
   },

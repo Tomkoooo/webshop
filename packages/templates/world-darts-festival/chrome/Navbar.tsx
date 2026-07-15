@@ -204,6 +204,7 @@ export function Navbar({
   }, [mobileOpen])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile nav on route change
     setMobileOpen(false)
   }, [pathname])
 

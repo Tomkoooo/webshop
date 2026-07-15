@@ -320,7 +320,7 @@ export function TBookOrgSettingsScreen() {
           <Input id="org-name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="currency">Alapértelmezett pénznem (díjak, árak)</Label>
+          <Label htmlFor="currency">Alapértelmezett pénznem (új eseményekhez és szállásokhoz)</Label>
           <CurrencySelect id="currency" value={currency} onValueChange={setCurrency} />
         </div>
         <Button type="button" onClick={() => void save()}>

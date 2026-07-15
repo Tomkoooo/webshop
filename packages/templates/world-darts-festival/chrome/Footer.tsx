@@ -7,7 +7,7 @@ import { Button } from "@wse/core/components/ui/button"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { hasContactFieldValue } from "@wse/core/lib/contact-display"
 import { FooterLegalLinks } from "@wse/core/templates/chrome/FooterLegalLinks"
-import type { FooterSettings } from "@wse/core/services/footer-settings"
+import type { FooterSettings, FooterContactEntry } from "@wse/core/services/footer-settings"
 import type { ChromeProps, SiteContactEntry } from "@wse/sdk/templates/types"
 
 const WDF_DEFAULT_QUICK_LINKS = [
@@ -43,6 +43,45 @@ type FooterProps = ChromeProps & {
 const controlClass =
   "cms-admin-control w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
 
+function contactEntryHref(entry: FooterContactEntry): string | null {
+  const value = entry.value.trim()
+  if (!value) return null
+  switch (entry.kind) {
+    case "mailto":
+      return `mailto:${value}`
+    case "tel":
+      return `tel:${value.replace(/\s+/g, "")}`
+    case "link":
+      return value
+    default:
+      return null
+  }
+}
+
+function ContactEntryRow({ entry }: { entry: FooterContactEntry }) {
+  const href = contactEntryHref(entry)
+  const label = entry.label.trim()
+  const value = entry.value.trim()
+  if (!value) return null
+
+  const content = (
+    <>
+      {label ? <span className="text-foreground/80">{label}: </span> : null}
+      {value}
+    </>
+  )
+
+  if (href) {
+    return (
+      <a href={href} className="block text-muted-foreground hover:text-primary">
+        {content}
+      </a>
+    )
+  }
+
+  return <p className="text-muted-foreground">{content}</p>
+}
+
 export function Footer({
   brandName,
   logoSrc,
@@ -56,6 +95,10 @@ export function Footer({
   onSettingsChange,
 }: FooterProps) {
   const quickLinks = resolveQuickLinks(footerSettings)
+  const contactEntries = (footerSettings?.contactEntries ?? []).filter(
+    (entry) => entry.value.trim()
+  )
+  const useContactEntries = contactEntries.length > 0
   const socialIconMap = {
     facebook: Facebook,
     instagram: Instagram,
@@ -150,7 +193,13 @@ export function Footer({
             ) : (
               <p className="font-semibold">{contactTitle}</p>
             )}
-            {contactEmails.length > 0 ? (
+            {useContactEntries ? (
+              <div className="space-y-1">
+                {contactEntries.map((entry, index) => (
+                  <ContactEntryRow key={`${entry.label}-${index}`} entry={entry} />
+                ))}
+              </div>
+            ) : contactEmails.length > 0 ? (
               <ul className="space-y-1">
                 {contactEmails.map((entry) => (
                   <li key={entry.id}>
@@ -175,10 +224,10 @@ export function Footer({
                 {email}
               </a>
             ) : null}
-            {hasContactFieldValue(phone) ? (
+            {!useContactEntries && hasContactFieldValue(phone) ? (
               <p className="text-muted-foreground">{phone}</p>
             ) : null}
-            {hasContactFieldValue(address) ? (
+            {!useContactEntries && hasContactFieldValue(address) ? (
               <p className="text-muted-foreground">{address}</p>
             ) : null}
           </div>

@@ -50,6 +50,8 @@ export interface ITBookBooking extends Document {
   selections: TBookSelections
   quote: TBookPriceQuote
   totalHuf: number
+  /** ISO 4217 currency used for checkout. */
+  currency: string
   status: TBookBookingStatus
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
@@ -154,6 +156,7 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     selections: { type: Schema.Types.Mixed, default: {} },
     quote: { type: QuoteSchema, required: true },
     totalHuf: { type: Number, required: true, min: 0 },
+    currency: { type: String, default: "HUF" },
     status: {
       type: String,
       enum: ["pending", "checkout_started", "paid", "confirmed", "cancelled", "expired"],

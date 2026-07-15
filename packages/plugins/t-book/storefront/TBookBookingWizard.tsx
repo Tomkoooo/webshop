@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
-import { ROOM_TYPE_SELECTION_KEY } from "../lib/hotel-pricing"
+import { ROOM_TYPE_SELECTION_KEY, PACKAGE_DEAL_SELECTION_KEY, matchingPackageDeals } from "../lib/hotel-pricing"
 import {
   AttendeeFieldInput,
   BookingOptionField,
@@ -22,6 +22,8 @@ import {
   type TBookPublicHotel,
   type TBookSelections,
 } from "./tbook-public-api"
+import { formatEventSchedule } from "../lib/event-schedule"
+import { mergeRegistrationFieldSchemas, registrationUnitLabel } from "../lib/registration-fields"
 
 type Copy = {
   stepTicket: string
@@ -59,17 +61,23 @@ function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelecti
   const selections: TBookSelections = {}
   const firstRoom = hotel.pricing.roomTypes[0]
   if (firstRoom) selections[ROOM_TYPE_SELECTION_KEY] = firstRoom.key
-  for (const group of hotel.pricing.addonGroups) {
-    for (const option of group.options) {
-      if (option.defaultValue != null) selections[option.key] = option.defaultValue
-      else if (option.type === "checkbox") selections[option.key] = false
-      else if (option.type === "number") selections[option.key] = option.min ?? 0
-      else if (option.type === "select" && option.choices?.[0])
-        selections[option.key] = option.choices[0].value
-      else if (option.type === "multiselect") selections[option.key] = []
-    }
+  const options =
+    hotel.pricing.extrasSection?.options ??
+    hotel.pricing.addonGroups?.flatMap((group) => group.options) ??
+    []
+  for (const option of options) {
+    if (option.defaultValue != null) selections[option.key] = option.defaultValue
+    else if (option.type === "checkbox") selections[option.key] = false
+    else if (option.type === "number") selections[option.key] = option.min ?? 0
+    else if (option.type === "select" && option.choices?.[0])
+      selections[option.key] = option.choices[0].value
+    else if (option.type === "multiselect") selections[option.key] = []
   }
   return selections
+}
+
+function hotelDisplayCurrency(hotel: TBookPublicHotel | null, event: TBookPublicEvent | null): string {
+  return hotel?.currency ?? event?.currency ?? "HUF"
 }
 
 export function TBookBookingWizard({
@@ -91,7 +99,6 @@ export function TBookBookingWizard({
 
   const [event, setEvent] = useState<TBookPublicEvent | null>(null)
   const [hotels, setHotels] = useState<TBookPublicHotel[]>([])
-  const [attendeeFieldSchema, setAttendeeFieldSchema] = useState<TBookPublicAttendeeFieldDef[]>([])
 
   const [guests, setGuests] = useState(1)
   const [nights, setNights] = useState(1)
@@ -105,6 +112,31 @@ export function TBookBookingWizard({
     () => hotels.find((h) => h.id === selectedHotelId) ?? null,
     [hotels, selectedHotelId]
   )
+  const registrationFieldSchema = useMemo(
+    () =>
+      mergeRegistrationFieldSchemas(
+        event?.attendeeFieldSchema,
+        selectedHotel?.registrationFieldSchema
+      ),
+    [event?.attendeeFieldSchema, selectedHotel?.registrationFieldSchema]
+  )
+  const registrationUnit = event?.registrationUnit ?? "person"
+  const guestUnitLabel = registrationUnitLabel(registrationUnit, guests)
+  const displayCurrency = hotelDisplayCurrency(selectedHotel, event)
+  const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
+  const availablePackages = useMemo(() => {
+    if (!selectedHotel || !roomTypeKey) return []
+    return matchingPackageDeals(
+      {
+        ...selectedHotel.pricing,
+        roomTypes: selectedHotel.pricing.roomTypes,
+        packages: selectedHotel.pricing.packages ?? [],
+      },
+      nights,
+      roomTypeKey
+    )
+  }, [selectedHotel, nights, roomTypeKey])
+  const extrasSection = selectedHotel?.pricing.extrasSection ?? null
 
   const loadEvent = useCallback(async () => {
     if (!apiKey.trim()) {
@@ -119,8 +151,6 @@ export function TBookBookingWizard({
       setEvent(res.event)
       setHotels(res.hotels)
       setNights(res.event.nights)
-      const schema = res.event.attendeeFieldSchema ?? []
-      setAttendeeFieldSchema(schema)
       setAttendees(emptyAttendeeRows(1))
       const firstHotel = res.hotels[0] ?? null
       setSelectedHotelId(firstHotel?.id ?? null)
@@ -139,7 +169,7 @@ export function TBookBookingWizard({
   useEffect(() => {
     setAttendees(emptyAttendeeRows(guests))
     setQuote(null)
-  }, [guests])
+  }, [guests, registrationFieldSchema.length])
 
   useEffect(() => {
     if (!selectedHotel) {
@@ -192,7 +222,7 @@ export function TBookBookingWizard({
           eventId: event.id,
           guests,
           customer,
-          attendees: attendeeFieldSchema.length > 0 ? attendees : undefined,
+          attendees: registrationFieldSchema.length > 0 ? attendees : undefined,
           hotelId: selectedHotelId,
           nights: selectedHotelId ? nights : null,
           selections: selectedHotelId ? selections : null,
@@ -211,9 +241,9 @@ export function TBookBookingWizard({
     customer.name.trim() &&
     customer.email.trim() &&
     customer.phone.trim() &&
-    (attendeeFieldSchema.length === 0 ||
-      attendees.every((row, i) =>
-        attendeeFieldSchema.every((field) => {
+    (registrationFieldSchema.length === 0 ||
+      attendees.every((row) =>
+        registrationFieldSchema.every((field) => {
           if (!field.required) return true
           const val = row.fields[field.key]
           return val != null && String(val).trim() !== ""
@@ -264,8 +294,12 @@ export function TBookBookingWizard({
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">{event.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {new Date(event.startDate).toLocaleDateString("hu-HU")} –{" "}
-            {new Date(event.endDate).toLocaleDateString("hu-HU")}
+            {formatEventSchedule(
+              event.startDate,
+              event.endDate,
+              event.startTime,
+              event.endTime
+            )}
           </p>
         </div>
         <BookingStepIndicator steps={steps} current={step} />
@@ -280,7 +314,9 @@ export function TBookBookingWizard({
       {step === 1 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium">{copy.guestsLabel}</span>
+            <span className="text-sm font-medium">
+              {registrationUnit === "team" ? "Csapatok száma" : copy.guestsLabel}
+            </span>
             <input
               type="number"
               min={1}
@@ -329,19 +365,61 @@ export function TBookBookingWizard({
                   <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
                   <select
                     className={INPUT}
-                    value={String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")}
-                    onChange={(e) => patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)}
+                    value={roomTypeKey}
+                    onChange={(e) => {
+                      patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
+                      patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
+                    }}
                   >
                     {selectedHotel.pricing.roomTypes.map((room) => (
                       <option key={room.key} value={room.key}>
-                        {room.label} — {formatHuf(room.baseRateHuf)} / fő / éj
+                        {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / fő / éj
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
 
-              {selectedHotel.pricing.addonGroups.map((group) => (
+              {availablePackages.length > 0 ? (
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium">Csomagajánlat</span>
+                  <select
+                    className={INPUT}
+                    value={String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")}
+                    onChange={(e) => patchSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value)}
+                  >
+                    <option value="">Per-éjszaka ár</option>
+                    {availablePackages.map((pkg) => (
+                      <option key={pkg.key} value={pkg.key}>
+                        {pkg.label} — {formatHuf(pkg.priceHuf, displayCurrency)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              {extrasSection ? (
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <div>
+                    <p className="text-sm font-semibold">{extrasSection.label}</p>
+                    {extrasSection.description ? (
+                      <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {extrasSection.options.map((option) => (
+                      <BookingOptionField
+                        key={option.key}
+                        option={option}
+                        value={selections[option.key]}
+                        visible={optionVisible(option, selections)}
+                        onChange={(v) => patchSelection(option.key, v)}
+                        inputClassName={INPUT}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : selectedHotel.pricing.addonGroups?.map((group) => (
                 <div key={group.key} className="space-y-3 rounded-xl border border-border p-4">
                   <p className="text-sm font-semibold">{group.label}</p>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -395,17 +473,22 @@ export function TBookBookingWizard({
             </div>
           </div>
 
-          {attendeeFieldSchema.length > 0 ? (
+          {registrationFieldSchema.length > 0 ? (
             <div className="space-y-4 border-t border-border pt-4">
               <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
-              <p className="text-sm text-muted-foreground">{copy.attendeesHint}</p>
+              <p className="text-sm text-muted-foreground">
+                {selectedHotel && (selectedHotel.registrationFieldSchema?.length ?? 0) > 0
+                  ? `Az esemény és a választott szállás (${selectedHotel.name}) által kért adatok. `
+                  : ""}
+                {copy.attendeesHint}
+              </p>
               {attendees.map((attendee, index) => (
                 <div key={index} className="space-y-3 rounded-xl border border-border p-4">
                   <p className="text-sm font-semibold">
-                    {index + 1}. résztvevő
+                    {index + 1}. {guestUnitLabel}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {attendeeFieldSchema.map((field) => (
+                    {registrationFieldSchema.map((field) => (
                       <AttendeeFieldInput
                         key={field.key}
                         field={field}
@@ -437,8 +520,12 @@ export function TBookBookingWizard({
               <dd className="font-medium text-right">{event.name}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">{copy.guestsLabel}</dt>
-              <dd className="font-medium">{guests} fő</dd>
+              <dt className="text-muted-foreground">
+                {registrationUnit === "team" ? "Csapatok" : copy.guestsLabel}
+              </dt>
+              <dd className="font-medium">
+                {guests} {guestUnitLabel}
+              </dd>
             </div>
             {selectedHotel ? (
               <div className="flex justify-between gap-4">
@@ -455,12 +542,12 @@ export function TBookBookingWizard({
             {quote.lines.map((line) => (
               <li key={line.key} className="flex justify-between gap-4 text-muted-foreground">
                 <span>{line.label}</span>
-                <span>{formatHuf(line.amountHuf)}</span>
+                <span>{formatHuf(line.amountHuf, displayCurrency)}</span>
               </li>
             ))}
           </ul>
           <p className="text-xl font-bold text-primary">
-            {copy.totalLabel}: {formatHuf(quote.totalHuf)}
+            {copy.totalLabel}: {formatHuf(quote.totalHuf, displayCurrency)}
           </p>
         </section>
       ) : null}

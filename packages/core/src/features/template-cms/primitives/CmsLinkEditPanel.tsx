@@ -44,7 +44,7 @@ export function CmsLinkEditPanel({
 
   return (
     <div
-      className="cms-admin-control fixed z-[500] w-80 rounded-xl bg-card p-4 text-card-foreground shadow-lg space-y-3"
+      className="cms-admin-control fixed z-[500] w-80 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-xl space-y-3"
       style={{ top, left }}
       role="dialog"
       aria-label={title}
@@ -58,7 +58,7 @@ export function CmsLinkEditPanel({
           onChange={(event) => onLabelChange(event.target.value)}
           onBlur={() => onLabelCommit(label)}
           placeholder="Gomb felirat"
-          className="h-9"
+          className="h-9 bg-background"
         />
       </div>
 
@@ -70,7 +70,7 @@ export function CmsLinkEditPanel({
             onChange={(event) => onHrefChange(event.target.value)}
             onBlur={() => onHrefCommit(href)}
             placeholder="/contact"
-            className="h-9"
+            className="h-9 bg-background"
           />
         </div>
       ) : null}

@@ -7,6 +7,12 @@ export type FooterSocialLink = {
   url: string
 }
 
+export type FooterContactEntry = {
+  label: string
+  value: string
+  kind: "text" | "link" | "mailto" | "tel"
+}
+
 export type FooterOrganizerSection = {
   title: string
   companyName: string
@@ -26,6 +32,8 @@ export type FooterSettings = {
   newsletterPlaceholder: string
   copyrightText: string
   socialLinks: FooterSocialLink[]
+  /** Structured contact rows shown in footer (overrides legacy email/phone when set). */
+  contactEntries?: FooterContactEntry[]
   /** Mineshow / camp footer — szervező blokk */
   organizerSection?: FooterOrganizerSection
   /** Pl. „Fizetés: bankkártya (Stripe)” */
@@ -95,6 +103,16 @@ function normalize(settings?: Partial<FooterSettings>): FooterSettings {
     newsletterPlaceholder: settings?.newsletterPlaceholder || DEFAULTS.newsletterPlaceholder,
     copyrightText: settings?.copyrightText || DEFAULTS.copyrightText,
     socialLinks,
+    contactEntries: Array.isArray(settings?.contactEntries)
+      ? settings.contactEntries.map((item) => ({
+          label: String(item.label || ""),
+          value: String(item.value || ""),
+          kind:
+            item.kind === "link" || item.kind === "mailto" || item.kind === "tel"
+              ? item.kind
+              : ("text" as const),
+        }))
+      : [],
     organizerSection: {
       title: settings?.organizerSection?.title || DEFAULT_ORGANIZER.title,
       companyName: settings?.organizerSection?.companyName || DEFAULT_ORGANIZER.companyName,

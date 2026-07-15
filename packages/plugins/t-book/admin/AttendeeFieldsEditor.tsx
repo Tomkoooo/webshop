@@ -53,9 +53,13 @@ function ChoicesEditor({
 export function AttendeeFieldsEditor({
   fields,
   onChange,
+  registrationUnit = "person",
+  scope = "event",
 }: {
   fields: TBookAttendeeFieldDef[]
   onChange: (fields: TBookAttendeeFieldDef[]) => void
+  registrationUnit?: "person" | "team"
+  scope?: "event" | "hotel"
 }) {
   const update = (index: number, patch: Partial<TBookAttendeeFieldDef>) => {
     const next = fields.map((field, i) => (i === index ? { ...field, ...patch } : field))
@@ -70,15 +74,32 @@ export function AttendeeFieldsEditor({
     onChange(assignAttendeeFieldKeys(next.map((field, i) => ({ ...field, sortOrder: i }))))
   }
 
+  const unitLabel = registrationUnit === "team" ? "csapat" : "résztvevő"
+  const unitLabelPlural = registrationUnit === "team" ? "csapat" : "résztvevő"
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground space-y-2">
-        <p>
-          Ezeket az adatokat <strong className="text-foreground">minden jegyet foglaló résztvevőtől</strong>{" "}
-          külön kell megadni (pl. név, életkor, állampolgárság). A foglaló kapcsolattartó adatait a
-          vendég a foglalási űrlap „Kapcsolattartó” részén adja meg.
-        </p>
-        <p>Ha több jegyet foglalnak, minden résztvevőhöz külön sor készül.</p>
+        {scope === "hotel" ? (
+          <>
+            <p>
+              Ezeket az adatokat <strong className="text-foreground">minden foglaláshoz</strong> külön
+              kell megadni, amikor a vendég ezt a szállást választja. Az esemény szintű mezőkkel
+              együtt jelennek meg a foglalási űrlapon.
+            </p>
+            <p>Egy fizető több {unitLabelPlural} nevére is foglalhat — minden {unitLabel} külön sor.</p>
+          </>
+        ) : (
+          <>
+            <p>
+              Ezeket az adatokat{" "}
+              <strong className="text-foreground">minden regisztrált {unitLabel}től</strong> külön kell
+              megadni (pl. név, életkor, nem). A foglaló kapcsolattartó adatait a vendég a
+              foglalási űrlap „Kapcsolattartó” részén adja meg.
+            </p>
+            <p>Ha több {unitLabelPlural} jegyet foglalnak, minden {unitLabel}hoz külön sor készül.</p>
+          </>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -94,7 +115,7 @@ export function AttendeeFieldsEditor({
 
       {fields.length === 0 ? (
         <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
-          Nincs egyedi résztvevői mező — csak a kapcsolattartó adatai kerülnek rögzítésre.
+          Nincs egyedi foglalási mező — csak a kapcsolattartó adatai kerülnek rögzítésre.
         </p>
       ) : null}
 
@@ -233,7 +254,7 @@ export function AttendeeFieldsEditor({
           )
         }
       >
-        + Résztvevői mező
+        + {scope === "hotel" ? "Foglalási mező" : `${unitLabel.charAt(0).toUpperCase()}${unitLabel.slice(1)}i mező`}
       </Button>
     </div>
   )

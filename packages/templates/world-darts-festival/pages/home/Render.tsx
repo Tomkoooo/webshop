@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { ChevronDown } from "lucide-react"
 import { CmsImage } from "@wse/cms-bridge"
 import { ContactInquiryForm } from "@wse/core/components/site-contact/ContactInquiryForm"
@@ -11,8 +11,9 @@ import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-e
 import { cn } from "@wse/core/lib/utils"
 import type { RenderProps, HomePageDeps } from "@wse/sdk/templates/types"
 import type { HomeContent } from "./schema"
+import type { WdfHomeSectionId } from "../../lib/wdf-home-sections"
 
-function SectionHeading({ children, className }: { children: React.ReactNode; className?: string }) {
+function SectionHeading({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <h2 className={cn("text-2xl font-bold tracking-tight sm:text-3xl", className)}>{children}</h2>
   )
@@ -93,11 +94,13 @@ function ScheduleDay({
 function PrizeMoneyTable({
   tableIndex,
   title,
+  subtitle,
   headers,
   rows,
 }: {
   tableIndex: number
   title: string
+  subtitle: string
   headers: string[]
   rows: string[][]
 }) {
@@ -143,6 +146,15 @@ function PrizeMoneyTable({
         <h3 className="text-lg font-semibold">
           <EditableDocText path={`${basePath}.title`} value={title} />
         </h3>
+        {subtitle || edit.enabled ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            <EditableDocText
+              path={`${basePath}.subtitle`}
+              value={subtitle}
+              placeholder="Másodlagos szöveg a táblázat alatt"
+            />
+          </p>
+        ) : null}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
@@ -207,11 +219,11 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
   const c = content
   const edit = useSurfaceDocEdit()
   const contactEmails = deps?.siteContact?.emails ?? []
+  const sectionLayout = c.sectionLayout ?? []
 
-  return (
-    <div className="bg-background text-foreground">
-      {/* Hero */}
-      <section className="relative min-h-[min(90svh,720px)] flex items-end overflow-hidden">
+  const sections: Record<WdfHomeSectionId, ReactNode> = {
+    hero: (
+      <section className="relative flex min-h-[min(90svh,720px)] items-end overflow-hidden">
         <CmsImage
           path="hero.heroImage"
           src={c.hero.heroImage}
@@ -251,8 +263,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
-
-      {/* Festival intro */}
+    ),
+    festival: (
       <section className="border-y border-border/60 bg-surface py-16">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-2">
           <div className="space-y-4">
@@ -283,8 +295,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           />
         </div>
       </section>
-
-      {/* Info cards */}
+    ),
+    infoCards: (
       <section className="py-16">
         <div className="mx-auto grid max-w-6xl gap-6 px-4 md:grid-cols-2">
           {c.infoCards.map((card, index) => (
@@ -335,8 +347,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           ) : null}
         </div>
       </section>
-
-      {/* Venue */}
+    ),
+    venue: (
       <section id="venue" className="scroll-mt-24 border-y border-border/60 bg-muted/20 py-16">
         <div className="mx-auto max-w-6xl px-4">
           <SectionHeading className="mb-8">
@@ -369,8 +381,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
-
-      {/* Schedule */}
+    ),
+    schedule: (
       <section id="schedule" className="scroll-mt-24 py-16">
         <div className="mx-auto max-w-3xl space-y-6 px-4">
           <SectionHeading>
@@ -406,8 +418,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
-
-      {/* Fees */}
+    ),
+    fees: (
       <section className="border-y border-border/60 bg-surface py-16">
         <div className="mx-auto max-w-3xl px-4">
           <SectionHeading className="mb-8 text-center">
@@ -469,15 +481,15 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
-
-      {/* Prize money */}
+    ),
+    prizeMoney: (
       <section id="prize-money" className="scroll-mt-24 py-16">
         <div className="mx-auto max-w-5xl space-y-8 px-4">
           <div className="text-center">
             <SectionHeading className="mb-3">
               <EditableDocText path="prizeMoney.heading" value={c.prizeMoney.heading} />
             </SectionHeading>
-            {c.prizeMoney.intro ? (
+            {c.prizeMoney.intro || edit.enabled ? (
               <p className="mx-auto max-w-2xl text-muted-foreground">
                 <EditableDocText path="prizeMoney.intro" value={c.prizeMoney.intro} multiline />
               </p>
@@ -499,6 +511,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                 <PrizeMoneyTable
                   tableIndex={index}
                   title={table.title}
+                  subtitle={table.subtitle ?? ""}
                   headers={table.headers}
                   rows={table.rows}
                 />
@@ -514,6 +527,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                     ...c.prizeMoney.tables,
                     {
                       title: "New tournament",
+                      subtitle: "",
                       headers: ["Place", "Prize"],
                       rows: [["Winner", "€0"]],
                     },
@@ -524,8 +538,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           ) : null}
         </div>
       </section>
-
-      {/* Sponsors */}
+    ),
+    sponsors: (
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <SectionHeading className="mb-10">
@@ -560,8 +574,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
-
-      {/* Contact */}
+    ),
+    contact: (
       <section id="contact" className="scroll-mt-24 border-t border-border/60 bg-muted/20 py-16">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2">
           <div className="space-y-4">
@@ -583,6 +597,14 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           </div>
         </div>
       </section>
+    ),
+  }
+
+  return (
+    <div className="bg-background text-foreground">
+      {sectionLayout.map((entry) =>
+        entry.enabled ? <div key={entry.id}>{sections[entry.id]}</div> : null
+      )}
     </div>
   )
 }

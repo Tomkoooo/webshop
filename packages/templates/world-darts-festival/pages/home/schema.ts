@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { tBookHomeChromeSchema } from "@wse/plugin-t-book/lib/storefront-chrome"
+import {
+  wdfSectionLayoutEntrySchema,
+  DEFAULT_WDF_SECTION_LAYOUT,
+} from "../../lib/wdf-home-sections"
 
 const navLinkSchema = z.object({
   label: z.string(),
@@ -36,6 +40,7 @@ const feeItemSchema = z.object({
 
 const prizeTableSchema = z.object({
   title: z.string(),
+  subtitle: z.string().default(""),
   headers: z.array(z.string()).default([]),
   rows: z.array(z.array(z.string())).default([]),
 })
@@ -47,6 +52,7 @@ const sponsorSchema = z.object({
 
 export const homeSchema = z.object({
   chrome: tBookHomeChromeSchema,
+  sectionLayout: z.array(wdfSectionLayoutEntrySchema).default(DEFAULT_WDF_SECTION_LAYOUT),
   hero: z.object({
     tagline: z.string(),
     title: z.string(),

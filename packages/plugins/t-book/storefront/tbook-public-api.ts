@@ -28,9 +28,13 @@ export type TBookPublicEvent = {
   location: { address?: string; lat?: number | null; lng?: number | null }
   startDate: string
   endDate: string
+  startTime?: string | null
+  endTime?: string | null
   nights: number
   ticketFeeHuf: number
-  ticketFeeMode: "per_person" | "per_booking"
+  ticketFeeMode: "per_person" | "per_booking" | "per_team"
+  registrationUnit?: "person" | "team"
+  currency?: string
   heroImage: string
   attendeeFieldSchema: TBookPublicAttendeeFieldDef[]
 }
@@ -55,6 +59,14 @@ export type TBookPublicRoomType = {
   baseRateHuf: number
 }
 
+export type TBookPublicPackageDeal = {
+  key: string
+  label: string
+  nights: number
+  priceHuf: number
+  roomTypeKey?: string | null
+}
+
 export type TBookPublicHotel = {
   id: string
   name: string
@@ -62,11 +74,20 @@ export type TBookPublicHotel = {
   address: string
   distanceFromVenueKm: number | null
   gallery: string[]
+  currency?: string
+  registrationFieldSchema?: TBookPublicAttendeeFieldDef[]
   pricing: {
     priceBasis: "net" | "gross"
     vatPercent: number
     roomTypes: TBookPublicRoomType[]
-    addonGroups: { key: string; label: string; options: TBookPublicOptionDef[] }[]
+    packages?: TBookPublicPackageDeal[]
+    extrasSection?: {
+      label: string
+      description?: string
+      options: TBookPublicOptionDef[]
+    } | null
+    /** @deprecated legacy — use extrasSection */
+    addonGroups?: { key: string; label: string; options: TBookPublicOptionDef[] }[]
   }
 }
 

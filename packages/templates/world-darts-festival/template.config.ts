@@ -35,6 +35,14 @@ import { TBookBookingRender } from "./pages/tbook/foglalas/Render"
 import { TBookSuccessRender } from "./pages/tbook/foglalas-siker/Render"
 import { TBookSurfaceEditorPanel } from "./pages/tbook/EditorPanel"
 
+import { importantInfoSchema } from "./static-pages/fontos-informaciok/schema"
+import { importantInfoDefaultContent } from "./static-pages/fontos-informaciok/defaultContent"
+import { ImportantInfoRender } from "./static-pages/fontos-informaciok/Render"
+
+const ImportantInfoEditorPanel = dynamic(() =>
+  import("./static-pages/fontos-informaciok/EditorPanel").then((m) => m.ImportantInfoEditorPanel)
+)
+
 const HomeEditorPanel = dynamic(() => import("./pages/home/EditorPanel").then((m) => m.HomeEditorPanel))
 const ShopEditorPanel = dynamic(() => import("./pages/shop/EditorPanel").then((m) => m.ShopEditorPanel))
 const PdpEditorPanel = dynamic(() => import("./pages/pdp/EditorPanel").then((m) => m.PdpEditorPanel))
@@ -50,7 +58,10 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     screenshots: ["/template-previews/world-darts-festival.svg"],
     capabilities: {
       hasBlog: false,
-      staticPages: [],
+      staticPages: ["fontos-informaciok"],
+      staticPageLabels: {
+        "fontos-informaciok": "Fontos információk",
+      },
       restyles: ["home"],
     },
     surfaces: DEFAULT_TEMPLATE_SURFACES,
@@ -81,7 +92,14 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
       EditorPanel: PdpEditorPanel,
     },
   },
-  staticPages: {},
+  staticPages: {
+    "fontos-informaciok": {
+      schema: importantInfoSchema,
+      defaultContent: importantInfoDefaultContent,
+      Render: ImportantInfoRender,
+      EditorPanel: ImportantInfoEditorPanel,
+    },
+  },
   tBookPages: {
     jegyek: {
       schema: tBookListContentSchema,

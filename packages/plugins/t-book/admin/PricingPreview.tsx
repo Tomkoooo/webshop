@@ -9,15 +9,19 @@ import {
 import type { TBookHotelPricing, TBookOptionDef, TBookSelections, TBookSelectionValue } from "../lib/pricing-types"
 import {
   ROOM_TYPE_SELECTION_KEY,
+  PACKAGE_DEAL_SELECTION_KEY,
+  getExtrasSection,
+  matchingPackageDeals,
   normalizeHotelPricing,
 } from "../lib/hotel-pricing"
-import { formatHuf } from "./t-book-api"
+import { formatMoney } from "./t-book-api"
 import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
 
 function renderOptionControl(
   option: TBookOptionDef,
   selections: TBookSelections,
-  setSelection: (key: string, value: TBookSelectionValue | null) => void
+  setSelection: (key: string, value: TBookSelectionValue | null) => void,
+  currency: string
 ) {
   if (!option.key) return null
   if (!isOptionApplicable(option, selections)) return null
@@ -35,7 +39,7 @@ function renderOptionControl(
             {(option.choices ?? []).map((c, index) => (
               <option key={c.value || `choice-${index}`} value={c.value}>
                 {c.label}
-                {c.priceHuf ? ` (+${formatHuf(c.priceHuf)})` : ""}
+                {c.priceHuf ? ` (+${formatMoney(c.priceHuf, currency)})` : ""}
               </option>
             ))}
           </TBookSelect>
@@ -105,17 +109,23 @@ export function PricingPreview({
   ticketFeeMode,
   ticketPriceBasis = "gross",
   ticketVatPercent = 27,
+  ticketCurrency = "HUF",
+  hotelCurrency = "HUF",
   defaultNights,
   pricing,
 }: {
   ticketFeeHuf: number
-  ticketFeeMode: "per_person" | "per_booking"
+  ticketFeeMode: "per_person" | "per_booking" | "per_team"
   ticketPriceBasis?: "net" | "gross"
   ticketVatPercent?: number
+  ticketCurrency?: string
+  hotelCurrency?: string
   defaultNights: number
   pricing: TBookHotelPricing
 }) {
+  const displayCurrency = hotelCurrency || ticketCurrency
   const normalized = useMemo(() => normalizeHotelPricing(pricing), [pricing])
+  const extrasSection = useMemo(() => getExtrasSection(normalized), [normalized])
   const [guests, setGuests] = useState(2)
   const [nights, setNights] = useState(defaultNights)
   const [withAccommodation, setWithAccommodation] = useState(true)
@@ -130,10 +140,16 @@ export function PricingPreview({
     })
   }
 
-  const sortedGroups = useMemo(
+  const roomTypeKey =
+    typeof selections[ROOM_TYPE_SELECTION_KEY] === "string"
+      ? selections[ROOM_TYPE_SELECTION_KEY]
+      : ""
+  const availablePackages = useMemo(
     () =>
-      [...normalized.addonGroups].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [normalized.addonGroups]
+      roomTypeKey
+        ? matchingPackageDeals(normalized, nights, roomTypeKey)
+        : [],
+    [normalized, nights, roomTypeKey]
   )
 
   const { quote, errors } = useMemo(() => {
@@ -167,7 +183,7 @@ export function PricingPreview({
       <div>
         <h3 className="text-sm font-semibold text-foreground">Élő ár-előnézet</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Így látja a vendég a mezőket — a szakasz címek és leírások is megjelennek.
+          Így látja a vendég a mezőket — a szakasz cím és leírás is megjelenik.
         </p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -201,55 +217,58 @@ export function PricingPreview({
       {withAccommodation && normalized.roomTypes.length > 0 ? (
         <TBookField label="Szobatípus">
           <TBookSelect
-            value={
-              typeof selections[ROOM_TYPE_SELECTION_KEY] === "string"
-                ? selections[ROOM_TYPE_SELECTION_KEY]
-                : ""
-            }
-            onChange={(e) => setSelection(ROOM_TYPE_SELECTION_KEY, e.target.value || null)}
+            value={roomTypeKey}
+            onChange={(e) => {
+              setSelection(ROOM_TYPE_SELECTION_KEY, e.target.value || null)
+              setSelection(PACKAGE_DEAL_SELECTION_KEY, null)
+            }}
           >
             <option value="">— válassz —</option>
             {normalized.roomTypes.map((room, index) => (
               <option key={room.key || `room-${index}`} value={room.key}>
-                {room.label} ({formatHuf(room.baseRateHuf)} / fő / éj)
+                {room.label} ({formatMoney(room.baseRateHuf, displayCurrency)} / fő / éj)
               </option>
             ))}
           </TBookSelect>
         </TBookField>
       ) : null}
 
-      {withAccommodation && sortedGroups.length > 0 ? (
-        <div className="space-y-4">
-          {sortedGroups.map((group, groupIndex) => {
-            const sortedOptions = [...group.options].sort(
-              (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
-            )
-            const visibleOptions = sortedOptions.filter(
-              (option) => option.key && isOptionApplicable(option, selections)
-            )
-            if (visibleOptions.length === 0 && !group.label.trim()) return null
-            return (
-              <section
-                key={group.key || `section-${groupIndex}`}
-                className="rounded-lg bg-background/80 p-3 space-y-3 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {group.label || "Névtelen szakasz"}
-                  </p>
-                  {group.description ? (
-                    <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
-                  ) : null}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {sortedOptions.map((option) =>
-                    renderOptionControl(option, selections, setSelection)
-                  )}
-                </div>
-              </section>
-            )
-          })}
-        </div>
+      {withAccommodation && availablePackages.length > 0 ? (
+        <TBookField label="Csomagajánlat (opcionális)">
+          <TBookSelect
+            value={
+              typeof selections[PACKAGE_DEAL_SELECTION_KEY] === "string"
+                ? selections[PACKAGE_DEAL_SELECTION_KEY]
+                : ""
+            }
+            onChange={(e) => setSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value || null)}
+          >
+            <option value="">Per-éjszaka ár</option>
+            {availablePackages.map((pkg) => (
+              <option key={pkg.key} value={pkg.key}>
+                {pkg.label} — {formatMoney(pkg.priceHuf, displayCurrency)}
+              </option>
+            ))}
+          </TBookSelect>
+        </TBookField>
+      ) : null}
+
+      {withAccommodation && extrasSection ? (
+        <section className="rounded-lg bg-background/80 p-3 space-y-3 shadow-sm">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {extrasSection.label || "Extrák"}
+            </p>
+            {extrasSection.description ? (
+              <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[...extrasSection.options]
+              .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+              .map((option) => renderOptionControl(option, selections, setSelection, displayCurrency))}
+          </div>
+        </section>
       ) : null}
 
       {errors.length > 0 ? (
@@ -264,12 +283,16 @@ export function PricingPreview({
         {quote.lines.map((line) => (
           <div key={line.key} className="flex justify-between text-sm gap-4">
             <span className="text-muted-foreground">{line.label}</span>
-            <span className="text-foreground font-medium">{formatHuf(line.amountHuf)}</span>
+            <span className="text-foreground font-medium">
+              {formatMoney(line.amountHuf, displayCurrency)}
+            </span>
           </div>
         ))}
         <div className="flex justify-between pt-2 text-base font-bold">
           <span className="text-foreground font-semibold">Összesen</span>
-          <span className="text-foreground font-semibold">{formatHuf(quote.totalHuf)}</span>
+          <span className="text-foreground font-semibold">
+            {formatMoney(quote.totalHuf, displayCurrency)}
+          </span>
         </div>
       </div>
     </div>

@@ -3,16 +3,18 @@
 import { Button } from "@wse/core/components/ui/button"
 import type { TBookRoomType } from "../lib/pricing-types"
 import { TBookField, TBookInput } from "./t-book-admin-ui"
-import { formatHuf } from "./t-book-api"
+import { formatMoney } from "./t-book-api"
 
 export function RoomTypesEditor({
   roomTypes,
   onChange,
   priceBasisLabel = "nettó",
+  currency = "HUF",
 }: {
   roomTypes: TBookRoomType[]
   onChange: (roomTypes: TBookRoomType[]) => void
   priceBasisLabel?: string
+  currency?: string
 }) {
   const update = (index: number, patch: Partial<TBookRoomType>) => {
     onChange(roomTypes.map((room, i) => (i === index ? { ...room, ...patch } : room)))
@@ -30,7 +32,7 @@ export function RoomTypesEditor({
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Minden szobatípus alapdíja <strong className="text-foreground">fő / éjszaka</strong> (
-        {priceBasisLabel} Ft). A vendég egy szobatípust választ — ez lesz a szállás alapára.
+        {priceBasisLabel}, {currency}). A vendég egy szobatípust választ — ez lesz a szállás alapára.
       </p>
       {roomTypes.length === 0 ? (
         <p className="text-sm text-amber-900 border border-amber-500/20 rounded-lg px-4 py-3 bg-amber-500/5">
@@ -53,7 +55,7 @@ export function RoomTypesEditor({
                 </TBookField>
               </div>
               <div className="col-span-5">
-                <TBookField label="Alapdíj / fő / éj">
+                <TBookField label={`Alapdíj / fő / éj (${currency})`}>
                   <TBookInput
                     type="number"
                     min={0}
@@ -86,7 +88,7 @@ export function RoomTypesEditor({
               <p className="col-span-12 text-xs text-muted-foreground -mt-1">
                 Példa 2 fő × 3 éj:{" "}
                 <span className="text-foreground font-semibold">
-                  {formatHuf(room.baseRateHuf * 2 * 3)}
+                  {formatMoney(room.baseRateHuf * 2 * 3, currency)}
                 </span>{" "}
                 ({priceBasisLabel} alap)
               </p>

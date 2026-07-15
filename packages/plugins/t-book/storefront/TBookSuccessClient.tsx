@@ -18,13 +18,13 @@ export function TBookSuccessClient({ copy, apiBase }: { copy: Copy; apiBase?: st
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
   const sessionId = searchParams.get("session_id")
-  const [status, setStatus] = useState<"loading" | "paid" | "error">("loading")
+  const shouldPoll = Boolean(bookingId || sessionId)
+  const [status, setStatus] = useState<"loading" | "paid" | "error">(
+    shouldPoll ? "loading" : "paid"
+  )
 
   useEffect(() => {
-    if (!bookingId && !sessionId) {
-      setStatus("paid")
-      return
-    }
+    if (!shouldPoll) return
     const base = apiBase?.replace(/\/$/, "") ?? "/api/plugins/t-book"
     const qs = new URLSearchParams()
     if (bookingId) qs.set("bookingId", bookingId)
@@ -39,7 +39,7 @@ export function TBookSuccessClient({ copy, apiBase }: { copy: Copy; apiBase?: st
         }
       })
       .catch(() => setStatus("error"))
-  }, [bookingId, sessionId, apiBase])
+  }, [bookingId, sessionId, apiBase, shouldPoll])
 
   if (status === "loading") {
     return (

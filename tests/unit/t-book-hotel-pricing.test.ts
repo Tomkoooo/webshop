@@ -22,8 +22,9 @@ describe("hotel pricing hierarchy", () => {
     })
     expect(normalized.roomTypes).toHaveLength(1)
     expect(normalized.roomTypes[0]?.baseRateHuf).toBe(12000)
-    expect(normalized.addonGroups).toHaveLength(1)
-    expect(normalized.addonGroups[0]?.options[0]?.key).toBe("meals")
+    expect(normalized.extrasSection).not.toBeNull()
+    expect(normalized.extrasSection?.options[0]?.key).toBe("meals")
+    expect(normalized.addonGroups).toHaveLength(0)
   })
 
   it("estimates booking path count for admin summary", () => {
@@ -34,23 +35,20 @@ describe("hotel pricing hierarchy", () => {
         { key: "a", label: "A", baseRateHuf: 10000 },
         { key: "b", label: "B", baseRateHuf: 12000 },
       ],
-      addonGroups: [
-        {
-          key: "meals",
-          label: "Étkezés",
-          options: [
-            {
-              key: "meals",
-              label: "Étkezés",
-              type: "select",
-              choices: [
-                { value: "none", label: "Nincs", priceHuf: 0, priceMode: "fixed" },
-                { value: "full", label: "Teljes", priceHuf: 5000, priceMode: "fixed" },
-              ],
-            },
-          ],
-        },
-      ],
+      extrasSection: {
+        label: "Extrák",
+        options: [
+          {
+            key: "meals",
+            label: "Étkezés",
+            type: "select",
+            choices: [
+              { value: "none", label: "Nincs", priceHuf: 0, priceMode: "fixed" },
+              { value: "full", label: "Teljes", priceHuf: 5000, priceMode: "fixed" },
+            ],
+          },
+        ],
+      },
     })
     expect(stats.roomTypeCount).toBe(2)
     expect(stats.estimatedBookingPaths).toBe(4)

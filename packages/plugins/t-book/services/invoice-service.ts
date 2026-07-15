@@ -3,6 +3,7 @@ import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import { InvoicingSzamlazzService } from "@wse/core/services/invoicing-szamlazz"
 import type { IOrder } from "@wse/core/models/Order"
 import TBookBooking, { type ITBookBooking } from "../models/TBookBooking"
+import { normalizeTBookCurrency } from "../lib/currency"
 
 function parseVatPercent(): number {
   const n = Number(process.env.TBOOK_INVOICE_VAT_PERCENT ?? 27)
@@ -78,8 +79,18 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
     return
   }
 
+  const bookingCurrency = normalizeTBookCurrency(booking.currency)
+  if (bookingCurrency !== "HUF" && bookingCurrency !== "EUR") {
+    booking.invoiceStatus = "failed"
+    booking.invoiceError = `A szamlazz.hu integráció jelenleg csak HUF és EUR devizát támogat (foglalás: ${bookingCurrency}).`
+    await booking.save()
+    return
+  }
+
   try {
-    const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking))
+    const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking), {
+      currency: bookingCurrency,
+    })
     booking.invoiceStatus = "issued"
     booking.invoiceId = result.invoiceId
     booking.invoicePdfFileName = result.pdfFileName ?? null

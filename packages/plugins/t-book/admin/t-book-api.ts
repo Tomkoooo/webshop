@@ -36,12 +36,18 @@ export type AdminEvent = {
   location: TBookLocation
   startDate: string
   endDate: string
+  startTime: string | null
+  endTime: string | null
   ticketFeeHuf: number
-  ticketFeeMode: "per_person" | "per_booking"
+  ticketFeeMode: "per_person" | "per_booking" | "per_team"
+  registrationUnit: "person" | "team"
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
+  currency: string
   capacity: number | null
   heroImage: string
+  voucherHeaderImage: string
+  vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   status: "draft" | "active" | "archived"
   sortOrder: number
@@ -58,6 +64,8 @@ export type AdminHotel = {
   contactEmail: string
   contactPhone: string
   gallery: string[]
+  currency: string
+  registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
   status: "draft" | "active" | "archived"
   sortOrder: number
@@ -152,6 +160,51 @@ export const INVOICE_STATUS_LABELS: Record<string, string> = {
   issued: "Kiállítva",
   failed: "Sikertelen",
   reversed: "Sztornózva",
+}
+
+export const VOUCHER_STATUS_LABELS: Record<string, string> = {
+  active: "Aktív",
+  checked_in: "Beléptetve",
+  void: "Érvénytelen",
+}
+
+export const VOUCHER_SCAN_RESULT_LABELS: Record<string, string> = {
+  valid: "Érvényes",
+  duplicate: "Már beléptetve",
+  invalid: "Érvénytelen",
+  wrong_event: "Más esemény",
+}
+
+export type AdminVoucher = {
+  id: string
+  token: string
+  status: string
+  displayName: string
+  attendeeIndex: number
+  attendeeFields: Record<string, string | number>
+  bookingId: string
+  eventSnapshot?: {
+    name: string
+    startDate: string
+    endDate: string
+    locationAddress: string
+  }
+  emailedAt: string | null
+  lastSentToEmail: string | null
+  lastSentToName: string | null
+  checkedInAt: string | null
+  checkedInByUserId?: string | null
+  createdAt?: string
+  updatedAt?: string
+  bookingCustomer?: { name?: string; email?: string; phone?: string }
+  bookingStatus?: string
+}
+
+export type VoucherScanResult = {
+  ok: boolean
+  result: "valid" | "duplicate" | "invalid" | "wrong_event"
+  message?: string
+  voucher?: AdminVoucher
 }
 
 export const TBOOK_STATUS_LABELS: Record<string, string> = {

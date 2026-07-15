@@ -21,6 +21,7 @@ import {
   TBookStatusBadge,
 } from "./t-book-admin-ui"
 import { EventHotelsAdmin } from "./EventHotelsAdmin"
+import { EventVouchersAdmin } from "./EventVouchersAdmin"
 import { EventFormDialog } from "./EventFormDialog"
 
 export function EventsAdmin({ path }: { path: string[] }) {
@@ -52,6 +53,10 @@ export function EventsAdmin({ path }: { path: string[] }) {
 
   if (path[0] && path[1] === "hotels") {
     return <EventHotelsAdmin eventId={path[0]} />
+  }
+
+  if (path[0] && path[1] === "vouchers") {
+    return <EventVouchersAdmin eventId={path[0]} />
   }
 
   const move = async (index: number, direction: -1 | 1) => {
@@ -174,17 +179,26 @@ export function EventsAdmin({ path }: { path: string[] }) {
                     ↓
                   </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9 text-xs"
-                  onClick={() => {
-                    setEditing(event)
-                    setDialogOpen(true)
-                  }}
-                >
-                  Szerkesztés
-                </Button>
+                {event.groupId ? (
+                  <Link
+                    href={`/admin/plugins/t-book/groups/${event.groupId}/events/${event.id}`}
+                    className="inline-flex h-9 items-center px-3 border border-border rounded-lg text-foreground text-xs font-medium hover:bg-muted/40"
+                  >
+                    Szerkesztés
+                  </Link>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 text-xs"
+                    onClick={() => {
+                      setEditing(event)
+                      setDialogOpen(true)
+                    }}
+                  >
+                    Szerkesztés
+                  </Button>
+                )}
                 <Link
                   href={
                     event.groupId
@@ -194,6 +208,12 @@ export function EventsAdmin({ path }: { path: string[] }) {
                   className="text-xs font-medium admin-link-accent"
                 >
                   {event.groupId ? "Csoport szállások →" : "Szállások & árazás →"}
+                </Link>
+                <Link
+                  href={`/admin/plugins/t-book/events/${event.id}/vouchers`}
+                  className="text-xs font-medium admin-link-accent"
+                >
+                  Belépőjegyek →
                 </Link>
                 <Button
                   type="button"

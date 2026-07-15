@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { emptyTBookLocation, type TBookLocation } from "../lib/location"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "../lib/vat"
 import type { TBookPriceBasis } from "../lib/vat"
-import { tBookAdminApi, type AdminEvent } from "./t-book-api"
+import { tBookAdminApi, formatMoney, type AdminEvent } from "./t-book-api"
 import {
   TBookDateInput,
   TBookField,
@@ -21,9 +21,13 @@ import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookLocationField } from "./TBookLocationField"
 import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
+import { CurrencySelect } from "./CurrencySelect"
 import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
+import { normalizeTBookCurrency } from "../lib/currency"
+import { formatEventSchedule, toTimeInputValue } from "../lib/event-schedule"
+import { registrationUnitLabel, ticketFeeModeLabel } from "../lib/registration-fields"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 function toDateInputValue(value?: string): string {
@@ -46,12 +50,18 @@ type EventDraft = {
   location: TBookLocation
   startDate: string
   endDate: string
+  startTime: string
+  endTime: string
   ticketFeeHuf: number
   ticketFeeMode: AdminEvent["ticketFeeMode"]
+  registrationUnit: AdminEvent["registrationUnit"]
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
+  currency: string
   capacity: string
   heroImage: string
+  voucherHeaderImage: string
+  vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
 }
 
@@ -63,7 +73,7 @@ export function EventFormPage({
   eventId?: string
 }) {
   const router = useRouter()
-  const { currency } = useOrgCurrency()
+  const { currency: orgCurrency } = useOrgCurrency()
   const isEdit = Boolean(eventId)
   const [loading, setLoading] = useState(isEdit)
   const [groupName, setGroupName] = useState("")
@@ -76,12 +86,18 @@ export function EventFormPage({
     location: emptyTBookLocation(),
     startDate: "",
     endDate: "",
+    startTime: "",
+    endTime: "",
     ticketFeeHuf: 0,
     ticketFeeMode: "per_person",
+    registrationUnit: "person",
     ticketPriceBasis: "net",
     ticketVatPercent: TBOOK_DEFAULT_VAT_PERCENT,
+    currency: orgCurrency,
     capacity: "",
     heroImage: "",
+    voucherHeaderImage: "",
+    vouchersEnabled: true,
     attendeeFieldSchema: [],
   })
 
@@ -102,12 +118,18 @@ export function EventFormPage({
             location: e.location ?? emptyTBookLocation(),
             startDate: toDateInputValue(e.startDate),
             endDate: toDateInputValue(e.endDate),
+            startTime: toTimeInputValue(e.startTime),
+            endTime: toTimeInputValue(e.endTime),
             ticketFeeHuf: e.ticketFeeHuf,
             ticketFeeMode: e.ticketFeeMode,
+            registrationUnit: e.registrationUnit ?? "person",
             ticketPriceBasis: e.ticketPriceBasis ?? "net",
             ticketVatPercent: e.ticketVatPercent ?? TBOOK_DEFAULT_VAT_PERCENT,
+            currency: normalizeTBookCurrency(e.currency),
             capacity: e.capacity != null ? String(e.capacity) : "",
             heroImage: e.heroImage,
+            voucherHeaderImage: e.voucherHeaderImage ?? "",
+            vouchersEnabled: e.vouchersEnabled !== false,
             attendeeFieldSchema: e.attendeeFieldSchema ?? [],
           })
         })
@@ -117,6 +139,12 @@ export function EventFormPage({
       .catch((e) => toast.error(e instanceof Error ? e.message : "Hiba"))
       .finally(() => setLoading(false))
   }, [groupId, eventId])
+
+  useEffect(() => {
+    if (!isEdit) {
+      setDraft((d) => ({ ...d, currency: orgCurrency }))
+    }
+  }, [orgCurrency, isEdit])
 
   const patch = (partial: Partial<EventDraft>) => setDraft((d) => ({ ...d, ...partial }))
 
@@ -134,12 +162,18 @@ export function EventFormPage({
       location: draft.location,
       startDate: draft.startDate,
       endDate: draft.endDate,
+      startTime: draft.startTime.trim() || null,
+      endTime: draft.endTime.trim() || null,
       ticketFeeHuf: draft.ticketFeeHuf,
       ticketFeeMode: draft.ticketFeeMode,
+      registrationUnit: draft.registrationUnit,
       ticketPriceBasis: draft.ticketPriceBasis,
       ticketVatPercent: draft.ticketVatPercent,
+      currency: draft.currency,
       capacity: draft.capacity ? Number(draft.capacity) : null,
       heroImage: draft.heroImage,
+      voucherHeaderImage: draft.voucherHeaderImage,
+      vouchersEnabled: draft.vouchersEnabled,
       attendeeFieldSchema: draft.attendeeFieldSchema,
       status: draft.status,
     }
@@ -151,7 +185,7 @@ export function EventFormPage({
         await tBookAdminApi("events", { method: "POST", body: JSON.stringify(payload) })
         toast.success("Esemény létrehozva")
       }
-      router.push(`/admin/plugins/t-book/groups/${groupId}`)
+      router.push(`/admin/plugins/t-book/groups/${groupId}/events`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Hiba")
     } finally {
@@ -162,29 +196,32 @@ export function EventFormPage({
   if (loading) return <TBookLoading />
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <TBookGroupSubnav groupId={groupId} groupName={groupName} />
       <TBookPageHeader
-        title={isEdit ? "Esemény szerkesztése" : "Új esemény"}
-        description={`Csoport: ${groupName}`}
+        title={isEdit ? `Esemény: ${draft.name || "…"}` : "Új esemény"}
+        description="Alapadatok → időpont → jegyár → foglalási mezők → tartalom"
         actions={
           <Link
-            href={`/admin/plugins/t-book/groups/${groupId}`}
+            href={`/admin/plugins/t-book/groups/${groupId}/events`}
             className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-foreground text-sm"
           >
-            Mégse
+            ← Vissza az eseményekhez
           </Link>
         }
       />
-      <div className="rounded-2xl bg-card shadow-sm p-6 md:p-8">
-        <TBookWizard
-          steps={STEPS}
-          currentStep={step}
-          onStepChange={setStep}
-          onSubmit={() => void save()}
-          submitting={saving}
-          submitLabel={isEdit ? "Mentés" : "Esemény létrehozása"}
-        >
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-2">
+          <div className="rounded-2xl bg-card shadow-sm p-6 md:p-8">
+            <TBookWizard
+              steps={STEPS}
+              currentStep={step}
+              onStepChange={setStep}
+              onSubmit={() => void save()}
+              submitting={saving}
+              submitLabel={isEdit ? "Esemény mentése" : "Esemény létrehozása"}
+            >
           {step === 0 ? (
             <div className="space-y-4">
               <TBookField label="Esemény neve">
@@ -224,6 +261,25 @@ export function EventFormPage({
                   />
                 </TBookField>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TBookField label="Kezdő időpont (opcionális)">
+                  <TBookInput
+                    type="time"
+                    value={draft.startTime}
+                    onChange={(e) => patch({ startTime: e.target.value })}
+                  />
+                </TBookField>
+                <TBookField label="Záró időpont (opcionális)">
+                  <TBookInput
+                    type="time"
+                    value={draft.endTime}
+                    onChange={(e) => patch({ endTime: e.target.value })}
+                  />
+                </TBookField>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Az időpontok a kezdő és záró napon értendők (pl. első nap 09:00, utolsó nap 18:00).
+              </p>
               <TBookLocationField
                 value={draft.location}
                 onChange={(location) => patch({ location })}
@@ -232,17 +288,38 @@ export function EventFormPage({
           ) : null}
           {step === 2 ? (
             <div className="space-y-4">
+              <TBookField label="Jegy pénzneme">
+                <CurrencySelect
+                  value={draft.currency}
+                  onValueChange={(currency) => patch({ currency })}
+                />
+              </TBookField>
               <TBookNetPriceField
-                label={`Jegyár (${currency})`}
+                label={`Jegyár (${draft.currency})`}
                 amount={draft.ticketFeeHuf}
                 priceBasis={draft.ticketPriceBasis}
                 vatPercent={draft.ticketVatPercent}
-                currency={currency}
+                currency={draft.currency}
                 onAmountChange={(ticketFeeHuf) => patch({ ticketFeeHuf })}
                 onPriceBasisChange={(ticketPriceBasis) => patch({ ticketPriceBasis })}
                 onVatPercentChange={(ticketVatPercent) => patch({ ticketVatPercent })}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TBookField label="Regisztráció egysége">
+                  <TBookSelect
+                    value={draft.registrationUnit}
+                    onChange={(e) =>
+                      patch({ registrationUnit: e.target.value as EventDraft["registrationUnit"] })
+                    }
+                  >
+                    <option value="person">Személyenként (fő)</option>
+                    <option value="team">Csapatonként</option>
+                  </TBookSelect>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Egy vásárló több {registrationUnitLabel(draft.registrationUnit, 2)}t is
+                    regisztrálhat — mindegyikhez külön adatok kérhetők.
+                  </p>
+                </TBookField>
                 <TBookField label="Jegyár módja">
                   <TBookSelect
                     value={draft.ticketFeeMode}
@@ -250,25 +327,29 @@ export function EventFormPage({
                       patch({ ticketFeeMode: e.target.value as EventDraft["ticketFeeMode"] })
                     }
                   >
-                    <option value="per_person">Fő / jegy</option>
-                    <option value="per_booking">Foglalásonként</option>
+                    <option value="per_person">
+                      {draft.registrationUnit === "team" ? "Csapatonként" : "Fő / jegy"}
+                    </option>
+                    <option value="per_team">Csapatonként (fix csapatdíj)</option>
+                    <option value="per_booking">Foglalásonként (fix összeg)</option>
                   </TBookSelect>
                 </TBookField>
-                <TBookField label="Kapacitás (üres = korlátlan)">
-                  <TBookInput
-                    type="number"
-                    min={0}
-                    value={draft.capacity}
-                    onChange={(e) => patch({ capacity: e.target.value })}
-                  />
-                </TBookField>
               </div>
+              <TBookField label={`Kapacitás (üres = korlátlan, ${draft.registrationUnit === "team" ? "csapat" : "fő"})`}>
+                <TBookInput
+                  type="number"
+                  min={0}
+                  value={draft.capacity}
+                  onChange={(e) => patch({ capacity: e.target.value })}
+                />
+              </TBookField>
             </div>
           ) : null}
           {step === 3 ? (
             <AttendeeFieldsEditor
               fields={draft.attendeeFieldSchema}
               onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
+              registrationUnit={draft.registrationUnit}
             />
           ) : null}
           {step === 4 ? (
@@ -284,9 +365,61 @@ export function EventFormPage({
                 onChange={(heroImage) => patch({ heroImage })}
                 aspect={16 / 9}
               />
+              <div className="rounded-lg bg-muted/30 p-4 space-y-4">
+                <p className="text-sm font-medium text-foreground">Belépőjegy (QR PDF)</p>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={draft.vouchersEnabled}
+                    onChange={(e) => patch({ vouchersEnabled: e.target.checked })}
+                    className="rounded border-border"
+                  />
+                  Jegyek kiállítása fizetés után
+                </label>
+                <TBookSingleMediaField
+                  label="Jegy PDF fejléc kép"
+                  value={draft.voucherHeaderImage}
+                  onChange={(voucherHeaderImage) => patch({ voucherHeaderImage })}
+                  aspect={3 / 1}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ha üres, a borítókép kerül a jegy PDF tetejére.
+                </p>
+              </div>
             </div>
           ) : null}
-        </TBookWizard>
+            </TBookWizard>
+          </div>
+        </div>
+
+        <div className="xl:sticky xl:top-6 h-fit space-y-4">
+          <div className="rounded-xl bg-card shadow-sm p-4 text-sm space-y-2">
+            <p className="font-semibold text-foreground">{draft.name || "Új esemény"}</p>
+            {draft.startDate ? (
+              <p className="text-xs text-muted-foreground">
+                {formatEventSchedule(
+                  draft.startDate,
+                  draft.endDate || draft.startDate,
+                  draft.startTime || null,
+                  draft.endTime || null
+                )}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Időpont még nincs megadva</p>
+            )}
+            <p className="text-xs text-neutral-400">
+              Jegy:{" "}
+              {draft.ticketFeeHuf > 0
+                ? `${formatMoney(draft.ticketFeeHuf, draft.currency)} ${draft.ticketPriceBasis === "net" ? "nettó" : "bruttó"} · ${ticketFeeModeLabel(draft.ticketFeeMode, draft.registrationUnit)}`
+                : "—"}
+            </p>
+            <p className="text-xs text-neutral-400">
+              {draft.attendeeFieldSchema.length} foglalási mező ·{" "}
+              {draft.registrationUnit === "team" ? "csapat" : "személy"} regisztráció
+              {draft.capacity ? ` · max ${draft.capacity}` : ""}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

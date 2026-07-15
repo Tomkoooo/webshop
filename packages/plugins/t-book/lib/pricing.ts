@@ -14,8 +14,10 @@ import { toGrossHuf, TBOOK_DEFAULT_VAT_PERCENT } from "./vat"
 import { mergeOptionSchemas } from "./option-merge"
 import {
   ROOM_TYPE_SELECTION_KEY,
+  PACKAGE_DEAL_SELECTION_KEY,
   flattenAddonOptions,
   findRoomType,
+  findPackageDeal,
   normalizeHotelPricing,
 } from "./hotel-pricing"
 
@@ -291,13 +293,24 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   )
 
   const ticketSubtotalHuf = roundHuf(
-    ticketFeeMode === "per_booking" ? ticketUnitGross : ticketUnitGross * guests
+    ticketFeeMode === "per_booking"
+      ? ticketUnitGross
+      : ticketFeeMode === "per_team" || ticketFeeMode === "per_person"
+        ? ticketUnitGross * guests
+        : ticketUnitGross * guests
   )
+
+  const ticketLineLabel =
+    ticketFeeMode === "per_booking"
+      ? "Belépőjegy"
+      : ticketFeeMode === "per_team"
+        ? `Belépőjegy × ${guests} csapat`
+        : `Belépőjegy × ${guests} fő`
 
   const lines: TBookPriceLine[] = [
     {
       key: "ticket",
-      label: ticketFeeMode === "per_booking" ? "Belépőjegy" : `Belépőjegy × ${guests} fő`,
+      label: ticketLineLabel,
       amountHuf: ticketSubtotalHuf,
     },
   ]
@@ -322,14 +335,30 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
 
     const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
     const roomType = findRoomType(acc, roomTypeKey)
+    const packageKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+    const packageDeal = packageKey ? findPackageDeal(acc, packageKey) : null
+
     if (roomType) {
-      const roomGross = toGrossHuf(roomType.baseRateHuf, accBasis, accVat)
-      accommodationBaseHuf = roundHuf(roomGross * guests * effectiveNights)
-      lines.push({
-        key: "accommodation_base",
-        label: `${roomType.label} (${guests} fő, ${effectiveNights} éj)`,
-        amountHuf: accommodationBaseHuf,
-      })
+      if (
+        packageDeal &&
+        packageDeal.nights === effectiveNights &&
+        (!packageDeal.roomTypeKey || packageDeal.roomTypeKey === roomTypeKey)
+      ) {
+        accommodationBaseHuf = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+        lines.push({
+          key: "accommodation_base",
+          label: `${packageDeal.label} (${roomType.label})`,
+          amountHuf: accommodationBaseHuf,
+        })
+      } else {
+        const roomGross = toGrossHuf(roomType.baseRateHuf, accBasis, accVat)
+        accommodationBaseHuf = roundHuf(roomGross * guests * effectiveNights)
+        lines.push({
+          key: "accommodation_base",
+          label: `${roomType.label} (${guests} fő, ${effectiveNights} éj)`,
+          amountHuf: accommodationBaseHuf,
+        })
+      }
     }
 
     const hotelAddonsGross = flattenAddonOptions(acc).map((o) =>

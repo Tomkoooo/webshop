@@ -1,4 +1,5 @@
 import type { HomeContent } from "./schema"
+import { DEFAULT_WDF_SECTION_LAYOUT } from "../../lib/wdf-home-sections"
 
 export const homeDefaultContent: HomeContent = {
   chrome: {
@@ -26,6 +27,7 @@ export const homeDefaultContent: HomeContent = {
       { type: "link", label: "Kapcsolat", href: "/#contact" },
     ],
   },
+  sectionLayout: DEFAULT_WDF_SECTION_LAYOUT.map((row) => ({ ...row })),
   hero: {
     tagline: "World Darts Festival 2025 — Budapest, Hungary",
     title: "Welcome to the WDF World Masters",
@@ -50,7 +52,7 @@ export const homeDefaultContent: HomeContent = {
       title: "Important information",
       body: "Read detailed information about registration, rules and playing format. Everything you need to know is just one click away.",
       ctaLabel: "Read more",
-      ctaHref: "/jegyek",
+      ctaHref: "/fontos-informaciok",
     },
     {
       title: "Are you on the list?",
@@ -107,6 +109,7 @@ export const homeDefaultContent: HomeContent = {
     tables: [
       {
         title: "WDF World Masters",
+        subtitle: "Prize — €3700",
         headers: ["Place", "Men", "Women", "Para"],
         rows: [
           ["Winner", "€5,000", "€3,500", "€1,500"],
@@ -116,6 +119,7 @@ export const homeDefaultContent: HomeContent = {
       },
       {
         title: "Hungarian Open",
+        subtitle: "",
         headers: ["Place", "Men", "Women"],
         rows: [
           ["Winner", "€2,000", "€1,500"],

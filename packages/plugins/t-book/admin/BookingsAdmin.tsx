@@ -18,11 +18,14 @@ import {
   BOOKING_STATUS_LABELS,
   INVOICE_STATUS_LABELS,
   TBOOK_ADMIN_API,
+  VOUCHER_STATUS_LABELS,
   type AdminBookingDetail,
   type AdminBookingRow,
   type AdminEvent,
   type AdminGroup,
+  type AdminVoucher,
 } from "./t-book-api"
+import { SendVoucherDialog } from "./SendVoucherDialog"
 import {
   formatAttendeeFieldValue,
   type TBookAttendeeFieldDef,
@@ -141,6 +144,138 @@ function AttendeesSection({
   )
 }
 
+function VouchersSection({
+  bookingId,
+  guests,
+  customerEmail,
+  customerName,
+}: {
+  bookingId: string
+  guests: number
+  customerEmail: string
+  customerName: string
+}) {
+  const [vouchers, setVouchers] = useState<AdminVoucher[]>([])
+  const [loading, setLoading] = useState(true)
+  const [sendAllOpen, setSendAllOpen] = useState(false)
+  const [sendVoucher, setSendVoucher] = useState<AdminVoucher | null>(null)
+
+  const reload = useCallback(() => {
+    setLoading(true)
+    tBookAdminApi<{ vouchers: AdminVoucher[] }>(`vouchers/bookings/${bookingId}`)
+      .then((d) => setVouchers(d.vouchers))
+      .catch(() => setVouchers([]))
+      .finally(() => setLoading(false))
+  }, [bookingId])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  const checkedIn = vouchers.filter((v) => v.status === "checked_in").length
+
+  if (loading) return null
+
+  return (
+    <>
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <p className={adminSectionTitle}>Belépőjegyek</p>
+          {vouchers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Még nincs kiállított jegy (vagy az eseménynél ki van kapcsolva).
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {vouchers.length}/{guests} jegy kiosztva · {checkedIn}/{vouchers.length} beléptetve
+              </p>
+              <div className="space-y-2">
+                {vouchers.map((voucher) => (
+                  <div
+                    key={voucher.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-medium text-foreground">{voucher.displayName}</span>
+                      {voucher.lastSentToEmail ? (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Utoljára: {voucher.lastSentToName} ({voucher.lastSentToEmail})
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TBookStatusBadge status={voucher.status} labels={VOUCHER_STATUS_LABELS} />
+                      {voucher.status !== "void" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-8 text-xs"
+                          onClick={() => setSendVoucher(voucher)}
+                        >
+                          Küldés
+                        </Button>
+                      ) : null}
+                      <Button asChild variant="outline" className="h-8 text-xs">
+                        <a href={`${TBOOK_ADMIN_API}/vouchers/${voucher.id}/pdf`}>PDF</a>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button asChild variant="outline" className="h-9 text-xs">
+                  <a href={`${TBOOK_ADMIN_API}/vouchers/bookings/${bookingId}/pdf`}>
+                    Összes jegy PDF
+                  </a>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 text-xs"
+                  onClick={() => setSendAllOpen(true)}
+                >
+                  Jegyek küldése e-mailben
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <SendVoucherDialog
+        open={sendAllOpen}
+        onOpenChange={setSendAllOpen}
+        title="Összes jegy küldése"
+        description="A teljes foglalás jegy PDF-je (minden vendég) kerül csatolásra."
+        defaultEmail={customerEmail}
+        defaultName={customerName}
+        bookingId={bookingId}
+        onSent={() => {
+          toast.success("Jegyek elküldve")
+          reload()
+        }}
+      />
+
+      <SendVoucherDialog
+        open={Boolean(sendVoucher)}
+        onOpenChange={(open) => {
+          if (!open) setSendVoucher(null)
+        }}
+        title="Egyedi jegy küldése"
+        description={sendVoucher ? `${sendVoucher.displayName} — egy oldalas jegy PDF` : undefined}
+        defaultEmail={sendVoucher?.lastSentToEmail ?? customerEmail}
+        defaultName={sendVoucher?.lastSentToName ?? sendVoucher?.displayName ?? customerName}
+        voucherId={sendVoucher?.id}
+        onSent={() => {
+          toast.success("Jegy elküldve")
+          reload()
+        }}
+      />
+    </>
+  )
+}
+
 function BookingDetailDialog({
   bookingId,
   onClose,
@@ -250,6 +385,15 @@ function BookingDetailDialog({
               attendees={booking.attendees ?? []}
               guests={booking.guests}
             />
+
+            {(booking.status === "paid" || booking.status === "confirmed") ? (
+              <VouchersSection
+                bookingId={booking.id}
+                guests={booking.guests}
+                customerEmail={booking.customer.email}
+                customerName={booking.customer.name}
+              />
+            ) : null}
 
             {Object.keys(booking.selections ?? {}).length > 0 ? (
               <Card>

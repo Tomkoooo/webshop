@@ -17,6 +17,9 @@ export const TBOOK_PERMISSIONS = [
   "booking:read",
   "booking:export",
   "booking:manage",
+  "voucher:read",
+  "voucher:scan",
+  "voucher:manage",
   "stats:read",
 ] as const
 
@@ -40,6 +43,9 @@ export const TBOOK_PERMISSION_LABELS: Record<TBookPermission, string> = {
   "booking:read": "Foglalások megtekintése",
   "booking:export": "Foglalások exportálása",
   "booking:manage": "Foglalások kezelése",
+  "voucher:read": "Jegyek megtekintése",
+  "voucher:scan": "Beléptetés (QR szkenner)",
+  "voucher:manage": "Jegyek kezelése (újraküldés)",
   "stats:read": "Statisztikák megtekintése",
 }
 
@@ -51,6 +57,7 @@ export const TBOOK_VIEWER_PERMISSIONS: TBookPermission[] = [
   "event:read",
   "hotel:read",
   "booking:read",
+  "voucher:read",
   "stats:read",
 ]
 
@@ -75,6 +82,10 @@ export function permissionGroups(): { label: string; permissions: TBookPermissio
     {
       label: "Foglalások",
       permissions: ["booking:read", "booking:export", "booking:manage", "stats:read"],
+    },
+    {
+      label: "Beléptetés",
+      permissions: ["voucher:read", "voucher:scan", "voucher:manage"],
     },
   ]
 }

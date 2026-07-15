@@ -99,6 +99,88 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Kapcsolati sorok</CardTitle>
+          <CardDescription>Kulcs–érték párok a lábléc kapcsolat oszlopában (szöveg, link, e-mail, telefon).</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(state.contactEntries ?? []).map((item, index) => (
+            <div key={index} className="grid gap-2 md:grid-cols-[120px_1fr_1fr_auto] md:items-center">
+              <select
+                className="h-9 rounded-md border-0 bg-background px-2 text-sm ring-1 ring-border/60"
+                value={item.kind}
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    contactEntries: (prev.contactEntries ?? []).map((row, idx) =>
+                      idx === index ? { ...row, kind: e.target.value as typeof item.kind } : row
+                    ),
+                  }))
+                }
+              >
+                <option value="text">Szöveg</option>
+                <option value="link">Link</option>
+                <option value="mailto">E-mail</option>
+                <option value="tel">Telefon</option>
+              </select>
+              <Input
+                value={item.label}
+                placeholder="Felirat"
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    contactEntries: (prev.contactEntries ?? []).map((row, idx) =>
+                      idx === index ? { ...row, label: e.target.value } : row
+                    ),
+                  }))
+                }
+              />
+              <Input
+                value={item.value}
+                placeholder="Érték"
+                onChange={(e) =>
+                  setState((prev) => ({
+                    ...prev,
+                    contactEntries: (prev.contactEntries ?? []).map((row, idx) =>
+                      idx === index ? { ...row, value: e.target.value } : row
+                    ),
+                  }))
+                }
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-destructive"
+                onClick={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    contactEntries: (prev.contactEntries ?? []).filter((_, idx) => idx !== index),
+                  }))
+                }
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setState((prev) => ({
+                ...prev,
+                contactEntries: [...(prev.contactEntries ?? []), { label: "", value: "", kind: "text" }],
+              }))
+            }
+          >
+            <Plus className="size-3.5" />
+            Kapcsolati sor
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Gyors linkek</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">

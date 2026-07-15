@@ -25,6 +25,25 @@ function oid(id: string): mongoose.Types.ObjectId {
   return new mongoose.Types.ObjectId(id)
 }
 
+async function getOrgDefaultCurrency(organizationId?: string): Promise<string> {
+  if (!organizationId) return DEFAULT_TBOOK_CURRENCY
+  await dbConnect()
+  const org = await TBookOrganization.findById(oid(organizationId))
+    .select("settings.currency")
+    .lean()
+  return normalizeTBookCurrency(org?.settings?.currency)
+}
+
+function serializeHotelPricing(pricing: ReturnType<typeof normalizeHotelPricing>) {
+  return {
+    priceBasis: pricing.priceBasis ?? "net",
+    vatPercent: pricing.vatPercent ?? 27,
+    roomTypes: pricing.roomTypes,
+    packages: pricing.packages ?? [],
+    extrasSection: pricing.extrasSection ?? null,
+  }
+}
+
 function orgFilter(organizationId?: string): Record<string, unknown> {
   return organizationId ? { organizationId: oid(organizationId) } : {}
 }
@@ -130,8 +149,12 @@ export class TBookEventService {
       }
       resolvedOrgId = group.organizationId ?? resolvedOrgId
     }
+    const currency = normalizeTBookCurrency(
+      parsed.currency ?? (await getOrgDefaultCurrency(resolvedOrgId ? String(resolvedOrgId) : organizationId))
+    )
     return TBookEvent.create({
       ...parsed,
+      currency,
       attendeeFieldSchema: normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema),
       groupId: parsed.groupId ? oid(parsed.groupId) : null,
       ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
@@ -170,6 +193,9 @@ export class TBookEventService {
     }
     if (parsed.attendeeFieldSchema !== undefined) {
       patch.attendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema)
+    }
+    if (parsed.currency !== undefined) {
+      patch.currency = normalizeTBookCurrency(parsed.currency)
     }
     await TBookEvent.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
@@ -247,16 +273,16 @@ export class TBookEventService {
     }
 
     const normalized = assignPricingKeys(normalizeHotelPricing(parsed.pricing))
-    const pricing = {
-      priceBasis: normalized.priceBasis ?? "net",
-      vatPercent: normalized.vatPercent ?? 27,
-      roomTypes: normalized.roomTypes,
-      addonGroups: normalized.addonGroups,
-    }
+    const pricing = serializeHotelPricing(normalized)
+    const currency = normalizeTBookCurrency(
+      parsed.currency ?? (await getOrgDefaultCurrency(resolvedOrgId ? String(resolvedOrgId) : organizationId))
+    )
     const { groupId: _g, eventId: _e, ...rest } = parsed
     return TBookHotel.create({
       ...rest,
       pricing,
+      currency,
+      registrationFieldSchema: normalizeAttendeeFieldSchema(parsed.registrationFieldSchema),
       groupId: groupOid,
       eventId: null,
       ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
@@ -299,12 +325,13 @@ export class TBookEventService {
     delete patch.eventId
     if (parsed.pricing) {
       const normalized = assignPricingKeys(normalizeHotelPricing(parsed.pricing))
-      patch.pricing = {
-        priceBasis: normalized.priceBasis ?? "net",
-        vatPercent: normalized.vatPercent ?? 27,
-        roomTypes: normalized.roomTypes,
-        addonGroups: normalized.addonGroups,
-      }
+      patch.pricing = serializeHotelPricing(normalized)
+    }
+    if (parsed.currency !== undefined) {
+      patch.currency = normalizeTBookCurrency(parsed.currency)
+    }
+    if (parsed.registrationFieldSchema !== undefined) {
+      patch.registrationFieldSchema = normalizeAttendeeFieldSchema(parsed.registrationFieldSchema)
     }
     await TBookHotel.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
@@ -402,9 +429,13 @@ export class TBookEventService {
       },
       startDate: e.startDate,
       endDate: e.endDate,
+      startTime: e.startTime ?? null,
+      endTime: e.endTime ?? null,
       nights: eventNights(e),
       ticketFeeHuf: e.ticketFeeHuf,
       ticketFeeMode: e.ticketFeeMode,
+      registrationUnit: e.registrationUnit ?? "person",
+      currency: normalizeTBookCurrency(e.currency),
       heroImage: e.heroImage,
       attendeeFieldSchema: normalizeAttendeeFieldSchema(e.attendeeFieldSchema ?? []),
     }))
@@ -430,9 +461,13 @@ export class TBookEventService {
         },
         startDate: event.startDate,
         endDate: event.endDate,
+        startTime: event.startTime ?? null,
+        endTime: event.endTime ?? null,
         nights: eventNights(event),
         ticketFeeHuf: event.ticketFeeHuf,
         ticketFeeMode: event.ticketFeeMode,
+        registrationUnit: event.registrationUnit ?? "person",
+        currency: normalizeTBookCurrency(event.currency),
         heroImage: event.heroImage,
         attendeeFieldSchema: normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? []),
       },
@@ -444,7 +479,9 @@ export class TBookEventService {
         address: h.address,
         distanceFromVenueKm: h.distanceFromVenueKm ?? null,
         gallery: h.gallery,
-        pricing: h.pricing,
+        currency: normalizeTBookCurrency(h.currency),
+        registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
+        pricing: normalizeHotelPricing(h.pricing),
       })),
     }
   }

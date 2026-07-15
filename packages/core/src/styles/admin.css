@@ -531,6 +531,39 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
   z-index: 60;
 }
 
+/* CMS controls inside dark/light storefront preview — always opaque admin surfaces */
+.admin-storefront-preview .cms-admin-control input,
+.admin-storefront-preview .cms-admin-control textarea,
+.admin-storefront-preview .cms-admin-control select {
+  background-color: oklch(0.99 0.002 286) !important;
+  color: oklch(0.18 0.01 286) !important;
+  border-color: oklch(0.84 0.01 286) !important;
+}
+
+.admin-storefront-preview .cms-admin-control [data-slot="button"] {
+  background-color: oklch(0.99 0.002 286) !important;
+  color: oklch(0.18 0.01 286) !important;
+  border-color: oklch(0.84 0.01 286) !important;
+  box-shadow: 0 1px 2px color-mix(in oklch, oklch(0.18 0.01 286) 8%, transparent);
+}
+
+.admin-storefront-preview .cms-admin-control [data-slot="button"]:hover {
+  background-color: oklch(0.95 0.01 286) !important;
+}
+
+.admin-storefront-preview .cms-admin-control [data-slot="button"].text-destructive,
+.admin-storefront-preview .cms-admin-control button.text-destructive {
+  color: oklch(0.58 0.22 27) !important;
+  border-color: oklch(0.58 0.22 27 / 35%) !important;
+}
+
+.admin-storefront-preview [data-cms-editing="true"] input:not(.font-minecraft),
+.admin-storefront-preview [data-cms-editing="true"] textarea:not(.font-minecraft) {
+  background-color: oklch(0.99 0.002 286) !important;
+  color: oklch(0.18 0.01 286) !important;
+  border-color: oklch(0.55 0.14 268 / 40%) !important;
+}
+
 [data-cms-editing="true"] .minecraft-social-tab {
   display: none;
 }

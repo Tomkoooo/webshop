@@ -157,8 +157,9 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">{hotel.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {pricing.roomTypes.length} szobatípus · {pricing.addonGroups.length}{" "}
-                        foglalási szakasz
+                        {pricing.roomTypes.length} szobatípus ·{" "}
+                        {(pricing.packages?.length ?? 0)} csomag
+                        {pricing.extrasSection ? " · extrák" : ""}
                       </p>
                     </div>
                     <TBookStatusBadge status={hotel.status} labels={TBOOK_STATUS_LABELS} />
@@ -187,6 +188,12 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
             <p className="text-xs text-neutral-500 mt-1">
               Időpont, helyszín és jegyár — a szállások közösek
             </p>
+            <Link
+              href={`/admin/plugins/t-book/groups/${groupId}/events`}
+              className="text-xs text-amber-800 hover:underline"
+            >
+              Összes esemény →
+            </Link>
           </div>
           <TBookPrimaryButton asChild>
             <Link href={`/admin/plugins/t-book/groups/${groupId}/events/new`}>+ Esemény</Link>
@@ -227,7 +234,7 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Link
-                    href={`/admin/plugins/t-book/groups/${groupId}/events/${event.id}/edit`}
+                    href={`/admin/plugins/t-book/groups/${groupId}/events/${event.id}`}
                     className="inline-flex h-9 items-center px-3 rounded-lg border border-border text-xs font-medium hover:bg-muted"
                   >
                     Szerkesztés

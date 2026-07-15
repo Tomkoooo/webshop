@@ -46,7 +46,7 @@ function DropdownItemsEditor({
   }
 
   return (
-    <div className="space-y-2 rounded-lg bg-background/60 p-2.5">
+    <div className="space-y-2 rounded-lg bg-muted/50 p-2.5">
       <p className="text-xs font-medium text-muted-foreground">Almenüpontok</p>
       {items.map((item, index) => (
         <div key={index} className="flex items-start gap-1">

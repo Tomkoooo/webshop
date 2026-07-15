@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { DEFAULT_TBOOK_CURRENCY } from "./currency"
+import { TBOOK_TIME_PATTERN } from "./event-schedule"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "./vat"
 
 export const tBookAttendeeFieldChoiceSchema = z.object({
@@ -77,6 +79,8 @@ export const tBookOptionDefSchema = z.object({
   sortOrder: z.number().int().optional(),
 })
 
+export const tBookCurrencySchema = z.string().min(3).max(3).default(DEFAULT_TBOOK_CURRENCY)
+
 export const tBookRoomTypeSchema = z.object({
   key: z
     .string()
@@ -85,6 +89,24 @@ export const tBookRoomTypeSchema = z.object({
   label: z.string().min(1),
   baseRateHuf: z.number().min(0),
   sortOrder: z.number().int().optional(),
+})
+
+export const tBookPackageDealSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9_]+$/, "Kulcs: csak kisbetű, szám és aláhúzás"),
+  label: z.string().min(1),
+  nights: z.number().int().min(1).max(60),
+  priceHuf: z.number().min(0),
+  roomTypeKey: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+})
+
+export const tBookExtrasSectionSchema = z.object({
+  label: z.string().min(1),
+  description: z.string().optional().default(""),
+  options: z.array(tBookOptionDefSchema).default([]),
 })
 
 export const tBookAddonGroupSchema = z.object({
@@ -126,6 +148,8 @@ export const tBookHotelPricingSchema = z
     priceBasis: tBookPriceBasisSchema.default("net"),
     vatPercent: tBookVatPercentSchema,
     roomTypes: z.array(tBookRoomTypeSchema).default([]),
+    packages: z.array(tBookPackageDealSchema).default([]),
+    extrasSection: tBookExtrasSectionSchema.nullable().optional(),
     addonGroups: z
       .array(tBookAddonGroupSchema)
       .default([])
@@ -171,6 +195,17 @@ export const tBookHotelPricingSchema = z
       }
       roomKeys.add(room.key)
     }
+    const extrasOptions = pricing.extrasSection?.options ?? []
+    if (extrasOptions.length > 0) {
+      validateUniqueOptionKeys(extrasOptions, ctx, pricing.extrasSection?.label ?? "Extrák")
+    }
+    const packageKeys = new Set<string>()
+    for (const pkg of pricing.packages ?? []) {
+      if (packageKeys.has(pkg.key)) {
+        ctx.addIssue({ code: "custom", message: `Duplikált csomagajánlat: ${pkg.key}` })
+      }
+      packageKeys.add(pkg.key)
+    }
   })
 
 /** @deprecated alias */
@@ -189,6 +224,16 @@ export const eventGroupInputSchema = z.object({
   listingImage: z.string().optional().default(""),
 })
 
+export const tBookEventTimeSchema = z.preprocess(
+  (value) => {
+    const trimmed = String(value ?? "").trim()
+    return trimmed || null
+  },
+  z
+    .union([z.null(), z.string().regex(TBOOK_TIME_PATTERN, "Érvényes időpont: HH:mm (pl. 09:00)")])
+    .optional()
+)
+
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
   name: z.string().min(1, "Név kötelező"),
@@ -196,12 +241,18 @@ export const eventInputSchema = z.object({
   location: tBookLocationSchema.optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  startTime: tBookEventTimeSchema,
+  endTime: tBookEventTimeSchema,
+  currency: tBookCurrencySchema.optional(),
   ticketFeeHuf: z.number().min(0),
-  ticketFeeMode: z.enum(["per_person", "per_booking"]).default("per_person"),
+  ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).default("per_person"),
+  registrationUnit: z.enum(["person", "team"]).default("person"),
   ticketPriceBasis: tBookPriceBasisSchema.default("net"),
   ticketVatPercent: tBookVatPercentSchema,
   capacity: z.number().int().min(0).nullable().optional(),
   heroImage: z.string().optional().default(""),
+  voucherHeaderImage: z.string().optional().default(""),
+  vouchersEnabled: z.boolean().default(true),
   attendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
@@ -218,6 +269,8 @@ export const hotelInputSchema = z
     contactEmail: z.string().optional().default(""),
     contactPhone: z.string().optional().default(""),
     gallery: z.array(z.string()).default([]),
+    currency: tBookCurrencySchema.optional(),
+    registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
     pricing: tBookHotelPricingSchema,
     status: tBookStatusSchema.default("draft"),
     sortOrder: z.number().int().default(0),

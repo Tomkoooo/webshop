@@ -1,12 +1,16 @@
 import type {
-  TBookAddonGroup,
+  TBookExtrasSection,
   TBookHotelPricing,
   TBookOptionDef,
+  TBookPackageDeal,
   TBookRoomType,
 } from "./pricing-types"
 
 /** Selection key for the chosen room type (matches `TBookRoomType.key`). */
 export const ROOM_TYPE_SELECTION_KEY = "room_type"
+
+/** Selection key for an optional fixed package deal instead of per-night pricing. */
+export const PACKAGE_DEAL_SELECTION_KEY = "package_deal"
 
 export function slugifyHotelKey(value: string): string {
   return value
@@ -56,6 +60,28 @@ function resolveChoiceValue(
   return uniqueKey(label, used, fallback)
 }
 
+function assignOptionKeys(options: TBookOptionDef[], optionKeys: Set<string>, prefix: string) {
+  return options.map((option, optionIndex) => {
+    const optionKey = resolveKey(
+      option.label,
+      option.key,
+      optionKeys,
+      `${prefix}_${optionIndex + 1}`
+    )
+    const choiceValues = new Set<string>()
+    const choices = option.choices?.map((choice, choiceIndex) => ({
+      ...choice,
+      value: resolveChoiceValue(
+        choice.label,
+        choice.value,
+        choiceValues,
+        `choice_${choiceIndex + 1}`
+      ),
+    }))
+    return { ...option, key: optionKey, choices }
+  })
+}
+
 /**
  * Assigns stable internal keys from labels before save. Moderators only edit
  * names; keys are generated automatically and kept unique within a hotel.
@@ -67,44 +93,53 @@ export function assignPricingKeys(pricing: TBookHotelPricing): TBookHotelPricing
     key: resolveKey(room.label, room.key, roomKeys, `room_${index + 1}`),
   }))
 
-  const groupKeys = new Set<string>()
+  const packageKeys = new Set<string>()
+  const packages = (pricing.packages ?? []).map((pkg, index) => ({
+    ...pkg,
+    key: resolveKey(pkg.label, pkg.key, packageKeys, `package_${index + 1}`),
+  }))
+
   const optionKeys = new Set<string>()
+  const extrasSection = pricing.extrasSection
+    ? {
+        ...pricing.extrasSection,
+        options: assignOptionKeys(pricing.extrasSection.options, optionKeys, "field"),
+      }
+    : null
 
-  const addonGroups = pricing.addonGroups.map((group, groupIndex) => {
-    const groupKey = resolveKey(group.label, group.key, groupKeys, `section_${groupIndex + 1}`)
-    const options = group.options.map((option, optionIndex) => {
-      const optionKey = resolveKey(
-        option.label,
-        option.key,
-        optionKeys,
-        `field_${groupIndex + 1}_${optionIndex + 1}`
-      )
-      const choiceValues = new Set<string>()
-      const choices = option.choices?.map((choice, choiceIndex) => ({
-        ...choice,
-        value: resolveChoiceValue(
-          choice.label,
-          choice.value,
-          choiceValues,
-          `choice_${choiceIndex + 1}`
-        ),
-      }))
-      return { ...option, key: optionKey, choices }
-    })
-    return { ...group, key: groupKey, options }
-  })
+  return { ...pricing, roomTypes, packages, extrasSection, addonGroups: [] }
+}
 
-  return { ...pricing, roomTypes, addonGroups }
+function migrateAddonGroupsToExtras(
+  addonGroups: NonNullable<TBookHotelPricing["addonGroups"]>
+): TBookExtrasSection | null {
+  if (addonGroups.length === 0) return null
+  const first = addonGroups[0]
+  const options = addonGroups.flatMap((group) => group.options)
+  if (!first.label.trim() && options.length === 0) return null
+  return {
+    label: first.label || "Extrák és felárak",
+    description: first.description ?? "",
+    options,
+  }
 }
 
 /** Normalizes legacy flat `baseRate + options[]` into room types + grouped add-ons. */
 export function normalizeHotelPricing(raw: TBookHotelPricing): TBookHotelPricing {
+  const base = {
+    priceBasis: raw.priceBasis ?? "net",
+    vatPercent: raw.vatPercent ?? 27,
+    packages: raw.packages ?? [],
+  }
+
   if (raw.roomTypes?.length) {
+    const extrasSection =
+      raw.extrasSection ?? migrateAddonGroupsToExtras(raw.addonGroups ?? []) ?? null
     return {
-      priceBasis: raw.priceBasis ?? "net",
-      vatPercent: raw.vatPercent ?? 27,
+      ...base,
       roomTypes: raw.roomTypes,
-      addonGroups: raw.addonGroups ?? [],
+      extrasSection,
+      addonGroups: [],
     }
   }
 
@@ -132,34 +167,36 @@ export function normalizeHotelPricing(raw: TBookHotelPricing): TBookHotelPricing
     ]
   }
 
-  const addonGroups: TBookAddonGroup[] =
+  const extrasSection: TBookExtrasSection | null =
     otherOptions.length > 0
-      ? [
-          {
-            key: "extras",
-            label: "Felárak & extrák",
-            sortOrder: 0,
-            options: otherOptions,
-          },
-        ]
-      : []
+      ? {
+          label: "Felárak & extrák",
+          description: "",
+          options: otherOptions,
+        }
+      : raw.extrasSection ?? migrateAddonGroupsToExtras(raw.addonGroups ?? []) ?? null
 
   return {
-    priceBasis: raw.priceBasis ?? "net",
-    vatPercent: raw.vatPercent ?? 27,
+    ...base,
     roomTypes,
-    addonGroups,
+    extrasSection,
+    addonGroups: [],
   }
 }
 
 export function flattenAddonOptions(pricing: TBookHotelPricing): TBookOptionDef[] {
   const normalized = normalizeHotelPricing(pricing)
-  return normalized.addonGroups
-    .slice()
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .flatMap((group) =>
-      [...group.options].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    )
+  return [...(normalized.extrasSection?.options ?? [])].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+  )
+}
+
+export function getExtrasSection(pricing: TBookHotelPricing): TBookExtrasSection | null {
+  const normalized = normalizeHotelPricing(pricing)
+  const section = normalized.extrasSection
+  if (!section) return null
+  if (!section.label.trim() && section.options.length === 0) return null
+  return section
 }
 
 export function findRoomType(
@@ -168,6 +205,28 @@ export function findRoomType(
 ): TBookRoomType | null {
   const normalized = normalizeHotelPricing(pricing)
   return normalized.roomTypes.find((r) => r.key === roomTypeKey) ?? null
+}
+
+export function findPackageDeal(
+  pricing: TBookHotelPricing,
+  packageKey: string
+): TBookPackageDeal | null {
+  const normalized = normalizeHotelPricing(pricing)
+  return normalized.packages?.find((p) => p.key === packageKey) ?? null
+}
+
+/** Packages matching the selected room type and night count. */
+export function matchingPackageDeals(
+  pricing: TBookHotelPricing,
+  nights: number,
+  roomTypeKey: string
+): TBookPackageDeal[] {
+  const normalized = normalizeHotelPricing(pricing)
+  return (normalized.packages ?? []).filter(
+    (pkg) =>
+      pkg.nights === nights &&
+      (!pkg.roomTypeKey || pkg.roomTypeKey === roomTypeKey)
+  )
 }
 
 /** Rough count of distinct customer configuration paths (for admin UX). */
@@ -193,7 +252,7 @@ function choicePaths(option: TBookOptionDef): number {
 
 export type HotelComplexityStats = {
   roomTypeCount: number
-  addonGroupCount: number
+  packageCount: number
   addonOptionCount: number
   /** room types × product(add-on branch counts) */
   estimatedBookingPaths: number
@@ -206,7 +265,7 @@ export function hotelComplexityStats(pricing: TBookHotelPricing): HotelComplexit
   const roomTypeCount = Math.max(1, normalized.roomTypes.length)
   return {
     roomTypeCount: normalized.roomTypes.length,
-    addonGroupCount: normalized.addonGroups.length,
+    packageCount: normalized.packages?.length ?? 0,
     addonOptionCount: addons.length,
     estimatedBookingPaths: roomTypeCount * addonPaths,
   }
@@ -217,22 +276,22 @@ export function eventHotelsComplexitySummary(
 ): {
   hotelCount: number
   totalRoomTypes: number
-  totalAddonGroups: number
+  totalPackages: number
   totalEstimatedPaths: number
 } {
   let totalRoomTypes = 0
-  let totalAddonGroups = 0
+  let totalPackages = 0
   let totalEstimatedPaths = 0
   for (const hotel of hotels) {
     const stats = hotelComplexityStats(hotel.pricing)
     totalRoomTypes += stats.roomTypeCount
-    totalAddonGroups += stats.addonGroupCount
+    totalPackages += stats.packageCount
     totalEstimatedPaths += stats.estimatedBookingPaths
   }
   return {
     hotelCount: hotels.length,
     totalRoomTypes,
-    totalAddonGroups,
+    totalPackages,
     totalEstimatedPaths,
   }
 }

@@ -86,6 +86,24 @@ function parseNumber(input: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Currencies supported by our Számlázz.hu integration (see szamlazz.js `Currencies`). */
+export type SzamlazzInvoiceCurrency = "HUF" | "EUR";
+
+export function resolveSzamlazzCurrency(code: string | null | undefined): SzamlazzInvoiceCurrency {
+  const normalized = String(code ?? "HUF")
+    .trim()
+    .toUpperCase();
+  return normalized === "EUR" ? "EUR" : "HUF";
+}
+
+function szamlazzCurrencyObject(code: SzamlazzInvoiceCurrency) {
+  return code === "EUR" ? Currencies.EUR : Currencies.HUF;
+}
+
+function szamlazzLanguage(code: SzamlazzInvoiceCurrency) {
+  return code === "EUR" ? Languages.English : Languages.Hungarian;
+}
+
 function mapPaymentMethod(order: IOrder) {
   const paymentName = String((order as unknown as { paymentMethod?: { name?: string } }).paymentMethod?.name || "").toLowerCase();
   if (paymentName.includes("kárty") || paymentName.includes("card") || paymentName.includes("stripe")) {
@@ -161,12 +179,16 @@ export class InvoicingSzamlazzService {
     return persistInvoicePdf(pdfBuffer, orderId);
   }
 
-  static async issueInvoice(order: IOrder): Promise<InvoiceIssueResult> {
+  static async issueInvoice(
+    order: IOrder,
+    opts?: { currency?: string | null }
+  ): Promise<InvoiceIssueResult> {
+    const currencyCode = resolveSzamlazzCurrency(opts?.currency);
     const client = this.getClient(true);
     const invoice = new Invoice({
       paymentMethod: mapPaymentMethod(order),
-      currency: Currencies.HUF,
-      language: Languages.Hungarian,
+      currency: szamlazzCurrencyObject(currencyCode),
+      language: szamlazzLanguage(currencyCode),
       seller: this.buildSeller(),
       buyer: this.buildBuyer(order),
       items: this.buildItems(order),

@@ -52,12 +52,18 @@ function serializeEvent(e: ITBookEvent) {
     },
     startDate: e.startDate,
     endDate: e.endDate,
+    startTime: e.startTime ?? null,
+    endTime: e.endTime ?? null,
     ticketFeeHuf: e.ticketFeeHuf,
     ticketFeeMode: e.ticketFeeMode,
+    registrationUnit: e.registrationUnit ?? "person",
     ticketPriceBasis: e.ticketPriceBasis ?? "gross",
     ticketVatPercent: e.ticketVatPercent ?? 27,
+    currency: e.currency ?? "HUF",
     capacity: e.capacity,
     heroImage: e.heroImage,
+    voucherHeaderImage: e.voucherHeaderImage ?? "",
+    vouchersEnabled: e.vouchersEnabled !== false,
     attendeeFieldSchema: e.attendeeFieldSchema ?? [],
     status: e.status,
     sortOrder: e.sortOrder,
@@ -76,6 +82,8 @@ function serializeHotel(h: ITBookHotel) {
     contactEmail: h.contactEmail,
     contactPhone: h.contactPhone,
     gallery: h.gallery,
+    currency: h.currency ?? "HUF",
+    registrationFieldSchema: h.registrationFieldSchema ?? [],
     pricing: h.pricing,
     status: h.status,
     sortOrder: h.sortOrder,
@@ -162,11 +170,8 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     // ---- Public, API-key protected ----------------------------------------
     if (segment === "events" && method === "GET" && path.length === 1) {
       const { groupId } = await requireApiKeyGroup(request)
-      const [events, currency] = await Promise.all([
-        TBookEventService.listPublicEventsForGroup(groupId),
-        TBookEventService.getOrganizationCurrencyForGroup(groupId),
-      ])
-      return json({ ok: true, events, currency }, 200, request)
+      const events = await TBookEventService.listPublicEventsForGroup(groupId)
+      return json({ ok: true, events }, 200, request)
     }
 
     if (segment === "events" && path[1] && method === "GET" && path.length === 2) {
@@ -629,6 +634,121 @@ async function handleTBookAdminApi(
         "Content-Disposition": `attachment; filename="szamla-${path[1]}.pdf"`,
       },
     })
+  }
+
+  // ---- Vouchers (accreditation / check-in) -----------------------------------
+  if (segment === "vouchers" && path[1] === "scan" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("voucher:scan")
+    const orgId = orgIdFromAuth(authResult)
+    const body = await request.json()
+    const { scanVoucher } = await import("../services/voucher-service")
+    const { getSessionUserId } = await import("../lib/org-auth")
+    const userId = authResult.mode === "org" ? authResult.ctx.userId : await getSessionUserId()
+    const result = await scanVoucher(body.token ?? body.qr ?? "", {
+      eventId: body.eventId || undefined,
+      organizationId: orgId,
+      userId: userId ?? undefined,
+      mode: body.mode === "lookup" ? "lookup" : "check_in",
+    })
+    return json({ ok: true, ...result })
+  }
+
+  if (segment === "vouchers" && path[1] === "stats" && method === "GET") {
+    const authResult = await resolveTBookAdminAuth("voucher:read")
+    const orgId = orgIdFromAuth(authResult)
+    const eventId = url.searchParams.get("eventId")
+    if (!eventId) return json({ error: "eventId kötelező" }, 400)
+    const { getVoucherStats } = await import("../services/voucher-service")
+    const stats = await getVoucherStats(eventId, orgId)
+    return json({ ok: true, stats })
+  }
+
+  if (segment === "vouchers" && path[1] === "resend" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("voucher:manage")
+    const orgId = orgIdFromAuth(authResult)
+    const body = await request.json()
+    if (!body.bookingId) return json({ error: "bookingId kötelező" }, 400)
+    const { resendVoucherEmail } = await import("../services/voucher-service")
+    await resendVoucherEmail(body.bookingId, orgId, {
+      email: body.email,
+      recipientName: body.recipientName,
+    })
+    return json({ ok: true })
+  }
+
+  if (segment === "vouchers" && path[1] === "send" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("voucher:manage")
+    const orgId = orgIdFromAuth(authResult)
+    const body = await request.json()
+    const { sendVoucherById, sendBookingVouchers } = await import("../services/voucher-service")
+    if (body.voucherId) {
+      await sendVoucherById(body.voucherId, {
+        email: body.email,
+        recipientName: body.recipientName,
+      }, orgId)
+    } else if (body.bookingId) {
+      await sendBookingVouchers(body.bookingId, {
+        email: body.email,
+        recipientName: body.recipientName,
+      }, orgId)
+    } else {
+      return json({ error: "voucherId vagy bookingId kötelező" }, 400)
+    }
+    return json({ ok: true })
+  }
+
+  if (segment === "vouchers" && path[1] && path[2] === "pdf" && method === "GET" && path.length === 3) {
+    const authResult = await resolveTBookAdminAuth("voucher:read")
+    const orgId = orgIdFromAuth(authResult)
+    const { getVoucherPdfById } = await import("../services/voucher-service")
+    const pdf = await getVoucherPdfById(path[1], orgId)
+    if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404)
+    return new NextResponse(new Uint8Array(pdf), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="jegy-${path[1]}.pdf"`,
+      },
+    })
+  }
+
+  if (segment === "vouchers" && path[1] === "bookings" && path[2] && path[3] === "pdf" && method === "GET") {
+    const authResult = await resolveTBookAdminAuth("voucher:read")
+    const orgId = orgIdFromAuth(authResult)
+    const { getVoucherPdfForBooking } = await import("../services/voucher-service")
+    const pdf = await getVoucherPdfForBooking(path[2], orgId)
+    if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404)
+    return new NextResponse(new Uint8Array(pdf), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="jegy-${path[2]}.pdf"`,
+      },
+    })
+  }
+
+  if (segment === "vouchers" && path[1] === "bookings" && path[2] && method === "GET" && path.length === 3) {
+    const authResult = await resolveTBookAdminAuth("voucher:read")
+    const orgId = orgIdFromAuth(authResult)
+    const { listVouchersForBooking } = await import("../services/voucher-service")
+    const vouchers = await listVouchersForBooking(path[2], orgId)
+    return json({ ok: true, vouchers })
+  }
+
+  if (segment === "vouchers" && method === "GET" && path.length === 1) {
+    const authResult = await resolveTBookAdminAuth("voucher:read")
+    const orgId = orgIdFromAuth(authResult)
+    const eventId = url.searchParams.get("eventId")
+    if (!eventId) return json({ error: "eventId kötelező" }, 400)
+    const { listVouchersByEvent, getVoucherStats } = await import("../services/voucher-service")
+    const result = await listVouchersByEvent(eventId, orgId, {
+      status: url.searchParams.get("status") || undefined,
+      search: url.searchParams.get("search") || undefined,
+      page: Number(url.searchParams.get("page") || 1),
+      pageSize: Number(url.searchParams.get("pageSize") || 50),
+    })
+    const stats = await getVoucherStats(eventId, orgId)
+    return json({ ok: true, stats, ...result })
   }
 
   return json({ error: "Admin route not found", path }, 404)

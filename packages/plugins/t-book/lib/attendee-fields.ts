@@ -1,4 +1,5 @@
 import { slugifyHotelKey } from "./hotel-pricing"
+import type { TBookRegistrationUnit } from "./registration-fields"
 
 export type TBookAttendeeFieldType = "text" | "email" | "phone" | "number" | "date" | "select"
 
@@ -152,19 +153,21 @@ function validateFieldValue(
 export function validateAttendees(
   schema: TBookAttendeeFieldDef[],
   guests: number,
-  attendees: TBookBookingAttendee[] | undefined | null
+  attendees: TBookBookingAttendee[] | undefined | null,
+  registrationUnit: TBookRegistrationUnit = "person"
 ): AttendeeValidationIssue[] {
   const normalized = normalizeAttendeeFieldSchema(schema)
   if (normalized.length === 0) return []
 
   const issues: AttendeeValidationIssue[] = []
   const rows = attendees ?? []
+  const unitLabel = registrationUnit === "team" ? "csapat" : "résztvevő"
 
   if (rows.length !== guests) {
     issues.push({
       index: -1,
       fieldKey: "",
-      message: `Minden résztvevő adata kötelező (${guests} fő).`,
+      message: `Minden ${unitLabel} adata kötelező (${guests} db).`,
     })
     return issues
   }

@@ -7,21 +7,15 @@ import {
   reservationEndsAt,
   stripeCheckoutExpiresAtUnix,
 } from "@wse/core/services/reservation-ttl"
-import TBookOrganization from "../models/TBookOrganization"
-import { normalizeTBookCurrency, stripeCurrencyCode, toStripeUnitAmount } from "../lib/currency"
 import TBookBooking from "../models/TBookBooking"
+import { normalizeTBookCurrency, stripeCurrencyCode, toStripeUnitAmount } from "../lib/currency"
 import { TBookBookingService } from "./booking-service"
 import type { CreateBookingInput } from "../lib/schemas"
 
 export const TBOOK_CHECKOUT_KIND = "t_book"
 
-async function resolveCheckoutCurrency(booking: { organizationId?: mongoose.Types.ObjectId | null }) {
-  if (!booking.organizationId) return normalizeTBookCurrency(null)
-  await dbConnect()
-  const org = await TBookOrganization.findById(booking.organizationId)
-    .select("settings.currency")
-    .lean()
-  return normalizeTBookCurrency(org?.settings?.currency)
+async function resolveCheckoutCurrency(booking: { currency?: string | null }) {
+  return normalizeTBookCurrency(booking.currency)
 }
 
 export class TBookCheckoutService {
@@ -176,6 +170,9 @@ export class TBookCheckoutService {
 
     const { sendBookingConfirmationEmail } = await import("../lib/send-booking-email")
     void sendBookingConfirmationEmail(booking)
+
+    const { issueVouchersForBooking } = await import("./voucher-service")
+    void issueVouchersForBooking(booking._id.toString())
 
     return booking._id.toString()
   }

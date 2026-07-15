@@ -74,6 +74,25 @@ export type TBookRoomType = {
   sortOrder?: number
 }
 
+/** Fixed stay package, e.g. 3 nights in a room type for a flat price. */
+export type TBookPackageDeal = {
+  key: string
+  label: string
+  nights: number
+  priceHuf: number
+  /** When set, package applies only to this room type. */
+  roomTypeKey?: string | null
+  sortOrder?: number
+}
+
+/** Single extras block shown to guests (title + description + option fields). */
+export type TBookExtrasSection = {
+  label: string
+  description?: string
+  options: TBookOptionDef[]
+}
+
+/** @deprecated Migrated to extrasSection on read via normalizeHotelPricing */
 export type TBookAddonGroup = {
   key: string
   label: string
@@ -84,7 +103,10 @@ export type TBookAddonGroup = {
 
 export type TBookHotelPricing = TBookVatPricing & {
   roomTypes: TBookRoomType[]
-  addonGroups: TBookAddonGroup[]
+  packages?: TBookPackageDeal[]
+  extrasSection?: TBookExtrasSection | null
+  /** @deprecated Migrated to extrasSection — kept for legacy reads */
+  addonGroups?: TBookAddonGroup[]
   /** @deprecated Legacy flat pricing — migrated on read via normalizeHotelPricing */
   baseRateHuf?: number
   baseRateMode?: TBookBaseRateMode
@@ -94,7 +116,7 @@ export type TBookHotelPricing = TBookVatPricing & {
 /** @deprecated Use TBookHotelPricing */
 export type TBookAccommodationPricing = TBookHotelPricing
 
-export type TBookTicketFeeMode = "per_person" | "per_booking"
+export type TBookTicketFeeMode = "per_person" | "per_booking" | "per_team"
 
 export type TBookSelectionValue = string | number | boolean | string[]
 export type TBookSelections = Record<string, TBookSelectionValue>

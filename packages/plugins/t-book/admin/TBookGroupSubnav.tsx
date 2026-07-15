@@ -8,6 +8,7 @@ import { pluginAdminLinkAccent } from "@wse/core/lib/plugin-admin-ui"
 function tabs(groupId: string) {
   return [
     { label: "Áttekintés", href: `/admin/plugins/t-book/groups/${groupId}` },
+    { label: "Események", href: `/admin/plugins/t-book/groups/${groupId}/events` },
     { label: "Szállások", href: `/admin/plugins/t-book/groups/${groupId}/hotels` },
     { label: "Beállítások", href: `/admin/plugins/t-book/groups/${groupId}/edit` },
   ]
@@ -33,12 +34,10 @@ export function TBookGroupSubnav({
       </div>
       <nav className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1">
         {tabs(groupId).map((tab) => {
-          const overviewHref = `/admin/plugins/t-book/groups/${groupId}`
           const active =
             pathname === tab.href ||
-            (tab.href === overviewHref &&
-              (pathname?.startsWith(`${overviewHref}/events`) ?? false)) ||
             (tab.href.endsWith("/hotels") && pathname?.includes(`/groups/${groupId}/hotels`)) ||
+            (tab.href.endsWith("/events") && pathname?.includes(`/groups/${groupId}/events`)) ||
             (tab.href.endsWith("/edit") && pathname?.includes(`/groups/${groupId}/edit`))
           return (
             <Link

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { TopBar } from "@wse/core/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@wse/core/features/homepage-cms/components/editor/DevicePreview"
 import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/components/CmsChromeBrandingToolbar"
+import { CmsChromePanelLayout, type CmsChromePanel } from "@wse/core/features/template-cms/components/CmsChromePanels"
 import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/CmsReviewOverlay"
 import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
@@ -56,6 +57,9 @@ export function DefaultModernVisualCmsChrome({
   contactAddress,
   footerCategories,
   toolbarBelowBranding,
+  chromePanels,
+  buildChromePanels,
+  footerCmsEditable = true,
   structureSidebar,
   navItems,
   navCta,
@@ -81,7 +85,13 @@ export function DefaultModernVisualCmsChrome({
   contactAddress: string
   footerCategories: FooterCategory[]
   toolbarBelowBranding?: React.ReactNode
-  /** Structured editing panel (e.g. list managers) shown beside the canvas in edit mode. */
+  /** Optional toggleable chrome panels (navigation, footer, sections). */
+  chromePanels?: CmsChromePanel[]
+  /** Build chrome panels with access to live footer/branding state. */
+  buildChromePanels?: (ctx: Pick<VisualCmsChromeCtx, "footerSettings" | "setFooterSettings">) => CmsChromePanel[]
+  /** When false, footer inline canvas editing is disabled (use chromePanels footer instead). */
+  footerCmsEditable?: boolean
+  /** @deprecated Use chromePanels instead. */
   structureSidebar?: React.ReactNode
   navItems?: ChromeNavItem[]
   navCta?: ChromeNavCta
@@ -172,7 +182,7 @@ export function DefaultModernVisualCmsChrome({
         logoSrc={branding.logoFooter}
         shopEnabled={shopEnabled}
         footerSettings={footerSettings}
-        cmsEditable={mode === "edit"}
+        cmsEditable={mode === "edit" && footerCmsEditable}
         onSettingsChange={
           mode === "edit"
             ? async (next) => {
@@ -218,6 +228,11 @@ export function DefaultModernVisualCmsChrome({
 
   const mainEdit = renderMain(ctxEdit)
   const mainReview = renderMain(ctxReview)
+  const resolvedChromePanels =
+    buildChromePanels?.({
+      footerSettings,
+      setFooterSettings,
+    }) ?? chromePanels ?? []
 
   return (
     <div className="cms-editor-chrome -mx-4 min-h-[calc(100dvh-8rem)] md:-mx-0">
@@ -243,21 +258,32 @@ export function DefaultModernVisualCmsChrome({
         {toolbarBelowBranding}
 
         <div className="p-4 space-y-4">
-          <div className={structureSidebar ? "flex items-start gap-4" : undefined}>
-            <div className="min-w-0 flex-1">
-              <DevicePreview device={device}>
-                <div
-                  className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-                  style={themeTokensToCssVars(themeSettings)}
-                >
-                  {wrapLayout("edit", mainEdit)}
-                </div>
-              </DevicePreview>
+          {resolvedChromePanels.length > 0 ? (
+            <CmsChromePanelLayout panels={resolvedChromePanels} device={device}>
+              <div
+                className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
+                style={themeTokensToCssVars(themeSettings)}
+              >
+                {wrapLayout("edit", mainEdit)}
+              </div>
+            </CmsChromePanelLayout>
+          ) : (
+            <div className={structureSidebar ? "flex items-start gap-4" : undefined}>
+              <div className="min-w-0 flex-1">
+                <DevicePreview device={device}>
+                  <div
+                    className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
+                    style={themeTokensToCssVars(themeSettings)}
+                  >
+                    {wrapLayout("edit", mainEdit)}
+                  </div>
+                </DevicePreview>
+              </div>
+              {structureSidebar ? (
+                <aside className="sticky top-4 hidden w-80 shrink-0 lg:block">{structureSidebar}</aside>
+              ) : null}
             </div>
-            {structureSidebar ? (
-              <aside className="sticky top-4 hidden w-80 shrink-0 lg:block">{structureSidebar}</aside>
-            ) : null}
-          </div>
+          )}
         </div>
       </div>
 

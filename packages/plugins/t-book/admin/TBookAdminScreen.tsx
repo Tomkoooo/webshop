@@ -5,6 +5,7 @@ import { GroupsAdmin } from "./GroupsAdmin"
 import { GroupAdminRouter } from "./GroupAdminRouter"
 import { EventsAdmin } from "./EventsAdmin"
 import { BookingsAdmin } from "./BookingsAdmin"
+import { VoucherScannerAdmin } from "./VoucherScannerAdmin"
 
 export function TBookAdminScreen({
   path,
@@ -23,6 +24,9 @@ export function TBookAdminScreen({
   }
   if (segment === "bookings") {
     return <BookingsAdmin />
+  }
+  if (segment === "scanner") {
+    return <VoucherScannerAdmin />
   }
   if (segment === "stats") {
     return <TBookDashboard />

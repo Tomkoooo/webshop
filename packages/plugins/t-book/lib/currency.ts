@@ -59,3 +59,19 @@ export function toStripeUnitAmount(amount: number, currency: string | null | und
 export function stripeCurrencyCode(currency: string | null | undefined): string {
   return getTBookCurrencyOption(currency).stripeCode
 }
+
+/** Resolves checkout currency for a booking; event and hotel must match when both are set. */
+export function resolveBookingCurrency(
+  eventCurrency: string | null | undefined,
+  hotelCurrency?: string | null
+): TBookCurrencyCode {
+  const event = normalizeTBookCurrency(eventCurrency)
+  if (!hotelCurrency) return event
+  const hotel = normalizeTBookCurrency(hotelCurrency)
+  if (event !== hotel) {
+    throw new Error(
+      `A jegy (${event}) és a szállás (${hotel}) pénzneme nem egyezik. Állítsd ugyanarra mindkettőn.`
+    )
+  }
+  return event
+}
