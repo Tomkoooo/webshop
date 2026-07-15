@@ -34,7 +34,7 @@ export const wdfSectionLayoutEntrySchema = z.object({
 export type WdfSectionLayoutEntry = z.infer<typeof wdfSectionLayoutEntrySchema>
 
 export const DEFAULT_WDF_SECTION_LAYOUT: WdfSectionLayoutEntry[] = WDF_HOME_SECTION_IDS.map(
-  (id) => ({ id, enabled: true })
+  (id) => ({ id, enabled: id !== "fees" })
 )
 
 /** Merge stored layout with defaults (handles new sections added in later versions). */
@@ -54,8 +54,8 @@ export function normalizeWdfSectionLayout(raw: unknown): WdfSectionLayoutEntry[]
   }
   for (const id of WDF_HOME_SECTION_IDS) {
     if (!ordered.some((row) => row.id === id)) {
-      ordered.push({ id, enabled: byId.get(id)?.enabled ?? true })
+      ordered.push({ id, enabled: id === "fees" ? false : (byId.get(id)?.enabled ?? true) })
     }
   }
-  return ordered
+  return ordered.map((row) => (row.id === "fees" ? { ...row, enabled: false } : row))
 }

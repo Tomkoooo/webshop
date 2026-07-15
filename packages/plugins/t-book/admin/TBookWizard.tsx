@@ -34,7 +34,7 @@ export function TBookWizard({
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 index === currentStep
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-muted/55 text-foreground ring-1 ring-inset ring-border/25"
                   : index < currentStep
                     ? "text-muted-foreground hover:text-foreground"
                     : "text-muted-foreground/60"

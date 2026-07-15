@@ -10,8 +10,12 @@ import type { TBookHotelPricing, TBookOptionDef, TBookSelections, TBookSelection
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
+  findPackageDeal,
   getExtrasSection,
-  matchingPackageDeals,
+  guestPackageDeals,
+  hotelRequiresPackageSelection,
+  hotelShowsPackageSelection,
+  hotelShowsRoomSelection,
   normalizeHotelPricing,
 } from "../lib/hotel-pricing"
 import { formatMoney } from "./t-book-api"
@@ -125,6 +129,9 @@ export function PricingPreview({
 }) {
   const displayCurrency = hotelCurrency || ticketCurrency
   const normalized = useMemo(() => normalizeHotelPricing(pricing), [pricing])
+  const showRooms = hotelShowsRoomSelection(normalized)
+  const showPackages = hotelShowsPackageSelection(normalized)
+  const packagesRequired = hotelRequiresPackageSelection(normalized)
   const extrasSection = useMemo(() => getExtrasSection(normalized), [normalized])
   const [guests, setGuests] = useState(2)
   const [nights, setNights] = useState(defaultNights)
@@ -144,12 +151,20 @@ export function PricingPreview({
     typeof selections[ROOM_TYPE_SELECTION_KEY] === "string"
       ? selections[ROOM_TYPE_SELECTION_KEY]
       : ""
+  const packageDealKey =
+    typeof selections[PACKAGE_DEAL_SELECTION_KEY] === "string"
+      ? selections[PACKAGE_DEAL_SELECTION_KEY]
+      : ""
   const availablePackages = useMemo(
     () =>
-      roomTypeKey
-        ? matchingPackageDeals(normalized, nights, roomTypeKey)
+      showPackages
+        ? guestPackageDeals(
+            normalized,
+            packagesRequired ? undefined : nights,
+            showRooms ? roomTypeKey : undefined
+          )
         : [],
-    [normalized, nights, roomTypeKey]
+    [normalized, showPackages, packagesRequired, nights, showRooms, roomTypeKey]
   )
 
   const { quote, errors } = useMemo(() => {
@@ -200,6 +215,7 @@ export function PricingPreview({
             type="number"
             min={1}
             value={nights}
+            disabled={packagesRequired && Boolean(packageDealKey)}
             onChange={(e) => setNights(Math.max(1, Number(e.target.value) || 1))}
           />
         </TBookField>
@@ -214,39 +230,46 @@ export function PricingPreview({
         </label>
       </div>
 
-      {withAccommodation && normalized.roomTypes.length > 0 ? (
-        <TBookField label="Szobatípus">
-          <TBookSelect
-            value={roomTypeKey}
-            onChange={(e) => {
-              setSelection(ROOM_TYPE_SELECTION_KEY, e.target.value || null)
-              setSelection(PACKAGE_DEAL_SELECTION_KEY, null)
-            }}
-          >
-            <option value="">— válassz —</option>
-            {normalized.roomTypes.map((room, index) => (
-              <option key={room.key || `room-${index}`} value={room.key}>
-                {room.label} ({formatMoney(room.baseRateHuf, displayCurrency)} / fő / éj)
-              </option>
-            ))}
-          </TBookSelect>
-        </TBookField>
+      {withAccommodation && showRooms && normalized.roomTypes.length > 0 ? (
+        <>
+          <TBookField label="Szobatípus">
+            <TBookSelect
+              value={roomTypeKey}
+              onChange={(e) => {
+                setSelection(ROOM_TYPE_SELECTION_KEY, e.target.value || null)
+                setSelection(PACKAGE_DEAL_SELECTION_KEY, null)
+              }}
+            >
+              <option value="">— válassz —</option>
+              {normalized.roomTypes.map((room, index) => (
+                <option key={room.key || `room-${index}`} value={room.key}>
+                  {room.label} ({formatMoney(room.baseRateHuf, displayCurrency)} / fő / éj)
+                </option>
+              ))}
+            </TBookSelect>
+          </TBookField>
+        </>
       ) : null}
 
-      {withAccommodation && availablePackages.length > 0 ? (
-        <TBookField label="Csomagajánlat (opcionális)">
+      {withAccommodation && showPackages && availablePackages.length > 0 ? (
+        <TBookField
+          label={packagesRequired ? "Csomagajánlat" : "Csomagajánlat (opcionális)"}
+        >
           <TBookSelect
-            value={
-              typeof selections[PACKAGE_DEAL_SELECTION_KEY] === "string"
-                ? selections[PACKAGE_DEAL_SELECTION_KEY]
-                : ""
-            }
-            onChange={(e) => setSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value || null)}
+            value={packageDealKey}
+            onChange={(e) => {
+              setSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value || null)
+              if (packagesRequired && e.target.value) {
+                const pkg = findPackageDeal(normalized, e.target.value)
+                if (pkg) setNights(pkg.nights)
+              }
+            }}
           >
-            <option value="">Per-éjszaka ár</option>
+            {!packagesRequired ? <option value="">Per-éjszaka ár</option> : null}
             {availablePackages.map((pkg) => (
               <option key={pkg.key} value={pkg.key}>
                 {pkg.label} — {formatMoney(pkg.priceHuf, displayCurrency)}
+                {pkg.nights > 1 ? ` (${pkg.nights} éj)` : ""}
               </option>
             ))}
           </TBookSelect>

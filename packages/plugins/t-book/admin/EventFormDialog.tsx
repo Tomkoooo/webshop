@@ -347,11 +347,14 @@ export function EventFormDialog({
                   Jegyek kiállítása fizetés után
                 </label>
                 <TBookSingleMediaField
-                  label="Jegy PDF fejléc kép"
+                  label="Jegy PDF fejléc kép (esemény felülírás)"
                   value={draft.voucherHeaderImage}
                   onChange={(voucherHeaderImage) => patch({ voucherHeaderImage })}
                   aspect={3 / 1}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Ha üres, a csoport alapértelmezett jegy fejléc képe érvényes (ha be van állítva).
+                </p>
               </div>
             </div>
           ) : null}

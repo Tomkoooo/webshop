@@ -23,6 +23,8 @@ export type AdminGroup = {
   listingTitle: string
   listingUrl: string
   listingImage: string
+  defaultHeroImage: string
+  voucherHeaderImage: string
   apiKeyHint: string
   apiKeyCreatedAt: string
   createdAt: string

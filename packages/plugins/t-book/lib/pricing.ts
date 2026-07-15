@@ -19,6 +19,7 @@ import {
   findRoomType,
   findPackageDeal,
   normalizeHotelPricing,
+  resolveAccommodationMode,
 } from "./hotel-pricing"
 
 function roundHuf(amount: number): number {
@@ -139,14 +140,36 @@ export function validateHotelSelections(
   selections: TBookSelections
 ): TBookSelectionError[] {
   const normalized = normalizeHotelPricing(pricing)
+  const mode = resolveAccommodationMode(normalized)
   const errors: TBookSelectionError[] = []
 
-  const roomKey = selections[ROOM_TYPE_SELECTION_KEY]
-  if (typeof roomKey !== "string" || !findRoomType(normalized, roomKey)) {
-    errors.push({
-      key: ROOM_TYPE_SELECTION_KEY,
-      message: "Kötelező szobatípus választás",
-    })
+  const packageKey = selections[PACKAGE_DEAL_SELECTION_KEY]
+  const packageDeal =
+    typeof packageKey === "string" && packageKey
+      ? findPackageDeal(normalized, packageKey)
+      : null
+
+  if (mode === "packages") {
+    if (!packageDeal) {
+      errors.push({
+        key: PACKAGE_DEAL_SELECTION_KEY,
+        message: "Kötelező csomagajánlat választás",
+      })
+    }
+  } else {
+    const roomKey = selections[ROOM_TYPE_SELECTION_KEY]
+    if (typeof roomKey !== "string" || !findRoomType(normalized, roomKey)) {
+      errors.push({
+        key: ROOM_TYPE_SELECTION_KEY,
+        message: "Kötelező szobatípus választás",
+      })
+    }
+    if (typeof packageKey === "string" && packageKey && !packageDeal) {
+      errors.push({
+        key: PACKAGE_DEAL_SELECTION_KEY,
+        message: "Érvénytelen csomagajánlat",
+      })
+    }
   }
 
   const addonOptions = flattenAddonOptions(normalized)
@@ -168,6 +191,7 @@ export function validateSelections(
 
   for (const key of Object.keys(selections)) {
     if (key === ROOM_TYPE_SELECTION_KEY) continue
+    if (key === PACKAGE_DEAL_SELECTION_KEY) continue
     if (!known.has(key)) {
       errors.push({ key, message: `Ismeretlen opció: ${key}` })
     }
@@ -330,7 +354,8 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     const acc = normalizeHotelPricing(input.accommodation)
     const accBasis = basisOf(acc.priceBasis, "gross")
     const accVat = vatOf(acc.vatPercent)
-    const effectiveNights = Math.max(1, nights)
+    const mode = resolveAccommodationMode(acc)
+    let effectiveNights = Math.max(1, nights)
     const selections = input.selections ?? {}
 
     const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
@@ -338,7 +363,15 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     const packageKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
     const packageDeal = packageKey ? findPackageDeal(acc, packageKey) : null
 
-    if (roomType) {
+    if (mode === "packages" && packageDeal) {
+      effectiveNights = packageDeal.nights
+      accommodationBaseHuf = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+      lines.push({
+        key: "accommodation_base",
+        label: packageDeal.label,
+        amountHuf: accommodationBaseHuf,
+      })
+    } else if (roomType) {
       if (
         packageDeal &&
         packageDeal.nights === effectiveNights &&
@@ -368,7 +401,19 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   }
 
   const selections = input.selections ?? {}
-  const effectiveNights = input.accommodation ? Math.max(1, nights) : nights
+  const accNormalized = input.accommodation ? normalizeHotelPricing(input.accommodation) : null
+  const packageKeyForNights = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+  const packageForNights =
+    accNormalized && packageKeyForNights
+      ? findPackageDeal(accNormalized, packageKeyForNights)
+      : null
+  const quotedNights =
+    input.accommodation && resolveAccommodationMode(accNormalized!) === "packages" && packageForNights
+      ? packageForNights.nights
+      : input.accommodation
+        ? Math.max(1, nights)
+        : nights
+  const effectiveNights = quotedNights
   const optionBaseHuf = accommodationBaseHuf || ticketSubtotalHuf
   const sorted = [...mergedOptions].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
@@ -392,7 +437,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   const accommodationSubtotalHuf = accommodationBaseHuf + accommodationOptionsHuf
   return {
     guests,
-    nights: input.accommodation ? Math.max(1, nights) : nights,
+    nights: quotedNights,
     ticketSubtotalHuf,
     accommodationBaseHuf,
     accommodationOptionsHuf,

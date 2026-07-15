@@ -61,13 +61,10 @@ export function EditableDocLink({
 
   return (
     <>
-      <div ref={anchorRef} className="relative inline-block">
+      <div ref={anchorRef} className="cms-editable-cta-wrap relative inline-block">
         <button
           type="button"
-          className={cn(
-            className,
-            "cursor-pointer ring-2 ring-primary/30 ring-offset-2 ring-offset-transparent"
-          )}
+          className={cn(className, "cursor-pointer")}
           onClick={(event) => {
             event.preventDefault()
             if (!open) {

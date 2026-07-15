@@ -157,6 +157,11 @@ const TBookHotelSchema = new Schema<ITBookHotel>(
     pricing: {
       priceBasis: { type: String, enum: ["net", "gross"], default: "net" },
       vatPercent: { type: Number, default: 27, min: 0, max: 100 },
+      accommodationMode: {
+        type: String,
+        enum: ["room_nights", "packages", "both"],
+        default: undefined,
+      },
       roomTypes: { type: [RoomTypeSchema], default: [] },
       packages: { type: [PackageDealSchema], default: [] },
       extrasSection: { type: ExtrasSectionSchema, default: null },

@@ -14,6 +14,8 @@ import {
 } from "./t-book-api"
 import {
   TBookField,
+  tBookGhostButtonSmClass,
+  tBookListRowClass,
   TBookLoading,
   TBookPageHeader,
   TBookPrimaryButton,
@@ -129,7 +131,7 @@ export function EventsAdmin({ path }: { path: string[] }) {
           {events.map((event, index) => (
             <li
               key={event.id}
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
+              className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${tBookListRowClass}`}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -182,7 +184,7 @@ export function EventsAdmin({ path }: { path: string[] }) {
                 {event.groupId ? (
                   <Link
                     href={`/admin/plugins/t-book/groups/${event.groupId}/events/${event.id}`}
-                    className="inline-flex h-9 items-center px-3 border border-border rounded-lg text-foreground text-xs font-medium hover:bg-muted/40"
+                    className={tBookGhostButtonSmClass}
                   >
                     Szerkesztés
                   </Link>

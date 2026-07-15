@@ -21,6 +21,10 @@ export interface ITBookEventGroup extends Document {
   listingUrl: string
   /** Cover image for the public directory card. */
   listingImage: string
+  /** Default event cover when an event has no hero image. */
+  defaultHeroImage: string
+  /** Default header image on voucher PDFs for events in this group. */
+  voucherHeaderImage: string
   /** SHA-256 hash of the group API key. The plaintext is shown to the admin once. */
   apiKeyHash: string
   /** Non-secret display hint, e.g. `tbk_ab12…89ef`. */
@@ -87,6 +91,8 @@ const TBookEventGroupSchema = new Schema<ITBookEventGroup>(
     listingTitle: { type: String, default: "" },
     listingUrl: { type: String, default: "" },
     listingImage: { type: String, default: "" },
+    defaultHeroImage: { type: String, default: "" },
+    voucherHeaderImage: { type: String, default: "" },
     apiKeyHash: { type: String, required: true, index: true },
     apiKeyHint: { type: String, required: true },
     apiKeyCreatedAt: { type: Date, required: true },

@@ -7,7 +7,7 @@ import {
   FIELD_TYPE_LABELS,
   tournamentAttendeeFieldPreset,
 } from "../lib/attendee-fields"
-import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
+import { TBookField, TBookInput, tBookPanelClass, tBookEmptyStateClass, TBookSelect } from "./t-book-admin-ui"
 
 function ChoicesEditor({
   choices,
@@ -123,13 +123,13 @@ export function AttendeeFieldsEditor({
       </div>
 
       {fields.length === 0 ? (
-        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+        <p className={tBookEmptyStateClass}>
           Nincs egyedi foglalási mező — csak a kapcsolattartó adatai kerülnek rögzítésre.
         </p>
       ) : null}
 
       {fields.map((field, index) => (
-        <div key={index} className="rounded-xl bg-card shadow-sm p-4 space-y-3">
+        <div key={index} className={`${tBookPanelClass} space-y-3`}>
           <div className="flex items-start justify-between gap-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               <TBookField label="Mező neve (vendég látja)">

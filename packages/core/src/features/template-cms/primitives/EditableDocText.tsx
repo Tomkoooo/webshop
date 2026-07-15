@@ -4,8 +4,7 @@ import { useEffect, useState } from "react"
 import { cn } from "@wse/core/lib/utils"
 import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
 
-const editableDocFieldClass =
-  "cms-admin-control w-full rounded border border-dashed border-primary/50 bg-card px-2 py-1 text-foreground shadow-sm"
+const editableDocFieldClass = "cms-inline-edit-field"
 
 export function EditableDocText({
   path,

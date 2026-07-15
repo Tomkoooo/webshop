@@ -9,7 +9,7 @@ import type {
   TBookRoomType,
 } from "../lib/pricing-types"
 import { ROOM_TYPE_SELECTION_KEY } from "../lib/hotel-pricing"
-import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
+import { tBookEmptyStateClass, TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
 
 const PRICE_MODE_LABELS: Record<TBookPriceMode, string> = {
   fixed: "Fix összeg",
@@ -224,7 +224,7 @@ export function OptionSchemaEditor({
   return (
     <div className="space-y-4">
       {options.length === 0 ? (
-        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-4 text-center">
+        <p className={tBookEmptyStateClass}>
           Még nincs foglalási mező ebben a szakaszban.
         </p>
       ) : null}

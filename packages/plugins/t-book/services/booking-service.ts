@@ -131,7 +131,7 @@ export class TBookBookingService {
       event,
       quote,
       hotelName,
-      nights,
+      nights: quote.nights,
       selections,
       currency: eventCurrency,
       hotelCurrency,

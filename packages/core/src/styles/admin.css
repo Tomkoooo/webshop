@@ -504,6 +504,128 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
 .admin-storefront-preview {
   contain: layout style;
   isolation: isolate;
+  /* Restore storefront Tailwind semantics inside the admin shell island */
+  --color-background: var(--theme-background);
+  --color-foreground: var(--theme-foreground);
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-primary-foreground);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-foreground: var(--theme-secondary-foreground);
+  --color-accent: var(--theme-accent);
+  --color-accent-foreground: var(--theme-accent-foreground);
+  --color-surface: var(--theme-surface);
+  --color-surface-foreground: var(--theme-surface-foreground);
+  --color-border: var(--theme-border);
+  --color-muted: var(--theme-muted);
+  --color-muted-foreground: var(--theme-muted-foreground);
+  --color-popover: var(--theme-surface);
+  --color-popover-foreground: var(--theme-surface-foreground);
+  --color-destructive: var(--theme-error);
+  --color-destructive-foreground: var(--theme-error-foreground);
+  --background: var(--theme-background);
+  --foreground: var(--theme-foreground);
+  --primary: var(--theme-primary);
+  --primary-foreground: var(--theme-primary-foreground);
+  --secondary: var(--theme-secondary);
+  --secondary-foreground: var(--theme-secondary-foreground);
+  --accent: var(--theme-accent);
+  --accent-foreground: var(--theme-accent-foreground);
+  --card: var(--theme-surface);
+  --card-foreground: var(--theme-surface-foreground);
+  --popover: var(--theme-surface);
+  --popover-foreground: var(--theme-surface-foreground);
+  --muted: var(--theme-muted);
+  --muted-foreground: var(--theme-muted-foreground);
+  --border: var(--theme-border);
+  --input: var(--theme-muted);
+  color: var(--theme-foreground);
+  background-color: var(--theme-background);
+}
+
+.admin-storefront-preview .text-foreground {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+.admin-storefront-preview .text-muted-foreground {
+  color: var(--theme-muted-foreground, var(--muted-foreground));
+}
+
+.admin-storefront-preview .prose {
+  color: var(--theme-foreground, var(--foreground));
+}
+
+/* Inline edit fields — minimal at rest, subtle highlight on interaction */
+.admin-storefront-preview .cms-inline-edit-field {
+  width: 100%;
+  border: none;
+  border-radius: 0.2rem;
+  background: transparent;
+  color: inherit;
+  padding: 0.1rem 0.2rem;
+  box-shadow: none;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.admin-storefront-preview .cms-inline-edit-field:hover {
+  background-color: color-mix(in oklab, var(--theme-primary) 7%, transparent);
+}
+
+.admin-storefront-preview .cms-inline-edit-field:focus {
+  outline: none;
+  background-color: color-mix(in oklab, var(--theme-surface) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--theme-primary) 32%, transparent);
+}
+
+.admin-storefront-preview .cms-inline-edit-field::placeholder {
+  color: var(--theme-muted-foreground);
+}
+
+/* Editable CTAs — small edit badge, no heavy outline on the button itself */
+.admin-storefront-preview .cms-editable-cta-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.admin-storefront-preview .cms-editable-cta-wrap::after {
+  content: "✎";
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 0.2rem;
+  padding: 0.05rem 0.2rem;
+  font-size: 0.55rem;
+  line-height: 1.1;
+  font-weight: 600;
+  background-color: var(--theme-primary);
+  color: var(--theme-primary-foreground);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--theme-background) 80%, transparent);
+}
+
+/* Compact list/action chips inside preview */
+.admin-storefront-preview .cms-preview-action {
+  background-color: color-mix(in oklab, var(--theme-surface) 90%, var(--theme-primary)) !important;
+  color: var(--theme-foreground) !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--theme-primary) 22%, var(--theme-border)) !important;
+  border-radius: 9999px !important;
+  min-height: 1.5rem;
+  padding-inline: 0.45rem !important;
+}
+
+.admin-storefront-preview .cms-preview-action:hover {
+  background-color: color-mix(in oklab, var(--theme-surface) 75%, var(--theme-primary)) !important;
+  box-shadow: inset 0 0 0 1px var(--theme-primary) !important;
+}
+
+.admin-storefront-preview .cms-preview-action.text-destructive {
+  color: var(--theme-error) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--theme-error) 40%, var(--theme-border)) !important;
+}
+
+.admin-storefront-preview .cms-preview-action.text-destructive:hover {
+  background-color: color-mix(in oklab, var(--theme-error) 10%, var(--theme-surface)) !important;
 }
 
 .cms-editor-toolbar,
@@ -529,39 +651,6 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
 .admin-storefront-preview [data-cms-editing="true"] .cms-admin-control {
   position: relative;
   z-index: 60;
-}
-
-/* CMS controls inside dark/light storefront preview — always opaque admin surfaces */
-.admin-storefront-preview .cms-admin-control input,
-.admin-storefront-preview .cms-admin-control textarea,
-.admin-storefront-preview .cms-admin-control select {
-  background-color: oklch(0.99 0.002 286) !important;
-  color: oklch(0.18 0.01 286) !important;
-  border-color: oklch(0.84 0.01 286) !important;
-}
-
-.admin-storefront-preview .cms-admin-control [data-slot="button"] {
-  background-color: oklch(0.99 0.002 286) !important;
-  color: oklch(0.18 0.01 286) !important;
-  border-color: oklch(0.84 0.01 286) !important;
-  box-shadow: 0 1px 2px color-mix(in oklch, oklch(0.18 0.01 286) 8%, transparent);
-}
-
-.admin-storefront-preview .cms-admin-control [data-slot="button"]:hover {
-  background-color: oklch(0.95 0.01 286) !important;
-}
-
-.admin-storefront-preview .cms-admin-control [data-slot="button"].text-destructive,
-.admin-storefront-preview .cms-admin-control button.text-destructive {
-  color: oklch(0.58 0.22 27) !important;
-  border-color: oklch(0.58 0.22 27 / 35%) !important;
-}
-
-.admin-storefront-preview [data-cms-editing="true"] input:not(.font-minecraft),
-.admin-storefront-preview [data-cms-editing="true"] textarea:not(.font-minecraft) {
-  background-color: oklch(0.99 0.002 286) !important;
-  color: oklch(0.18 0.01 286) !important;
-  border-color: oklch(0.55 0.14 268 / 40%) !important;
 }
 
 [data-cms-editing="true"] .minecraft-social-tab {
@@ -595,7 +684,7 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
   color: #5c4a32;
 }
 
-/* WDF festival landing — force dark/gold tokens in CMS preview (ignore legacy shop theme rows). */
+/* WDF — fallback when inline theme vars are not yet applied (loading frame) */
 .admin-storefront-preview.world-darts-festival-preview {
   --theme-primary: #d4a017;
   --theme-primary-foreground: #0a0a0a;
@@ -621,6 +710,36 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
 
 .admin-breadcrumb-scroll {
   scrollbar-width: none;
+}
+
+/* Radix portals attach to <body>, outside .admin-shell — must be fully opaque */
+html .admin-portal-surface,
+html [data-slot="select-content"].admin-portal-surface,
+html [data-slot="popover-content"].admin-portal-surface {
+  background-color: oklch(0.99 0.002 286);
+  color: oklch(0.18 0.01 286);
+  border-color: oklch(0.91 0.006 286);
+  backdrop-filter: none;
+}
+
+html[data-admin-theme="dark"] .admin-portal-surface,
+html[data-admin-theme="dark"] [data-slot="select-content"].admin-portal-surface,
+html[data-admin-theme="dark"] [data-slot="popover-content"].admin-portal-surface {
+  background-color: oklch(0.19 0.014 286);
+  color: oklch(0.96 0.004 286);
+  border-color: oklch(0.3 0.016 286);
+}
+
+html [data-slot="select-content"].admin-portal-surface [data-slot="select-item"]:focus,
+html [data-slot="select-content"].admin-portal-surface [data-slot="select-item"][data-highlighted] {
+  background-color: oklch(0.55 0.14 268 / 12%);
+  color: oklch(0.18 0.01 286);
+}
+
+html[data-admin-theme="dark"] [data-slot="select-content"].admin-portal-surface [data-slot="select-item"]:focus,
+html[data-admin-theme="dark"] [data-slot="select-content"].admin-portal-surface [data-slot="select-item"][data-highlighted] {
+  background-color: oklch(0.66 0.16 268 / 18%);
+  color: oklch(0.96 0.004 286);
 }
 
 .admin-breadcrumb-scroll::-webkit-scrollbar {

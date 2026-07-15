@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@wse/core/components/ui/button"
 import { cn } from "@wse/core/lib/utils"
 import type { TBookAddonGroup, TBookRoomType } from "../lib/pricing-types"
-import { TBookField, TBookInput } from "./t-book-admin-ui"
+import { tBookAccordionPanelClass, tBookEmptyStateClass, TBookField, TBookInput } from "./t-book-admin-ui"
 import { OptionSchemaEditor } from "./OptionSchemaEditor"
 
 export function AddonGroupsEditor({
@@ -45,7 +45,7 @@ export function AddonGroupsEditor({
       </div>
 
       {groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+        <p className={tBookEmptyStateClass}>
           Nincs extrák szakasz — csak szobatípus alapár fog szerepelni a foglalásban.
         </p>
       ) : null}
@@ -55,7 +55,7 @@ export function AddonGroupsEditor({
         const isOpen = openKey === panelKey || (!openKey && index === 0)
         const optionCount = group.options.length
         return (
-          <div key={panelKey} className="rounded-xl bg-card shadow-sm overflow-hidden">
+          <div key={panelKey} className={tBookAccordionPanelClass}>
             <button
               type="button"
               className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/40"
@@ -74,7 +74,7 @@ export function AddonGroupsEditor({
             </button>
 
             {isOpen ? (
-              <div className="border-t border-border p-4 space-y-4">
+              <div className="border-t border-border/40 p-4 space-y-4">
                 <TBookField label="Szakasz címe (vendég látja)">
                   <TBookInput
                     value={group.label}

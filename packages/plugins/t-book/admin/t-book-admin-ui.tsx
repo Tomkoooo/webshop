@@ -23,7 +23,45 @@ import {
   pluginAdminPageTitle,
 } from "@wse/core/lib/plugin-admin-ui"
 
-export const tBookInputClass = pluginAdminInputClass
+export const tBookInputClass = cn(
+  pluginAdminInputClass,
+  "border-0 bg-muted/35 shadow-none ring-1 ring-inset ring-border/25",
+  "focus-visible:ring-2 focus-visible:ring-primary/30"
+)
+
+/** Shared look for selects, date inputs, and text fields in tBook admin. */
+export const tBookControlClass = tBookInputClass
+
+/** Wizard / form main panel — tint instead of bright white card. */
+export const tBookFormShellClass =
+  "rounded-2xl bg-muted/20 p-6 md:p-8 shadow-none ring-1 ring-inset ring-border/15"
+
+/** Secondary nav actions (Mégse, Vissza) without heavy outlines. */
+export const tBookGhostButtonClass =
+  "inline-flex h-10 items-center px-4 rounded-lg text-sm text-foreground bg-muted/30 hover:bg-muted/45 ring-1 ring-inset ring-border/20 transition-colors"
+
+export const tBookGhostButtonSmClass =
+  "inline-flex h-9 items-center px-3 rounded-lg text-xs font-medium text-foreground bg-muted/30 hover:bg-muted/45 ring-1 ring-inset ring-border/20 transition-colors"
+
+/** List rows and nested editor blocks. */
+export const tBookPanelClass =
+  "rounded-xl bg-muted/25 p-4 md:p-5 shadow-none ring-1 ring-inset ring-border/15"
+
+export const tBookPanelCompactClass =
+  "rounded-xl bg-muted/25 p-3 shadow-none ring-1 ring-inset ring-border/15"
+
+export const tBookAccordionPanelClass =
+  "rounded-xl bg-muted/25 shadow-none ring-1 ring-inset ring-border/15 overflow-hidden"
+
+export const tBookListRowClass =
+  "rounded-xl bg-muted/20 p-5 shadow-none ring-1 ring-inset ring-border/15 hover:bg-muted/30 transition-colors"
+
+export const tBookCompactRowClass =
+  "flex items-center justify-between gap-3 rounded-xl bg-muted/20 px-4 py-3 ring-1 ring-inset ring-border/15 hover:bg-muted/30 transition-colors"
+
+/** Empty / placeholder blocks — no dashed white boxes. */
+export const tBookEmptyStateClass =
+  "text-sm text-muted-foreground rounded-lg bg-muted/15 px-4 py-6 text-center ring-1 ring-inset ring-border/15"
 
 /** Radix Select cannot use empty string as item value — map option value="" to this sentinel. */
 const TBOOK_SELECT_EMPTY = "__tbook_empty__"
@@ -136,7 +174,11 @@ export function TBookSelect({
     >
       <SelectTrigger
         id={id}
-        className={cn("h-10 w-full bg-background shadow-sm ring-1 ring-border/60", className)}
+        className={cn(
+          tBookControlClass,
+          "h-10 w-full border-0 data-[placeholder]:text-muted-foreground",
+          className
+        )}
       >
         <SelectValue placeholder="Válassz…" />
       </SelectTrigger>

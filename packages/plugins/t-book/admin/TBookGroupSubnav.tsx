@@ -24,7 +24,7 @@ export function TBookGroupSubnav({
   const pathname = usePathname()
 
   return (
-    <div className="space-y-3 border-b border-border pb-4">
+    <div className="space-y-3 border-b border-border/35 pb-4">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Link href="/admin/plugins/t-book/groups" className={cn(pluginAdminLinkAccent, "text-xs")}>
           Csoportok
@@ -46,8 +46,8 @@ export function TBookGroupSubnav({
               className={cn(
                 "rounded-md px-4 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted/55 text-foreground ring-1 ring-inset ring-border/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
               )}
             >
               {tab.label}

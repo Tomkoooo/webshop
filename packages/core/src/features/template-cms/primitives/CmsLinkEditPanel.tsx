@@ -44,7 +44,7 @@ export function CmsLinkEditPanel({
 
   return (
     <div
-      className="cms-admin-control fixed z-[500] w-80 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-xl space-y-3"
+      className="admin-portal-surface cms-admin-control fixed z-[500] w-80 rounded-xl border bg-card p-4 text-card-foreground shadow-xl space-y-3"
       style={{ top, left }}
       role="dialog"
       aria-label={title}

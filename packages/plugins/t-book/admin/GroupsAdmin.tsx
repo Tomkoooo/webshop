@@ -13,6 +13,8 @@ import {
 import { Button } from "@wse/core/components/ui/button"
 import { tBookAdminApi, TBOOK_STATUS_LABELS, type AdminGroup } from "./t-book-api"
 import {
+  tBookGhostButtonSmClass,
+  tBookListRowClass,
   TBookLoading,
   TBookPageHeader,
   TBookPrimaryButton,
@@ -127,7 +129,7 @@ export function GroupsAdmin() {
           {groups.map((g) => (
             <li
               key={g.id}
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
+              className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${tBookListRowClass}`}
             >
               <Link href={`/admin/plugins/t-book/groups/${g.id}`} className="min-w-0 flex-1 group">
                 <div className="flex items-center gap-3">
@@ -157,7 +159,7 @@ export function GroupsAdmin() {
                 </Link>
                 <Link
                   href={`/admin/plugins/t-book/groups/${g.id}/edit`}
-                  className="inline-flex h-9 items-center px-3 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                  className={tBookGhostButtonSmClass}
                 >
                   Beállítások
                 </Link>

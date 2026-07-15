@@ -166,6 +166,13 @@ export class ThemeService {
       return { ...base, ...partial } as ThemeTokens
     }
 
+    // Templates with a baked-in palette (e.g. WDF) must not inherit legacy global/shop rows
+    // through ENGINE_DEFAULT_THEME — only explicit stored color keys override the baseline.
+    if (template.defaultTheme) {
+      const partial = doc.colors as Partial<ThemeTokens>
+      return { ...base, ...partial } as ThemeTokens
+    }
+
     const legacyLayer = themeLayerFromStoredDocument(doc)
     return { ...base, ...legacyLayer } as ThemeTokens
   }

@@ -19,7 +19,7 @@ import { Breadcrumb } from "@wse/core/features/homepage-cms/components/editor/Br
 import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/components/CmsChromeBrandingToolbar"
 import { FALLBACK_TEMPLATE_ID, getTemplateById, loadTemplateModule } from "@wse/core/templates/registry"
 import type { TemplateModule } from "@wse/sdk/templates/types"
-import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars"
+import { themeTokensToPreviewCssVars } from "@wse/core/lib/theme-css-vars"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { ThemeTokens } from "@wse/core/services/theme"
 import { CmsEditProvider } from "@wse/core/features/homepage-cms/components/editor/cms-edit-context"
@@ -344,7 +344,7 @@ export function VisualHomepageEditor({
             <DevicePreview device={device}>
               <div
                 className={`flex min-h-[480px] flex-col text-foreground selection:bg-primary selection:text-primary-foreground ${isMinecraftCamp ? "bg-[#b8d88a]" : "bg-background"} ${previewSurfaceClass}`}
-                style={themeTokensToCssVars(themeSettings)}
+                style={themeTokensToPreviewCssVars(themeSettings)}
               >
                 <NavbarCmp
                   brandName={branding.brandName}
@@ -441,7 +441,7 @@ export function VisualHomepageEditor({
         >
           <div
             className={`min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground ${previewSurfaceClass}`}
-            style={themeTokensToCssVars(themeSettings)}
+            style={themeTokensToPreviewCssVars(themeSettings)}
           >
             <NavbarCmp
               brandName={branding.brandName}

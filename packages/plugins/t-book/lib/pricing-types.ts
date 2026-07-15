@@ -66,6 +66,8 @@ export type TBookBaseRateMode =
   | "per_person"
   | "per_booking"
 
+export type TBookAccommodationMode = "room_nights" | "packages" | "both"
+
 export type TBookRoomType = {
   key: string
   label: string
@@ -102,6 +104,8 @@ export type TBookAddonGroup = {
 }
 
 export type TBookHotelPricing = TBookVatPricing & {
+  /** How guests pick accommodation: per-night rooms, fixed packages, or both. */
+  accommodationMode?: TBookAccommodationMode
   roomTypes: TBookRoomType[]
   packages?: TBookPackageDeal[]
   extrasSection?: TBookExtrasSection | null

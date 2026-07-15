@@ -7,11 +7,13 @@ import dbConnect from "@wse/core/lib/db"
 import { MediaService } from "@wse/core/services/media"
 import TBookBooking from "../models/TBookBooking"
 import TBookEvent from "../models/TBookEvent"
+import TBookEventGroup from "../models/TBookEventGroup"
 import TBookVoucher from "../models/TBookVoucher"
 import type { ITBookVoucher, TBookVoucherEventSnapshot } from "../models/TBookVoucher"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 import { attendeeFieldLabelMap } from "../lib/attendee-fields"
 import { buildVoucherPdf } from "../lib/voucher-pdf"
+import { resolveVoucherHeaderImage } from "../lib/voucher-header"
 import { sendVoucherEmail } from "../lib/send-voucher-email"
 
 export type VoucherScanResult =
@@ -101,7 +103,12 @@ export async function issueVouchersForBooking(bookingId: string): Promise<string
   const event = await TBookEvent.findById(booking.eventId).lean()
   if (!event || !event.vouchersEnabled) return null
 
-  const headerImage = event.voucherHeaderImage?.trim() || event.heroImage?.trim() || ""
+  const group = event.groupId
+    ? await TBookEventGroup.findById(event.groupId)
+        .select("voucherHeaderImage defaultHeroImage")
+        .lean()
+    : null
+  const headerImage = resolveVoucherHeaderImage(event, group)
   const eventSnapshot = eventSnapshotFromEvent(event)
   const schema = booking.attendeeFieldSchema ?? []
 

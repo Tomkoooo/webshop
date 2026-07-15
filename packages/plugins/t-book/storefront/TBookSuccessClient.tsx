@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import { TBOOK_SAME_ORIGIN_API_BASE } from "../lib/tbook-api-base"
 
 type Copy = {
   loadingText: string
@@ -14,7 +15,7 @@ type Copy = {
   errorCta: string
 }
 
-export function TBookSuccessClient({ copy, apiBase }: { copy: Copy; apiBase?: string }) {
+export function TBookSuccessClient({ copy }: { copy: Copy }) {
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
   const sessionId = searchParams.get("session_id")
@@ -25,7 +26,7 @@ export function TBookSuccessClient({ copy, apiBase }: { copy: Copy; apiBase?: st
 
   useEffect(() => {
     if (!shouldPoll) return
-    const base = apiBase?.replace(/\/$/, "") ?? "/api/plugins/t-book"
+    const base = TBOOK_SAME_ORIGIN_API_BASE
     const qs = new URLSearchParams()
     if (bookingId) qs.set("bookingId", bookingId)
     if (sessionId) qs.set("session_id", sessionId)
@@ -39,7 +40,7 @@ export function TBookSuccessClient({ copy, apiBase }: { copy: Copy; apiBase?: st
         }
       })
       .catch(() => setStatus("error"))
-  }, [bookingId, sessionId, apiBase, shouldPoll])
+  }, [bookingId, sessionId, shouldPoll])
 
   if (status === "loading") {
     return (

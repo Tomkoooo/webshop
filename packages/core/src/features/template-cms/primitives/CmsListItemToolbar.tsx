@@ -22,7 +22,7 @@ export function CmsListItemToolbar({
   className,
 }: ToolbarProps) {
   return (
-    <div className={cn("cms-admin-control flex flex-wrap items-center gap-1", className)}>
+    <div className={cn("cms-preview-action flex flex-wrap items-center gap-1", className)}>
       {onMoveUp ? (
         <Button
           type="button"
@@ -30,7 +30,7 @@ export function CmsListItemToolbar({
           size="sm"
           disabled={!canMoveUp}
           onClick={onMoveUp}
-          className="h-7 gap-1 px-2 text-[10px]"
+          className="cms-preview-action h-7 gap-1 px-2 text-[10px]"
         >
           <ArrowUp className="h-3 w-3" />
           Fel
@@ -43,7 +43,7 @@ export function CmsListItemToolbar({
           size="sm"
           disabled={!canMoveDown}
           onClick={onMoveDown}
-          className="h-7 gap-1 px-2 text-[10px]"
+          className="cms-preview-action h-7 gap-1 px-2 text-[10px]"
         >
           <ArrowDown className="h-3 w-3" />
           Le
@@ -55,7 +55,7 @@ export function CmsListItemToolbar({
           variant="outline"
           size="sm"
           onClick={onRemove}
-          className="ml-auto h-7 gap-1 border-destructive/40 px-2 text-[10px] text-destructive hover:bg-destructive/10"
+          className="cms-preview-action ml-auto h-7 gap-1 px-2 text-[10px] text-destructive"
         >
           <X className="h-3 w-3" />
           Törlés
@@ -78,7 +78,7 @@ export function CmsListAddButton({ onClick, label, className }: AddButtonProps) 
       variant="outline"
       size="sm"
       onClick={onClick}
-      className={cn("cms-admin-control gap-1.5", className)}
+      className={cn("cms-preview-action gap-1.5", className)}
     >
       <Plus className="h-3.5 w-3.5" />
       {label}

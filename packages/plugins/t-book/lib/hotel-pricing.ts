@@ -1,4 +1,5 @@
 import type {
+  TBookAccommodationMode,
   TBookExtrasSection,
   TBookHotelPricing,
   TBookOptionDef,
@@ -11,6 +12,49 @@ export const ROOM_TYPE_SELECTION_KEY = "room_type"
 
 /** Selection key for an optional fixed package deal instead of per-night pricing. */
 export const PACKAGE_DEAL_SELECTION_KEY = "package_deal"
+
+export const ACCOMMODATION_MODE_LABELS: Record<TBookAccommodationMode, string> = {
+  room_nights: "Szobatípus / éjszaka (per fő / éj)",
+  packages: "Csak csomagajánlatok",
+  both: "Szobatípus + opcionális csomag",
+}
+
+/** Effective mode — explicit field or inferred from stored pricing shape. */
+export function resolveAccommodationMode(pricing: TBookHotelPricing): TBookAccommodationMode {
+  if (pricing.accommodationMode) return pricing.accommodationMode
+  const packages = pricing.packages ?? []
+  const rooms = pricing.roomTypes ?? []
+  if (packages.length > 0 && rooms.length === 0) return "packages"
+  if (packages.length > 0) return "both"
+  return "room_nights"
+}
+
+export function hotelShowsRoomSelection(pricing: TBookHotelPricing): boolean {
+  const mode = resolveAccommodationMode(pricing)
+  return mode === "room_nights" || mode === "both"
+}
+
+export function hotelShowsPackageSelection(pricing: TBookHotelPricing): boolean {
+  const mode = resolveAccommodationMode(pricing)
+  return mode === "packages" || mode === "both"
+}
+
+export function hotelRequiresPackageSelection(pricing: TBookHotelPricing): boolean {
+  return resolveAccommodationMode(pricing) === "packages"
+}
+
+/** Client-side / admin save guard mirroring Zod rules. */
+export function validateHotelPricingConfig(pricing: TBookHotelPricing): string | null {
+  const mode = resolveAccommodationMode(pricing)
+  const hasLegacy = pricing.baseRateHuf != null || (pricing.options?.length ?? 0) > 0
+  if ((mode === "room_nights" || mode === "both") && pricing.roomTypes.length === 0 && !hasLegacy) {
+    return "Legalább egy szobatípus szükséges."
+  }
+  if (mode === "packages" && (pricing.packages ?? []).length === 0) {
+    return "Legalább egy csomagajánlat szükséges."
+  }
+  return null
+}
 
 export function slugifyHotelKey(value: string): string {
   return value
@@ -110,6 +154,13 @@ export function assignPricingKeys(pricing: TBookHotelPricing): TBookHotelPricing
   return { ...pricing, roomTypes, packages, extrasSection, addonGroups: [] }
 }
 
+function withAccommodationMode(raw: TBookHotelPricing, normalized: TBookHotelPricing): TBookHotelPricing {
+  return {
+    ...normalized,
+    accommodationMode: raw.accommodationMode ?? normalized.accommodationMode,
+  }
+}
+
 function migrateAddonGroupsToExtras(
   addonGroups: NonNullable<TBookHotelPricing["addonGroups"]>
 ): TBookExtrasSection | null {
@@ -130,17 +181,29 @@ export function normalizeHotelPricing(raw: TBookHotelPricing): TBookHotelPricing
     priceBasis: raw.priceBasis ?? "net",
     vatPercent: raw.vatPercent ?? 27,
     packages: raw.packages ?? [],
+    accommodationMode: raw.accommodationMode,
   }
 
   if (raw.roomTypes?.length) {
     const extrasSection =
       raw.extrasSection ?? migrateAddonGroupsToExtras(raw.addonGroups ?? []) ?? null
-    return {
+    return withAccommodationMode(raw, {
       ...base,
       roomTypes: raw.roomTypes,
       extrasSection,
       addonGroups: [],
-    }
+    })
+  }
+
+  if ((raw.packages?.length ?? 0) > 0 && resolveAccommodationMode(raw) === "packages") {
+    const extrasSection =
+      raw.extrasSection ?? migrateAddonGroupsToExtras(raw.addonGroups ?? []) ?? null
+    return withAccommodationMode(raw, {
+      ...base,
+      roomTypes: [],
+      extrasSection,
+      addonGroups: [],
+    })
   }
 
   const legacyBase = raw.baseRateHuf ?? 0
@@ -176,12 +239,12 @@ export function normalizeHotelPricing(raw: TBookHotelPricing): TBookHotelPricing
         }
       : raw.extrasSection ?? migrateAddonGroupsToExtras(raw.addonGroups ?? []) ?? null
 
-  return {
+  return withAccommodationMode(raw, {
     ...base,
     roomTypes,
     extrasSection,
     addonGroups: [],
-  }
+  })
 }
 
 export function flattenAddonOptions(pricing: TBookHotelPricing): TBookOptionDef[] {
@@ -215,7 +278,7 @@ export function findPackageDeal(
   return normalized.packages?.find((p) => p.key === packageKey) ?? null
 }
 
-/** Packages matching the selected room type and night count. */
+/** Packages matching the selected room type and night count (room_nights / both modes). */
 export function matchingPackageDeals(
   pricing: TBookHotelPricing,
   nights: number,
@@ -227,6 +290,29 @@ export function matchingPackageDeals(
       pkg.nights === nights &&
       (!pkg.roomTypeKey || pkg.roomTypeKey === roomTypeKey)
   )
+}
+
+/** Packages shown to guests — mode-aware. */
+export function guestPackageDeals(
+  pricing: TBookHotelPricing,
+  nights?: number,
+  roomTypeKey?: string
+): TBookPackageDeal[] {
+  const normalized = normalizeHotelPricing(pricing)
+  const mode = resolveAccommodationMode(normalized)
+  let deals = [...(normalized.packages ?? [])].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+  )
+
+  if (mode === "packages") {
+    if (nights != null && nights > 0) {
+      deals = deals.filter((pkg) => pkg.nights === nights)
+    }
+    return deals
+  }
+
+  if (!roomTypeKey) return []
+  return matchingPackageDeals(normalized, nights ?? 1, roomTypeKey)
 }
 
 /** Rough count of distinct customer configuration paths (for admin UX). */
@@ -260,14 +346,22 @@ export type HotelComplexityStats = {
 
 export function hotelComplexityStats(pricing: TBookHotelPricing): HotelComplexityStats {
   const normalized = normalizeHotelPricing(pricing)
+  const mode = resolveAccommodationMode(normalized)
   const addons = flattenAddonOptions(normalized)
   const addonPaths = addons.reduce((acc, option) => acc * choicePaths(option), 1)
-  const roomTypeCount = Math.max(1, normalized.roomTypes.length)
+  const packageCount = normalized.packages?.length ?? 0
+  const roomTypeCount = normalized.roomTypes.length
+  const primaryPaths =
+    mode === "packages"
+      ? Math.max(1, packageCount)
+      : mode === "both"
+        ? Math.max(1, roomTypeCount) + packageCount
+        : Math.max(1, roomTypeCount)
   return {
-    roomTypeCount: normalized.roomTypes.length,
-    packageCount: normalized.packages?.length ?? 0,
+    roomTypeCount,
+    packageCount,
     addonOptionCount: addons.length,
-    estimatedBookingPaths: roomTypeCount * addonPaths,
+    estimatedBookingPaths: primaryPaths * addonPaths,
   }
 }
 

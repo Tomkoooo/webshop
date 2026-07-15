@@ -1,15 +1,9 @@
 import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, formatTBookMoney } from "../lib/currency"
+import { TBOOK_SAME_ORIGIN_API_BASE } from "../lib/tbook-api-base"
 import type { TBookHotelPricing, TBookOptionDef } from "../lib/pricing-types"
 
-export function resolveTBookApiBase(override?: string): string {
-  const trimmed = override?.replace(/\/$/, "")
-  if (trimmed) return trimmed
-  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_TBOOK_API_BASE?.trim()) {
-    return process.env.NEXT_PUBLIC_TBOOK_API_BASE.replace(/\/$/, "")
-  }
-  return "/api/plugins/t-book"
-}
+export { resolveTBookServerApiBase, TBOOK_SAME_ORIGIN_API_BASE } from "../lib/tbook-api-base"
 
 export type TBookPublicAttendeeFieldDef = {
   key: string
@@ -88,7 +82,8 @@ export type TBookPublicDirectoryListing = {
 }
 
 export function fetchPublicDirectory(apiBase?: string) {
-  return fetch(`${resolveTBookApiBase(apiBase)}/directory`).then(async (res) => {
+  const base = apiBase?.replace(/\/$/, "") ?? TBOOK_SAME_ORIGIN_API_BASE
+  return fetch(`${base}/directory`).then(async (res) => {
     const data = (await res.json()) as {
       ok?: boolean
       listings?: TBookPublicDirectoryListing[]
@@ -110,7 +105,8 @@ async function tbookFetch<T>(
     throw new Error("A tBook API kulcs üres vagy érvénytelen.")
   }
 
-  const res = await fetch(`${resolveTBookApiBase(apiBase)}${path}`, {
+  const base = apiBase?.replace(/\/$/, "") ?? TBOOK_SAME_ORIGIN_API_BASE
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

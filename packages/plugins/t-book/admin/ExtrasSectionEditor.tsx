@@ -1,7 +1,7 @@
 "use client"
 
 import type { TBookExtrasSection, TBookRoomType } from "../lib/pricing-types"
-import { TBookField, TBookInput } from "./t-book-admin-ui"
+import { tBookEmptyStateClass, TBookField, tBookGhostButtonClass, TBookInput } from "./t-book-admin-ui"
 import { OptionSchemaEditor } from "./OptionSchemaEditor"
 
 const emptySection = (): TBookExtrasSection => ({
@@ -39,7 +39,7 @@ export function ExtrasSectionEditor({
       </div>
 
       {!hasContent ? (
-        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-6 text-center">
+        <p className={tBookEmptyStateClass}>
           Nincs extrák szakasz — csak szobatípus alapár fog szerepelni a foglalásban.
         </p>
       ) : null}
@@ -79,7 +79,7 @@ export function ExtrasSectionEditor({
       ) : (
         <button
           type="button"
-          className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-sm font-bold"
+          className={tBookGhostButtonClass}
           onClick={() => onChange(emptySection())}
         >
           + Extrák szakasz hozzáadása

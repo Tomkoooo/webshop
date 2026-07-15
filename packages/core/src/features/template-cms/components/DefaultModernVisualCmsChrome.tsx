@@ -10,7 +10,7 @@ import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/Cms
 import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
 import type { ChromeNavCta, ChromeNavItem, TemplateModule } from "@wse/sdk/templates/types"
-import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars"
+import { themeTokensToPreviewCssVars } from "@wse/core/lib/theme-css-vars"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { ContactEmailEntry } from "@wse/core/lib/contact-emails"
 import type { ThemeTokens } from "@wse/core/services/theme"
@@ -228,6 +228,9 @@ export function DefaultModernVisualCmsChrome({
 
   const mainEdit = renderMain(ctxEdit)
   const mainReview = renderMain(ctxReview)
+  const previewThemeStyle = themeTokensToPreviewCssVars(
+    mod.defaultTheme ? { ...mod.defaultTheme, ...themeSettings } : themeSettings
+  )
   const resolvedChromePanels =
     buildChromePanels?.({
       footerSettings,
@@ -262,7 +265,7 @@ export function DefaultModernVisualCmsChrome({
             <CmsChromePanelLayout panels={resolvedChromePanels} device={device}>
               <div
                 className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-                style={themeTokensToCssVars(themeSettings)}
+                style={previewThemeStyle}
               >
                 {wrapLayout("edit", mainEdit)}
               </div>
@@ -273,7 +276,7 @@ export function DefaultModernVisualCmsChrome({
                 <DevicePreview device={device}>
                   <div
                     className={`relative isolate flex min-h-[480px] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-border/40 text-foreground selection:bg-primary selection:text-primary-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-                    style={themeTokensToCssVars(themeSettings)}
+                    style={previewThemeStyle}
                   >
                     {wrapLayout("edit", mainEdit)}
                   </div>
@@ -291,7 +294,7 @@ export function DefaultModernVisualCmsChrome({
         <CmsReviewOverlay title={reviewTitle} onClose={() => setReviewOpen(false)} closeLabel="Vissza">
           <div
             className={`flex min-h-screen flex-col overflow-x-hidden text-foreground admin-storefront-preview ${previewBgClass} ${previewSurfaceClass}`}
-            style={themeTokensToCssVars(themeSettings)}
+            style={previewThemeStyle}
           >
             {wrapLayout("review", mainReview)}
           </div>

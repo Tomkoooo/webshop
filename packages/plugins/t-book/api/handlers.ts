@@ -6,7 +6,8 @@ import { TBookEventService } from "../services/event-service"
 import { TBookBookingService } from "../services/booking-service"
 import { TBookCheckoutService } from "../services/checkout-service"
 import { extractApiKeyFromRequest, hashApiKey } from "../lib/api-key"
-import { fetchPublicEventsForStorefront } from "../lib/fetch-public-events"
+import { fetchPublicEventsForStorefront } from "../lib/fetch-public-storefront"
+import { resolveTBookServerApiBase } from "../lib/tbook-api-base"
 import { checkRateLimit, clientKeyFromRequest } from "../lib/rate-limit"
 import { parseBookingFilters } from "../lib/booking-query"
 import { buildBookingCsv, buildBookingExcelBuffer } from "../lib/booking-export"
@@ -18,6 +19,11 @@ import type { ITBookHotel } from "../models/TBookHotel"
 import { orgIdFromAuth, resolveTBookAdminAuth } from "../lib/admin-api-auth"
 import { OrgAuthError } from "../lib/org-auth"
 import { handleTBookOrgApi, handleTBookSystemApi } from "./org-handlers"
+import {
+  getTBookUpstreamApiBase,
+  proxyTBookPublicRequest,
+  shouldProxyPublicTBookRoute,
+} from "../lib/upstream-proxy"
 
 function serializeGroup(g: ITBookEventGroup) {
   return {
@@ -32,6 +38,8 @@ function serializeGroup(g: ITBookEventGroup) {
     listingTitle: g.listingTitle ?? "",
     listingUrl: g.listingUrl ?? "",
     listingImage: g.listingImage ?? "",
+    defaultHeroImage: g.defaultHeroImage ?? "",
+    voucherHeaderImage: g.voucherHeaderImage ?? "",
     apiKeyHint: g.apiKeyHint,
     apiKeyCreatedAt: g.apiKeyCreatedAt,
     createdAt: g.createdAt,
@@ -170,6 +178,11 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     }
 
     // ---- Public, API-key protected ----------------------------------------
+    const upstreamBase = getTBookUpstreamApiBase()
+    if (upstreamBase && shouldProxyPublicTBookRoute(segment, path, method)) {
+      return proxyTBookPublicRequest(request, upstreamBase, path, corsHeaders)
+    }
+
     if (segment === "events" && method === "GET" && path.length === 1) {
       const { groupId } = await requireApiKeyGroup(request)
       const events = await TBookEventService.listPublicEventsForGroup(groupId)
@@ -298,7 +311,7 @@ async function handleTBookAdminApi(
     const apiBaseOverride =
       typeof body.apiBase === "string" && body.apiBase.trim()
         ? body.apiBase.trim()
-        : process.env.NEXT_PUBLIC_TBOOK_API_BASE
+        : resolveTBookServerApiBase()
     const { events, error } = await fetchPublicEventsForStorefront(apiKey, apiBaseOverride || undefined)
     if (error) {
       return json({ ok: false, error, eventCount: 0 })

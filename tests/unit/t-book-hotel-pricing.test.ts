@@ -53,4 +53,16 @@ describe("hotel pricing hierarchy", () => {
     expect(stats.roomTypeCount).toBe(2)
     expect(stats.estimatedBookingPaths).toBe(4)
   })
+
+  it("keeps package-only hotels without inventing room types", () => {
+    const normalized = normalizeHotelPricing({
+      priceBasis: "gross",
+      vatPercent: 27,
+      accommodationMode: "packages",
+      roomTypes: [],
+      packages: [{ key: "p1", label: "3 éj", nights: 3, priceHuf: 50000 }],
+    })
+    expect(normalized.roomTypes).toHaveLength(0)
+    expect(normalized.packages).toHaveLength(1)
+  })
 })

@@ -15,6 +15,8 @@ import {
   type AdminGroup,
 } from "./t-book-api"
 import {
+  tBookGhostButtonSmClass,
+  tBookListRowClass,
   TBookLoading,
   TBookPageHeader,
   TBookPrimaryButton,
@@ -89,7 +91,7 @@ export function GroupEventsAdmin({ groupId }: { groupId: string }) {
       />
 
       {events.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 p-10 text-center space-y-4">
+        <div className="rounded-xl bg-amber-500/5 p-10 text-center space-y-4 ring-1 ring-inset ring-amber-500/20">
           <p className="text-neutral-300 text-sm">
             Még nincs esemény ehhez a csoporthoz. Itt adod hozzá a jegyeket, időpontot és
             foglalási mezőket.
@@ -105,7 +107,7 @@ export function GroupEventsAdmin({ groupId }: { groupId: string }) {
           {events.map((event, index) => (
             <li
               key={event.id}
-              className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
+              className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${tBookListRowClass}`}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -158,13 +160,13 @@ export function GroupEventsAdmin({ groupId }: { groupId: string }) {
                 </div>
                 <Link
                   href={`/admin/plugins/t-book/groups/${groupId}/events/${event.id}`}
-                  className="inline-flex h-9 items-center px-3 border border-border rounded-lg text-foreground text-xs font-medium hover:bg-muted/40"
+                  className={tBookGhostButtonSmClass}
                 >
                   Szerkesztés
                 </Link>
                 <Link
                   href={`/admin/plugins/t-book/events/${event.id}/vouchers`}
-                  className="inline-flex h-9 items-center px-3 border border-border rounded-lg text-foreground text-xs font-medium hover:bg-muted/40"
+                  className={tBookGhostButtonSmClass}
                 >
                   Belépőjegyek
                 </Link>

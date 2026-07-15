@@ -11,9 +11,12 @@ import { tBookAdminApi, formatMoney, type AdminEvent } from "./t-book-api"
 import {
   TBookDateInput,
   TBookField,
+  tBookFormShellClass,
+  tBookGhostButtonClass,
   TBookInput,
   TBookLoading,
   TBookPageHeader,
+  tBookPanelClass,
   TBookSelect,
 } from "./t-book-admin-ui"
 import { TBookWizard } from "./TBookWizard"
@@ -79,6 +82,8 @@ export function EventFormPage({
   const isEdit = Boolean(eventId)
   const [loading, setLoading] = useState(isEdit)
   const [groupName, setGroupName] = useState("")
+  const [groupVoucherHeaderImage, setGroupVoucherHeaderImage] = useState("")
+  const [groupDefaultHeroImage, setGroupDefaultHeroImage] = useState("")
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<EventDraft>({
@@ -107,8 +112,12 @@ export function EventFormPage({
 
   useEffect(() => {
     const loads: Promise<void>[] = [
-      tBookAdminApi<{ group: { name: string } }>(`groups/${groupId}`).then((g) => {
+      tBookAdminApi<{ group: { name: string; voucherHeaderImage?: string; defaultHeroImage?: string } }>(
+        `groups/${groupId}`
+      ).then((g) => {
         setGroupName(g.group.name)
+        setGroupVoucherHeaderImage(g.group.voucherHeaderImage ?? "")
+        setGroupDefaultHeroImage(g.group.defaultHeroImage ?? "")
       }),
     ]
     if (eventId) {
@@ -212,7 +221,7 @@ export function EventFormPage({
         actions={
           <Link
             href={`/admin/plugins/t-book/groups/${groupId}/events`}
-            className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-foreground text-sm"
+            className={tBookGhostButtonClass}
           >
             ← Vissza az eseményekhez
           </Link>
@@ -221,7 +230,7 @@ export function EventFormPage({
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2">
-          <div className="rounded-2xl bg-card shadow-sm p-6 md:p-8">
+          <div className={tBookFormShellClass}>
             <TBookWizard
               steps={STEPS}
               currentStep={step}
@@ -396,11 +405,18 @@ export function EventFormPage({
                 onChange={(description) => patch({ description })}
               />
               <TBookSingleMediaField
-                label="Borítókép"
+                label="Borítókép (esemény felülírás)"
                 value={draft.heroImage}
                 onChange={(heroImage) => patch({ heroImage })}
                 aspect={16 / 9}
               />
+              <p className="text-xs text-muted-foreground -mt-2">
+                {draft.heroImage.trim()
+                  ? "Az esemény saját borítóképe érvényes."
+                  : groupDefaultHeroImage.trim()
+                    ? "Ha üres, a csoport alapértelmezett esemény borítóképe jelenik meg."
+                    : "Ha üres és a csoportnál sincs beállítva, nem jelenik meg borítókép."}
+              </p>
               <div className="rounded-lg bg-muted/30 p-4 space-y-4">
                 <p className="text-sm font-medium text-foreground">Belépőjegy (QR PDF)</p>
                 <label className="flex items-center gap-2 text-sm">
@@ -413,13 +429,17 @@ export function EventFormPage({
                   Jegyek kiállítása fizetés után
                 </label>
                 <TBookSingleMediaField
-                  label="Jegy PDF fejléc kép"
+                  label="Jegy PDF fejléc kép (esemény felülírás)"
                   value={draft.voucherHeaderImage}
                   onChange={(voucherHeaderImage) => patch({ voucherHeaderImage })}
                   aspect={3 / 1}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ha üres, a borítókép kerül a jegy PDF tetejére.
+                  {draft.voucherHeaderImage.trim()
+                    ? "Az esemény saját fejléc képe érvényes — felülírja a csoport alapértelmezését."
+                    : groupVoucherHeaderImage.trim()
+                      ? "Ha üres, a csoport alapértelmezett jegy fejléc képe kerül a PDF tetejére."
+                      : "Ha üres és a csoportnál sincs beállítva, a borítókép kerül a PDF tetejére."}
                 </p>
               </div>
             </div>
@@ -429,7 +449,7 @@ export function EventFormPage({
         </div>
 
         <div className="xl:sticky xl:top-6 h-fit space-y-4">
-          <div className="rounded-xl bg-card shadow-sm p-4 text-sm space-y-2">
+          <div className={`${tBookPanelClass} text-sm space-y-2`}>
             <p className="font-semibold text-foreground">{draft.name || "Új esemény"}</p>
             {draft.startDate ? (
               <p className="text-xs text-muted-foreground">

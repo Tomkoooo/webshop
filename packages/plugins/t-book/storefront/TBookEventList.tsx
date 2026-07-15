@@ -22,14 +22,12 @@ type Copy = {
 
 export function TBookEventList({
   apiKey,
-  apiBase,
   copy,
   initialEvents,
   initialError = null,
   currency: currencyProp = "HUF",
 }: {
   apiKey: string
-  apiBase?: string
   copy: Copy
   /** When set, events were loaded on the server — no browser API call needed. */
   initialEvents?: TBookPublicEvent[]
@@ -55,7 +53,7 @@ export function TBookEventList({
       setLoading(true)
       setError(null)
       try {
-        const res = await listEvents(normalizedKey, apiBase)
+        const res = await listEvents(normalizedKey)
         if (!cancelled) {
           setEvents(res.events)
           if (res.currency) setCurrency(res.currency)
@@ -69,7 +67,7 @@ export function TBookEventList({
     return () => {
       cancelled = true
     }
-  }, [apiKey, apiBase, serverProvided])
+  }, [apiKey, serverProvided])
 
   if (loading) {
     return (

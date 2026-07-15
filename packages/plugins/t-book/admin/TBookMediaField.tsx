@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ImageUpload } from "@wse/core/components/admin/ImageUpload"
 import { MultiImageUpload } from "@wse/core/components/admin/MultiImageUpload"
-import { TBookField, TBookInput } from "./t-book-admin-ui"
+import { TBookField, TBookInput, tBookControlClass } from "./t-book-admin-ui"
 
 type Mode = "upload" | "url"
 
@@ -17,8 +17,8 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => vo
           onClick={() => onChange(tab)}
           className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             mode === tab
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-muted/55 text-foreground ring-1 ring-inset ring-border/25"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
           }`}
         >
           {tab === "upload" ? "Feltöltés" : "URL / link"}
@@ -75,7 +75,7 @@ export function TBookGalleryField({
         <MultiImageUpload currentImages={value} onUpload={onChange} aspect={4 / 3} />
       ) : (
         <textarea
-          className="w-full min-h-24 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
+          className={`w-full min-h-24 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${tBookControlClass}`}
           value={value.join("\n")}
           onChange={(e) =>
             onChange(

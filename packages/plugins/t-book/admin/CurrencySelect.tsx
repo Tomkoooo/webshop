@@ -7,7 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@wse/core/components/ui/select"
+import { cn } from "@wse/core/lib/utils"
 import { TBOOK_CURRENCY_OPTIONS, normalizeTBookCurrency } from "../lib/currency"
+import { tBookControlClass } from "./t-book-admin-ui"
 
 export function CurrencySelect({
   value,
@@ -21,7 +23,10 @@ export function CurrencySelect({
   const normalized = normalizeTBookCurrency(value)
   return (
     <Select value={normalized} onValueChange={onValueChange}>
-      <SelectTrigger id={id} className="h-10 w-full bg-background shadow-sm ring-1 ring-border/60">
+      <SelectTrigger
+        id={id}
+        className={cn(tBookControlClass, "h-10 w-full border-0 data-[placeholder]:text-muted-foreground")}
+      >
         <SelectValue placeholder="Pénznem" />
       </SelectTrigger>
       <SelectContent className="z-[300]" position="popper">

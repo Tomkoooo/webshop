@@ -323,3 +323,51 @@ describe("isOptionApplicable", () => {
     expect(isOptionApplicable(accessibilityOption, {})).toBe(false)
   })
 })
+
+const packageOnlyPricing = {
+  priceBasis: "gross" as const,
+  vatPercent: 27,
+  accommodationMode: "packages" as const,
+  roomTypes: [],
+  packages: [
+    { key: "single_3n", label: "3 éj egyágyas", nights: 3, priceHuf: 120000, sortOrder: 0 },
+    { key: "double_3n", label: "3 éj kétágyas", nights: 3, priceHuf: 150000, sortOrder: 1 },
+  ],
+  extrasSection: null,
+}
+
+describe("package-only accommodation", () => {
+  it("requires package selection without room types", () => {
+    const errors = validateHotelSelections(packageOnlyPricing, {})
+    expect(errors.some((e) => e.key === "package_deal")).toBe(true)
+    expect(errors.some((e) => e.key === "room_type")).toBe(false)
+  })
+
+  it("accepts valid package selection", () => {
+    const errors = validateHotelSelections(packageOnlyPricing, {
+      package_deal: "single_3n",
+    })
+    expect(errors).toEqual([])
+  })
+
+  it("does not treat package_deal as unknown option", () => {
+    const errors = validateHotelSelections(basePricing, {
+      room_type: "standard",
+      package_deal: "weekend",
+    })
+    expect(errors.some((e) => e.message.includes("Ismeretlen opció"))).toBe(false)
+  })
+
+  it("quotes flat package price without guest multiplier", () => {
+    const quote = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      guests: 4,
+      nights: 3,
+      accommodation: packageOnlyPricing,
+      selections: { package_deal: "single_3n" },
+    })
+    expect(quote.accommodationBaseHuf).toBe(120000)
+    expect(quote.nights).toBe(3)
+    expect(quote.lines.find((l) => l.key === "accommodation_base")?.label).toBe("3 éj egyágyas")
+  })
+})

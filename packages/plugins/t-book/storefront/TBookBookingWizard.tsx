@@ -3,7 +3,16 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
-import { ROOM_TYPE_SELECTION_KEY, PACKAGE_DEAL_SELECTION_KEY, matchingPackageDeals } from "../lib/hotel-pricing"
+import {
+  ROOM_TYPE_SELECTION_KEY,
+  PACKAGE_DEAL_SELECTION_KEY,
+  findPackageDeal,
+  guestPackageDeals,
+  hotelRequiresPackageSelection,
+  hotelShowsPackageSelection,
+  hotelShowsRoomSelection,
+  resolveAccommodationMode,
+} from "../lib/hotel-pricing"
 import {
   AttendeeFieldInput,
   BookingOptionField,
@@ -24,6 +33,7 @@ import {
 } from "./tbook-public-api"
 import { formatEventSchedule } from "../lib/event-schedule"
 import { mergeRegistrationFieldSchemas, registrationUnitLabel } from "../lib/registration-fields"
+import type { TBookPublicEventDetailResult } from "../lib/fetch-public-storefront"
 
 type Copy = {
   stepTicket: string
@@ -61,8 +71,14 @@ function emptyAttendeeRows(count: number, withTeamMembers: boolean): TBookBookin
 function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelections {
   if (!hotel) return {}
   const selections: TBookSelections = {}
-  const firstRoom = hotel.pricing.roomTypes[0]
-  if (firstRoom) selections[ROOM_TYPE_SELECTION_KEY] = firstRoom.key
+  const mode = resolveAccommodationMode(hotel.pricing)
+  if (mode === "packages") {
+    const firstPkg = hotel.pricing.packages?.[0]
+    if (firstPkg) selections[PACKAGE_DEAL_SELECTION_KEY] = firstPkg.key
+  } else {
+    const firstRoom = hotel.pricing.roomTypes[0]
+    if (firstRoom) selections[ROOM_TYPE_SELECTION_KEY] = firstRoom.key
+  }
   const options =
     hotel.pricing.extrasSection?.options ??
     hotel.pricing.addonGroups?.flatMap((group) => group.options) ??
@@ -82,30 +98,65 @@ function hotelDisplayCurrency(hotel: TBookPublicHotel | null, event: TBookPublic
   return hotel?.currency ?? event?.currency ?? "HUF"
 }
 
+function applyEventDetailToWizardState(
+  detail: Pick<TBookPublicEventDetailResult, "event" | "hotels" | "error">,
+  setters: {
+    setEvent: (event: TBookPublicEvent | null) => void
+    setHotels: (hotels: TBookPublicHotel[]) => void
+    setNights: (nights: number) => void
+    setAttendees: (rows: TBookBookingAttendeePayload[]) => void
+    setSelectedHotelId: (id: string | null) => void
+    setSelections: (selections: TBookSelections) => void
+    setError: (error: string | null) => void
+  },
+  fallbackError: string
+) {
+  if (detail.error || !detail.event) {
+    setters.setEvent(null)
+    setters.setHotels([])
+    setters.setError(detail.error ?? fallbackError)
+    return
+  }
+  const firstHotel = detail.hotels[0] ?? null
+  setters.setEvent(detail.event)
+  setters.setHotels(detail.hotels)
+  setters.setNights(detail.event.nights)
+  setters.setAttendees(emptyAttendeeRows(1, false))
+  setters.setSelectedHotelId(firstHotel?.id ?? null)
+  setters.setSelections(defaultSelectionsForHotel(firstHotel))
+  setters.setError(null)
+}
+
 export function TBookBookingWizard({
   apiKey,
-  apiBase,
   eventId,
   copy,
+  initialEventDetail,
 }: {
   apiKey: string
-  apiBase?: string
   eventId: string
   copy: Copy
+  /** When set, event detail was loaded on the server — same path as /jegyek. */
+  initialEventDetail?: TBookPublicEventDetailResult
 }) {
+  const serverProvided = initialEventDetail !== undefined
   const steps = [copy.stepTicket, copy.stepDetails, copy.stepReview]
   const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!serverProvided)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialEventDetail?.error ?? null)
 
-  const [event, setEvent] = useState<TBookPublicEvent | null>(null)
-  const [hotels, setHotels] = useState<TBookPublicHotel[]>([])
+  const [event, setEvent] = useState<TBookPublicEvent | null>(initialEventDetail?.event ?? null)
+  const [hotels, setHotels] = useState<TBookPublicHotel[]>(initialEventDetail?.hotels ?? [])
 
   const [guests, setGuests] = useState(1)
-  const [nights, setNights] = useState(1)
-  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null)
-  const [selections, setSelections] = useState<TBookSelections>({})
+  const [nights, setNights] = useState(initialEventDetail?.event?.nights ?? 1)
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(
+    initialEventDetail?.hotels[0]?.id ?? null
+  )
+  const [selections, setSelections] = useState<TBookSelections>(() =>
+    defaultSelectionsForHotel(initialEventDetail?.hotels[0] ?? null)
+  )
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "", note: "" })
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
@@ -129,12 +180,30 @@ export function TBookBookingWizard({
   const needsTeamMembers =
     registrationUnit === "team" && teamMemberFieldSchema.length > 0
   const displayCurrency = hotelDisplayCurrency(selectedHotel, event)
+  const accommodationMode = selectedHotel
+    ? resolveAccommodationMode(selectedHotel.pricing)
+    : "room_nights"
+  const showRooms = selectedHotel ? hotelShowsRoomSelection(selectedHotel.pricing) : false
+  const showPackages = selectedHotel ? hotelShowsPackageSelection(selectedHotel.pricing) : false
+  const packagesRequired = selectedHotel ? hotelRequiresPackageSelection(selectedHotel.pricing) : false
   const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
+  const packageDealKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
   const availablePackages = useMemo(() => {
-    if (!selectedHotel || !roomTypeKey) return []
-    return matchingPackageDeals(selectedHotel.pricing, nights, roomTypeKey)
-  }, [selectedHotel, nights, roomTypeKey])
+    if (!selectedHotel || !showPackages) return []
+    return guestPackageDeals(
+      selectedHotel.pricing,
+      packagesRequired ? undefined : nights,
+      showRooms ? roomTypeKey : undefined
+    )
+  }, [selectedHotel, showPackages, packagesRequired, nights, showRooms, roomTypeKey])
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
+
+  useEffect(() => {
+    if (!selectedHotel || accommodationMode !== "packages") return
+    if (!packageDealKey) return
+    const pkg = findPackageDeal(selectedHotel.pricing, packageDealKey)
+    if (pkg && pkg.nights !== nights) setNights(pkg.nights)
+  }, [selectedHotel, accommodationMode, packageDealKey, nights])
 
   const loadEvent = useCallback(async () => {
     if (!apiKey.trim()) {
@@ -145,24 +214,23 @@ export function TBookBookingWizard({
     setLoading(true)
     setError(null)
     try {
-      const res = await getEventDetail(apiKey.trim(), eventId, apiBase)
-      setEvent(res.event)
-      setHotels(res.hotels)
-      setNights(res.event.nights)
-      setAttendees(emptyAttendeeRows(1, false))
-      const firstHotel = res.hotels[0] ?? null
-      setSelectedHotelId(firstHotel?.id ?? null)
-      setSelections(defaultSelectionsForHotel(firstHotel))
+      const res = await getEventDetail(apiKey.trim(), eventId)
+      applyEventDetailToWizardState(
+        { event: res.event, hotels: res.hotels, error: null },
+        { setEvent, setHotels, setNights, setAttendees, setSelectedHotelId, setSelections, setError },
+        copy.eventError
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.eventError)
     } finally {
       setLoading(false)
     }
-  }, [apiKey, apiBase, eventId, copy.eventError])
+  }, [apiKey, eventId, copy.eventError])
 
   useEffect(() => {
+    if (serverProvided) return
     void loadEvent()
-  }, [loadEvent])
+  }, [loadEvent, serverProvided])
 
   useEffect(() => {
     setAttendees(emptyAttendeeRows(guests, needsTeamMembers))
@@ -196,8 +264,7 @@ export function TBookBookingWizard({
           hotelId: selectedHotelId,
           nights: selectedHotelId ? nights : null,
           selections: selectedHotelId ? selections : null,
-        },
-        apiBase
+        }
       )
       setQuote(res.quote)
       return true
@@ -225,8 +292,7 @@ export function TBookBookingWizard({
           hotelId: selectedHotelId,
           nights: selectedHotelId ? nights : null,
           selections: selectedHotelId ? selections : null,
-        },
-        apiBase
+        }
       )
       window.location.href = res.checkoutUrl
     } catch (err) {
@@ -360,52 +426,64 @@ export function TBookBookingWizard({
 
           {selectedHotel ? (
             <div className="space-y-4 border-t border-border pt-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium">{copy.nightsLabel}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    className={INPUT}
-                    value={nights}
-                    onChange={(e) => {
-                      setNights(Number(e.target.value))
-                      setQuote(null)
-                    }}
-                  />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
-                  <select
-                    className={INPUT}
-                    value={roomTypeKey}
-                    onChange={(e) => {
-                      patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
-                      patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
-                    }}
-                  >
-                    {selectedHotel.pricing.roomTypes.map((room) => (
-                      <option key={room.key} value={room.key}>
-                        {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / fő / éj
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+              {showRooms ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block space-y-1.5">
+                    <span className="text-sm font-medium">{copy.nightsLabel}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      className={INPUT}
+                      value={nights}
+                      onChange={(e) => {
+                        setNights(Number(e.target.value))
+                        setQuote(null)
+                      }}
+                    />
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
+                    <select
+                      className={INPUT}
+                      value={roomTypeKey}
+                      onChange={(e) => {
+                        patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
+                        patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
+                      }}
+                    >
+                      {selectedHotel.pricing.roomTypes.map((room) => (
+                        <option key={room.key} value={room.key}>
+                          {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / fő / éj
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : null}
 
-              {availablePackages.length > 0 ? (
+              {showPackages && availablePackages.length > 0 ? (
                 <label className="block space-y-1.5">
-                  <span className="text-sm font-medium">Csomagajánlat</span>
+                  <span className="text-sm font-medium">
+                    {packagesRequired ? "Csomagajánlat" : "Csomagajánlat (opcionális)"}
+                  </span>
                   <select
                     className={INPUT}
-                    value={String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")}
-                    onChange={(e) => patchSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value)}
+                    value={packageDealKey}
+                    onChange={(e) => {
+                      patchSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value)
+                      if (packagesRequired && e.target.value) {
+                        const pkg = findPackageDeal(selectedHotel.pricing, e.target.value)
+                        if (pkg) setNights(pkg.nights)
+                      }
+                    }}
+                    required={packagesRequired}
                   >
-                    <option value="">Per-éjszaka ár</option>
+                    {!packagesRequired ? <option value="">Per-éjszaka ár</option> : null}
                     {availablePackages.map((pkg) => (
                       <option key={pkg.key} value={pkg.key}>
                         {pkg.label} — {formatHuf(pkg.priceHuf, displayCurrency)}
+                        {pkg.nights > 1 ? ` (${pkg.nights} éj)` : ""}
                       </option>
                     ))}
                   </select>

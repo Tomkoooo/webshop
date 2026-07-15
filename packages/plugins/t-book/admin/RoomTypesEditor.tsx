@@ -2,7 +2,7 @@
 
 import { Button } from "@wse/core/components/ui/button"
 import type { TBookRoomType } from "../lib/pricing-types"
-import { TBookField, TBookInput } from "./t-book-admin-ui"
+import { TBookField, TBookInput, tBookPanelCompactClass } from "./t-book-admin-ui"
 import { formatMoney } from "./t-book-api"
 
 export function RoomTypesEditor({
@@ -43,7 +43,7 @@ export function RoomTypesEditor({
           {roomTypes.map((room, index) => (
             <div
               key={index}
-              className="grid grid-cols-12 gap-2 items-end rounded-xl bg-card shadow-sm p-3"
+              className={`grid grid-cols-12 gap-2 items-end ${tBookPanelCompactClass}`}
             >
               <div className="col-span-5">
                 <TBookField label="Megnevezés (vendég látja)">

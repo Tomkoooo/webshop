@@ -5,10 +5,16 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
-import type { TBookHotelPricing } from "../lib/pricing-types"
+import type { TBookAccommodationMode, TBookHotelPricing } from "../lib/pricing-types"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "../lib/vat"
 import type { TBookPriceBasis } from "../lib/vat"
-import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
+import {
+  ACCOMMODATION_MODE_LABELS,
+  assignPricingKeys,
+  normalizeHotelPricing,
+  resolveAccommodationMode,
+  validateHotelPricingConfig,
+} from "../lib/hotel-pricing"
 import {
   tBookAdminApi,
   formatMoney,
@@ -17,9 +23,12 @@ import {
 } from "./t-book-api"
 import {
   TBookField,
+  tBookFormShellClass,
+  tBookGhostButtonClass,
   TBookInput,
   TBookLoading,
   TBookPageHeader,
+  tBookPanelClass,
   TBookSelect,
 } from "./t-book-admin-ui"
 import { TBookWizard } from "./TBookWizard"
@@ -158,6 +167,7 @@ export function HotelFormPage({
     }))
 
   const previewPricing = useMemo(() => assignPricingKeys(draft.pricing), [draft.pricing])
+  const accommodationMode = resolveAccommodationMode(previewPricing)
   const roomTypes = previewPricing.roomTypes
   const priceBasisLabel = draft.pricing.priceBasis === "net" ? "nettó" : "bruttó"
 
@@ -167,8 +177,9 @@ export function HotelFormPage({
       setStep(0)
       return
     }
-    if (draft.pricing.roomTypes.length === 0) {
-      toast.error("Legalább egy szobatípus szükséges.")
+    const configError = validateHotelPricingConfig(draft.pricing)
+    if (configError) {
+      toast.error(configError)
       setStep(1)
       return
     }
@@ -221,7 +232,7 @@ export function HotelFormPage({
         actions={
           <Link
             href={`/admin/plugins/t-book/groups/${groupId}/hotels`}
-            className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-foreground text-sm"
+            className={tBookGhostButtonClass}
           >
             ← Vissza a szállásokhoz
           </Link>
@@ -230,7 +241,7 @@ export function HotelFormPage({
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2">
-          <div className="rounded-2xl bg-card shadow-sm p-6 md:p-8">
+          <div className={tBookFormShellClass}>
             <TBookWizard
               steps={HOTEL_STEPS}
               currentStep={step}
@@ -315,26 +326,56 @@ export function HotelFormPage({
                       onValueChange={(currency) => patch({ currency })}
                     />
                   </TBookField>
+                  <TBookField label="Szállás árazása">
+                    <TBookSelect
+                      value={draft.pricing.accommodationMode ?? accommodationMode}
+                      onChange={(e) =>
+                        patchPricing({
+                          accommodationMode: e.target.value as TBookAccommodationMode,
+                        })
+                      }
+                    >
+                      {(
+                        Object.entries(ACCOMMODATION_MODE_LABELS) as Array<
+                          [TBookAccommodationMode, string]
+                        >
+                      ).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </TBookSelect>
+                  </TBookField>
                   <TBookVatSettingsField
-                    label="ÁFA beállítások (minden szobatípusra)"
+                    label={
+                      accommodationMode === "packages"
+                        ? "ÁFA beállítások (csomagajánlatok)"
+                        : "ÁFA beállítások (minden szobatípusra)"
+                    }
                     priceBasis={(draft.pricing.priceBasis ?? "net") as TBookPriceBasis}
                     vatPercent={draft.pricing.vatPercent ?? TBOOK_DEFAULT_VAT_PERCENT}
                     onPriceBasisChange={(priceBasis) => patchPricing({ priceBasis })}
                     onVatPercentChange={(vatPercent) => patchPricing({ vatPercent })}
                   />
-                  <RoomTypesEditor
-                    roomTypes={draft.pricing.roomTypes}
-                    onChange={(roomTypes) => patchPricing({ roomTypes })}
-                    priceBasisLabel={priceBasisLabel}
-                    currency={draft.currency}
-                  />
-                  <PackageDealsEditor
-                    packages={draft.pricing.packages ?? []}
-                    onChange={(packages) => patchPricing({ packages })}
-                    roomTypes={roomTypes}
-                    currency={draft.currency}
-                    priceBasisLabel={priceBasisLabel}
-                  />
+                  {accommodationMode === "room_nights" || accommodationMode === "both" ? (
+                    <RoomTypesEditor
+                      roomTypes={draft.pricing.roomTypes}
+                      onChange={(roomTypes) => patchPricing({ roomTypes })}
+                      priceBasisLabel={priceBasisLabel}
+                      currency={draft.currency}
+                    />
+                  ) : null}
+                  {accommodationMode === "packages" || accommodationMode === "both" ? (
+                    <PackageDealsEditor
+                      packages={draft.pricing.packages ?? []}
+                      onChange={(packages) => patchPricing({ packages })}
+                      roomTypes={roomTypes}
+                      currency={draft.currency}
+                      priceBasisLabel={priceBasisLabel}
+                      packagesOnly={accommodationMode === "packages"}
+                      required={accommodationMode === "packages"}
+                    />
+                  ) : null}
                 </div>
               ) : null}
 
@@ -357,7 +398,7 @@ export function HotelFormPage({
               {step === 4 ? (
                 <div className="space-y-4">
                   <HotelComplexitySummary pricing={draft.pricing} />
-                  <div className="rounded-xl bg-card shadow-sm p-4 text-sm space-y-2">
+                  <div className={`${tBookPanelClass} text-sm space-y-2`}>
                     <p>
                       <strong className="text-foreground">{draft.name || "—"}</strong>
                       {draft.distanceFromVenueKm
@@ -366,21 +407,38 @@ export function HotelFormPage({
                     </p>
                     <p className="text-neutral-400 text-xs">{draft.address || "Nincs cím"}</p>
                     <p className="text-neutral-300 text-xs">
-                      {draft.pricing.roomTypes.length} szobatípus ·{" "}
-                      {(draft.pricing.packages ?? []).length} csomagajánlat
+                      {ACCOMMODATION_MODE_LABELS[accommodationMode]}
+                      {draft.pricing.roomTypes.length > 0
+                        ? ` · ${draft.pricing.roomTypes.length} szobatípus`
+                        : ""}
+                      {(draft.pricing.packages ?? []).length > 0
+                        ? ` · ${(draft.pricing.packages ?? []).length} csomagajánlat`
+                        : ""}
                       {draft.pricing.extrasSection ? " · extrák szakasz" : ""}
                       {draft.registrationFieldSchema.length > 0
                         ? ` · ${draft.registrationFieldSchema.length} foglalási mező`
                         : ""}
                     </p>
-                    <ul className="text-xs text-neutral-500 space-y-1">
-                      {draft.pricing.roomTypes.map((room) => (
-                        <li key={room.key}>
-                          {room.label}: {formatMoney(room.baseRateHuf, draft.currency)} / fő / éj (
-                          {priceBasisLabel})
-                        </li>
-                      ))}
-                    </ul>
+                    {draft.pricing.roomTypes.length > 0 ? (
+                      <ul className="text-xs text-neutral-500 space-y-1">
+                        {draft.pricing.roomTypes.map((room) => (
+                          <li key={room.key}>
+                            {room.label}: {formatMoney(room.baseRateHuf, draft.currency)} / fő / éj (
+                            {priceBasisLabel})
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {(draft.pricing.packages ?? []).length > 0 ? (
+                      <ul className="text-xs text-neutral-500 space-y-1">
+                        {(draft.pricing.packages ?? []).map((pkg) => (
+                          <li key={pkg.key}>
+                            {pkg.label}: {formatMoney(pkg.priceHuf, draft.currency)} ({pkg.nights}{" "}
+                            éj, {priceBasisLabel})
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -402,7 +460,7 @@ export function HotelFormPage({
               hotelCurrency={draft.currency}
             />
           ) : (
-            <p className="text-xs text-neutral-500 rounded-xl border border-border p-4">
+            <p className="text-xs text-neutral-500 rounded-xl bg-muted/20 p-4 ring-1 ring-inset ring-border/15">
               Ár-előnézethez hozz létre legalább egy eseményt a csoportban.
             </p>
           )}

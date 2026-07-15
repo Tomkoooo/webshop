@@ -2,7 +2,7 @@
 
 import { Button } from "@wse/core/components/ui/button"
 import type { TBookPackageDeal, TBookRoomType } from "../lib/pricing-types"
-import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
+import { TBookField, TBookInput, tBookEmptyStateClass, tBookPanelCompactClass, TBookSelect } from "./t-book-admin-ui"
 import { formatMoney } from "./t-book-api"
 
 export function PackageDealsEditor({
@@ -11,12 +11,17 @@ export function PackageDealsEditor({
   roomTypes,
   currency = "HUF",
   priceBasisLabel = "nettó",
+  packagesOnly = false,
+  required = false,
 }: {
   packages: TBookPackageDeal[]
   onChange: (packages: TBookPackageDeal[]) => void
   roomTypes: TBookRoomType[]
   currency?: string
   priceBasisLabel?: string
+  /** Hide room-type link — guest picks named packages only. */
+  packagesOnly?: boolean
+  required?: boolean
 }) {
   const update = (index: number, patch: Partial<TBookPackageDeal>) => {
     onChange(packages.map((pkg, i) => (i === index ? { ...pkg, ...patch } : pkg)))
@@ -33,21 +38,24 @@ export function PackageDealsEditor({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Fix árú csomagajánlatok (pl. 3 éjszaka adott szobatípusban). Ha a vendég ezt választja,
-        a per-éjszaka számítás helyett a csomagár érvényes ({priceBasisLabel}, {currency}).
+        {packagesOnly
+          ? `Fix árú csomagajánlatok (pl. „3 éj egyágyas”, „3 éj kétágyas”). A vendég csak a csomagot választja — nincs külön szobatípus-választó (${priceBasisLabel}, ${currency}).`
+          : `Fix árú csomagajánlatok (pl. 3 éjszaka adott szobatípusban). Ha a vendég ezt választja, a per-éjszaka számítás helyett a csomagár érvényes (${priceBasisLabel}, ${currency}).`}
       </p>
       {packages.length === 0 ? (
-        <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg px-4 py-4 text-center">
-          Nincs csomagajánlat — csak szobatípus alapár / éj lesz számolva.
+        <p className={tBookEmptyStateClass}>
+          {required
+            ? "Adj hozzá legalább egy csomagajánlatot."
+            : "Nincs csomagajánlat — csak szobatípus alapár / éj lesz számolva."}
         </p>
       ) : (
         <div className="space-y-2">
           {packages.map((pkg, index) => (
             <div
               key={index}
-              className="grid grid-cols-12 gap-2 items-end rounded-xl bg-card shadow-sm p-3"
+              className={`grid grid-cols-12 gap-2 items-end ${tBookPanelCompactClass}`}
             >
-              <div className="col-span-4">
+              <div className={packagesOnly ? "col-span-5" : "col-span-4"}>
                 <TBookField label="Csomag neve (vendég látja)">
                   <TBookInput
                     placeholder="3 éjszaka csomag"
@@ -77,23 +85,25 @@ export function PackageDealsEditor({
                   />
                 </TBookField>
               </div>
-              <div className="col-span-3">
-                <TBookField label="Szobatípus (opcionális)">
-                  <TBookSelect
-                    value={pkg.roomTypeKey ?? ""}
-                    onChange={(e) =>
-                      update(index, { roomTypeKey: e.target.value || null })
-                    }
-                  >
-                    <option value="">Bármely szobatípus</option>
-                    {roomTypes.map((room, roomIndex) => (
-                      <option key={room.key || `room-${roomIndex}`} value={room.key}>
-                        {room.label || "Névtelen"}
-                      </option>
-                    ))}
-                  </TBookSelect>
-                </TBookField>
-              </div>
+              {!packagesOnly ? (
+                <div className="col-span-3">
+                  <TBookField label="Szobatípus (opcionális)">
+                    <TBookSelect
+                      value={pkg.roomTypeKey ?? ""}
+                      onChange={(e) =>
+                        update(index, { roomTypeKey: e.target.value || null })
+                      }
+                    >
+                      <option value="">Bármely szobatípus</option>
+                      {roomTypes.map((room, roomIndex) => (
+                        <option key={room.key || `room-${roomIndex}`} value={room.key}>
+                          {room.label || "Névtelen"}
+                        </option>
+                      ))}
+                    </TBookSelect>
+                  </TBookField>
+                </div>
+              ) : null}
               <div className="col-span-1 flex gap-1 justify-end pb-1">
                 <Button
                   type="button"

@@ -36,6 +36,7 @@ import {
   TBookInput,
   TBookLoading,
   TBookPageHeader,
+  tBookPanelClass,
   TBookSelect,
   TBookStatusBadge,
 } from "./t-book-admin-ui"
@@ -599,7 +600,7 @@ export function BookingsAdmin() {
         }
       />
 
-      <div className="rounded-xl bg-card shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className={`${tBookPanelClass} grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3`}>
         <TBookField label="Keresés (név, email, telefon, esemény)">
           <TBookInput
             value={filters.search}

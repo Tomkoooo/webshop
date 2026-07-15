@@ -148,10 +148,13 @@ function validateUniqueOptionKeys(
   }
 }
 
+export const tBookAccommodationModeSchema = z.enum(["room_nights", "packages", "both"]).optional()
+
 export const tBookHotelPricingSchema = z
   .object({
     priceBasis: tBookPriceBasisSchema.default("net"),
     vatPercent: tBookVatPercentSchema,
+    accommodationMode: tBookAccommodationModeSchema,
     roomTypes: z.array(tBookRoomTypeSchema).default([]),
     packages: z.array(tBookPackageDealSchema).default([]),
     extrasSection: tBookExtrasSectionSchema.nullable().optional(),
@@ -187,10 +190,25 @@ export const tBookHotelPricingSchema = z
   })
   .superRefine((pricing, ctx) => {
     const hasLegacy = pricing.baseRateHuf != null || (pricing.options?.length ?? 0) > 0
-    if (pricing.roomTypes.length === 0 && !hasLegacy) {
+    const packages = pricing.packages ?? []
+    const mode =
+      pricing.accommodationMode ??
+      (packages.length > 0 && pricing.roomTypes.length === 0
+        ? "packages"
+        : packages.length > 0
+          ? "both"
+          : "room_nights")
+
+    if ((mode === "room_nights" || mode === "both") && pricing.roomTypes.length === 0 && !hasLegacy) {
       ctx.addIssue({
         code: "custom",
         message: "Legalább egy szobatípus szükséges",
+      })
+    }
+    if (mode === "packages" && packages.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Legalább egy csomagajánlat szükséges",
       })
     }
     const roomKeys = new Set<string>()
@@ -227,6 +245,8 @@ export const eventGroupInputSchema = z.object({
   listingTitle: z.string().optional().default(""),
   listingUrl: z.string().optional().default(""),
   listingImage: z.string().optional().default(""),
+  defaultHeroImage: z.string().optional().default(""),
+  voucherHeaderImage: z.string().optional().default(""),
 })
 
 export const tBookEventTimeSchema = z.preprocess(

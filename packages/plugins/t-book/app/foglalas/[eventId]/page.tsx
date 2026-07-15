@@ -6,6 +6,8 @@ import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-
 import { getTBookBookingContent } from "@wse/core/lib/tbook-page-content"
 import { TBookBookingWizard } from "@wse/plugin-t-book/storefront/TBookBookingWizard"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
+import { fetchPublicEventDetailForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
+import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
 
 type Props = {
   params: Promise<{ eventId: string }>
@@ -20,6 +22,8 @@ export default async function FoglalasEventPage({ params }: Props) {
   const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id)
   const bookingCopy = await getTBookBookingContent(chrome.template.manifest.id)
   const apiKey = siteConfig?.tbookApiKey ?? ""
+  const apiBase = resolveTBookServerApiBase()
+  const eventDetail = await fetchPublicEventDetailForStorefront(apiKey, eventId, apiBase)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
@@ -41,6 +45,7 @@ export default async function FoglalasEventPage({ params }: Props) {
         <TBookBookingWizard
           apiKey={apiKey}
           eventId={eventId}
+          initialEventDetail={eventDetail}
           copy={{
             stepTicket: bookingCopy.stepTicket,
             stepDetails: bookingCopy.stepDetails,

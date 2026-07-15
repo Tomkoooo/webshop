@@ -10,7 +10,7 @@ import {
   type TBookLocation,
 } from "../lib/location"
 import { tBookAdminApi } from "./t-book-api"
-import { TBookField, TBookInput } from "./t-book-admin-ui"
+import { TBookField, TBookInput, tBookControlClass } from "./t-book-admin-ui"
 
 export function TBookLocationField({
   value,
@@ -111,14 +111,14 @@ export function TBookLocationField({
       </div>
       <TBookField label="Térkép embed (iframe src vagy teljes iframe kód)">
         <textarea
-          className="w-full min-h-20 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
+          className={`w-full min-h-20 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${tBookControlClass}`}
           value={location.mapEmbedUrl}
           onChange={(e) => patch({ mapEmbedUrl: normalizeMapEmbedUrl(e.target.value) })}
           placeholder='https://www.google.com/maps/embed?pb=… vagy <iframe src="…">'
         />
       </TBookField>
       {location.mapEmbedUrl ? (
-        <div className="rounded-xl overflow-hidden border border-border aspect-video bg-muted">
+        <div className="rounded-xl overflow-hidden aspect-video bg-muted ring-1 ring-inset ring-border/20">
           <iframe
             title="Térkép előnézet"
             src={normalizeMapEmbedUrl(location.mapEmbedUrl)}

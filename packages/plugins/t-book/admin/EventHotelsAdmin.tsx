@@ -13,15 +13,24 @@ import {
   type AdminEvent,
   type AdminHotel,
 } from "./t-book-api"
-import type { TBookHotelPricing } from "../lib/pricing-types"
+import type { TBookAccommodationMode, TBookHotelPricing } from "../lib/pricing-types"
 import { TBOOK_DEFAULT_VAT_PERCENT } from "../lib/vat"
 import type { TBookPriceBasis } from "../lib/vat"
-import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
+import {
+  ACCOMMODATION_MODE_LABELS,
+  assignPricingKeys,
+  normalizeHotelPricing,
+  resolveAccommodationMode,
+  validateHotelPricingConfig,
+} from "../lib/hotel-pricing"
 import {
   TBookField,
+  tBookGhostButtonClass,
   TBookInput,
+  tBookListRowClass,
   TBookLoading,
   TBookPageHeader,
+  tBookPanelClass,
   TBookPrimaryButton,
   TBookSelect,
   TBookStatusBadge,
@@ -126,6 +135,7 @@ function HotelEditor({
     }))
 
   const previewPricing = useMemo(() => assignPricingKeys(draft.pricing), [draft.pricing])
+  const accommodationMode = resolveAccommodationMode(previewPricing)
   const roomTypes = previewPricing.roomTypes
   const priceBasisLabel = draft.pricing.priceBasis === "net" ? "nettó" : "bruttó"
 
@@ -135,8 +145,9 @@ function HotelEditor({
       setStep(0)
       return
     }
-    if (draft.pricing.roomTypes.length === 0) {
-      toast.error("Legalább egy szobatípus szükséges.")
+    const configError = validateHotelPricingConfig(draft.pricing)
+    if (configError) {
+      toast.error(configError)
       setStep(1)
       return
     }
@@ -277,26 +288,56 @@ function HotelEditor({
                     onValueChange={(currency) => patch({ currency })}
                   />
                 </TBookField>
+                <TBookField label="Szállás árazása">
+                  <TBookSelect
+                    value={draft.pricing.accommodationMode ?? accommodationMode}
+                    onChange={(e) =>
+                      patchPricing({
+                        accommodationMode: e.target.value as TBookAccommodationMode,
+                      })
+                    }
+                  >
+                    {(
+                      Object.entries(ACCOMMODATION_MODE_LABELS) as Array<
+                        [TBookAccommodationMode, string]
+                      >
+                    ).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </TBookSelect>
+                </TBookField>
                 <TBookVatSettingsField
-                  label="ÁFA beállítások (minden szobatípusra)"
+                  label={
+                    accommodationMode === "packages"
+                      ? "ÁFA beállítások (csomagajánlatok)"
+                      : "ÁFA beállítások (minden szobatípusra)"
+                  }
                   priceBasis={(draft.pricing.priceBasis ?? "net") as TBookPriceBasis}
                   vatPercent={draft.pricing.vatPercent ?? TBOOK_DEFAULT_VAT_PERCENT}
                   onPriceBasisChange={(priceBasis) => patchPricing({ priceBasis })}
                   onVatPercentChange={(vatPercent) => patchPricing({ vatPercent })}
                 />
-                <RoomTypesEditor
-                  roomTypes={draft.pricing.roomTypes}
-                  onChange={(roomTypes) => patchPricing({ roomTypes })}
-                  priceBasisLabel={priceBasisLabel}
-                  currency={draft.currency}
-                />
-                <PackageDealsEditor
-                  packages={draft.pricing.packages ?? []}
-                  onChange={(packages) => patchPricing({ packages })}
-                  roomTypes={roomTypes}
-                  currency={draft.currency}
-                  priceBasisLabel={priceBasisLabel}
-                />
+                {accommodationMode === "room_nights" || accommodationMode === "both" ? (
+                  <RoomTypesEditor
+                    roomTypes={draft.pricing.roomTypes}
+                    onChange={(roomTypes) => patchPricing({ roomTypes })}
+                    priceBasisLabel={priceBasisLabel}
+                    currency={draft.currency}
+                  />
+                ) : null}
+                {accommodationMode === "packages" || accommodationMode === "both" ? (
+                  <PackageDealsEditor
+                    packages={draft.pricing.packages ?? []}
+                    onChange={(packages) => patchPricing({ packages })}
+                    roomTypes={roomTypes}
+                    currency={draft.currency}
+                    priceBasisLabel={priceBasisLabel}
+                    packagesOnly={accommodationMode === "packages"}
+                    required={accommodationMode === "packages"}
+                  />
+                ) : null}
               </div>
             ) : null}
 
@@ -311,7 +352,7 @@ function HotelEditor({
             {step === 3 ? (
               <div className="space-y-4">
                 <HotelComplexitySummary pricing={draft.pricing} />
-                <div className="rounded-xl bg-card shadow-sm p-4 text-sm space-y-2">
+                <div className={`${tBookPanelClass} text-sm space-y-2`}>
                   <p>
                     <strong className="text-foreground">{draft.name || "—"}</strong>
                     {draft.distanceFromVenueKm
@@ -320,18 +361,32 @@ function HotelEditor({
                   </p>
                   <p className="text-neutral-400 text-xs">{draft.address || "Nincs cím"}</p>
                   <p className="text-neutral-300 text-xs">
-                    {draft.pricing.roomTypes.length} szobatípus ·{" "}
-                    {(draft.pricing.packages ?? []).length} csomagajánlat
+                    {ACCOMMODATION_MODE_LABELS[accommodationMode]}
+                    {draft.pricing.roomTypes.length > 0
+                      ? ` · ${draft.pricing.roomTypes.length} szobatípus`
+                      : ""}
+                    {(draft.pricing.packages ?? []).length > 0
+                      ? ` · ${(draft.pricing.packages ?? []).length} csomagajánlat`
+                      : ""}
                     {draft.pricing.extrasSection ? " · extrák szakasz" : ""}
                   </p>
-                  <ul className="text-xs text-neutral-500 space-y-1">
-                    {draft.pricing.roomTypes.map((room) => (
-                      <li key={room.key}>
-                        {room.label}: {formatMoney(room.baseRateHuf, draft.currency)} / fő / éj (
-                        {priceBasisLabel})
-                      </li>
-                    ))}
-                  </ul>
+                  {(draft.pricing.packages ?? []).length > 0 ? (
+                    <ul className="text-xs text-neutral-500 space-y-1">
+                      {(draft.pricing.packages ?? []).map((pkg) => (
+                        <li key={pkg.key}>
+                          {pkg.label}: {formatMoney(pkg.priceHuf, draft.currency)} ({pkg.nights} éj)
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="text-xs text-neutral-500 space-y-1">
+                      {draft.pricing.roomTypes.map((room) => (
+                        <li key={room.key}>
+                          {room.label}: {formatMoney(room.baseRateHuf, draft.currency)} / fő / éj
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -428,7 +483,7 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
           <>
             <Link
               href="/admin/plugins/t-book/events"
-              className="inline-flex items-center h-10 px-4 border border-border rounded-lg text-foreground text-sm"
+              className={tBookGhostButtonClass}
             >
               ← Események
             </Link>
@@ -459,7 +514,7 @@ export function EventHotelsAdmin({ eventId }: { eventId: string }) {
             return (
               <li
                 key={hotel.id}
-                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-card shadow-sm p-5 hover:shadow-md transition-shadow"
+                className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${tBookListRowClass}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">

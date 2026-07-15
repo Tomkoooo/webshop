@@ -14,6 +14,7 @@ import {
   type HotelInput,
 } from "../lib/schemas"
 import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
+import { resolveEventHeroImage } from "../lib/event-hero"
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
@@ -38,6 +39,7 @@ function serializeHotelPricing(pricing: ReturnType<typeof normalizeHotelPricing>
   return {
     priceBasis: pricing.priceBasis ?? "net",
     vatPercent: pricing.vatPercent ?? 27,
+    accommodationMode: pricing.accommodationMode,
     roomTypes: pricing.roomTypes,
     packages: pricing.packages ?? [],
     extrasSection: pricing.extrasSection ?? null,
@@ -421,6 +423,9 @@ export class TBookEventService {
 
   static async listPublicEventsForGroup(groupId: mongoose.Types.ObjectId) {
     await dbConnect()
+    const group = await TBookEventGroup.findById(groupId)
+      .select("defaultHeroImage")
+      .lean()
     const events = await TBookEvent.find({ groupId, status: "active" })
       .sort({ sortOrder: 1, startDate: 1 })
       .lean()
@@ -445,7 +450,7 @@ export class TBookEventService {
       teamMemberLimit: e.teamMemberLimit ?? null,
       teamMemberFieldSchema: normalizeAttendeeFieldSchema(e.teamMemberFieldSchema ?? []),
       currency: normalizeTBookCurrency(e.currency),
-      heroImage: e.heroImage,
+      heroImage: resolveEventHeroImage(e, group),
       attendeeFieldSchema: normalizeAttendeeFieldSchema(e.attendeeFieldSchema ?? []),
     }))
   }
@@ -479,7 +484,7 @@ export class TBookEventService {
         teamMemberLimit: event.teamMemberLimit ?? null,
         teamMemberFieldSchema: normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? []),
         currency: normalizeTBookCurrency(event.currency),
-        heroImage: event.heroImage,
+        heroImage: resolveEventHeroImage(event, group),
         attendeeFieldSchema: normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? []),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],

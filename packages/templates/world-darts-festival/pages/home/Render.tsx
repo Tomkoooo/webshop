@@ -258,7 +258,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               hrefPath="hero.secondaryCtaHref"
               label={c.hero.secondaryCtaLabel}
               href={c.hero.secondaryCtaHref}
-              className="inline-flex min-h-11 items-center rounded-lg border border-border bg-background/80 px-6 py-2.5 text-sm font-semibold backdrop-blur hover:bg-muted"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface/90 px-6 py-2.5 text-sm font-semibold text-foreground backdrop-blur hover:bg-muted"
             />
           </div>
         </div>

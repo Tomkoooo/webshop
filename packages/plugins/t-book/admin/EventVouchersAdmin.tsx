@@ -16,6 +16,7 @@ import {
 } from "./t-book-api"
 import {
   TBookField,
+  tBookGhostButtonClass,
   TBookInput,
   TBookLoading,
   TBookPageHeader,
@@ -89,7 +90,7 @@ export function EventVouchersAdmin({ eventId }: { eventId: string }) {
         actions={
           <Link
             href="/admin/plugins/t-book/events"
-            className="inline-flex h-10 items-center px-4 border border-border rounded-lg text-foreground text-sm"
+            className={tBookGhostButtonClass}
           >
             ← Események
           </Link>
