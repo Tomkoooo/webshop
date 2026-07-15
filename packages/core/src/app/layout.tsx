@@ -121,7 +121,7 @@ export default async function RootLayout({
     : await PopupCampaignService.getActiveForStorefront();
 
   return (
-    <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars}>
+    <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars} data-template={dbActiveTemplate.manifest.id}>
       <head>
         {adminChrome ? (
           <script dangerouslySetInnerHTML={{ __html: ADMIN_THEME_BOOT_SCRIPT }} />

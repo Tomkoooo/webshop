@@ -7,6 +7,7 @@ import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-
 import { getTBookSuccessContent } from "@wse/core/lib/tbook-page-content"
 import { TBookSuccessClient } from "@wse/plugin-t-book/storefront/TBookSuccessClient"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
+import { tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
 
 export default async function FoglalasSikerPage() {
   const enabled = await PluginService.isEnabled("t-book")
@@ -21,6 +22,7 @@ export default async function FoglalasSikerPage() {
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
+  const templateId = chrome.template.manifest.id
 
   return (
     <>
@@ -32,7 +34,7 @@ export default async function FoglalasSikerPage() {
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
       />
-      <main className="min-h-[70vh] bg-background px-4 py-10">
+      <main className={tBookMainClassName(templateId)}>
         <Suspense
           fallback={
             <div className="text-center text-muted-foreground">{successCopy.loadingText}</div>

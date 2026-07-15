@@ -28,9 +28,22 @@ export const getCachedBrandingSettings = unstable_cache(
   { revalidate: REVALIDATE_SECONDS, tags: [STOREFRONT_CACHE_TAGS.branding] }
 )
 
+export async function getCachedFooterSettingsForTemplate(template: TemplateModule) {
+  const templateId = template.manifest.id
+  return unstable_cache(
+    async () => FooterSettingsService.getForTemplate(template),
+    ["storefront-footer-settings", templateId],
+    {
+      revalidate: REVALIDATE_SECONDS,
+      tags: [STOREFRONT_CACHE_TAGS.footer, `footer:${templateId}`],
+    }
+  )()
+}
+
+/** @deprecated Prefer getCachedFooterSettingsForTemplate once the active template is known. */
 export const getCachedFooterSettings = unstable_cache(
   async () => FooterSettingsService.get(),
-  ["storefront-footer-settings"],
+  ["storefront-footer-settings-legacy"],
   { revalidate: REVALIDATE_SECONDS, tags: [STOREFRONT_CACHE_TAGS.footer] }
 )
 

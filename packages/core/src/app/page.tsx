@@ -2,6 +2,7 @@ import { getHomepagePageData } from "@wse/core/lib/homepage-page-data"
 import { getStorefrontFooterHydrationProps } from "@wse/core/lib/storefront-footer-props"
 import { extractMineshowSiteConfig } from "@wse/template-minecraft-camp/lib/site-config"
 import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
+import { WDF_STOREFRONT_ROOT_CLASS } from "@wse/template-world-darts-festival/lib/wdf-classes"
 import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 
 export const revalidate = 60
@@ -24,7 +25,7 @@ export default async function LandingPage() {
 
   return (
     <div
-      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden ${fontRoot}`}
+      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden ${fontRoot} ${isWorldDartsFestival ? WDF_STOREFRONT_ROOT_CLASS : ""}`}
     >
       <Navbar
         brandName={branding.brandName}

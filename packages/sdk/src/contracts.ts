@@ -20,6 +20,12 @@ export type FooterOrganizerSection = {
   openingHours: string
 }
 
+export type FooterContactEntry = {
+  label: string
+  value: string
+  kind: "text" | "link" | "mailto" | "tel"
+}
+
 export type FooterSettings = {
   tagline: string
   quickLinksTitle: string
@@ -31,6 +37,8 @@ export type FooterSettings = {
   newsletterPlaceholder: string
   copyrightText: string
   socialLinks: FooterSocialLink[]
+  /** Structured contact rows shown in footer (overrides legacy email/phone when set). */
+  contactEntries?: FooterContactEntry[]
   /** Mineshow / camp footer — szervező blokk */
   organizerSection?: FooterOrganizerSection
   /** Pl. „Fizetés: bankkártya (Stripe)” */

@@ -8,6 +8,7 @@ import { EditableDocText } from "@wse/core/features/template-cms/primitives/Edit
 import { EditableDocLink } from "@wse/core/features/template-cms/primitives/EditableDocLink"
 import { CmsListAddButton, CmsListItemToolbar } from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
 import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
+import { Reveal } from "@wse/core/components/motion/css-reveal"
 import { cn } from "@wse/core/lib/utils"
 import type { RenderProps, HomePageDeps } from "@wse/sdk/templates/types"
 import type { HomeContent } from "./schema"
@@ -223,7 +224,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
 
   const sections: Record<WdfHomeSectionId, ReactNode> = {
     hero: (
-      <section className="relative flex min-h-[min(90svh,720px)] items-end overflow-hidden">
+      <section className="relative flex min-h-[min(90svh,720px)] items-end overflow-hidden wdf-hero-glow">
         <CmsImage
           path="hero.heroImage"
           src={c.hero.heroImage}
@@ -236,38 +237,46 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
         />
         <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 pt-32 sm:pb-16">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
-            <EditableDocText path="hero.tagline" value={c.hero.tagline} />
-          </p>
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-            <EditableDocText path="hero.title" value={c.hero.title} multiline />
-          </h1>
-          <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            <EditableDocText path="hero.subtitle" value={c.hero.subtitle} multiline />
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <EditableDocLink
-              labelPath="hero.primaryCtaLabel"
-              hrefPath="hero.primaryCtaHref"
-              label={c.hero.primaryCtaLabel}
-              href={c.hero.primaryCtaHref}
-              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            />
-            <EditableDocLink
-              labelPath="hero.secondaryCtaLabel"
-              hrefPath="hero.secondaryCtaHref"
-              label={c.hero.secondaryCtaLabel}
-              href={c.hero.secondaryCtaHref}
-              className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface/90 px-6 py-2.5 text-sm font-semibold text-foreground backdrop-blur hover:bg-muted"
-            />
-          </div>
+          <Reveal mode="mount" variant="fade" delayMs={0}>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
+              <EditableDocText path="hero.tagline" value={c.hero.tagline} />
+            </p>
+          </Reveal>
+          <Reveal mode="mount" variant="up" delayMs={80}>
+            <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+              <EditableDocText path="hero.title" value={c.hero.title} multiline />
+            </h1>
+          </Reveal>
+          <Reveal mode="mount" variant="up" delayMs={160}>
+            <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+              <EditableDocText path="hero.subtitle" value={c.hero.subtitle} multiline />
+            </p>
+          </Reveal>
+          <Reveal mode="mount" variant="up" delayMs={240}>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <EditableDocLink
+                labelPath="hero.primaryCtaLabel"
+                hrefPath="hero.primaryCtaHref"
+                label={c.hero.primaryCtaLabel}
+                href={c.hero.primaryCtaHref}
+                className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              />
+              <EditableDocLink
+                labelPath="hero.secondaryCtaLabel"
+                hrefPath="hero.secondaryCtaHref"
+                label={c.hero.secondaryCtaLabel}
+                href={c.hero.secondaryCtaHref}
+                className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface/90 px-6 py-2.5 text-sm font-semibold text-foreground backdrop-blur hover:bg-muted"
+              />
+            </div>
+          </Reveal>
         </div>
       </section>
     ),
     festival: (
       <section className="border-y border-border/60 bg-surface py-16">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-2">
-          <div className="space-y-4">
+          <Reveal variant="left" className="space-y-4">
             <SectionHeading>
               <EditableDocText path="festival.title" value={c.festival.title} />
             </SectionHeading>
@@ -281,18 +290,20 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               href={c.festival.ctaHref}
               className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
             />
-          </div>
-          <CmsImage
-            path="festival.image"
-            src={c.festival.image}
-            alt={c.festival.title}
-            className="aspect-video w-full overflow-hidden rounded-2xl"
-            frameClassName="size-full"
-            imageClassName="size-full object-cover"
-            width={800}
-            height={450}
-            usageLabel="Fesztivál kép"
-          />
+          </Reveal>
+          <Reveal variant="right">
+            <CmsImage
+              path="festival.image"
+              src={c.festival.image}
+              alt={c.festival.title}
+              className="aspect-video w-full overflow-hidden rounded-2xl"
+              frameClassName="size-full"
+              imageClassName="size-full object-cover"
+              width={800}
+              height={450}
+              usageLabel="Fesztivál kép"
+            />
+          </Reveal>
         </div>
       </section>
     ),
@@ -302,7 +313,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           {c.infoCards.map((card, index) => (
             <article
               key={index}
-              className="relative flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm"
+              className="wdf-card-lift relative flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm"
             >
               {edit.enabled ? (
                 <CmsListItemToolbar
@@ -602,8 +613,12 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
 
   return (
     <div className="bg-background text-foreground">
-      {sectionLayout.map((entry) =>
-        entry.enabled ? <div key={entry.id}>{sections[entry.id]}</div> : null
+      {sectionLayout.map((entry, index) =>
+        entry.enabled ? (
+          <Reveal key={entry.id} variant="up" delayMs={index * 40}>
+            {sections[entry.id]}
+          </Reveal>
+        ) : null
       )}
     </div>
   )

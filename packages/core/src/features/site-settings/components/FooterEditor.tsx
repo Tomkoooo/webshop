@@ -11,7 +11,14 @@ import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
 import { adminFieldLabel } from "@wse/core/lib/admin-ui"
 
-export function FooterEditor({ initial }: { initial: FooterSettings }) {
+export function FooterEditor({
+  initial,
+  showCampFields = false,
+}: {
+  initial: FooterSettings
+  /** Mineshow / camp organizer block — only for minecraft-camp and similar. */
+  showCampFields?: boolean
+}) {
   const [state, setState] = useState<FooterSettings>(initial)
   const socialLabels: Record<string, string> = {
     facebook: "Facebook",
@@ -56,17 +63,20 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
             <Label className={adminFieldLabel}>Copyright sor</Label>
             <Input value={state.copyrightText} onChange={(e) => setState((prev) => ({ ...prev, copyrightText: e.target.value }))} />
           </div>
-          <div className="space-y-1.5 md:col-span-2">
-            <Label className={adminFieldLabel}>Fizetési módok megjegyzés</Label>
-            <Input
-              value={state.paymentMethodsNote ?? ""}
-              onChange={(e) => setState((prev) => ({ ...prev, paymentMethodsNote: e.target.value }))}
-              placeholder="Fizetés: bankkártya (Stripe)"
-            />
-          </div>
+          {showCampFields ? (
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className={adminFieldLabel}>Fizetési módok megjegyzés</Label>
+              <Input
+                value={state.paymentMethodsNote ?? ""}
+                onChange={(e) => setState((prev) => ({ ...prev, paymentMethodsNote: e.target.value }))}
+                placeholder="Fizetés: bankkártya (Stripe)"
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
+      {showCampFields ? (
       <Card>
         <CardHeader>
           <CardTitle>Szervező blokk</CardTitle>
@@ -96,6 +106,7 @@ export function FooterEditor({ initial }: { initial: FooterSettings }) {
           <p className="text-xs text-muted-foreground">A tábor helyszíne a főoldal Kapcsolat szekciójában szerkeszthető.</p>
         </CardContent>
       </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

@@ -5,6 +5,7 @@ import {
 } from "@wse/sdk/templates/types"
 import dynamic from "next/dynamic"
 import { worldDartsFestivalTheme } from "./theme"
+import { wdfFooterDefaults } from "./footer-defaults"
 import { Navbar } from "./chrome/Navbar"
 import { Footer } from "./chrome/Footer"
 
@@ -68,6 +69,7 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     deployment: "landing",
   },
   defaultTheme: worldDartsFestivalTheme,
+  footerDefaults: wdfFooterDefaults,
   chrome: {
     Navbar,
     Footer,

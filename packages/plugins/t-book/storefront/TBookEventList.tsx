@@ -10,6 +10,8 @@ import {
 } from "./tbook-public-api"
 import { formatEventSchedule } from "../lib/event-schedule"
 
+export type TBookListVariant = "default" | "wdf"
+
 type Copy = {
   pageTitle: string
   pageIntro: string
@@ -26,6 +28,7 @@ export function TBookEventList({
   initialEvents,
   initialError = null,
   currency: currencyProp = "HUF",
+  variant = "default",
 }: {
   apiKey: string
   copy: Copy
@@ -33,6 +36,7 @@ export function TBookEventList({
   initialEvents?: TBookPublicEvent[]
   initialError?: string | null
   currency?: string
+  variant?: TBookListVariant
 }) {
   const serverProvided = initialEvents !== undefined
   const [events, setEvents] = useState<TBookPublicEvent[]>(initialEvents ?? [])
@@ -99,7 +103,7 @@ export function TBookEventList({
 
   return (
     <div className="space-y-6">
-      <header className="max-w-2xl">
+      <header className={variant === "wdf" ? "wdf-tbook-header max-w-2xl" : "max-w-2xl"}>
         <h1 className="text-3xl font-bold tracking-tight">{copy.pageTitle}</h1>
         <p className="mt-2 text-muted-foreground">{copy.pageIntro}</p>
       </header>
@@ -111,7 +115,11 @@ export function TBookEventList({
           return (
             <article
               key={event.id}
-              className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md"
+              className={
+                variant === "wdf"
+                  ? "wdf-event-card wdf-card-lift flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+                  : "flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md"
+              }
             >
               {event.heroImage ? (
                 <div
@@ -152,7 +160,11 @@ export function TBookEventList({
                 </p>
                 <Link
                   href={`/foglalas/${event.id}`}
-                  className="mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className={
+                    variant === "wdf"
+                      ? "wdf-cta-pulse mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                      : "mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  }
                 >
                   {copy.bookCta}
                 </Link>

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../../../../packages/core/src/styles/admin.css";
+@import "../../../../packages/templates/world-darts-festival/styles/wdf-storefront.css";
 
 /* Monorepo: scan engine packages for Tailwind utilities (auto-detection only covers this app). */
 @source "../../../../packages";

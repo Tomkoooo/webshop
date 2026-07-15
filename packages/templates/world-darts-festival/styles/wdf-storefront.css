@@ -1,0 +1,116 @@
+/* World Darts Festival — template-owned storefront chrome (imported by apps/world-darts-festival). */
+
+.wdf-storefront {
+  --wdf-gold-glow: color-mix(in oklab, var(--theme-primary) 35%, transparent);
+  --wdf-accent-glow: color-mix(in oklab, var(--theme-accent) 25%, transparent);
+}
+
+.wdf-storefront .wdf-hero-glow::after {
+  content: "";
+  position: absolute;
+  inset: auto 10% -20% 10%;
+  height: 40%;
+  background: radial-gradient(ellipse at center, var(--wdf-gold-glow), transparent 70%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wdf-storefront .wdf-section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--theme-primary) 45%, transparent),
+    transparent
+  );
+}
+
+.wdf-storefront .wdf-card-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wdf-storefront .wdf-card-lift:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 16px 40px color-mix(in oklab, var(--theme-background) 55%, transparent);
+    border-color: color-mix(in oklab, var(--theme-primary) 40%, var(--theme-border));
+  }
+}
+
+/* tBook routes */
+.wdf-tbook-page {
+  position: relative;
+  min-height: 70vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--wdf-gold-glow), transparent 55%),
+    var(--theme-background);
+}
+
+.wdf-tbook-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 20% 80%,
+    var(--wdf-accent-glow) 0%,
+    transparent 45%
+  );
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.wdf-tbook-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.wdf-tbook-page .wdf-tbook-header h1 {
+  background: linear-gradient(
+    135deg,
+    var(--theme-foreground) 0%,
+    color-mix(in oklab, var(--theme-primary) 85%, var(--theme-foreground)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.wdf-tbook-page article.wdf-event-card {
+  border-color: color-mix(in oklab, var(--theme-border) 80%, var(--theme-primary));
+  background: color-mix(in oklab, var(--theme-surface) 92%, var(--theme-background));
+  box-shadow: 0 8px 32px color-mix(in oklab, var(--theme-background) 70%, transparent);
+}
+
+.wdf-tbook-page article.wdf-event-card:hover {
+  border-color: color-mix(in oklab, var(--theme-primary) 50%, var(--theme-border));
+}
+
+.wdf-tbook-page .wdf-booking-panel {
+  border: 1px solid color-mix(in oklab, var(--theme-border) 75%, var(--theme-primary));
+  background: color-mix(in oklab, var(--theme-surface) 90%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.wdf-tbook-page .wdf-step-active {
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes wdf-pulse-ring {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--theme-primary) 35%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 0 8px transparent;
+    }
+  }
+
+  .wdf-tbook-page .wdf-cta-pulse {
+    animation: wdf-pulse-ring 2.5s ease-in-out infinite;
+  }
+}

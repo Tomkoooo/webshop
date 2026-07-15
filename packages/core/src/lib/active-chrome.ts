@@ -2,20 +2,21 @@ import { cache } from "react"
 import {
   getRequestActiveTemplateInfo,
   getRequestBrandingSettings,
-  getRequestFooterSettings,
+  getCachedFooterSettingsForTemplate,
 } from "@wse/core/lib/cached-storefront"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { resolveCommerceSlots } from "@wse/core/templates/resolve-commerce-slots"
 import { readPreviewTemplateId } from "@wse/core/services/template-preview"
 import { loadTemplateModule } from "@wse/core/templates/registry"
 import { timeDevMetric } from "@wse/core/lib/dev-metrics"
+import { FooterSettingsService } from "@wse/core/services/footer-settings"
 import type { NavbarSearchSlotProps, TemplateModule } from "@wse/sdk/templates/types"
 import type { ComponentType } from "react"
 
 export type ActiveChrome = {
   template: TemplateModule
   branding: { brandName: string; logoNav: string; logoFooter: string; logoHero: string }
-  footerSettings: Awaited<ReturnType<typeof getRequestFooterSettings>>
+  footerSettings: Awaited<ReturnType<typeof FooterSettingsService.getForTemplate>>
   shopEnabled: boolean
   Navbar: TemplateModule["chrome"]["Navbar"]
   Footer: TemplateModule["chrome"]["Footer"]
@@ -23,16 +24,20 @@ export type ActiveChrome = {
 }
 
 export const getActiveChrome = cache(async function getActiveChrome(): Promise<ActiveChrome> {
-  const [previewTemplateId, activeInfo, branding, footerSettings] = await Promise.all([
+  const [previewTemplateId, activeInfo, branding] = await Promise.all([
     timeDevMetric("activeChrome.previewTemplate", () => readPreviewTemplateId(), { category: "page-data" }),
     timeDevMetric("activeChrome.templateInfo", () => getRequestActiveTemplateInfo(), { category: "page-data" }),
     timeDevMetric("activeChrome.branding", () => getRequestBrandingSettings(), { category: "page-data" }),
-    timeDevMetric("activeChrome.footerSettings", () => getRequestFooterSettings(), { category: "page-data" }),
   ])
   const template = await timeDevMetric(
     "activeChrome.templateModule",
     () => loadTemplateModule(previewTemplateId ?? activeInfo.templateId),
     { category: "page-data", metadata: { templateId: previewTemplateId ?? activeInfo.templateId } }
+  )
+  const footerSettings = await timeDevMetric(
+    "activeChrome.footerSettings",
+    () => getCachedFooterSettingsForTemplate(template),
+    { category: "page-data", metadata: { templateId: template.manifest.id } }
   )
   const shopEnabled = isShopEnabled()
   const { NavbarSearch } = resolveCommerceSlots(template)

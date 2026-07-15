@@ -52,7 +52,7 @@ export default async function ProductVisualPageEditor({
     getProductPdpDraft(template.manifest.id, slug),
     getHomepageRenderDependencies(),
     BrandingSettingsService.get(),
-    FooterSettingsService.get(),
+    FooterSettingsService.getForTemplate(dbActiveTemplate),
     SeoSettingsService.get(),
     ThemeService.getMergedForTemplate(dbActiveTemplate),
   ])

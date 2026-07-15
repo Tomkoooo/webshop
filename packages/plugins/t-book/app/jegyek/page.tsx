@@ -8,6 +8,7 @@ import { TBookEventList } from "@wse/plugin-t-book/storefront/TBookEventList"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 import { fetchPublicEventsForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
+import { tBookListVariant, tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
 
 export default async function JegyekPage() {
   const enabled = await PluginService.isEnabled("t-book")
@@ -25,6 +26,7 @@ export default async function JegyekPage() {
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
+  const templateId = chrome.template.manifest.id
 
   return (
     <>
@@ -36,10 +38,11 @@ export default async function JegyekPage() {
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
       />
-      <main className="min-h-[70vh] bg-background px-4 py-10">
+      <main className={tBookMainClassName(templateId)}>
         <div className="mx-auto max-w-5xl">
           <TBookEventList
             apiKey={apiKey}
+            variant={tBookListVariant(templateId)}
             copy={{
               pageTitle: listCopy.pageTitle,
               pageIntro: listCopy.pageIntro,

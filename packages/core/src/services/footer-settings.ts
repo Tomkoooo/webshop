@@ -1,5 +1,11 @@
 import dbConnect from "@wse/core/lib/db"
+import {
+  ENGINE_SHOP_FOOTER_DEFAULTS,
+  resolveFooterDefaults,
+  shouldMigrateLegacyFooter,
+} from "@wse/core/lib/resolve-footer-defaults"
 import FooterSetting from "@wse/core/models/FooterSetting"
+import type { TemplateModule } from "@wse/sdk/templates/types"
 
 export type FooterSocialLink = {
   platform: "facebook" | "instagram" | "twitter" | "youtube"
@@ -40,48 +46,23 @@ export type FooterSettings = {
   paymentMethodsNote?: string
 }
 
-const DEFAULT_ORGANIZER: FooterOrganizerSection = {
-  title: "A KockaKemp tábor szervezője az Eseményszervezés.hu BTL ügynökség Kft.",
-  companyName: "",
-  registeredAddress: "",
-  mailingAddress: "",
-  openingHours: "",
+const LEGACY_FOOTER_KEY = "footer"
+
+export function footerKeyForTemplate(templateId: string): string {
+  return `footer:${templateId}`
 }
 
-const DEFAULT_PAYMENT_NOTE = "Fizetés: bankkártya (Stripe)"
-
-const DEFAULTS: FooterSettings = {
-  tagline: "Minőségi termékek, gyors szállítás.",
-  quickLinksTitle: "Linkek",
-  quickLinks: [
-    { label: "Főoldal", href: "#home" },
-    { label: "Rólunk", href: "#about" },
-    { label: "Termékek", href: "#shop" },
-    { label: "Vélemények", href: "#reviews" },
-    { label: "Kapcsolat", href: "#contact" },
-  ],
-  categoriesTitle: "Kategóriák",
-  browseProductsLabel: "Termékek böngészése",
-  contactTitle: "Kapcsolat",
-  newsletterLabel: "Hírlevél",
-  newsletterPlaceholder: "E-mail cím",
-  copyrightText: "© {year} {brand}. Minden jog fenntartva.",
-  socialLinks: [
-    { platform: "facebook", enabled: false, url: "" },
-    { platform: "instagram", enabled: false, url: "" },
-    { platform: "twitter", enabled: false, url: "" },
-    { platform: "youtube", enabled: false, url: "" },
-  ],
-}
-
-function normalize(settings?: Partial<FooterSettings>): FooterSettings {
+function normalize(
+  settings: Partial<FooterSettings> | undefined,
+  defaults: FooterSettings
+): FooterSettings {
   const quickLinks =
     Array.isArray(settings?.quickLinks) && settings.quickLinks.length > 0
       ? settings.quickLinks.map((item) => ({
           label: String(item.label || ""),
           href: String(item.href || ""),
         }))
-      : DEFAULTS.quickLinks.map((item) => ({ ...item }))
+      : defaults.quickLinks.map((item) => ({ ...item }))
 
   const socialLinks =
     Array.isArray(settings?.socialLinks) && settings.socialLinks.length > 0
@@ -90,18 +71,38 @@ function normalize(settings?: Partial<FooterSettings>): FooterSettings {
           enabled: Boolean(item.enabled),
           url: String(item.url || ""),
         }))
-      : DEFAULTS.socialLinks.map((item) => ({ ...item }))
+      : defaults.socialLinks.map((item) => ({ ...item }))
+
+  const defaultOrganizer = defaults.organizerSection ?? {
+    title: "",
+    companyName: "",
+    registeredAddress: "",
+    mailingAddress: "",
+    openingHours: "",
+  }
 
   return {
-    tagline: settings?.tagline || DEFAULTS.tagline,
-    quickLinksTitle: settings?.quickLinksTitle || DEFAULTS.quickLinksTitle,
+    tagline: settings?.tagline?.trim() ? settings.tagline : defaults.tagline,
+    quickLinksTitle: settings?.quickLinksTitle?.trim()
+      ? settings.quickLinksTitle
+      : defaults.quickLinksTitle,
     quickLinks,
-    categoriesTitle: settings?.categoriesTitle || DEFAULTS.categoriesTitle,
-    browseProductsLabel: settings?.browseProductsLabel || DEFAULTS.browseProductsLabel,
-    contactTitle: settings?.contactTitle || DEFAULTS.contactTitle,
-    newsletterLabel: settings?.newsletterLabel || DEFAULTS.newsletterLabel,
-    newsletterPlaceholder: settings?.newsletterPlaceholder || DEFAULTS.newsletterPlaceholder,
-    copyrightText: settings?.copyrightText || DEFAULTS.copyrightText,
+    categoriesTitle: settings?.categoriesTitle?.trim()
+      ? settings.categoriesTitle
+      : defaults.categoriesTitle,
+    browseProductsLabel: settings?.browseProductsLabel?.trim()
+      ? settings.browseProductsLabel
+      : defaults.browseProductsLabel,
+    contactTitle: settings?.contactTitle?.trim() ? settings.contactTitle : defaults.contactTitle,
+    newsletterLabel: settings?.newsletterLabel?.trim()
+      ? settings.newsletterLabel
+      : defaults.newsletterLabel,
+    newsletterPlaceholder: settings?.newsletterPlaceholder?.trim()
+      ? settings.newsletterPlaceholder
+      : defaults.newsletterPlaceholder,
+    copyrightText: settings?.copyrightText?.trim()
+      ? settings.copyrightText
+      : defaults.copyrightText,
     socialLinks,
     contactEntries: Array.isArray(settings?.contactEntries)
       ? settings.contactEntries.map((item) => ({
@@ -112,40 +113,114 @@ function normalize(settings?: Partial<FooterSettings>): FooterSettings {
               ? item.kind
               : ("text" as const),
         }))
-      : [],
+      : (defaults.contactEntries ?? []).map((item) => ({ ...item })),
     organizerSection: {
-      title: settings?.organizerSection?.title || DEFAULT_ORGANIZER.title,
-      companyName: settings?.organizerSection?.companyName || DEFAULT_ORGANIZER.companyName,
-      registeredAddress:
-        settings?.organizerSection?.registeredAddress || DEFAULT_ORGANIZER.registeredAddress,
-      mailingAddress:
-        settings?.organizerSection?.mailingAddress || DEFAULT_ORGANIZER.mailingAddress,
-      openingHours: settings?.organizerSection?.openingHours || DEFAULT_ORGANIZER.openingHours,
+      title: settings?.organizerSection?.title?.trim()
+        ? settings.organizerSection.title
+        : defaultOrganizer.title,
+      companyName: settings?.organizerSection?.companyName?.trim()
+        ? settings.organizerSection.companyName
+        : defaultOrganizer.companyName,
+      registeredAddress: settings?.organizerSection?.registeredAddress?.trim()
+        ? settings.organizerSection.registeredAddress
+        : defaultOrganizer.registeredAddress,
+      mailingAddress: settings?.organizerSection?.mailingAddress?.trim()
+        ? settings.organizerSection.mailingAddress
+        : defaultOrganizer.mailingAddress,
+      openingHours: settings?.organizerSection?.openingHours?.trim()
+        ? settings.organizerSection.openingHours
+        : defaultOrganizer.openingHours,
     },
-    paymentMethodsNote: settings?.paymentMethodsNote || DEFAULT_PAYMENT_NOTE,
+    paymentMethodsNote:
+      settings?.paymentMethodsNote?.trim() !== undefined &&
+      settings.paymentMethodsNote.trim() !== ""
+        ? settings.paymentMethodsNote
+        : defaults.paymentMethodsNote ?? "",
   }
 }
 
+function docToSettings(doc: Record<string, unknown>, defaults: FooterSettings): FooterSettings {
+  return normalize(doc as Partial<FooterSettings>, defaults)
+}
+
+async function persistFooter(key: string, settings: FooterSettings): Promise<void> {
+  await FooterSetting.findOneAndUpdate({ key }, { $set: { key, ...settings } }, { upsert: true })
+}
+
 export class FooterSettingsService {
+  /** Engine shop defaults (legacy global key). */
   static defaults() {
-    return DEFAULTS
+    return {
+      ...ENGINE_SHOP_FOOTER_DEFAULTS,
+      quickLinks: ENGINE_SHOP_FOOTER_DEFAULTS.quickLinks.map((item) => ({ ...item })),
+      socialLinks: ENGINE_SHOP_FOOTER_DEFAULTS.socialLinks.map((item) => ({ ...item })),
+    }
   }
 
+  /**
+   * Per-template footer row (`footer:<templateId>`).
+   * Migrates customized legacy `footer` once; ignores shop/camp seed leftovers for WDF.
+   */
+  static async getForTemplate(template: TemplateModule): Promise<FooterSettings> {
+    const templateId = template.manifest.id
+    const key = footerKeyForTemplate(templateId)
+    const defaults = resolveFooterDefaults(template)
+
+    await dbConnect()
+    const scoped = (await FooterSetting.findOne({ key }).lean()) as Record<string, unknown> | null
+    if (scoped) {
+      return docToSettings(scoped, defaults)
+    }
+
+    const legacy = (await FooterSetting.findOne({ key: LEGACY_FOOTER_KEY }).lean()) as Record<
+      string,
+      unknown
+    > | null
+
+    let seeded: FooterSettings
+    if (legacy && shouldMigrateLegacyFooter(templateId, legacy as Partial<FooterSettings>)) {
+      seeded = docToSettings(legacy, defaults)
+    } else {
+      seeded = normalize(undefined, defaults)
+    }
+
+    await persistFooter(key, seeded)
+    return seeded
+  }
+
+  static async updateForTemplate(
+    template: TemplateModule,
+    input: Partial<FooterSettings>
+  ): Promise<FooterSettings> {
+    const current = await this.getForTemplate(template)
+    const defaults = resolveFooterDefaults(template)
+    const normalized = normalize({ ...current, ...input }, defaults)
+    await dbConnect()
+    await persistFooter(footerKeyForTemplate(template.manifest.id), normalized)
+    return normalized
+  }
+
+  /** @deprecated Use getForTemplate with the active template module. */
   static async get(): Promise<FooterSettings> {
     await dbConnect()
     const doc = await FooterSetting.findOneAndUpdate(
-      { key: "footer" },
-      { $setOnInsert: { key: "footer", ...DEFAULTS } },
+      { key: LEGACY_FOOTER_KEY },
+      { $setOnInsert: { key: LEGACY_FOOTER_KEY, ...this.defaults() } },
       { upsert: true, returnDocument: "after", lean: true }
     )
-    return normalize(doc as Partial<FooterSettings>)
+    return normalize(doc as Partial<FooterSettings>, this.defaults())
   }
 
+  /** @deprecated Use updateForTemplate with the active template module. */
   static async update(input: Partial<FooterSettings>): Promise<FooterSettings> {
     await dbConnect()
     const merged = { ...(await this.get()), ...input }
-    const normalized = normalize(merged)
-    await FooterSetting.findOneAndUpdate({ key: "footer" }, { $set: normalized }, { upsert: true })
+    const normalized = normalize(merged, this.defaults())
+    await FooterSetting.findOneAndUpdate(
+      { key: LEGACY_FOOTER_KEY },
+      { $set: normalized },
+      { upsert: true }
+    )
     return normalized
   }
 }

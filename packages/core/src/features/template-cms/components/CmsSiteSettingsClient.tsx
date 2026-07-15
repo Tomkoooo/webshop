@@ -33,6 +33,7 @@ type Props = {
   sections: SettingsSectionMeta[]
   showShopOrderEmails: boolean
   templateName: string
+  templateId: string
   themeResetBaseline: ThemeTokens
   themeResetHelpText: string
   initialTheme: ThemeTokens
@@ -51,6 +52,7 @@ export function CmsSiteSettingsClient({
   sections,
   showShopOrderEmails,
   templateName,
+  templateId,
   themeResetBaseline,
   themeResetHelpText,
   initialTheme,
@@ -140,7 +142,12 @@ export function CmsSiteSettingsClient({
                 <CmsChromeBrandingToolbar branding={branding} setBranding={setBranding} />
               </div>
             ) : null}
-            {section === "footer" ? <FooterEditor initial={initialFooter} /> : null}
+            {section === "footer" ? (
+              <FooterEditor
+                initial={initialFooter}
+                showCampFields={templateId === "minecraft-camp"}
+              />
+            ) : null}
             {section === "contact" ? (
               <ContactEmailsEditor
                 initial={initialContactEmails}

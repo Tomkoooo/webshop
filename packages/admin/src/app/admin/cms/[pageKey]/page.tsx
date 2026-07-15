@@ -61,7 +61,7 @@ export default async function CmsPageEditor({
   const [dependencies, branding, footer, seo, theme] = await Promise.all([
     getHomepageRenderDependencies(),
     BrandingSettingsService.get(),
-    FooterSettingsService.get(),
+    FooterSettingsService.getForTemplate(template),
     SeoSettingsService.get(),
     ThemeService.getMergedForTemplate(template),
   ])

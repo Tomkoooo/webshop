@@ -402,6 +402,8 @@ export interface TemplateModule {
    * back to this baseline (when set) via ThemeService.
    */
   defaultTheme?: ThemeTokens
+  /** Template-specific footer baseline; stored overrides use key `footer:<templateId>`. */
+  footerDefaults?: FooterSettings
   chrome: {
     Navbar: ComponentType<ChromeProps>
     Footer: ComponentType<ChromeProps & {

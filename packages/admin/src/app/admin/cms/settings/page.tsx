@@ -39,7 +39,7 @@ export default async function CmsSiteSettingsPage({
     ThemeService.getMergedForTemplate(template),
     SeoSettingsService.get(),
     BrandingSettingsService.get(),
-    FooterSettingsService.get(),
+    FooterSettingsService.getForTemplate(template),
     ContactEmailsService.list(),
     ContactEmailsService.getDisplayChannels(),
     ContactEmailsService.listInvoiceErrorAlertEmails(),
@@ -58,6 +58,7 @@ export default async function CmsSiteSettingsPage({
         sections={sections}
         showShopOrderEmails={showShopOrderEmails}
         templateName={template.manifest.name}
+        templateId={template.manifest.id}
         initialTheme={theme}
         themeResetBaseline={themeResetBaseline}
         themeResetHelpText={themeResetHelpText}

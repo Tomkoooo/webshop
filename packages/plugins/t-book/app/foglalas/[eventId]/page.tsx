@@ -8,6 +8,8 @@ import { TBookBookingWizard } from "@wse/plugin-t-book/storefront/TBookBookingWi
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 import { fetchPublicEventDetailForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
+import { tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
+import { cn } from "@wse/core/lib/utils"
 
 type Props = {
   params: Promise<{ eventId: string }>
@@ -30,6 +32,8 @@ export default async function FoglalasEventPage({ params }: Props) {
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
+  const templateId = chrome.template.manifest.id
+  const isWdf = templateId === "world-darts-festival"
 
   return (
     <>
@@ -41,35 +45,42 @@ export default async function FoglalasEventPage({ params }: Props) {
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
       />
-      <main className="min-h-[70vh] bg-background px-4 py-10">
-        <TBookBookingWizard
-          apiKey={apiKey}
-          eventId={eventId}
-          initialEventDetail={eventDetail}
-          copy={{
-            stepTicket: bookingCopy.stepTicket,
-            stepDetails: bookingCopy.stepDetails,
-            stepReview: bookingCopy.stepReview,
-            guestsLabel: bookingCopy.guestsLabel,
-            hotelLabel: bookingCopy.hotelLabel,
-            hotelNone: bookingCopy.hotelNone,
-            nightsLabel: bookingCopy.nightsLabel,
-            roomTypeLabel: bookingCopy.roomTypeLabel,
-            customerHeading: bookingCopy.customerHeading,
-            customerHint: bookingCopy.customerHint,
-            attendeesHeading: bookingCopy.attendeesHeading,
-            attendeesHint: bookingCopy.attendeesHint,
-            quoteCta: bookingCopy.quoteCta,
-            payCta: bookingCopy.payCta,
-            payLoading: bookingCopy.payLoading,
-            backLabel: bookingCopy.backLabel,
-            nextLabel: bookingCopy.nextLabel,
-            reviewHeading: bookingCopy.reviewHeading,
-            totalLabel: bookingCopy.totalLabel,
-            loadingEvent: bookingCopy.loadingEvent,
-            eventError: bookingCopy.eventError,
-          }}
-        />
+      <main className={tBookMainClassName(templateId)}>
+        <div
+          className={cn(
+            "mx-auto max-w-5xl",
+            isWdf && "wdf-booking-panel rounded-2xl p-4 sm:p-6"
+          )}
+        >
+          <TBookBookingWizard
+            apiKey={apiKey}
+            eventId={eventId}
+            initialEventDetail={eventDetail}
+            copy={{
+              stepTicket: bookingCopy.stepTicket,
+              stepDetails: bookingCopy.stepDetails,
+              stepReview: bookingCopy.stepReview,
+              guestsLabel: bookingCopy.guestsLabel,
+              hotelLabel: bookingCopy.hotelLabel,
+              hotelNone: bookingCopy.hotelNone,
+              nightsLabel: bookingCopy.nightsLabel,
+              roomTypeLabel: bookingCopy.roomTypeLabel,
+              customerHeading: bookingCopy.customerHeading,
+              customerHint: bookingCopy.customerHint,
+              attendeesHeading: bookingCopy.attendeesHeading,
+              attendeesHint: bookingCopy.attendeesHint,
+              quoteCta: bookingCopy.quoteCta,
+              payCta: bookingCopy.payCta,
+              payLoading: bookingCopy.payLoading,
+              backLabel: bookingCopy.backLabel,
+              nextLabel: bookingCopy.nextLabel,
+              reviewHeading: bookingCopy.reviewHeading,
+              totalLabel: bookingCopy.totalLabel,
+              loadingEvent: bookingCopy.loadingEvent,
+              eventError: bookingCopy.eventError,
+            }}
+          />
+        </div>
       </main>
       <Footer
         brandName={branding.brandName}
