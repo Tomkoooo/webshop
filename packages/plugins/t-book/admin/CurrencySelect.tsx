@@ -21,10 +21,10 @@ export function CurrencySelect({
   const normalized = normalizeTBookCurrency(value)
   return (
     <Select value={normalized} onValueChange={onValueChange}>
-      <SelectTrigger id={id}>
+      <SelectTrigger id={id} className="h-10 w-full bg-background shadow-sm ring-1 ring-border/60">
         <SelectValue placeholder="Pénznem" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="z-[300]" position="popper">
         {TBOOK_CURRENCY_OPTIONS.map((opt) => (
           <SelectItem key={opt.code} value={opt.code}>
             {opt.label}

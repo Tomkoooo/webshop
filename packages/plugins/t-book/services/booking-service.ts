@@ -180,16 +180,25 @@ export class TBookBookingService {
     }
 
     const registrationUnit = event.registrationUnit ?? "person"
+    const teamMemberFieldSchema = normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? [])
     const attendeeIssues = validateAttendees(
       registrationFieldSchema,
       parsed.guests,
       parsed.attendees,
-      registrationUnit
+      registrationUnit,
+      {
+        teamMemberFieldSchema,
+        teamMemberLimit: event.teamMemberLimit ?? null,
+      }
     )
     if (attendeeIssues.length > 0) {
       throw new Error(attendeeIssues.map((issue) => issue.message).join(" "))
     }
-    const attendees = normalizeAttendeePayload(registrationFieldSchema, parsed.attendees)
+    const attendees = normalizeAttendeePayload(
+      registrationFieldSchema,
+      parsed.attendees,
+      teamMemberFieldSchema
+    )
 
     const group = event.groupId
       ? await TBookEventGroup.findById(event.groupId).lean()
@@ -211,6 +220,8 @@ export class TBookBookingService {
       },
       billing: parsed.billing ?? null,
       attendeeFieldSchema: registrationFieldSchema,
+      teamMemberFieldSchema,
+      teamMemberLimit: event.teamMemberLimit ?? null,
       attendees,
       guests: parsed.guests,
       nights,

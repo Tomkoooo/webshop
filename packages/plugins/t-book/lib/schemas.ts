@@ -23,8 +23,13 @@ export const tBookAttendeeFieldDefSchema = z.object({
   sortOrder: z.number().int().optional(),
 })
 
+export const tBookBookingTeamMemberSchema = z.object({
+  fields: z.record(z.string(), z.union([z.string(), z.number()])),
+})
+
 export const tBookBookingAttendeeSchema = z.object({
   fields: z.record(z.string(), z.union([z.string(), z.number()])),
+  members: z.array(tBookBookingTeamMemberSchema).optional(),
 })
 
 export const tBookStatusSchema = z.enum(["draft", "active", "archived"])
@@ -247,6 +252,9 @@ export const eventInputSchema = z.object({
   ticketFeeHuf: z.number().min(0),
   ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).default("per_person"),
   registrationUnit: z.enum(["person", "team"]).default("person"),
+  /** Max listed members per team registration (null = unlimited). */
+  teamMemberLimit: z.number().int().min(1).max(100).nullable().optional(),
+  teamMemberFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   ticketPriceBasis: tBookPriceBasisSchema.default("net"),
   ticketVatPercent: tBookVatPercentSchema,
   capacity: z.number().int().min(0).nullable().optional(),

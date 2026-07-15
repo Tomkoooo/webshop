@@ -43,6 +43,8 @@ export interface ITBookBooking extends Document {
   billing: TBookBillingInfo | null
   /** Snapshot of event attendee field schema at booking time (for stable admin labels). */
   attendeeFieldSchema: TBookAttendeeFieldDef[]
+  teamMemberFieldSchema: TBookAttendeeFieldDef[]
+  teamMemberLimit: number | null
   /** Per-ticket participant data — one row per guest when schema is configured. */
   attendees: TBookBookingAttendee[]
   guests: number
@@ -131,9 +133,17 @@ const AttendeeFieldDefSchema = new Schema(
   { _id: false }
 )
 
+const BookingTeamMemberSchema = new Schema(
+  {
+    fields: { type: Schema.Types.Mixed, default: {} },
+  },
+  { _id: false }
+)
+
 const BookingAttendeeSchema = new Schema(
   {
     fields: { type: Schema.Types.Mixed, default: {} },
+    members: { type: [BookingTeamMemberSchema], default: undefined },
   },
   { _id: false }
 )
@@ -150,6 +160,8 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     customer: { type: CustomerSchema, required: true },
     billing: { type: BillingSchema, default: null },
     attendeeFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
+    teamMemberFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
+    teamMemberLimit: { type: Number, default: null },
     attendees: { type: [BookingAttendeeSchema], default: [] },
     guests: { type: Number, required: true, min: 1 },
     nights: { type: Number, default: 0, min: 0 },

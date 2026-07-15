@@ -35,6 +35,8 @@ export type TBookPublicEvent = {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit?: "person" | "team"
+  teamMemberLimit?: number | null
+  teamMemberFieldSchema?: TBookPublicAttendeeFieldDef[]
   currency?: string
   heroImage: string
   attendeeFieldSchema: TBookPublicAttendeeFieldDef[]
@@ -73,6 +75,7 @@ export type TBookSelections = Record<string, string | number | boolean | string[
 
 export type TBookBookingAttendeePayload = {
   fields: Record<string, string | number>
+  members?: Array<{ fields: Record<string, string | number> }>
 }
 
 export type TBookPublicDirectoryListing = {

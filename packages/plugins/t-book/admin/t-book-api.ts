@@ -41,6 +41,8 @@ export type AdminEvent = {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit: "person" | "team"
+  teamMemberLimit: number | null
+  teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
   currency: string

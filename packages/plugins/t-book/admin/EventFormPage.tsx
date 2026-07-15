@@ -55,6 +55,8 @@ type EventDraft = {
   ticketFeeHuf: number
   ticketFeeMode: AdminEvent["ticketFeeMode"]
   registrationUnit: AdminEvent["registrationUnit"]
+  teamMemberLimit: string
+  teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
   currency: string
@@ -91,6 +93,8 @@ export function EventFormPage({
     ticketFeeHuf: 0,
     ticketFeeMode: "per_person",
     registrationUnit: "person",
+    teamMemberLimit: "",
+    teamMemberFieldSchema: [],
     ticketPriceBasis: "net",
     ticketVatPercent: TBOOK_DEFAULT_VAT_PERCENT,
     currency: orgCurrency,
@@ -123,6 +127,8 @@ export function EventFormPage({
             ticketFeeHuf: e.ticketFeeHuf,
             ticketFeeMode: e.ticketFeeMode,
             registrationUnit: e.registrationUnit ?? "person",
+            teamMemberLimit: e.teamMemberLimit != null ? String(e.teamMemberLimit) : "",
+            teamMemberFieldSchema: e.teamMemberFieldSchema ?? [],
             ticketPriceBasis: e.ticketPriceBasis ?? "net",
             ticketVatPercent: e.ticketVatPercent ?? TBOOK_DEFAULT_VAT_PERCENT,
             currency: normalizeTBookCurrency(e.currency),
@@ -167,6 +173,8 @@ export function EventFormPage({
       ticketFeeHuf: draft.ticketFeeHuf,
       ticketFeeMode: draft.ticketFeeMode,
       registrationUnit: draft.registrationUnit,
+      teamMemberLimit: draft.teamMemberLimit ? Number(draft.teamMemberLimit) : null,
+      teamMemberFieldSchema: draft.teamMemberFieldSchema,
       ticketPriceBasis: draft.ticketPriceBasis,
       ticketVatPercent: draft.ticketVatPercent,
       currency: draft.currency,
@@ -343,14 +351,42 @@ export function EventFormPage({
                   onChange={(e) => patch({ capacity: e.target.value })}
                 />
               </TBookField>
+              {draft.registrationUnit === "team" ? (
+                <TBookField label="Max. csapattag / csapat (üres = korlátlan)">
+                  <TBookInput
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={draft.teamMemberLimit}
+                    onChange={(e) => patch({ teamMemberLimit: e.target.value })}
+                    placeholder="pl. 5"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Korlátozza, hány tag adható meg csapatonként a foglalási űrlapon.
+                  </p>
+                </TBookField>
+              ) : null}
             </div>
           ) : null}
           {step === 3 ? (
-            <AttendeeFieldsEditor
-              fields={draft.attendeeFieldSchema}
-              onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
-              registrationUnit={draft.registrationUnit}
-            />
+            <div className="space-y-8">
+              <AttendeeFieldsEditor
+                fields={draft.attendeeFieldSchema}
+                onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
+                registrationUnit={draft.registrationUnit}
+              />
+              {draft.registrationUnit === "team" ? (
+                <div className="border-t border-border pt-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground">Csapattagok adatai</h3>
+                  <AttendeeFieldsEditor
+                    fields={draft.teamMemberFieldSchema}
+                    onChange={(teamMemberFieldSchema) => patch({ teamMemberFieldSchema })}
+                    registrationUnit="team"
+                    scope="teamMember"
+                  />
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {step === 4 ? (
             <div className="space-y-4">

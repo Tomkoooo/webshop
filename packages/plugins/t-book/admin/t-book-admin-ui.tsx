@@ -1,6 +1,7 @@
 "use client"
 
 import type { ComponentType, ReactNode } from "react"
+import { Children, isValidElement, useMemo } from "react"
 import { Calendar } from "lucide-react"
 import { cn } from "@wse/core/lib/utils"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
@@ -8,17 +9,54 @@ import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
 import { Button } from "@wse/core/components/ui/button"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@wse/core/components/ui/select"
+import {
   pluginAdminFieldLabel,
   pluginAdminInputClass,
   pluginAdminPageDescription,
   pluginAdminPageHeader,
   pluginAdminPageTitle,
-  pluginAdminSelectClass,
 } from "@wse/core/lib/plugin-admin-ui"
 
 export const tBookInputClass = pluginAdminInputClass
 
-export const tBookSelectClass = pluginAdminSelectClass
+/** Radix Select cannot use empty string as item value — map option value="" to this sentinel. */
+const TBOOK_SELECT_EMPTY = "__tbook_empty__"
+
+type ParsedOption = {
+  value: string
+  label: ReactNode
+  disabled?: boolean
+}
+
+function parseSelectOptions(children: ReactNode): ParsedOption[] {
+  const options: ParsedOption[] = []
+  for (const child of Children.toArray(children)) {
+    if (!isValidElement<{ value?: string; disabled?: boolean; children?: ReactNode }>(child)) continue
+    if (child.type !== "option") continue
+    const rawValue = child.props.value ?? ""
+    options.push({
+      value: rawValue === "" ? TBOOK_SELECT_EMPTY : String(rawValue),
+      label: child.props.children ?? rawValue,
+      disabled: child.props.disabled,
+    })
+  }
+  return options
+}
+
+function toSelectValue(value: string | number | readonly string[] | undefined): string {
+  if (value == null || value === "") return TBOOK_SELECT_EMPTY
+  return String(value)
+}
+
+function fromSelectValue(value: string): string {
+  return value === TBOOK_SELECT_EMPTY ? "" : value
+}
 
 export function TBookLoading({ label = "Betöltés…" }: { label?: string }) {
   return (
@@ -71,8 +109,46 @@ export function TBookDateInput({ className, ...props }: React.ComponentProps<typ
   )
 }
 
-export function TBookSelect(props: React.ComponentProps<"select">) {
-  return <select {...props} className={cn(tBookSelectClass, props.className)} />
+export function TBookSelect({
+  value,
+  onChange,
+  children,
+  className,
+  disabled,
+  id,
+  required: _required,
+  name: _name,
+  autoFocus: _autoFocus,
+  ..._rest
+}: React.ComponentProps<"select">) {
+  const options = useMemo(() => parseSelectOptions(children), [children])
+  const selectValue = toSelectValue(value)
+
+  return (
+    <Select
+      value={selectValue}
+      onValueChange={(next) => {
+        onChange?.({
+          target: { value: fromSelectValue(next) },
+        } as React.ChangeEvent<HTMLSelectElement>)
+      }}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        id={id}
+        className={cn("h-10 w-full bg-background shadow-sm ring-1 ring-border/60", className)}
+      >
+        <SelectValue placeholder="Válassz…" />
+      </SelectTrigger>
+      <SelectContent className="z-[300]" position="popper">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 }
 
 export function TBookPageHeader({

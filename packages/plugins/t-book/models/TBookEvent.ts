@@ -27,6 +27,8 @@ export interface ITBookEvent extends Document {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit: "person" | "team"
+  teamMemberLimit: number | null
+  teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
   ticketVatPercent: number
   /** null = unlimited. */
@@ -69,6 +71,38 @@ const TBookEventSchema = new Schema<ITBookEvent>(
       default: "per_person",
     },
     registrationUnit: { type: String, enum: ["person", "team"], default: "person" },
+    teamMemberLimit: { type: Number, default: null, min: 1, max: 100 },
+    teamMemberFieldSchema: {
+      type: [
+        new Schema(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true },
+            type: {
+              type: String,
+              enum: ["text", "email", "phone", "number", "date", "select"],
+              required: true,
+            },
+            required: { type: Boolean, default: false },
+            helpText: { type: String, default: "" },
+            choices: {
+              type: [
+                new Schema(
+                  { value: { type: String, required: true }, label: { type: String, required: true } },
+                  { _id: false }
+                ),
+              ],
+              default: undefined,
+            },
+            min: { type: Number },
+            max: { type: Number },
+            sortOrder: { type: Number, default: 0 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     ticketPriceBasis: { type: String, enum: ["net", "gross"], default: "net" },
     ticketVatPercent: { type: Number, default: 27, min: 0, max: 100 },
     capacity: { type: Number, default: null },

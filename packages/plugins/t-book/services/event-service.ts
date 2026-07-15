@@ -156,6 +156,7 @@ export class TBookEventService {
       ...parsed,
       currency,
       attendeeFieldSchema: normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema),
+      teamMemberFieldSchema: normalizeAttendeeFieldSchema(parsed.teamMemberFieldSchema),
       groupId: parsed.groupId ? oid(parsed.groupId) : null,
       ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
     })
@@ -193,6 +194,12 @@ export class TBookEventService {
     }
     if (parsed.attendeeFieldSchema !== undefined) {
       patch.attendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema)
+    }
+    if (parsed.teamMemberFieldSchema !== undefined) {
+      patch.teamMemberFieldSchema = normalizeAttendeeFieldSchema(parsed.teamMemberFieldSchema)
+    }
+    if (parsed.teamMemberLimit !== undefined) {
+      patch.teamMemberLimit = parsed.teamMemberLimit
     }
     if (parsed.currency !== undefined) {
       patch.currency = normalizeTBookCurrency(parsed.currency)
@@ -435,6 +442,8 @@ export class TBookEventService {
       ticketFeeHuf: e.ticketFeeHuf,
       ticketFeeMode: e.ticketFeeMode,
       registrationUnit: e.registrationUnit ?? "person",
+      teamMemberLimit: e.teamMemberLimit ?? null,
+      teamMemberFieldSchema: normalizeAttendeeFieldSchema(e.teamMemberFieldSchema ?? []),
       currency: normalizeTBookCurrency(e.currency),
       heroImage: e.heroImage,
       attendeeFieldSchema: normalizeAttendeeFieldSchema(e.attendeeFieldSchema ?? []),
@@ -467,6 +476,8 @@ export class TBookEventService {
         ticketFeeHuf: event.ticketFeeHuf,
         ticketFeeMode: event.ticketFeeMode,
         registrationUnit: event.registrationUnit ?? "person",
+        teamMemberLimit: event.teamMemberLimit ?? null,
+        teamMemberFieldSchema: normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? []),
         currency: normalizeTBookCurrency(event.currency),
         heroImage: event.heroImage,
         attendeeFieldSchema: normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? []),

@@ -59,7 +59,7 @@ export function AttendeeFieldsEditor({
   fields: TBookAttendeeFieldDef[]
   onChange: (fields: TBookAttendeeFieldDef[]) => void
   registrationUnit?: "person" | "team"
-  scope?: "event" | "hotel"
+  scope?: "event" | "hotel" | "teamMember"
 }) {
   const update = (index: number, patch: Partial<TBookAttendeeFieldDef>) => {
     const next = fields.map((field, i) => (i === index ? { ...field, ...patch } : field))
@@ -88,6 +88,15 @@ export function AttendeeFieldsEditor({
               együtt jelennek meg a foglalási űrlapon.
             </p>
             <p>Egy fizető több {unitLabelPlural} nevére is foglalhat — minden {unitLabel} külön sor.</p>
+          </>
+        ) : scope === "teamMember" ? (
+          <>
+            <p>
+              Ezeket az adatokat <strong className="text-foreground">minden csapattagtól</strong> külön
+              kell megadni (pl. név, e-mail, nem). A csapat szintű mezők (pl. csapatnév) a fenti
+              „Résztvevői adatok” lépésben állíthatók.
+            </p>
+            <p>A vásárló csapatonként felsorolja a tagokat — a maximális létszám a jegyár lépésben állítható.</p>
           </>
         ) : (
           <>
@@ -254,7 +263,11 @@ export function AttendeeFieldsEditor({
           )
         }
       >
-        + {scope === "hotel" ? "Foglalási mező" : `${unitLabel.charAt(0).toUpperCase()}${unitLabel.slice(1)}i mező`}
+        + {scope === "hotel"
+          ? "Foglalási mező"
+          : scope === "teamMember"
+            ? "Csapattag mező"
+            : `${unitLabel.charAt(0).toUpperCase()}${unitLabel.slice(1)}i mező`}
       </Button>
     </div>
   )

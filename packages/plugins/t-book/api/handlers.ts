@@ -57,6 +57,8 @@ function serializeEvent(e: ITBookEvent) {
     ticketFeeHuf: e.ticketFeeHuf,
     ticketFeeMode: e.ticketFeeMode,
     registrationUnit: e.registrationUnit ?? "person",
+    teamMemberLimit: e.teamMemberLimit ?? null,
+    teamMemberFieldSchema: e.teamMemberFieldSchema ?? [],
     ticketPriceBasis: e.ticketPriceBasis ?? "gross",
     ticketVatPercent: e.ticketVatPercent ?? 27,
     currency: e.currency ?? "HUF",

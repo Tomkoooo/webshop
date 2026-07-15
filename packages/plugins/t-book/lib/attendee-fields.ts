@@ -24,6 +24,12 @@ export type TBookAttendeeFieldValue = string | number
 
 export type TBookBookingAttendee = {
   fields: Record<string, TBookAttendeeFieldValue>
+  /** Listed team members when registration unit is team. */
+  members?: TBookBookingTeamMember[]
+}
+
+export type TBookBookingTeamMember = {
+  fields: Record<string, TBookAttendeeFieldValue>
 }
 
 export type AttendeeValidationIssue = { index: number; fieldKey: string; message: string }
@@ -154,10 +160,17 @@ export function validateAttendees(
   schema: TBookAttendeeFieldDef[],
   guests: number,
   attendees: TBookBookingAttendee[] | undefined | null,
-  registrationUnit: TBookRegistrationUnit = "person"
+  registrationUnit: TBookRegistrationUnit = "person",
+  teamOpts?: {
+    teamMemberFieldSchema?: TBookAttendeeFieldDef[]
+    teamMemberLimit?: number | null
+  }
 ): AttendeeValidationIssue[] {
   const normalized = normalizeAttendeeFieldSchema(schema)
-  if (normalized.length === 0) return []
+  const memberSchema = normalizeAttendeeFieldSchema(teamOpts?.teamMemberFieldSchema)
+  const memberLimit = teamOpts?.teamMemberLimit ?? null
+
+  if (normalized.length === 0 && memberSchema.length === 0) return []
 
   const issues: AttendeeValidationIssue[] = []
   const rows = attendees ?? []
@@ -179,6 +192,38 @@ export function validateAttendees(
         issues.push({ index, fieldKey: field.key, message })
       }
     }
+
+    if (registrationUnit !== "team" || memberSchema.length === 0) return
+
+    const members = attendee.members ?? []
+    if (members.length === 0) {
+      issues.push({
+        index,
+        fieldKey: "",
+        message: `${index + 1}. csapat: legalább egy csapattag adata kötelező.`,
+      })
+      return
+    }
+    if (memberLimit != null && members.length > memberLimit) {
+      issues.push({
+        index,
+        fieldKey: "",
+        message: `${index + 1}. csapat: legfeljebb ${memberLimit} csapattag adható meg.`,
+      })
+    }
+
+    members.forEach((member, memberIndex) => {
+      for (const field of memberSchema) {
+        const message = validateFieldValue(field, member.fields?.[field.key])
+        if (message) {
+          issues.push({
+            index,
+            fieldKey: field.key,
+            message: `${index + 1}. csapat, ${memberIndex + 1}. tag: ${message}`,
+          })
+        }
+      }
+    })
   })
 
   return issues
@@ -186,15 +231,20 @@ export function validateAttendees(
 
 export function normalizeAttendeePayload(
   schema: TBookAttendeeFieldDef[],
-  attendees: TBookBookingAttendee[] | undefined | null
+  attendees: TBookBookingAttendee[] | undefined | null,
+  teamMemberSchema: TBookAttendeeFieldDef[] = []
 ): TBookBookingAttendee[] {
   const normalized = normalizeAttendeeFieldSchema(schema)
-  if (normalized.length === 0) return []
+  const normalizedMembers = normalizeAttendeeFieldSchema(teamMemberSchema)
+  if (normalized.length === 0 && normalizedMembers.length === 0) return []
 
-  return (attendees ?? []).map((attendee) => {
+  const normalizeFields = (
+    fieldDefs: TBookAttendeeFieldDef[],
+    rawFields: Record<string, TBookAttendeeFieldValue> | undefined
+  ) => {
     const fields: Record<string, TBookAttendeeFieldValue> = {}
-    for (const field of normalized) {
-      const raw = attendee.fields?.[field.key]
+    for (const field of fieldDefs) {
+      const raw = rawFields?.[field.key]
       if (raw == null || raw === "") continue
       if (field.type === "number") {
         fields[field.key] = typeof raw === "number" ? raw : Number(raw)
@@ -202,7 +252,16 @@ export function normalizeAttendeePayload(
         fields[field.key] = String(raw).trim()
       }
     }
-    return { fields }
+    return fields
+  }
+
+  return (attendees ?? []).map((attendee) => {
+    const fields = normalizeFields(normalized, attendee.fields)
+    if (normalizedMembers.length === 0) return { fields }
+    const members = (attendee.members ?? []).map((member) => ({
+      fields: normalizeFields(normalizedMembers, member.fields),
+    }))
+    return { fields, members }
   })
 }
 

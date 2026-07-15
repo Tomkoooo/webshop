@@ -52,8 +52,10 @@ type Copy = {
 const INPUT =
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
 
-function emptyAttendeeRows(count: number): TBookBookingAttendeePayload[] {
-  return Array.from({ length: count }, () => ({ fields: {} }))
+function emptyAttendeeRows(count: number, withTeamMembers: boolean): TBookBookingAttendeePayload[] {
+  return Array.from({ length: count }, () =>
+    withTeamMembers ? { fields: {}, members: [{ fields: {} }] } : { fields: {} }
+  )
 }
 
 function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelections {
@@ -121,7 +123,11 @@ export function TBookBookingWizard({
     [event?.attendeeFieldSchema, selectedHotel?.registrationFieldSchema]
   )
   const registrationUnit = event?.registrationUnit ?? "person"
+  const teamMemberFieldSchema = event?.teamMemberFieldSchema ?? []
+  const teamMemberLimit = event?.teamMemberLimit ?? null
   const guestUnitLabel = registrationUnitLabel(registrationUnit, guests)
+  const needsTeamMembers =
+    registrationUnit === "team" && teamMemberFieldSchema.length > 0
   const displayCurrency = hotelDisplayCurrency(selectedHotel, event)
   const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
   const availablePackages = useMemo(() => {
@@ -143,7 +149,7 @@ export function TBookBookingWizard({
       setEvent(res.event)
       setHotels(res.hotels)
       setNights(res.event.nights)
-      setAttendees(emptyAttendeeRows(1))
+      setAttendees(emptyAttendeeRows(1, false))
       const firstHotel = res.hotels[0] ?? null
       setSelectedHotelId(firstHotel?.id ?? null)
       setSelections(defaultSelectionsForHotel(firstHotel))
@@ -159,9 +165,9 @@ export function TBookBookingWizard({
   }, [loadEvent])
 
   useEffect(() => {
-    setAttendees(emptyAttendeeRows(guests))
+    setAttendees(emptyAttendeeRows(guests, needsTeamMembers))
     setQuote(null)
-  }, [guests, registrationFieldSchema.length])
+  }, [guests, registrationFieldSchema.length, needsTeamMembers])
 
   useEffect(() => {
     if (!selectedHotel) {
@@ -214,7 +220,8 @@ export function TBookBookingWizard({
           eventId: event.id,
           guests,
           customer,
-          attendees: registrationFieldSchema.length > 0 ? attendees : undefined,
+          attendees:
+            registrationFieldSchema.length > 0 || needsTeamMembers ? attendees : undefined,
           hotelId: selectedHotelId,
           nights: selectedHotelId ? nights : null,
           selections: selectedHotelId ? selections : null,
@@ -233,14 +240,29 @@ export function TBookBookingWizard({
     customer.name.trim() &&
     customer.email.trim() &&
     customer.phone.trim() &&
-    (registrationFieldSchema.length === 0 ||
-      attendees.every((row) =>
-        registrationFieldSchema.every((field) => {
-          if (!field.required) return true
-          const val = row.fields[field.key]
-          return val != null && String(val).trim() !== ""
-        })
-      ))
+    (registrationFieldSchema.length === 0 && !needsTeamMembers
+      ? true
+      : attendees.every((row) => {
+          const teamFieldsOk =
+            registrationFieldSchema.length === 0 ||
+            registrationFieldSchema.every((field) => {
+              if (!field.required) return true
+              const val = row.fields[field.key]
+              return val != null && String(val).trim() !== ""
+            })
+          if (!teamFieldsOk) return false
+          if (!needsTeamMembers) return true
+          const members = row.members ?? []
+          if (members.length === 0) return false
+          if (teamMemberLimit != null && members.length > teamMemberLimit) return false
+          return members.every((member) =>
+            teamMemberFieldSchema.every((field) => {
+              if (!field.required) return true
+              const val = member.fields[field.key]
+              return val != null && String(val).trim() !== ""
+            })
+          )
+        }))
 
   const goNext = async () => {
     if (step === 2) {
@@ -465,7 +487,7 @@ export function TBookBookingWizard({
             </div>
           </div>
 
-          {registrationFieldSchema.length > 0 ? (
+          {registrationFieldSchema.length > 0 || needsTeamMembers ? (
             <div className="space-y-4 border-t border-border pt-4">
               <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
               <p className="text-sm text-muted-foreground">
@@ -479,23 +501,107 @@ export function TBookBookingWizard({
                   <p className="text-sm font-semibold">
                     {index + 1}. {guestUnitLabel}
                   </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {registrationFieldSchema.map((field) => (
-                      <AttendeeFieldInput
-                        key={field.key}
-                        field={field}
-                        value={attendee.fields[field.key]}
-                        onChange={(value) =>
-                          setAttendees((rows) =>
-                            rows.map((row, i) =>
-                              i === index ? { fields: { ...row.fields, [field.key]: value } } : row
+                  {registrationFieldSchema.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {registrationFieldSchema.map((field) => (
+                        <AttendeeFieldInput
+                          key={field.key}
+                          field={field}
+                          value={attendee.fields[field.key]}
+                          onChange={(value) =>
+                            setAttendees((rows) =>
+                              rows.map((row, i) =>
+                                i === index ? { ...row, fields: { ...row.fields, [field.key]: value } } : row
+                              )
                             )
-                          )
-                        }
-                        inputClassName={INPUT}
-                      />
-                    ))}
-                  </div>
+                          }
+                          inputClassName={INPUT}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {needsTeamMembers ? (
+                    <div className="space-y-3 border-t border-border pt-3">
+                      <p className="text-sm font-medium">Csapattagok</p>
+                      {(attendee.members ?? []).map((member, memberIndex) => (
+                        <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
+                          <p className="text-xs font-semibold text-muted-foreground">
+                            {memberIndex + 1}. tag
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {teamMemberFieldSchema.map((field) => (
+                              <AttendeeFieldInput
+                                key={field.key}
+                                field={field}
+                                value={member.fields[field.key]}
+                                onChange={(value) =>
+                                  setAttendees((rows) =>
+                                    rows.map((row, i) =>
+                                      i === index
+                                        ? {
+                                            ...row,
+                                            members: (row.members ?? []).map((m, mi) =>
+                                              mi === memberIndex
+                                                ? { fields: { ...m.fields, [field.key]: value } }
+                                                : m
+                                            ),
+                                          }
+                                        : row
+                                    )
+                                  )
+                                }
+                                inputClassName={INPUT}
+                              />
+                            ))}
+                          </div>
+                          {(attendee.members ?? []).length > 1 ? (
+                            <button
+                              type="button"
+                              className="text-xs text-destructive hover:underline"
+                              onClick={() =>
+                                setAttendees((rows) =>
+                                  rows.map((row, i) =>
+                                    i === index
+                                      ? {
+                                          ...row,
+                                          members: (row.members ?? []).filter(
+                                            (_, mi) => mi !== memberIndex
+                                          ),
+                                        }
+                                      : row
+                                  )
+                                )
+                              }
+                            >
+                              Tag eltávolítása
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                      {teamMemberLimit == null ||
+                      (attendee.members ?? []).length < teamMemberLimit ? (
+                        <button
+                          type="button"
+                          className="text-sm font-medium text-primary hover:underline"
+                          onClick={() =>
+                            setAttendees((rows) =>
+                              rows.map((row, i) =>
+                                i === index
+                                  ? {
+                                      ...row,
+                                      members: [...(row.members ?? []), { fields: {} }],
+                                    }
+                                  : row
+                              )
+                            )
+                          }
+                        >
+                          + Csapattag hozzáadása
+                          {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
