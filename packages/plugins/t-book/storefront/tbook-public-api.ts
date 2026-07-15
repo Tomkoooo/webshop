@@ -1,4 +1,5 @@
 import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "../lib/api-key"
+import { DEFAULT_TBOOK_CURRENCY, formatTBookMoney } from "../lib/currency"
 
 export function resolveTBookApiBase(override?: string): string {
   const trimmed = override?.replace(/\/$/, "")
@@ -134,7 +135,12 @@ async function tbookFetch<T>(
 }
 
 export function listEvents(apiKey: string, apiBase?: string) {
-  return tbookFetch<{ ok: true; events: TBookPublicEvent[] }>(apiKey, "/events", undefined, apiBase)
+  return tbookFetch<{ ok: true; events: TBookPublicEvent[]; currency?: string }>(
+    apiKey,
+    "/events",
+    undefined,
+    apiBase
+  )
 }
 
 export function getEventDetail(apiKey: string, eventId: string, apiBase?: string) {
@@ -208,10 +214,6 @@ export function createBooking(
   )
 }
 
-export function formatHuf(amount: number): string {
-  return new Intl.NumberFormat("hu-HU", {
-    style: "currency",
-    currency: "HUF",
-    maximumFractionDigits: 0,
-  }).format(amount)
+export function formatHuf(amount: number, currency: string = DEFAULT_TBOOK_CURRENCY): string {
+  return formatTBookMoney(amount, currency)
 }

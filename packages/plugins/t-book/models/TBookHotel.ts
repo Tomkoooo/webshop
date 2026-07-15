@@ -3,6 +3,7 @@ import type { TBookHotelPricing } from "../lib/pricing-types"
 import type { TBookStatus } from "../lib/schemas"
 
 export interface ITBookHotel extends Document {
+  organizationId?: Types.ObjectId | null
   /** Hotels are owned by the event group (shared across events). */
   groupId: Types.ObjectId | null
   /** @deprecated Legacy per-event hotels — migrated to groupId on read. */
@@ -88,6 +89,7 @@ const AddonGroupSchema = new Schema(
 
 const TBookHotelSchema = new Schema<ITBookHotel>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
     groupId: { type: Schema.Types.ObjectId, ref: "TBookEventGroup", default: null, index: true },
     eventId: { type: Schema.Types.ObjectId, ref: "TBookEvent", default: null, index: true },
     name: { type: String, required: true },

@@ -24,6 +24,7 @@ import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookLocationField } from "./TBookLocationField"
 import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
+import { useOrgCurrency } from "./use-org-currency"
 
 function toDateInputValue(value?: string): string {
   if (!value) return ""
@@ -86,6 +87,7 @@ export function EventFormDialog({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
+  const { currency } = useOrgCurrency()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<EventDraft>(() => draftFromEvent(event, defaultGroupId))
@@ -225,10 +227,11 @@ export function EventFormDialog({
           {step === 2 ? (
             <div className="space-y-4">
               <TBookNetPriceField
-                label="Jegyár (Ft)"
+                label={`Jegyár (${currency})`}
                 amount={draft.ticketFeeHuf}
                 priceBasis={draft.ticketPriceBasis}
                 vatPercent={draft.ticketVatPercent}
+                currency={currency}
                 onAmountChange={(ticketFeeHuf) => patch({ ticketFeeHuf })}
                 onPriceBasisChange={(ticketPriceBasis) => patch({ ticketPriceBasis })}
                 onVatPercentChange={(ticketVatPercent) => patch({ ticketVatPercent })}

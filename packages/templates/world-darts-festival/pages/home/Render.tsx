@@ -30,7 +30,9 @@ function ScheduleDay({
   items: string[]
 }) {
   const [open, setOpen] = useState(index === 0)
+  const edit = useSurfaceDocEdit()
   const panelId = `schedule-day-${index}`
+  const itemsPath = `schedule.days.${index}.items`
 
   return (
     <div className="rounded-xl border border-border/60 bg-surface overflow-hidden">
@@ -53,18 +55,36 @@ function ScheduleDay({
         <ChevronDown className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
       {open ? (
-        <ul id={panelId} role="region" aria-labelledby={`${panelId}-btn`} className="space-y-2 border-t border-border/60 px-5 py-4">
-          {items.map((item, itemIndex) => (
-            <li key={itemIndex} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
-              <EditableDocText
-                path={`schedule.days.${index}.items.${itemIndex}`}
-                value={item}
-                multiline
-              />
-            </li>
-          ))}
-        </ul>
+        <div id={panelId} role="region" aria-labelledby={`${panelId}-btn`} className="space-y-2 border-t border-border/60 px-5 py-4">
+          <ul className="space-y-2">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex} className="relative flex items-start gap-2 text-sm text-muted-foreground">
+                {edit.enabled ? (
+                  <CmsListItemToolbar
+                    onRemove={() =>
+                      edit.setPath(
+                        itemsPath,
+                        items.filter((_, i) => i !== itemIndex)
+                      )
+                    }
+                  />
+                ) : null}
+                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                <EditableDocText
+                  path={`schedule.days.${index}.items.${itemIndex}`}
+                  value={item}
+                  multiline
+                />
+              </li>
+            ))}
+          </ul>
+          {edit.enabled ? (
+            <CmsListAddButton
+              label="Programpont hozzáadása"
+              onClick={() => edit.setPath(itemsPath, [...items, "New schedule item"])}
+            />
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

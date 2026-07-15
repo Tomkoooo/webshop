@@ -2,7 +2,7 @@ import { getHomepagePageData } from "@wse/core/lib/homepage-page-data"
 import { getStorefrontFooterHydrationProps } from "@wse/core/lib/storefront-footer-props"
 import { extractMineshowSiteConfig } from "@wse/template-minecraft-camp/lib/site-config"
 import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
-import { extractTBookHomeChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 
 export const revalidate = 60
 
@@ -19,6 +19,7 @@ export default async function LandingPage() {
   const mineshowSite = isMinecraftCamp ? extractMineshowSiteConfig(content) : null
   const wdfChrome = isWorldDartsFestival ? extractTBookHomeChrome(content) : null
   const wdfNavItems = wdfChrome ? navItemsFromTBookChrome(wdfChrome) : undefined
+  const wdfNavCta = wdfChrome ? navCtaFromTBookChrome(wdfChrome) : undefined
   const fontRoot = isMinecraftCamp ? pressStart2P.variable : ""
 
   return (
@@ -32,6 +33,7 @@ export default async function LandingPage() {
         NavbarSearch={NavbarSearch}
         venueBadge={mineshowSite?.venueShort}
         navItems={wdfNavItems}
+        navCta={wdfNavCta}
       />
 
       <main className="overflow-x-hidden">

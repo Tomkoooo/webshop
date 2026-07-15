@@ -8,13 +8,15 @@ import { Button } from "@wse/core/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@wse/core/components/ui/card"
 import {
   tBookAdminApi,
-  formatHuf,
+  formatMoney,
   BOOKING_STATUS_LABELS,
   type AdminDashboardStats,
 } from "./t-book-api"
 import { TBookLoading, TBookPageHeader, TBookStatusBadge } from "./t-book-admin-ui"
+import { useOrgCurrency } from "./use-org-currency"
 
 export function TBookDashboard() {
+  const { currency } = useOrgCurrency()
   const [stats, setStats] = useState<AdminDashboardStats | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,7 +39,7 @@ export function TBookDashboard() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AdminKpiCard
           title="Bevétel"
-          value={formatHuf(stats.revenueHuf)}
+          value={formatMoney(stats.revenueHuf, currency)}
           subtitle={`${stats.bookingCount} fizetett foglalás`}
           icon={Wallet}
         />
@@ -90,7 +92,7 @@ export function TBookDashboard() {
                   <div className="flex shrink-0 items-center gap-3">
                     <TBookStatusBadge status={b.status} labels={BOOKING_STATUS_LABELS} />
                     <span className="whitespace-nowrap text-sm font-semibold text-foreground">
-                      {formatHuf(b.totalHuf)}
+                      {formatMoney(b.totalHuf, currency)}
                     </span>
                   </div>
                 </li>

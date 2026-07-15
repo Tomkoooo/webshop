@@ -5,10 +5,13 @@ import { useCallback, useMemo } from "react"
 import { usePathname } from "next/navigation"
 import {
   BarChart3,
+  Building2,
   LayoutDashboard,
   LogOut,
   Puzzle,
+  Shield,
   ShoppingCart,
+  Users,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { Avatar, AvatarFallback } from "@wse/core/components/ui/avatar"
@@ -63,12 +66,16 @@ export function AdminSidebar({
   shopEnabled = true,
   pluginNavGroups = [],
   contentModeNav,
+  multiTenantAdmin = false,
+  isSystemAdmin = false,
 }: {
   brandName?: string
   enabledFeatures?: Partial<Record<FeatureKey, boolean>>
   shopEnabled?: boolean
   pluginNavGroups?: PluginNavGroup[]
   contentModeNav?: ContentModeSidebarNav
+  multiTenantAdmin?: boolean
+  isSystemAdmin?: boolean
 }) {
   const { data: session } = useSession()
   const { setOpenMobile } = useSidebar()
@@ -140,6 +147,50 @@ export function AdminSidebar({
       </SidebarHeader>
 
       <SidebarContent>
+        {multiTenantAdmin ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === "/admin"}>
+                    <Link href="/admin" onClick={onLinkClick}>
+                      <LayoutDashboard className="size-4" />
+                      <span>Áttekintés</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {isSystemAdmin ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/system")}>
+                      <Link href="/admin/system" onClick={onLinkClick}>
+                        <Shield className="size-4" />
+                        <span>Rendszer</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/org")}>
+                    <Link href="/admin/org/members" onClick={onLinkClick}>
+                      <Users className="size-4" />
+                      <span>Szervezet</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === "/admin/org/select"}>
+                    <Link href="/admin/org/select" onClick={onLinkClick}>
+                      <Building2 className="size-4" />
+                      <span>Szervezet váltás</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
+
         {contentModeItems.length > 0 ? (
           <SidebarGroup>
             <SidebarGroupLabel>Modul</SidebarGroupLabel>

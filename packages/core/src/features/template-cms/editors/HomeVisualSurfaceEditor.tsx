@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
 import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
+import { CmsNavChromeSidebar } from "@wse/core/features/template-cms/components/CmsNavChromeSidebar"
 import { buildListFieldsSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
@@ -21,7 +22,7 @@ import {
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
-import { extractTBookHomeChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
 import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
@@ -126,15 +127,25 @@ export function HomeVisualSurfaceEditor({
     seoDescription: "",
   }
 
-  const structureSidebar = buildListFieldsSidebar({
-    specs: mod.pages.home.listFields,
-    draft,
-    setPath,
-  })
+  const structureSidebar =
+    templateId === "world-darts-festival" ? (
+      <CmsNavChromeSidebar draft={draft} setPath={setPath} />
+    ) : (
+      buildListFieldsSidebar({
+        specs: mod.pages.home.listFields,
+        draft,
+        setPath,
+      })
+    )
 
   const eventNavItems =
     templateId === "world-darts-festival"
       ? navItemsFromTBookChrome(extractTBookHomeChrome(draft))
+      : undefined
+
+  const eventNavCta =
+    templateId === "world-darts-festival"
+      ? navCtaFromTBookChrome(extractTBookHomeChrome(draft))
       : undefined
 
   const toolbar = (
@@ -273,6 +284,7 @@ export function HomeVisualSurfaceEditor({
       toolbarBelowBranding={toolbar}
       structureSidebar={structureSidebar}
       navItems={eventNavItems}
+      navCta={eventNavCta}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

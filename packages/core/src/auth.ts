@@ -118,6 +118,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } catch (error) {
         console.error("[auth] bootstrap admin on signIn failed", error)
       }
+      if (userId && email) {
+        try {
+          const { isMultiTenantAdminEnabled } = await import("@wse/core/lib/site-features")
+          if (isMultiTenantAdminEnabled()) {
+            const { TBookOrgService } = await import("@wse/plugin-t-book/services/org-service")
+            await TBookOrgService.processPendingInvitesForEmail(email, userId)
+          }
+        } catch (error) {
+          console.error("[auth] process org invites failed", error)
+        }
+      }
     },
   },
   callbacks: {
@@ -166,10 +177,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           
           if (dbUser) {
             if (dbUser._id) {
-              session.user.id = String(dbUser._id);
+              session.user.id = String(dbUser._id)
             }
             if (dbUser.role) {
-              session.user.role = dbUser.role as "ADMIN" | "USER";
+              session.user.role = dbUser.role as "ADMIN" | "USER"
+            }
+            session.user.isSystemAdmin = dbUser.isSystemAdmin === true
+
+            try {
+              const { isMultiTenantAdminEnabled } = await import("@wse/core/lib/site-features")
+              if (isMultiTenantAdminEnabled() && session.user.id) {
+                const { listUserOrganizationIds } = await import("@wse/plugin-t-book/lib/org-auth")
+                const { getActiveOrganizationIdFromCookie } = await import(
+                  "@wse/plugin-t-book/lib/org-cookie"
+                )
+                session.user.organizationIds = await listUserOrganizationIds(session.user.id)
+                session.user.activeOrganizationId =
+                  (await getActiveOrganizationIdFromCookie()) ?? undefined
+              }
+            } catch (error) {
+              console.error("[auth] Failed to load org session fields:", error)
             }
           }
         } catch (error) {

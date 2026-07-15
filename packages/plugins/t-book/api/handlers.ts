@@ -15,6 +15,9 @@ import { geocodeAddress } from "../lib/geocode"
 import type { ITBookEventGroup } from "../models/TBookEventGroup"
 import type { ITBookEvent } from "../models/TBookEvent"
 import type { ITBookHotel } from "../models/TBookHotel"
+import { orgIdFromAuth, resolveTBookAdminAuth } from "../lib/admin-api-auth"
+import { OrgAuthError } from "../lib/org-auth"
+import { handleTBookOrgApi, handleTBookSystemApi } from "./org-handlers"
 
 function serializeGroup(g: ITBookEventGroup) {
   return {
@@ -159,8 +162,11 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     // ---- Public, API-key protected ----------------------------------------
     if (segment === "events" && method === "GET" && path.length === 1) {
       const { groupId } = await requireApiKeyGroup(request)
-      const events = await TBookEventService.listPublicEventsForGroup(groupId)
-      return json({ ok: true, events }, 200, request)
+      const [events, currency] = await Promise.all([
+        TBookEventService.listPublicEventsForGroup(groupId),
+        TBookEventService.getOrganizationCurrencyForGroup(groupId),
+      ])
+      return json({ ok: true, events, currency }, 200, request)
     }
 
     if (segment === "events" && path[1] && method === "GET" && path.length === 2) {
@@ -195,10 +201,17 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       return json({ ok: true, ...result }, 200, request)
     }
 
+    // ---- Org & system (multi-tenant) --------------------------------------
+    if (segment === "org") {
+      return handleTBookOrgApi(path.slice(1), request, method)
+    }
+
+    if (segment === "system") {
+      return handleTBookSystemApi(path.slice(1), request, method)
+    }
+
     // ---- Admin (session auth) ---------------------------------------------
     if (segment === "admin") {
-      const { requireAdmin } = await import("@wse/core/lib/admin-auth")
-      await requireAdmin()
       return handleTBookAdminApi(path.slice(1), request, method)
     }
 
@@ -209,6 +222,9 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     console.error("[t-book]", err)
     if (err instanceof Error && err.message === "Unauthorized") {
       return json({ error: "Unauthorized" }, 401, request)
+    }
+    if (err instanceof OrgAuthError) {
+      return json({ error: err.message }, err.statusCode, request)
     }
     return json({ error: errorMessage(err, "Hiba történt") }, 400, request)
   }
@@ -259,13 +275,17 @@ async function handleTBookAdminApi(
   const segment = path[0] ?? ""
   const url = new URL(request.url)
 
+  try {
   // ---- Dashboard ----------------------------------------------------------
   if (segment === "dashboard" && method === "GET" && path.length === 1) {
-    const stats = await TBookEventService.getDashboardStats()
+    const authResult = await resolveTBookAdminAuth("stats:read")
+    const orgId = orgIdFromAuth(authResult)
+    const stats = await TBookEventService.getDashboardStats(orgId)
     return json({ ok: true, stats })
   }
 
   if (segment === "connection-test" && method === "POST" && path.length === 1) {
+    await resolveTBookAdminAuth("group:read")
     const body = await request.json()
     const apiKey = String(body.apiKey ?? "")
     const apiBaseOverride =
@@ -280,6 +300,7 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "geocode" && method === "POST" && path.length === 1) {
+    await resolveTBookAdminAuth("event:write")
     const body = await request.json()
     const result = await geocodeAddress(String(body.address ?? ""))
     return json({ ok: true, ...result })
@@ -287,7 +308,9 @@ async function handleTBookAdminApi(
 
   // ---- Event groups --------------------------------------------------------
   if (segment === "groups" && method === "GET" && path.length === 1) {
-    const groups = await TBookEventService.listGroups()
+    const authResult = await resolveTBookAdminAuth("group:read")
+    const orgId = orgIdFromAuth(authResult)
+    const groups = await TBookEventService.listGroups(orgId)
     return json({
       ok: true,
       groups: groups.map(serializeGroup),
@@ -295,38 +318,49 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "groups" && path[1] && method === "GET" && path.length === 2) {
-    const group = await TBookEventService.getGroup(path[1])
+    const authResult = await resolveTBookAdminAuth("group:read")
+    const orgId = orgIdFromAuth(authResult)
+    const group = await TBookEventService.getGroup(path[1], orgId)
     if (!group) return json({ error: "Csoport nem található" }, 404)
     return json({ ok: true, group: serializeGroup(group) })
   }
 
   if (segment === "groups" && method === "POST" && path.length === 1) {
+    const authResult = await resolveTBookAdminAuth("group:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    const { group, apiKey } = await TBookEventService.createGroup(body)
-    // The plaintext key is returned exactly once — only the hash is stored.
+    const { group, apiKey } = await TBookEventService.createGroup(body, orgId)
     return json({ ok: true, id: String(group._id), apiKey })
   }
 
   if (segment === "groups" && path[1] && method === "PUT" && path.length === 2) {
+    const authResult = await resolveTBookAdminAuth("group:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    await TBookEventService.updateGroup(path[1], body)
+    await TBookEventService.updateGroup(path[1], body, orgId)
     return json({ ok: true })
   }
 
   if (segment === "groups" && path[1] && method === "DELETE" && path.length === 2) {
-    await TBookEventService.deleteGroup(path[1])
+    const authResult = await resolveTBookAdminAuth("group:write")
+    const orgId = orgIdFromAuth(authResult)
+    await TBookEventService.deleteGroup(path[1], orgId)
     return json({ ok: true })
   }
 
   if (segment === "groups" && path[1] && path[2] === "rotate-key" && method === "POST") {
-    const apiKey = await TBookEventService.rotateGroupApiKey(path[1])
+    const authResult = await resolveTBookAdminAuth("group:apiKey")
+    const orgId = orgIdFromAuth(authResult)
+    const apiKey = await TBookEventService.rotateGroupApiKey(path[1], orgId)
     return json({ ok: true, apiKey })
   }
 
   // ---- Events --------------------------------------------------------------
   if (segment === "events" && method === "GET" && path.length === 1) {
+    const authResult = await resolveTBookAdminAuth("event:read")
+    const orgId = orgIdFromAuth(authResult)
     const groupId = url.searchParams.get("groupId") || undefined
-    const events = await TBookEventService.listEvents({ groupId })
+    const events = await TBookEventService.listEvents({ groupId, organizationId: orgId })
     return json({
       ok: true,
       events: events.map(serializeEvent),
@@ -334,19 +368,25 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "events" && method === "POST" && path.length === 1) {
+    const authResult = await resolveTBookAdminAuth("event:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    const event = await TBookEventService.createEvent(body)
+    const event = await TBookEventService.createEvent(body, orgId)
     return json({ ok: true, id: String(event._id) })
   }
 
   if (segment === "events" && path[1] === "reorder" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("event:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    await TBookEventService.reorderEvents(body.orderedIds ?? [])
+    await TBookEventService.reorderEvents(body.orderedIds ?? [], orgId)
     return json({ ok: true })
   }
 
   if (segment === "events" && path[1] && method === "GET" && path.length === 2) {
-    const event = await TBookEventService.getEvent(path[1])
+    const authResult = await resolveTBookAdminAuth("event:read")
+    const orgId = orgIdFromAuth(authResult)
+    const event = await TBookEventService.getEvent(path[1], orgId)
     if (!event) return json({ error: "Esemény nem található" }, 404)
     return json({
       ok: true,
@@ -355,18 +395,24 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "events" && path[1] && method === "PUT" && path.length === 2) {
+    const authResult = await resolveTBookAdminAuth("event:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    await TBookEventService.updateEvent(path[1], body)
+    await TBookEventService.updateEvent(path[1], body, orgId)
     return json({ ok: true })
   }
 
   if (segment === "events" && path[1] && method === "DELETE" && path.length === 2) {
-    await TBookEventService.deleteEvent(path[1])
+    const authResult = await resolveTBookAdminAuth("event:write")
+    const orgId = orgIdFromAuth(authResult)
+    await TBookEventService.deleteEvent(path[1], orgId)
     return json({ ok: true })
   }
 
   if (segment === "groups" && path[1] && path[2] === "hotels" && method === "GET") {
-    const hotels = await TBookEventService.listHotelsForGroup(path[1])
+    const authResult = await resolveTBookAdminAuth("hotel:read")
+    const orgId = orgIdFromAuth(authResult)
+    const hotels = await TBookEventService.listHotelsForGroup(path[1], orgId)
     return json({
       ok: true,
       hotels: hotels.map(serializeHotel),
@@ -374,14 +420,18 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "groups" && path[1] && path[2] === "hotels" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("hotel:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    const hotel = await TBookEventService.createHotel({ ...body, groupId: path[1] })
+    const hotel = await TBookEventService.createHotel({ ...body, groupId: path[1] }, orgId)
     return json({ ok: true, id: String(hotel._id) })
   }
 
   // ---- Hotels (legacy event-scoped + by id) --------------------------------
   if (segment === "events" && path[1] && path[2] === "hotels" && method === "GET") {
-    const hotels = await TBookEventService.listHotels(path[1])
+    const authResult = await resolveTBookAdminAuth("hotel:read")
+    const orgId = orgIdFromAuth(authResult)
+    const hotels = await TBookEventService.listHotels(path[1], orgId)
     return json({
       ok: true,
       hotels: hotels.map(serializeHotel),
@@ -389,30 +439,39 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "events" && path[1] && path[2] === "hotels" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("hotel:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    const hotel = await TBookEventService.createHotel({ ...body, eventId: path[1] })
+    const hotel = await TBookEventService.createHotel({ ...body, eventId: path[1] }, orgId)
     return json({ ok: true, id: String(hotel._id) })
   }
 
   if (segment === "hotels" && path[1] && method === "GET" && path.length === 2) {
-    const hotel = await TBookEventService.getHotel(path[1])
+    const authResult = await resolveTBookAdminAuth("hotel:read")
+    const orgId = orgIdFromAuth(authResult)
+    const hotel = await TBookEventService.getHotel(path[1], orgId)
     if (!hotel) return json({ error: "Szállás nem található" }, 404)
     return json({ ok: true, hotel: serializeHotel(hotel) })
   }
 
   if (segment === "hotels" && path[1] && method === "PUT" && path.length === 2) {
+    const authResult = await resolveTBookAdminAuth("hotel:write")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    await TBookEventService.updateHotel(path[1], body)
+    await TBookEventService.updateHotel(path[1], body, orgId)
     return json({ ok: true })
   }
 
   if (segment === "hotels" && path[1] && method === "DELETE" && path.length === 2) {
-    await TBookEventService.deleteHotel(path[1])
+    const authResult = await resolveTBookAdminAuth("hotel:write")
+    const orgId = orgIdFromAuth(authResult)
+    await TBookEventService.deleteHotel(path[1], orgId)
     return json({ ok: true })
   }
 
   // ---- Live pricing preview -------------------------------------------------
   if (segment === "quote" && method === "POST" && path.length === 1) {
+    await resolveTBookAdminAuth("event:read")
     const body = await request.json()
     const { quote } = await TBookBookingService.quote(body)
     return json({ ok: true, quote })
@@ -420,7 +479,10 @@ async function handleTBookAdminApi(
 
   // ---- Bookings ---------------------------------------------------------------
   if (segment === "bookings" && method === "GET" && path.length === 1) {
+    const authResult = await resolveTBookAdminAuth("booking:read")
+    const orgId = orgIdFromAuth(authResult)
     const filters = parseBookingFilters(url.searchParams)
+    if (orgId) filters.organizationId = orgId
     const result = await TBookBookingService.listBookingsAdmin(filters)
     return json({
       ok: true,
@@ -452,13 +514,18 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "bookings" && path[1] === "facets" && method === "GET") {
+    const authResult = await resolveTBookAdminAuth("booking:read")
+    const orgId = orgIdFromAuth(authResult)
     const eventId = url.searchParams.get("eventId") || undefined
-    const facets = await TBookBookingService.listSelectionFacets(eventId)
+    const facets = await TBookBookingService.listSelectionFacets(eventId, orgId)
     return json({ ok: true, facets })
   }
 
   if (segment === "bookings" && path[1] === "export" && method === "GET") {
+    const authResult = await resolveTBookAdminAuth("booking:export")
+    const orgId = orgIdFromAuth(authResult)
     const filters = parseBookingFilters(url.searchParams)
+    if (orgId) filters.organizationId = orgId
     const format = url.searchParams.get("format") === "csv" ? "csv" : "xlsx"
     const bookings = await TBookBookingService.listBookingsForExport(filters)
 
@@ -486,7 +553,9 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "bookings" && path[1] && method === "GET" && path.length === 2) {
-    const booking = await TBookBookingService.getBookingAdmin(path[1])
+    const authResult = await resolveTBookAdminAuth("booking:read")
+    const orgId = orgIdFromAuth(authResult)
+    const booking = await TBookBookingService.getBookingAdmin(path[1], orgId)
     if (!booking) return json({ error: "Foglalás nem található" }, 404)
     return json({
       ok: true,
@@ -519,15 +588,19 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "bookings" && path[1] && path[2] === "status" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("booking:manage")
+    const orgId = orgIdFromAuth(authResult)
     const body = await request.json()
-    await TBookBookingService.updateStatus(path[1], body.status)
+    await TBookBookingService.updateStatus(path[1], body.status, orgId)
     return json({ ok: true })
   }
 
   if (segment === "bookings" && path[1] && path[2] === "invoice" && method === "POST" && path.length === 3) {
+    const authResult = await resolveTBookAdminAuth("booking:manage")
+    const orgId = orgIdFromAuth(authResult)
     const { issueBookingInvoice } = await import("../services/invoice-service")
-    await issueBookingInvoice(path[1])
-    const booking = await TBookBookingService.getBookingAdmin(path[1])
+    await issueBookingInvoice(path[1], orgId)
+    const booking = await TBookBookingService.getBookingAdmin(path[1], orgId)
     return json({
       ok: true,
       invoiceStatus: booking?.invoiceStatus ?? "none",
@@ -536,14 +609,18 @@ async function handleTBookAdminApi(
   }
 
   if (segment === "bookings" && path[1] && path[2] === "invoice" && path[3] === "reverse" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("booking:manage")
+    const orgId = orgIdFromAuth(authResult)
     const { reverseBookingInvoice } = await import("../services/invoice-service")
-    await reverseBookingInvoice(path[1])
+    await reverseBookingInvoice(path[1], orgId)
     return json({ ok: true })
   }
 
   if (segment === "bookings" && path[1] && path[2] === "invoice" && path[3] === "pdf" && method === "GET") {
+    const authResult = await resolveTBookAdminAuth("booking:read")
+    const orgId = orgIdFromAuth(authResult)
     const { downloadBookingInvoicePdf } = await import("../services/invoice-service")
-    const pdf = await downloadBookingInvoicePdf(path[1])
+    const pdf = await downloadBookingInvoicePdf(path[1], orgId)
     if (!pdf) return json({ error: "Számla PDF nem érhető el" }, 404)
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
@@ -555,4 +632,13 @@ async function handleTBookAdminApi(
   }
 
   return json({ error: "Admin route not found", path }, 404)
+  } catch (err) {
+    if (err instanceof OrgAuthError) {
+      return json({ error: err.message }, err.statusCode)
+    }
+    if (err instanceof Error && err.message === "Unauthorized") {
+      return json({ error: "Unauthorized" }, 401)
+    }
+    throw err
+  }
 }

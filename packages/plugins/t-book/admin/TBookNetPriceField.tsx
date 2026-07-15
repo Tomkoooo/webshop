@@ -3,7 +3,7 @@
 import type { TBookPriceBasis } from "../lib/vat"
 import { TBOOK_VAT_PRESETS, grossPreview } from "../lib/vat"
 import { TBookField, TBookInput, TBookSelect } from "./t-book-admin-ui"
-import { formatHuf } from "./t-book-api"
+import { formatMoney } from "./t-book-api"
 
 export function TBookNetPriceField({
   label,
@@ -13,6 +13,7 @@ export function TBookNetPriceField({
   onAmountChange,
   onPriceBasisChange,
   onVatPercentChange,
+  currency = "HUF",
 }: {
   label: string
   amount: number
@@ -21,8 +22,10 @@ export function TBookNetPriceField({
   onAmountChange: (amount: number) => void
   onPriceBasisChange: (basis: TBookPriceBasis) => void
   onVatPercentChange: (vat: number) => void
+  currency?: string
 }) {
   const preview = grossPreview(amount, priceBasis, vatPercent)
+  const fmt = (value: number) => formatMoney(value, currency)
 
   return (
     <div className="space-y-3">
@@ -61,12 +64,12 @@ export function TBookNetPriceField({
         </TBookField>
       </div>
       <p className="text-xs text-neutral-500">
-        Nettó: <span className="text-neutral-300 font-bold">{formatHuf(preview.netHuf)}</span>
+        Nettó: <span className="text-neutral-300 font-bold">{fmt(preview.netHuf)}</span>
         {" · "}
-        ÁFA: <span className="text-neutral-300 font-bold">{formatHuf(preview.vatHuf)}</span>
+        ÁFA: <span className="text-neutral-300 font-bold">{fmt(preview.vatHuf)}</span>
         {" · "}
         Bruttó (fizetendő):{" "}
-        <span className="text-amber-900 font-bold">{formatHuf(preview.grossHuf)}</span>
+        <span className="text-amber-900 font-bold">{fmt(preview.grossHuf)}</span>
       </p>
     </div>
   )

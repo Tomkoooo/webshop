@@ -10,7 +10,11 @@ import { isShopEnabled } from "@wse/core/lib/features/shop"
 
 function AdminLoginPageContent() {
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl")?.trim() || "/admin"
+  const rawCallback = searchParams.get("callbackUrl")?.trim() || "/admin"
+  const callbackUrl =
+    rawCallback === "/admin" || rawCallback.startsWith("/admin/")
+      ? `/auth/admin-callback?callbackUrl=${encodeURIComponent(rawCallback)}`
+      : rawCallback
   const [pending, setPending] = React.useState(false)
   const shopEnabled = isShopEnabled()
 

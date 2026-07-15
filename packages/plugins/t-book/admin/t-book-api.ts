@@ -7,6 +7,7 @@ import type {
 import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "../lib/attendee-fields"
 import type { TBookLocation } from "../lib/location"
 import type { TBookPriceBasis } from "../lib/vat"
+import { formatTBookMoney, DEFAULT_TBOOK_CURRENCY } from "../lib/currency"
 
 export const TBOOK_ADMIN_API = "/api/plugins/t-book/admin"
 
@@ -128,8 +129,13 @@ export async function tBookAdminApi<T>(path: string, init?: RequestInit): Promis
   return data as T
 }
 
+export function formatMoney(amount: number, currency: string = DEFAULT_TBOOK_CURRENCY): string {
+  return formatTBookMoney(amount, currency)
+}
+
+/** @deprecated Use formatMoney(amount, currency) */
 export function formatHuf(amount: number): string {
-  return `${Math.round(amount).toLocaleString("hu-HU")} Ft`
+  return formatMoney(amount, DEFAULT_TBOOK_CURRENCY)
 }
 
 export const BOOKING_STATUS_LABELS: Record<string, string> = {

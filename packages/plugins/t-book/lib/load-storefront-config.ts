@@ -1,13 +1,16 @@
 import { getRequestPageContent } from "@wse/core/lib/cached-storefront"
-import type { ChromeNavItem } from "@wse/sdk/templates/types"
+import type { ChromeNavCta, ChromeNavItem } from "@wse/sdk/templates/types"
 import {
+  defaultNavCta,
   extractTBookHomeChrome,
+  navCtaFromTBookChrome,
   navItemsFromTBookChrome,
   type TBookHomeChromeConfig,
 } from "./storefront-chrome"
 
 export type TBookStorefrontConfig = TBookHomeChromeConfig & {
   navItems: ChromeNavItem[]
+  navCta: ChromeNavCta
 }
 
 /** Reads tBook API key + CMS nav from published home content (`chrome` block). */
@@ -20,8 +23,9 @@ export async function loadTBookStorefrontConfig(
     return {
       ...chrome,
       navItems: navItemsFromTBookChrome(chrome),
+      navCta: navCtaFromTBookChrome(chrome),
     }
   } catch {
-    return { nav: [], tbookApiKey: "", navItems: [] }
+    return { nav: [], navCta: defaultNavCta, tbookApiKey: "", navItems: [] }
   }
 }

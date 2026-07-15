@@ -168,6 +168,7 @@ export class TBookBookingService {
       : null
 
     return TBookBooking.create({
+      organizationId: group?.organizationId ?? event.organizationId ?? null,
       groupId: event.groupId,
       eventId: event._id,
       hotelId: parsed.hotelId ? oid(parsed.hotelId) : null,
@@ -197,7 +198,7 @@ export class TBookBookingService {
   /** Aggregation `$match` does not auto-cast, so id filters become ObjectIds here. */
   private static castedQuery(filters: TBookBookingFilters): Record<string, unknown> {
     const query = buildBookingQuery(filters)
-    for (const key of ["eventId", "groupId", "hotelId"] as const) {
+    for (const key of ["organizationId", "eventId", "groupId", "hotelId"] as const) {
       if (typeof query[key] === "string") query[key] = oid(query[key] as string)
     }
     return query
@@ -239,15 +240,27 @@ export class TBookBookingService {
     return TBookBooking.find(query).sort({ createdAt: -1 }).lean()
   }
 
-  static async getBookingAdmin(id: string): Promise<ITBookBooking | null> {
+  static async getBookingAdmin(id: string, organizationId?: string): Promise<ITBookBooking | null> {
     await dbConnect()
-    return TBookBooking.findById(oid(id)).lean<ITBookBooking>()
+    const booking = await TBookBooking.findById(oid(id)).lean<ITBookBooking>()
+    if (!booking) return null
+    if (organizationId && booking.organizationId && String(booking.organizationId) !== organizationId) {
+      return null
+    }
+    return booking
   }
 
-  static async updateStatus(id: string, nextStatus: TBookBookingStatus): Promise<void> {
+  static async updateStatus(
+    id: string,
+    nextStatus: TBookBookingStatus,
+    organizationId?: string
+  ): Promise<void> {
     await dbConnect()
     const booking = await TBookBooking.findById(oid(id))
     if (!booking) throw new Error("Foglalás nem található.")
+    if (organizationId && booking.organizationId && String(booking.organizationId) !== organizationId) {
+      throw new Error("A foglalás nem tartozik ehhez a szervezethez.")
+    }
     const allowed = VALID_STATUS_TRANSITIONS[booking.status] ?? []
     if (!allowed.includes(nextStatus)) {
       throw new Error(`Nem engedélyezett státusz váltás: ${booking.status} → ${nextStatus}`)
@@ -257,12 +270,13 @@ export class TBookBookingService {
   }
 
   /** Distinct option keys/values across bookings of an event — powers smart filters. */
-  static async listSelectionFacets(eventId?: string) {
+  static async listSelectionFacets(eventId?: string, organizationId?: string) {
     await dbConnect()
     const match: Record<string, unknown> = {
       status: { $in: ["paid", "confirmed", "pending", "checkout_started"] },
     }
     if (eventId) match.eventId = oid(eventId)
+    if (organizationId) match.organizationId = oid(organizationId)
 
     const bookings = await TBookBooking.find(match).select("selections").limit(2000).lean()
     const facets = new Map<string, Set<string>>()

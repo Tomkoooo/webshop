@@ -13,6 +13,8 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
 import { resolveShopDisabledAdminLanding } from "@wse/core/lib/admin-plugin-navigation"
+import { isMultiTenantAdminEnabled } from "@wse/core/lib/site-features"
+import { TBookAdminHomeResolver } from "@wse/plugin-t-book/admin/TBookAdminHomeResolver"
 import { AdminContentModeHub } from "@wse/core/components/admin/AdminContentModeHub"
 import { AdminKpiCard } from "@wse/core/components/admin/AdminKpiCard"
 import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
@@ -43,6 +45,9 @@ export default async function AdminDashboard({
   searchParams: Promise<{ recentPage?: string }>
 }) {
   if (!isShopEnabled()) {
+    if (isMultiTenantAdminEnabled()) {
+      return <TBookAdminHomeResolver />
+    }
     const landing = await resolveShopDisabledAdminLanding()
     if (landing.kind === "redirect") {
       redirect(landing.href)

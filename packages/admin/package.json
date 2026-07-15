@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@wse/core": "*",
+    "@wse/plugin-t-book": "*",
     "@wse/sdk": "*"
   },
   "peerDependencies": {

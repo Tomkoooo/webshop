@@ -6,6 +6,7 @@ import {
   isPluginAllowlistedForDeployment,
 } from "@wse/core/config/deployments-registry"
 import { isShopEnabled } from "@wse/core/lib/features/shop"
+import { isMultiTenantAdminEnabled } from "@wse/core/lib/site-features"
 import { loadPluginModule } from "@wse/core/plugins/registry"
 import { FeatureFlagService } from "@wse/core/services/feature-flags"
 
@@ -115,6 +116,16 @@ export type ContentModeSidebarNav = {
 }
 
 export async function resolveContentModeSidebarNav(): Promise<ContentModeSidebarNav> {
+  if (isMultiTenantAdminEnabled()) {
+    return {
+      overviewHref: "/admin",
+      overviewLabel: "Áttekintés",
+      statsHref: "/admin/plugins/t-book/stats",
+      statsLabel: "Statisztikák",
+      flattenPluginNav: false,
+    }
+  }
+
   const plugins = await PluginService.listEnabledWithAdmin()
   const primary = pickPrimaryPlugin(plugins)
 

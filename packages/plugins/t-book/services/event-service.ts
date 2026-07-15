@@ -4,6 +4,7 @@ import TBookEventGroup, { type ITBookEventGroup } from "../models/TBookEventGrou
 import TBookEvent, { eventNights, type ITBookEvent } from "../models/TBookEvent"
 import TBookHotel, { type ITBookHotel } from "../models/TBookHotel"
 import TBookBooking from "../models/TBookBooking"
+import TBookOrganization from "../models/TBookOrganization"
 import {
   eventGroupInputSchema,
   eventInputSchema,
@@ -15,6 +16,7 @@ import {
 import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
+import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -23,16 +25,32 @@ function oid(id: string): mongoose.Types.ObjectId {
   return new mongoose.Types.ObjectId(id)
 }
 
+function orgFilter(organizationId?: string): Record<string, unknown> {
+  return organizationId ? { organizationId: oid(organizationId) } : {}
+}
+
+async function assertGroupInOrg(groupId: string, organizationId?: string) {
+  if (!organizationId) return
+  const group = await TBookEventGroup.findById(oid(groupId)).select("organizationId").lean()
+  if (!group || String(group.organizationId) !== organizationId) {
+    throw new Error("A csoport nem tartozik ehhez a szervezethez.")
+  }
+}
+
 export class TBookEventService {
   // ---- Event groups -------------------------------------------------------
 
   /** Creates a group and returns the plaintext API key exactly once. */
-  static async createGroup(input: EventGroupInput): Promise<{ group: ITBookEventGroup; apiKey: string }> {
+  static async createGroup(
+    input: EventGroupInput,
+    organizationId?: string
+  ): Promise<{ group: ITBookEventGroup; apiKey: string }> {
     const parsed = eventGroupInputSchema.parse(input)
     await dbConnect()
     const apiKey = generateApiKey()
     const group = await TBookEventGroup.create({
       ...parsed,
+      ...(organizationId ? { organizationId: oid(organizationId) } : {}),
       apiKeyHash: hashApiKey(apiKey),
       apiKeyHint: apiKeyHint(apiKey),
       apiKeyCreatedAt: new Date(),
@@ -40,38 +58,44 @@ export class TBookEventService {
     return { group, apiKey }
   }
 
-  static async listGroups(): Promise<ITBookEventGroup[]> {
+  static async listGroups(organizationId?: string): Promise<ITBookEventGroup[]> {
     await dbConnect()
-    return TBookEventGroup.find({}).sort({ createdAt: -1 }).lean<ITBookEventGroup[]>()
+    return TBookEventGroup.find(orgFilter(organizationId)).sort({ createdAt: -1 }).lean<ITBookEventGroup[]>()
   }
 
-  static async getGroup(id: string): Promise<ITBookEventGroup | null> {
+  static async getGroup(id: string, organizationId?: string): Promise<ITBookEventGroup | null> {
     await dbConnect()
-    return TBookEventGroup.findById(oid(id)).lean<ITBookEventGroup>()
+    const group = await TBookEventGroup.findById(oid(id)).lean<ITBookEventGroup>()
+    if (!group) return null
+    if (organizationId && String(group.organizationId) !== organizationId) return null
+    return group
   }
 
-  static async updateGroup(id: string, input: Partial<EventGroupInput>): Promise<void> {
+  static async updateGroup(id: string, input: Partial<EventGroupInput>, organizationId?: string): Promise<void> {
     const parsed = eventGroupInputSchema.partial().parse(input)
     await dbConnect()
-    await TBookEventGroup.updateOne({ _id: oid(id) }, { $set: parsed })
+    await assertGroupInOrg(id, organizationId)
+    await TBookEventGroup.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: parsed })
   }
 
-  static async deleteGroup(id: string): Promise<void> {
+  static async deleteGroup(id: string, organizationId?: string): Promise<void> {
     await dbConnect()
+    await assertGroupInOrg(id, organizationId)
     const groupOid = oid(id)
-    const eventCount = await TBookEvent.countDocuments({ groupId: groupOid })
+    const eventCount = await TBookEvent.countDocuments({ groupId: groupOid, ...orgFilter(organizationId) })
     if (eventCount > 0) {
       throw new Error("A csoport nem törölhető, amíg események tartoznak hozzá.")
     }
-    await TBookEventGroup.deleteOne({ _id: groupOid })
+    await TBookEventGroup.deleteOne({ _id: groupOid, ...orgFilter(organizationId) })
   }
 
   /** Revokes the old key and returns the new plaintext key exactly once. */
-  static async rotateGroupApiKey(id: string): Promise<string> {
+  static async rotateGroupApiKey(id: string, organizationId?: string): Promise<string> {
     await dbConnect()
+    await assertGroupInOrg(id, organizationId)
     const apiKey = generateApiKey()
     const result = await TBookEventGroup.updateOne(
-      { _id: oid(id) },
+      { _id: oid(id), ...orgFilter(organizationId) },
       {
         $set: {
           apiKeyHash: hashApiKey(apiKey),
@@ -91,92 +115,133 @@ export class TBookEventService {
 
   // ---- Events -------------------------------------------------------------
 
-  static async createEvent(input: EventInput): Promise<ITBookEvent> {
+  static async createEvent(input: EventInput, organizationId?: string): Promise<ITBookEvent> {
     const parsed = eventInputSchema.parse(input)
     if (parsed.endDate < parsed.startDate) {
       throw new Error("A záró dátum nem lehet a kezdő dátum előtt.")
     }
     await dbConnect()
+    let resolvedOrgId = organizationId ? oid(organizationId) : null
+    if (parsed.groupId) {
+      const group = await TBookEventGroup.findById(oid(parsed.groupId)).lean()
+      if (!group) throw new Error("Csoport nem található.")
+      if (organizationId && String(group.organizationId) !== organizationId) {
+        throw new Error("A csoport nem tartozik ehhez a szervezethez.")
+      }
+      resolvedOrgId = group.organizationId ?? resolvedOrgId
+    }
     return TBookEvent.create({
       ...parsed,
       attendeeFieldSchema: normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema),
       groupId: parsed.groupId ? oid(parsed.groupId) : null,
+      ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
     })
   }
 
-  static async listEvents(filter?: { groupId?: string | null }): Promise<ITBookEvent[]> {
+  static async listEvents(filter?: { groupId?: string | null; organizationId?: string }): Promise<ITBookEvent[]> {
     await dbConnect()
-    const query: Record<string, unknown> = {}
+    const query: Record<string, unknown> = { ...orgFilter(filter?.organizationId) }
     if (filter?.groupId) query.groupId = oid(filter.groupId)
     return TBookEvent.find(query).sort({ sortOrder: 1, startDate: 1 }).lean<ITBookEvent[]>()
   }
 
-  static async getEvent(id: string): Promise<ITBookEvent | null> {
+  static async getEvent(id: string, organizationId?: string): Promise<ITBookEvent | null> {
     await dbConnect()
-    return TBookEvent.findById(oid(id)).lean<ITBookEvent>()
+    const event = await TBookEvent.findById(oid(id)).lean<ITBookEvent>()
+    if (!event) return null
+    if (organizationId && event.organizationId && String(event.organizationId) !== organizationId) {
+      return null
+    }
+    return event
   }
 
-  static async updateEvent(id: string, input: Partial<EventInput>): Promise<void> {
+  static async updateEvent(id: string, input: Partial<EventInput>, organizationId?: string): Promise<void> {
     const parsed = eventInputSchema.partial().parse(input)
     await dbConnect()
+    const existing = await TBookEvent.findById(oid(id)).lean()
+    if (!existing) throw new Error("Esemény nem található.")
+    if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
+      throw new Error("Az esemény nem tartozik ehhez a szervezethez.")
+    }
     const patch: Record<string, unknown> = { ...parsed }
     if (parsed.groupId !== undefined) {
       patch.groupId = parsed.groupId ? oid(parsed.groupId) : null
+      if (parsed.groupId) await assertGroupInOrg(parsed.groupId, organizationId)
     }
     if (parsed.attendeeFieldSchema !== undefined) {
       patch.attendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.attendeeFieldSchema)
     }
-    await TBookEvent.updateOne({ _id: oid(id) }, { $set: patch })
+    await TBookEvent.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
 
-  static async deleteEvent(id: string): Promise<void> {
+  static async deleteEvent(id: string, organizationId?: string): Promise<void> {
     await dbConnect()
     const eventOid = oid(id)
+    const existing = await TBookEvent.findById(eventOid).lean()
+    if (!existing) throw new Error("Esemény nem található.")
+    if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
+      throw new Error("Az esemény nem tartozik ehhez a szervezethez.")
+    }
     const bookingCount = await TBookBooking.countDocuments({
       eventId: eventOid,
       status: { $in: ["paid", "confirmed"] },
+      ...orgFilter(organizationId),
     })
     if (bookingCount > 0) {
       throw new Error("Az esemény nem törölhető, mert fizetett foglalások tartoznak hozzá. Archiváld inkább.")
     }
-    await TBookHotel.deleteMany({ eventId: eventOid })
-    await TBookEvent.deleteOne({ _id: eventOid })
+    await TBookHotel.deleteMany({ eventId: eventOid, ...orgFilter(organizationId) })
+    await TBookEvent.deleteOne({ _id: eventOid, ...orgFilter(organizationId) })
   }
 
-  static async reorderEvents(orderedIds: string[]): Promise<void> {
+  static async reorderEvents(orderedIds: string[], organizationId?: string): Promise<void> {
     await dbConnect()
     await Promise.all(
-      orderedIds.map((id, index) =>
-        TBookEvent.updateOne({ _id: oid(id) }, { $set: { sortOrder: index } })
-      )
+      orderedIds.map(async (id, index) => {
+        const event = await TBookEvent.findById(oid(id)).select("organizationId").lean()
+        if (!event) return
+        if (organizationId && event.organizationId && String(event.organizationId) !== organizationId) return
+        await TBookEvent.updateOne({ _id: oid(id) }, { $set: { sortOrder: index } })
+      })
     )
   }
 
   // ---- Hotels -------------------------------------------------------------
 
-  static async listHotelsForGroup(groupId: string): Promise<ITBookHotel[]> {
+  static async listHotelsForGroup(groupId: string, organizationId?: string): Promise<ITBookHotel[]> {
     await dbConnect()
+    await assertGroupInOrg(groupId, organizationId)
     const groupOid = oid(groupId)
-    const eventIds = await TBookEvent.find({ groupId: groupOid }).distinct("_id")
+    const eventIds = await TBookEvent.find({ groupId: groupOid, ...orgFilter(organizationId) }).distinct("_id")
     return TBookHotel.find({
       $or: [{ groupId: groupOid }, { eventId: { $in: eventIds } }],
+      ...orgFilter(organizationId),
     })
       .sort({ sortOrder: 1, createdAt: 1 })
       .lean<ITBookHotel[]>()
   }
 
-  static async createHotel(input: HotelInput): Promise<ITBookHotel> {
+  static async createHotel(input: HotelInput, organizationId?: string): Promise<ITBookHotel> {
     const parsed = hotelInputSchema.parse(input)
     await dbConnect()
 
     let groupOid: mongoose.Types.ObjectId | null = parsed.groupId ? oid(parsed.groupId) : null
+    let resolvedOrgId: mongoose.Types.ObjectId | null = organizationId ? oid(organizationId) : null
     if (groupOid) {
       const group = await TBookEventGroup.findById(groupOid).lean()
       if (!group) throw new Error("Csoport nem található.")
+      if (organizationId && String(group.organizationId) !== organizationId) {
+        throw new Error("A csoport nem tartozik ehhez a szervezethez.")
+      }
+      resolvedOrgId = group.organizationId ?? resolvedOrgId
     } else if (parsed.eventId) {
       const event = await TBookEvent.findById(oid(parsed.eventId)).lean()
       if (!event) throw new Error("Esemény nem található.")
+      if (organizationId && event.organizationId && String(event.organizationId) !== organizationId) {
+        throw new Error("Az esemény nem tartozik ehhez a szervezethez.")
+      }
       groupOid = event.groupId
+      resolvedOrgId = event.organizationId ?? resolvedOrgId
     } else {
       throw new Error("Csoport vagy esemény megadása kötelező.")
     }
@@ -194,28 +259,42 @@ export class TBookEventService {
       pricing,
       groupId: groupOid,
       eventId: null,
+      ...(resolvedOrgId ? { organizationId: resolvedOrgId } : {}),
     })
   }
 
-  static async listHotels(eventId: string): Promise<ITBookHotel[]> {
+  static async listHotels(eventId: string, organizationId?: string): Promise<ITBookHotel[]> {
     await dbConnect()
     const event = await TBookEvent.findById(oid(eventId)).lean()
-    if (event?.groupId) {
-      return TBookEventService.listHotelsForGroup(String(event.groupId))
+    if (organizationId && event?.organizationId && String(event.organizationId) !== organizationId) {
+      return []
     }
-    return TBookHotel.find({ eventId: oid(eventId) })
+    if (event?.groupId) {
+      return TBookEventService.listHotelsForGroup(String(event.groupId), organizationId)
+    }
+    return TBookHotel.find({ eventId: oid(eventId), ...orgFilter(organizationId) })
       .sort({ sortOrder: 1, createdAt: 1 })
       .lean<ITBookHotel[]>()
   }
 
-  static async getHotel(id: string): Promise<ITBookHotel | null> {
+  static async getHotel(id: string, organizationId?: string): Promise<ITBookHotel | null> {
     await dbConnect()
-    return TBookHotel.findById(oid(id)).lean<ITBookHotel>()
+    const hotel = await TBookHotel.findById(oid(id)).lean<ITBookHotel>()
+    if (!hotel) return null
+    if (organizationId && hotel.organizationId && String(hotel.organizationId) !== organizationId) {
+      return null
+    }
+    return hotel
   }
 
-  static async updateHotel(id: string, input: Partial<HotelInput>): Promise<void> {
+  static async updateHotel(id: string, input: Partial<HotelInput>, organizationId?: string): Promise<void> {
     const parsed = hotelInputSchema.partial().parse(input)
     await dbConnect()
+    const existing = await TBookHotel.findById(oid(id)).lean()
+    if (!existing) throw new Error("Szállás nem található.")
+    if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
+      throw new Error("A szállás nem tartozik ehhez a szervezethez.")
+    }
     const patch: Record<string, unknown> = { ...parsed }
     delete patch.eventId
     if (parsed.pricing) {
@@ -227,20 +306,26 @@ export class TBookEventService {
         addonGroups: normalized.addonGroups,
       }
     }
-    await TBookHotel.updateOne({ _id: oid(id) }, { $set: patch })
+    await TBookHotel.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
 
-  static async deleteHotel(id: string): Promise<void> {
+  static async deleteHotel(id: string, organizationId?: string): Promise<void> {
     await dbConnect()
     const hotelOid = oid(id)
+    const existing = await TBookHotel.findById(hotelOid).lean()
+    if (!existing) throw new Error("Szállás nem található.")
+    if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
+      throw new Error("A szállás nem tartozik ehhez a szervezethez.")
+    }
     const bookingCount = await TBookBooking.countDocuments({
       hotelId: hotelOid,
       status: { $in: ["paid", "confirmed"] },
+      ...orgFilter(organizationId),
     })
     if (bookingCount > 0) {
       throw new Error("A hotel nem törölhető, mert fizetett foglalások tartoznak hozzá. Archiváld inkább.")
     }
-    await TBookHotel.deleteOne({ _id: hotelOid })
+    await TBookHotel.deleteOne({ _id: hotelOid, ...orgFilter(organizationId) })
   }
 
   // ---- Public directory (no API key) --------------------------------------
@@ -287,6 +372,18 @@ export class TBookEventService {
   }
 
   // ---- Public (API-key scoped) reads --------------------------------------
+
+  static async getOrganizationCurrencyForGroup(
+    groupId: mongoose.Types.ObjectId
+  ): Promise<string> {
+    await dbConnect()
+    const group = await TBookEventGroup.findById(groupId).select("organizationId").lean()
+    if (!group?.organizationId) return DEFAULT_TBOOK_CURRENCY
+    const org = await TBookOrganization.findById(group.organizationId)
+      .select("settings.currency")
+      .lean()
+    return normalizeTBookCurrency(org?.settings?.currency)
+  }
 
   static async listPublicEventsForGroup(groupId: mongoose.Types.ObjectId) {
     await dbConnect()
@@ -354,15 +451,16 @@ export class TBookEventService {
 
   // ---- Dashboard ----------------------------------------------------------
 
-  static async getDashboardStats() {
+  static async getDashboardStats(organizationId?: string) {
     await dbConnect()
+    const scope = orgFilter(organizationId)
     const now = new Date()
     const [groupCount, eventCount, upcomingEvents, bookingAgg, recentBookings] = await Promise.all([
-      TBookEventGroup.countDocuments({ status: { $ne: "archived" } }),
-      TBookEvent.countDocuments({ status: "active" }),
-      TBookEvent.countDocuments({ status: "active", startDate: { $gte: now } }),
+      TBookEventGroup.countDocuments({ status: { $ne: "archived" }, ...scope }),
+      TBookEvent.countDocuments({ status: "active", ...scope }),
+      TBookEvent.countDocuments({ status: "active", startDate: { $gte: now }, ...scope }),
       TBookBooking.aggregate<{ _id: string; count: number; revenueHuf: number; guests: number }>([
-        { $match: { status: { $in: ["paid", "confirmed"] } } },
+        { $match: { status: { $in: ["paid", "confirmed"] }, ...scope } },
         {
           $group: {
             _id: "$status",
@@ -372,7 +470,7 @@ export class TBookEventService {
           },
         },
       ]),
-      TBookBooking.find({ status: { $in: ["paid", "confirmed", "pending"] } })
+      TBookBooking.find({ status: { $in: ["paid", "confirmed", "pending"] }, ...scope })
         .sort({ createdAt: -1 })
         .limit(8)
         .lean(),
@@ -386,7 +484,7 @@ export class TBookEventService {
       }),
       { count: 0, revenueHuf: 0, guests: 0 }
     )
-    const pendingCount = await TBookBooking.countDocuments({ status: "pending" })
+    const pendingCount = await TBookBooking.countDocuments({ status: "pending", ...scope })
 
     return {
       groupCount,

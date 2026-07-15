@@ -1,9 +1,11 @@
 import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "./api-key"
+import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "./currency"
 import { resolveTBookApiBase } from "../storefront/tbook-public-api"
 import type { TBookPublicEvent } from "../storefront/tbook-public-api"
 
 export type TBookPublicEventsResult = {
   events: TBookPublicEvent[]
+  currency: string
   error: string | null
 }
 
@@ -16,6 +18,7 @@ export async function fetchPublicEventsForStorefront(
   if (!key) {
     return {
       events: [],
+      currency: DEFAULT_TBOOK_CURRENCY,
       error: "A tBook API kulcs nincs beállítva. Add meg a CMS-ben a főoldal integrációs beállításainál, majd tedd közzé.",
     }
   }
@@ -32,15 +35,21 @@ export async function fetchPublicEventsForStorefront(
     const data = (await res.json()) as {
       ok?: boolean
       events?: TBookPublicEvent[]
+      currency?: string
       error?: string
     }
     if (!res.ok) {
-      return { events: [], error: data.error ?? `HTTP ${res.status}` }
+      return { events: [], currency: DEFAULT_TBOOK_CURRENCY, error: data.error ?? `HTTP ${res.status}` }
     }
-    return { events: data.events ?? [], error: null }
+    return {
+      events: data.events ?? [],
+      currency: normalizeTBookCurrency(data.currency),
+      error: null,
+    }
   } catch (err) {
     return {
       events: [],
+      currency: DEFAULT_TBOOK_CURRENCY,
       error: err instanceof Error ? err.message : "Nem sikerült betölteni az eseményeket.",
     }
   }

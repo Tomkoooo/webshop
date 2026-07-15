@@ -1,4 +1,4 @@
-import type { ChromeNavItem } from "@wse/sdk/templates/types"
+import type { ChromeNavCta, ChromeNavItem } from "@wse/sdk/templates/types"
 import { z } from "zod"
 import { normalizeTBookApiKey } from "./api-key"
 
@@ -16,8 +16,25 @@ const navItemSchema = z.discriminatedUnion("type", [
   }),
 ])
 
+export const defaultNavCta: ChromeNavCta = {
+  enabled: true,
+  label: "Jegyek",
+  mobileLabel: "Jegyek & foglalás",
+  href: "/jegyek",
+  showIcon: true,
+}
+
+const navCtaSchema = z.object({
+  enabled: z.boolean().default(true),
+  label: z.string().default(defaultNavCta.label),
+  mobileLabel: z.string().default(defaultNavCta.mobileLabel),
+  href: z.string().default(defaultNavCta.href),
+  showIcon: z.boolean().default(true),
+})
+
 export const tBookHomeChromeSchema = z.object({
   nav: z.array(navItemSchema).default([]),
+  navCta: navCtaSchema.default(defaultNavCta),
   tbookApiKey: z.string().default(""),
 })
 
@@ -31,7 +48,7 @@ export function extractTBookHomeChrome(content: unknown): TBookHomeChromeConfig 
   )
   return parsed.success
     ? { ...parsed.data, tbookApiKey: normalizeTBookApiKey(parsed.data.tbookApiKey) }
-    : { nav: [], tbookApiKey: "" }
+    : { nav: [], navCta: defaultNavCta, tbookApiKey: "" }
 }
 
 export function navItemsFromTBookChrome(config: TBookHomeChromeConfig): ChromeNavItem[] {
@@ -40,4 +57,8 @@ export function navItemsFromTBookChrome(config: TBookHomeChromeConfig): ChromeNa
       ? { type: "link" as const, label: item.label, href: item.href }
       : { type: "dropdown" as const, label: item.label, items: item.items }
   )
+}
+
+export function navCtaFromTBookChrome(config: TBookHomeChromeConfig): ChromeNavCta {
+  return { ...defaultNavCta, ...config.navCta }
 }

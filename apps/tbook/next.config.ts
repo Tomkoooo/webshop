@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   env: {
-    WSE_SITE_CONFIG_JSON: "{\"id\":\"tbook\",\"label\":\"tBook\",\"templateId\":\"default-modern\",\"plugins\":[\"t-book\"],\"pluginConfig\":{\"t-book\":{\"currency\":\"HUF\"}}}",
+    WSE_SITE_CONFIG_JSON: "{\"id\":\"tbook\",\"label\":\"tBook\",\"templateId\":\"default-modern\",\"plugins\":[\"t-book\"],\"multiTenantAdmin\":true,\"pluginConfig\":{\"t-book\":{\"currency\":\"HUF\"}}}",
   },
   /* config options here */
   output: "standalone",

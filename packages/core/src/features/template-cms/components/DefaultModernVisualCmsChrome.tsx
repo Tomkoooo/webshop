@@ -8,7 +8,7 @@ import { CmsChromeBrandingToolbar } from "@wse/core/features/template-cms/compon
 import { CmsReviewOverlay } from "@wse/core/features/template-cms/components/CmsReviewOverlay"
 import { CmsEditorErrorState } from "@wse/core/features/template-cms/components/CmsEditorErrorState"
 import { useTemplateModule } from "@wse/core/features/template-cms/hooks/use-template-module"
-import type { ChromeNavItem, TemplateModule } from "@wse/sdk/templates/types"
+import type { ChromeNavCta, ChromeNavItem, TemplateModule } from "@wse/sdk/templates/types"
 import { themeTokensToCssVars } from "@wse/core/lib/theme-css-vars"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { ContactEmailEntry } from "@wse/core/lib/contact-emails"
@@ -58,6 +58,7 @@ export function DefaultModernVisualCmsChrome({
   toolbarBelowBranding,
   structureSidebar,
   navItems,
+  navCta,
   renderMain,
 }: {
   templateId: string
@@ -83,6 +84,7 @@ export function DefaultModernVisualCmsChrome({
   /** Structured editing panel (e.g. list managers) shown beside the canvas in edit mode. */
   structureSidebar?: React.ReactNode
   navItems?: ChromeNavItem[]
+  navCta?: ChromeNavCta
   renderMain: (ctx: VisualCmsChromeCtx) => React.ReactNode
 }) {
   const router = useRouter()
@@ -154,6 +156,7 @@ export function DefaultModernVisualCmsChrome({
         shopEnabled={shopEnabled}
         cmsChromePreview
         navItems={navItems}
+        navCta={navCta}
       />
       {/* Shop-style mains use pt-32 for a fixed storefront bar; shrink that under in-flow CMS preview. */}
       <div className="min-h-0 flex-1 overflow-x-hidden [&>main.min-h-screen]:!pt-8">{main}</div>
@@ -245,7 +248,7 @@ export function DefaultModernVisualCmsChrome({
               </DevicePreview>
             </div>
             {structureSidebar ? (
-              <aside className="sticky top-4 hidden w-80 shrink-0 xl:block">{structureSidebar}</aside>
+              <aside className="sticky top-4 hidden w-80 shrink-0 lg:block">{structureSidebar}</aside>
             ) : null}
           </div>
         </div>

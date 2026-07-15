@@ -10,9 +10,15 @@ import { cn } from "@wse/core/lib/utils"
 export function AdminAppShell({
   sidebar,
   children,
+  multiTenantAdmin,
+  activeOrganizationId,
+  organizationIds,
 }: {
   sidebar: ReactNode
   children: ReactNode
+  multiTenantAdmin?: boolean
+  activeOrganizationId?: string
+  organizationIds?: string[]
 }) {
   return (
     <AdminThemeProvider>
@@ -20,7 +26,11 @@ export function AdminAppShell({
         <SidebarProvider className="h-[calc(100*var(--dvh))] max-h-[calc(100*var(--dvh))] w-full max-w-full overflow-hidden">
           {sidebar}
           <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <AdminHeader />
+            <AdminHeader
+              multiTenantAdmin={multiTenantAdmin}
+              activeOrganizationId={activeOrganizationId}
+              organizationIds={organizationIds}
+            />
             <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
           </SidebarInset>
         </SidebarProvider>

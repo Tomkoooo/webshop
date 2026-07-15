@@ -4,6 +4,8 @@ import type { TBookPriceBasis } from "../lib/vat"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 export interface ITBookEvent extends Document {
+  /** Denormalized org scope for admin queries. */
+  organizationId?: Types.ObjectId | null
   /** Optional container group — events can also be standalone. */
   groupId: Types.ObjectId | null
   name: string
@@ -34,6 +36,7 @@ export interface ITBookEvent extends Document {
 
 const TBookEventSchema = new Schema<ITBookEvent>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
     groupId: { type: Schema.Types.ObjectId, ref: "TBookEventGroup", default: null, index: true },
     name: { type: String, required: true },
     description: { type: String, default: "" },

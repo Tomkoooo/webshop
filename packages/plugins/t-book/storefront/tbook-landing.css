@@ -1,0 +1,154 @@
+/*
+ * tBook public landing — calm minimalist tokens from lovable-project-5ab77d18.
+ * Scoped to .tbook-landing; overrides storefront theme vars for this page only.
+ */
+
+.tbook-landing {
+  --tl-radius: 0.75rem;
+  --tl-background: oklch(0.985 0.003 90);
+  --tl-foreground: oklch(0.22 0.01 250);
+  --tl-surface: oklch(1 0 0);
+  --tl-surface-muted: oklch(0.97 0.004 90);
+  --tl-card: oklch(1 0 0);
+  --tl-card-foreground: oklch(0.22 0.01 250);
+  --tl-primary: oklch(0.24 0.015 250);
+  --tl-primary-foreground: oklch(0.985 0.003 90);
+  --tl-secondary: oklch(0.955 0.006 90);
+  --tl-secondary-foreground: oklch(0.28 0.012 250);
+  --tl-muted: oklch(0.955 0.006 90);
+  --tl-muted-foreground: oklch(0.52 0.012 250);
+  --tl-accent: oklch(0.86 0.03 160);
+  --tl-accent-foreground: oklch(0.28 0.02 200);
+  --tl-border: oklch(0.92 0.005 90);
+  --tl-border-strong: oklch(0.86 0.006 90);
+  --tl-ring: oklch(0.7 0.02 200);
+  --tl-shadow-card: 0 1px 3px 0 oklch(0.2 0.02 240 / 0.06), 0 1px 2px -1px oklch(0.2 0.02 240 / 0.04);
+  --tl-font-display: var(--tl-font-display-family, "Instrument Serif", ui-serif, Georgia, serif);
+  --tl-font-sans: var(--tl-font-sans-family, "Inter", ui-sans-serif, system-ui, sans-serif);
+
+  --theme-background: var(--tl-background);
+  --theme-foreground: var(--tl-foreground);
+  --theme-surface: var(--tl-surface);
+  --theme-surface-foreground: var(--tl-foreground);
+  --theme-primary: var(--tl-primary);
+  --theme-primary-foreground: var(--tl-primary-foreground);
+  --theme-secondary: var(--tl-secondary);
+  --theme-secondary-foreground: var(--tl-secondary-foreground);
+  --theme-muted: var(--tl-muted);
+  --theme-muted-foreground: var(--tl-muted-foreground);
+  --theme-accent: var(--tl-accent);
+  --theme-accent-foreground: var(--tl-accent-foreground);
+  --theme-border: var(--tl-border);
+
+  --background: var(--tl-background);
+  --foreground: var(--tl-foreground);
+  --card: var(--tl-card);
+  --card-foreground: var(--tl-card-foreground);
+  --primary: var(--tl-primary);
+  --primary-foreground: var(--tl-primary-foreground);
+  --secondary: var(--tl-secondary);
+  --secondary-foreground: var(--tl-secondary-foreground);
+  --muted: var(--tl-muted);
+  --muted-foreground: var(--tl-muted-foreground);
+  --accent: var(--tl-accent);
+  --accent-foreground: var(--tl-accent-foreground);
+  --border: var(--tl-border);
+  --ring: var(--tl-ring);
+
+  font-family: var(--tl-font-sans);
+  background-color: var(--tl-background);
+  color: var(--tl-foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.tbook-landing ::selection {
+  background: var(--tl-accent);
+  color: var(--tl-accent-foreground);
+}
+
+.tbook-landing .tl-font-display {
+  font-family: var(--tl-font-display);
+}
+
+.tbook-landing .tl-ink-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: var(--tl-foreground);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.tbook-landing .tl-hairline {
+  border: 1px solid var(--tl-border);
+}
+
+.tbook-landing .tl-surface {
+  background-color: var(--tl-surface);
+}
+
+.tbook-landing .tl-surface-muted {
+  background-color: var(--tl-surface-muted);
+}
+
+.tbook-landing .tl-border-strong {
+  border-color: var(--tl-border-strong);
+}
+
+.tbook-landing .tl-bg-border-strong {
+  background-color: var(--tl-border-strong);
+}
+
+.tbook-landing .tl-shadow-card {
+  box-shadow: var(--tl-shadow-card);
+}
+
+.tbook-landing .tl-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--tl-muted) 0%,
+    var(--tl-surface-muted) 50%,
+    var(--tl-muted) 100%
+  );
+  background-size: 800px 100%;
+  animation: tl-shimmer 1.8s ease-in-out infinite;
+  border-radius: calc(var(--tl-radius) - 2px);
+}
+
+.tbook-landing .tl-fade-up {
+  animation: tl-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tbook-landing .tl-fade-in {
+  animation: tl-fade-in 0.5s ease-out both;
+}
+
+@keyframes tl-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tl-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tl-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}

@@ -7,7 +7,8 @@ import { ChevronDown, Menu, Ticket, X } from "lucide-react"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { cn } from "@wse/core/lib/utils"
-import type { ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
+import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
+import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
 
 const FALLBACK_NAV: ChromeNavItem[] = [
   { type: "link", label: "Főoldal", href: "/" },
@@ -133,18 +134,58 @@ function MobileNavGroup({
   )
 }
 
+function NavCtaButton({
+  cta,
+  variant,
+  className,
+  cmsChromePreview,
+  onNavigate,
+}: {
+  cta: ChromeNavCta
+  variant: "desktop" | "mobile"
+  className?: string
+  cmsChromePreview?: boolean
+  onNavigate?: () => void
+}) {
+  if (!cta.enabled) return null
+
+  const label = cta.label.trim() || defaultNavCta.label
+  const mobileLabel = cta.mobileLabel.trim() || label
+  const href = cta.href.trim() || defaultNavCta.href
+  const displayLabel = variant === "mobile" ? mobileLabel : label
+
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={cn(
+        variant === "desktop"
+          ? "inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          : "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground",
+        cmsChromePreview && "pointer-events-none",
+        className
+      )}
+    >
+      {cta.showIcon ? <Ticket className="size-4" aria-hidden /> : null}
+      {displayLabel}
+    </Link>
+  )
+}
+
 export function Navbar({
   brandName,
   logoSrc,
   shopEnabled = false,
   cmsChromePreview,
   navItems,
+  navCta,
 }: ChromeProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const mobilePanelId = useId()
   const isHome = pathname === "/"
   const items = navItems?.length ? navItems : FALLBACK_NAV
+  const cta = { ...defaultNavCta, ...navCta }
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -212,16 +253,7 @@ export function Navbar({
               </Link>
             )
           )}
-          <Link
-            href="/jegyek"
-            className={cn(
-              "ml-2 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90",
-              cmsChromePreview && "pointer-events-none"
-            )}
-          >
-            <Ticket className="size-4" aria-hidden />
-            Jegyek
-          </Link>
+          <NavCtaButton cta={cta} variant="desktop" className="ml-2" cmsChromePreview={cmsChromePreview} />
         </nav>
 
         <button
@@ -267,14 +299,13 @@ export function Navbar({
                   </Link>
                 )
               )}
-              <Link
-                href="/jegyek"
-                onClick={closeMobile}
-                className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
-              >
-                <Ticket className="size-4" aria-hidden />
-                Jegyek & foglalás
-              </Link>
+              <NavCtaButton
+                cta={cta}
+                variant="mobile"
+                className="mt-2"
+                cmsChromePreview={cmsChromePreview}
+                onNavigate={closeMobile}
+              />
             </div>
           </nav>
         </>

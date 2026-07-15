@@ -10,6 +10,8 @@ export interface IUser extends Document {
   newsletterSubscribedAt?: Date;
   newsletterUnsubscribedAt?: Date;
   role: "ADMIN" | "USER";
+  /** Platform-level tBook system admin (multi-tenant control plane). */
+  isSystemAdmin?: boolean;
   billingInfo?: {
     type: "personal" | "company";
     name: string;
@@ -44,6 +46,7 @@ const UserSchema = new Schema<IUser>(
     newsletterSubscribedAt: { type: Date },
     newsletterUnsubscribedAt: { type: Date },
     role: { type: String, enum: ["ADMIN", "USER"], default: "USER" },
+    isSystemAdmin: { type: Boolean, default: false, index: true },
     billingInfo: {
       type: { type: String, enum: ["personal", "company"] },
       name: { type: String },

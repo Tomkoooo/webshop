@@ -25,6 +25,7 @@ export function TBookEventList({
   copy,
   initialEvents,
   initialError = null,
+  currency: currencyProp = "HUF",
 }: {
   apiKey: string
   apiBase?: string
@@ -32,9 +33,11 @@ export function TBookEventList({
   /** When set, events were loaded on the server — no browser API call needed. */
   initialEvents?: TBookPublicEvent[]
   initialError?: string | null
+  currency?: string
 }) {
   const serverProvided = initialEvents !== undefined
   const [events, setEvents] = useState<TBookPublicEvent[]>(initialEvents ?? [])
+  const [currency, setCurrency] = useState(currencyProp)
   const [loading, setLoading] = useState(!serverProvided)
   const [error, setError] = useState<string | null>(initialError)
 
@@ -52,7 +55,10 @@ export function TBookEventList({
       setError(null)
       try {
         const res = await listEvents(normalizedKey, apiBase)
-        if (!cancelled) setEvents(res.events)
+        if (!cancelled) {
+          setEvents(res.events)
+          if (res.currency) setCurrency(res.currency)
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Nem sikerült betölteni az eseményeket.")
       } finally {
@@ -139,7 +145,7 @@ export function TBookEventList({
                   ) : null}
                 </div>
                 <p className="text-sm font-semibold text-primary">
-                  {formatHuf(event.ticketFeeHuf)} {feeLabel}
+                  {formatHuf(event.ticketFeeHuf, currency)} {feeLabel}
                 </p>
                 <Link
                   href={`/foglalas/${event.id}`}

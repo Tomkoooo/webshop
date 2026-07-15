@@ -1,10 +1,15 @@
 "use client"
 
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DefaultModernVisualCmsChrome } from "@wse/core/features/template-cms/components/DefaultModernVisualCmsChrome"
 import { CmsEditorSubtoolbar } from "@wse/core/features/template-cms/components/CmsEditorSubtoolbar"
+import { CmsNavChromeSidebar } from "@wse/core/features/template-cms/components/CmsNavChromeSidebar"
+import { CmsTBookPageSidebar } from "@wse/core/features/template-cms/components/CmsTBookPageSidebar"
+import { Input } from "@wse/core/components/ui/input"
+import { Label } from "@wse/core/components/ui/label"
 import { SurfaceDocEditProvider } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { useUndoableJsonDocument } from "@wse/core/features/template-cms/hooks/use-undoable-json-document"
 import { useSurfaceDraftPersistence } from "@wse/core/features/template-cms/hooks/use-surface-draft-persistence"
@@ -16,6 +21,8 @@ import {
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
+import { adminFieldLabel } from "@wse/core/lib/admin-ui"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { TemplateModule } from "@wse/sdk/templates/types"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
@@ -45,6 +52,7 @@ export function TBookSurfaceVisualEditor({
   pageKey,
   pageLabel,
   initialDraft,
+  initialHomeDraft,
   branding,
   footer: initialFooter,
   seo,
@@ -58,6 +66,8 @@ export function TBookSurfaceVisualEditor({
   pageKey: string
   pageLabel: string
   initialDraft: Record<string, unknown>
+  /** Published/draft home content — drives nav + Jegyek CTA in preview. */
+  initialHomeDraft: Record<string, unknown>
   branding: Branding
   footer: FooterSettings
   seo: SeoSettings
@@ -69,6 +79,7 @@ export function TBookSurfaceVisualEditor({
   void themeResetBaseline
   const router = useRouter()
   const { mod, error: templateLoadError } = useTemplateModule(templateId)
+  const isWdf = templateId === "world-darts-festival"
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -113,11 +124,54 @@ export function TBookSurfaceVisualEditor({
     depth: 0,
   }))
 
+  const homeChrome = isWdf ? extractTBookHomeChrome(initialHomeDraft) : null
+  const previewNavItems = homeChrome ? navItemsFromTBookChrome(homeChrome) : undefined
+  const previewNavCta = homeChrome ? navCtaFromTBookChrome(homeChrome) : undefined
+
+  const meta = (draft as { meta?: { seoTitle?: string; seoDescription?: string } }).meta ?? {
+    seoTitle: "",
+    seoDescription: "",
+  }
+
+  const structureSidebar: ReactNode = (
+    <div className="space-y-4">
+      <CmsTBookPageSidebar pageKey={pageKey} draft={draft} setPath={setPath} />
+      {isWdf ? <CmsNavChromeSidebar draft={initialHomeDraft} setPath={() => {}} readOnly /> : null}
+    </div>
+  )
+
   const toolbar = (
     <CmsEditorSubtoolbar
       title={`tBook oldal: ${pageLabel}`}
-      description="A szövegeket közvetlenül az előnézeten szerkesztheted. Az eseménylista és a foglalási folyamat működése változatlan marad — csak a megjelenő szövegek módosulnak."
-    />
+      description="A szövegeket közvetlenül az előnézeten vagy a jobb oldali panelen szerkesztheted. Az előnézet a sablon színeit és navigációját használja."
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[180px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO cím</Label>
+          <Input
+            className="h-9"
+            value={meta.seoTitle ?? ""}
+            onChange={(e) => setPath("meta.seoTitle", e.target.value)}
+          />
+        </div>
+        <div className="min-w-[220px] flex-1 space-y-1.5">
+          <Label className={adminFieldLabel}>SEO leírás</Label>
+          <Input
+            className="h-9"
+            value={meta.seoDescription ?? ""}
+            onChange={(e) => setPath("meta.seoDescription", e.target.value)}
+          />
+        </div>
+        {isWdf ? (
+          <Link
+            href="/admin/cms/home"
+            className="inline-flex h-9 items-center rounded-md border border-border/60 bg-background px-3 text-xs font-medium text-foreground hover:bg-muted"
+          >
+            Navigáció szerkesztése →
+          </Link>
+        ) : null}
+      </div>
+    </CmsEditorSubtoolbar>
   )
 
   return (
@@ -166,6 +220,9 @@ export function TBookSurfaceVisualEditor({
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
+      structureSidebar={structureSidebar}
+      navItems={previewNavItems}
+      navCta={previewNavCta}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

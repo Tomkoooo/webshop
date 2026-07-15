@@ -53,10 +53,18 @@ export function bookingToInvoiceOrder(booking: ITBookBooking): IOrder {
   } as unknown as IOrder
 }
 
+function assertBookingOrg(booking: ITBookBooking | null, organizationId?: string) {
+  if (!booking) throw new Error("Foglalás nem található.")
+  if (organizationId && booking.organizationId && String(booking.organizationId) !== organizationId) {
+    throw new Error("A foglalás nem tartozik ehhez a szervezethez.")
+  }
+}
+
 /** Fire-and-forget after payment; failures are recorded for admin retry. */
-export async function issueBookingInvoice(bookingId: string): Promise<void> {
+export async function issueBookingInvoice(bookingId: string, organizationId?: string): Promise<void> {
   await dbConnect()
   const booking = await TBookBooking.findById(bookingId)
+  assertBookingOrg(booking, organizationId)
   if (!booking) return
   if (booking.invoiceStatus === "issued") return
 
@@ -84,9 +92,10 @@ export async function issueBookingInvoice(bookingId: string): Promise<void> {
   await booking.save()
 }
 
-export async function reverseBookingInvoice(bookingId: string): Promise<void> {
+export async function reverseBookingInvoice(bookingId: string, organizationId?: string): Promise<void> {
   await dbConnect()
   const booking = await TBookBooking.findById(bookingId)
+  assertBookingOrg(booking, organizationId)
   if (!booking?.invoiceId || booking.invoiceStatus !== "issued") {
     throw new Error("Nincs kiállított számla ehhez a foglaláshoz.")
   }
@@ -95,9 +104,13 @@ export async function reverseBookingInvoice(bookingId: string): Promise<void> {
   await booking.save()
 }
 
-export async function downloadBookingInvoicePdf(bookingId: string): Promise<Buffer | null> {
+export async function downloadBookingInvoicePdf(
+  bookingId: string,
+  organizationId?: string
+): Promise<Buffer | null> {
   await dbConnect()
   const booking = await TBookBooking.findById(bookingId).lean()
+  assertBookingOrg(booking, organizationId)
   if (!booking?.invoiceId) return null
   return InvoicingSzamlazzService.downloadInvoicePdf({
     invoiceId: booking.invoiceId,

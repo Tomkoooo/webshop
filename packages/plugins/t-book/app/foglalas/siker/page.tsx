@@ -30,6 +30,7 @@ export default async function FoglalasSikerPage() {
         shopEnabled={false}
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
+        navCta={siteConfig?.navCta}
       />
       <main className="min-h-[70vh] bg-background px-4 py-10">
         <Suspense

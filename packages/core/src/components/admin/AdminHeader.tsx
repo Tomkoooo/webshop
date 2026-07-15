@@ -15,9 +15,18 @@ import { SidebarTrigger } from "@wse/core/components/ui/sidebar"
 import { Separator } from "@wse/core/components/ui/separator"
 import { AdminContainer } from "@wse/core/components/admin/AdminContainer"
 import { AdminThemeToggle } from "@wse/core/components/admin/AdminThemeToggle"
+import { AdminOrgSwitcher } from "@wse/core/components/admin/AdminOrgSwitcher"
 import { translateAdminBreadcrumbSegment } from "@wse/core/lib/admin-breadcrumbs"
 
-export function AdminHeader() {
+export function AdminHeader({
+  multiTenantAdmin,
+  activeOrganizationId,
+  organizationIds = [],
+}: {
+  multiTenantAdmin?: boolean
+  activeOrganizationId?: string
+  organizationIds?: string[]
+}) {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
   const ref = useRef<HTMLDivElement>(null)
@@ -61,6 +70,12 @@ export function AdminHeader() {
             })}
           </BreadcrumbList>
         </Breadcrumb>
+        {multiTenantAdmin ? (
+          <AdminOrgSwitcher
+            activeOrganizationId={activeOrganizationId}
+            organizationIds={organizationIds}
+          />
+        ) : null}
         <AdminThemeToggle />
       </div>
       <Separator className="mt-4" />

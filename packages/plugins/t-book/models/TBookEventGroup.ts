@@ -4,6 +4,8 @@ import type { TBookOptionDef } from "../lib/pricing-types"
 import type { TBookPriceBasis } from "../lib/vat"
 
 export interface ITBookEventGroup extends Document {
+  /** Owning organization (multi-tenant scoping). */
+  organizationId?: mongoose.Types.ObjectId | null
   name: string
   description: string
   status: TBookStatus
@@ -74,6 +76,7 @@ const OptionDefSchema = new Schema(
 
 const TBookEventGroupSchema = new Schema<ITBookEventGroup>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
     name: { type: String, required: true },
     description: { type: String, default: "" },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },

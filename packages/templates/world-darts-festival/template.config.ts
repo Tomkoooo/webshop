@@ -67,19 +67,6 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
       defaultContent: homeDefaultContent,
       Render: HomeRender,
       EditorPanel: HomeEditorPanel,
-      listFields: [
-        {
-          path: "chrome.nav",
-          label: "Navigáció",
-          titleKey: "label",
-          maxItems: 12,
-          fields: [
-            { key: "type", label: "Típus (link / dropdown)" },
-            { key: "label", label: "Felirat" },
-            { key: "href", label: "URL (link típusnál)" },
-          ],
-        },
-      ],
     },
     shop: {
       schema: shopSchema,

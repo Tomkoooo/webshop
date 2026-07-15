@@ -8,4 +8,5 @@ export const siteConfig = {
   id: "tbook",
   templateId: "default-modern",
   plugins: ["t-book"] as const,
+  multiTenantAdmin: true,
 }

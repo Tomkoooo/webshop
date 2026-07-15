@@ -1,6 +1,7 @@
 /** Pure admin booking filter → Mongo query builder (unit-testable). */
 
 export type TBookBookingFilters = {
+  organizationId?: string
   search?: string
   eventId?: string
   groupId?: string
@@ -49,6 +50,7 @@ export function parseBookingFilters(searchParams: URLSearchParams): TBookBooking
 export function buildBookingQuery(filters: TBookBookingFilters): Record<string, unknown> {
   const query: Record<string, unknown> = {}
 
+  if (filters.organizationId) query.organizationId = filters.organizationId
   if (filters.eventId) query.eventId = filters.eventId
   if (filters.groupId) query.groupId = filters.groupId
   if (filters.hotelId) query.hotelId = filters.hotelId

@@ -8,12 +8,16 @@ declare module "next-auth" {
     user: {
       id?: string
       role: Role
+      isSystemAdmin?: boolean
+      organizationIds?: string[]
+      activeOrganizationId?: string
     } & DefaultSession["user"]
   }
  
   interface User {
     id?: string
     role: Role
+    isSystemAdmin?: boolean
   }
 }
 
@@ -22,6 +26,7 @@ declare module "next-auth/jwt" {
     id?: string
     sub?: string
     role?: Role
+    isSystemAdmin?: boolean
   }
 }
 

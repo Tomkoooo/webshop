@@ -335,6 +335,10 @@ export default async function CmsPageEditor({
         const { TBookSurfaceVisualEditor } = await import(
           "@wse/core/features/template-cms/editors/TBookSurfaceVisualEditor"
         )
+        const initialHomeDraft = (await PageContentService.getDraft(
+          template.manifest.id,
+          "page:home"
+        )) as Record<string, unknown>
         return (
           <SurfacePageLayout
             editablePages={editablePages}
@@ -349,6 +353,7 @@ export default async function CmsPageEditor({
                 pageKey={fullPageKey}
                 pageLabel={entry.label}
                 initialDraft={initialDraftUnknown as Record<string, unknown>}
+                initialHomeDraft={initialHomeDraft}
                 branding={branding}
                 footer={footer}
                 seo={seo}

@@ -33,6 +33,16 @@ export type ChromeNavItem =
   | { type: "link"; label: string; href: string }
   | { type: "dropdown"; label: string; items: ChromeNavLink[] }
 
+/** Optional primary navbar call-to-action (e.g. festival ticket button). */
+export type ChromeNavCta = {
+  enabled: boolean
+  label: string
+  /** Label shown in the mobile drawer; falls back to `label` when empty. */
+  mobileLabel: string
+  href: string
+  showIcon: boolean
+}
+
 export type ChromeProps = {
   brandName: string
   logoSrc: string
@@ -49,6 +59,8 @@ export type ChromeProps = {
   venueBadge?: string
   /** Optional CMS-driven navigation items (eventstructure and similar templates). */
   navItems?: ChromeNavItem[]
+  /** Optional CMS-driven primary nav CTA button (world-darts-festival and similar). */
+  navCta?: ChromeNavCta
   children?: ReactNode
 }
 

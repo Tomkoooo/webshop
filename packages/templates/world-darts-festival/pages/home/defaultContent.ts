@@ -3,9 +3,15 @@ import type { HomeContent } from "./schema"
 export const homeDefaultContent: HomeContent = {
   chrome: {
     tbookApiKey: "",
+    navCta: {
+      enabled: true,
+      label: "Jegyek",
+      mobileLabel: "Jegyek & foglalás",
+      href: "/jegyek",
+      showIcon: true,
+    },
     nav: [
       { type: "link", label: "Főoldal", href: "/" },
-      { type: "link", label: "Jegyek & foglalás", href: "/jegyek" },
       {
         type: "dropdown",
         label: "Események",

@@ -18,7 +18,7 @@ export default async function JegyekPage() {
   const listCopy = await getTBookListContent(chrome.template.manifest.id)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookApiBase(process.env.NEXT_PUBLIC_TBOOK_API_BASE)
-  const { events, error: eventsError } = await fetchPublicEventsForStorefront(apiKey, apiBase)
+  const { events, currency, error: eventsError } = await fetchPublicEventsForStorefront(apiKey, apiBase)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
@@ -34,6 +34,7 @@ export default async function JegyekPage() {
         shopEnabled={false}
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
+        navCta={siteConfig?.navCta}
       />
       <main className="min-h-[70vh] bg-background px-4 py-10">
         <div className="mx-auto max-w-5xl">
@@ -50,6 +51,7 @@ export default async function JegyekPage() {
             }}
             initialEvents={events}
             initialError={eventsError}
+            currency={currency}
           />
         </div>
       </main>

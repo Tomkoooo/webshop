@@ -7,14 +7,21 @@ import {
   reservationEndsAt,
   stripeCheckoutExpiresAtUnix,
 } from "@wse/core/services/reservation-ttl"
+import TBookOrganization from "../models/TBookOrganization"
+import { normalizeTBookCurrency, stripeCurrencyCode, toStripeUnitAmount } from "../lib/currency"
 import TBookBooking from "../models/TBookBooking"
 import { TBookBookingService } from "./booking-service"
 import type { CreateBookingInput } from "../lib/schemas"
 
 export const TBOOK_CHECKOUT_KIND = "t_book"
 
-function toStripeHufAmount(amountHuf: number): number {
-  return Math.max(1, Math.round(Number(amountHuf || 0) * 100))
+async function resolveCheckoutCurrency(booking: { organizationId?: mongoose.Types.ObjectId | null }) {
+  if (!booking.organizationId) return normalizeTBookCurrency(null)
+  await dbConnect()
+  const org = await TBookOrganization.findById(booking.organizationId)
+    .select("settings.currency")
+    .lean()
+  return normalizeTBookCurrency(org?.settings?.currency)
 }
 
 export class TBookCheckoutService {
@@ -44,6 +51,7 @@ export class TBookCheckoutService {
     const stripe = getStripeClient()
     const baseUrl = opts?.returnBaseUrl || getAppBaseUrl()
     const bookingId = booking._id.toString()
+    const currency = await resolveCheckoutCurrency(booking)
 
     const description = [
       `${booking.guests} fő`,
@@ -69,8 +77,8 @@ export class TBookCheckoutService {
         {
           quantity: 1,
           price_data: {
-            currency: "huf",
-            unit_amount: toStripeHufAmount(booking.totalHuf),
+            currency: stripeCurrencyCode(currency),
+            unit_amount: toStripeUnitAmount(booking.totalHuf, currency),
             product_data: {
               name: booking.eventName,
               description,

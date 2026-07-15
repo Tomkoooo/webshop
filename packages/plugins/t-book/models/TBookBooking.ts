@@ -31,6 +31,7 @@ export type TBookBillingInfo = {
 }
 
 export interface ITBookBooking extends Document {
+  organizationId?: Types.ObjectId | null
   groupId: Types.ObjectId | null
   eventId: Types.ObjectId
   hotelId: Types.ObjectId | null
@@ -137,6 +138,7 @@ const BookingAttendeeSchema = new Schema(
 
 const TBookBookingSchema = new Schema<ITBookBooking>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
     groupId: { type: Schema.Types.ObjectId, ref: "TBookEventGroup", default: null, index: true },
     eventId: { type: Schema.Types.ObjectId, ref: "TBookEvent", required: true, index: true },
     hotelId: { type: Schema.Types.ObjectId, ref: "TBookHotel", default: null, index: true },

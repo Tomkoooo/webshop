@@ -23,6 +23,7 @@ import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
 import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
+import { useOrgCurrency } from "./use-org-currency"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 function toDateInputValue(value?: string): string {
@@ -62,6 +63,7 @@ export function EventFormPage({
   eventId?: string
 }) {
   const router = useRouter()
+  const { currency } = useOrgCurrency()
   const isEdit = Boolean(eventId)
   const [loading, setLoading] = useState(isEdit)
   const [groupName, setGroupName] = useState("")
@@ -231,10 +233,11 @@ export function EventFormPage({
           {step === 2 ? (
             <div className="space-y-4">
               <TBookNetPriceField
-                label="Jegyár (Ft)"
+                label={`Jegyár (${currency})`}
                 amount={draft.ticketFeeHuf}
                 priceBasis={draft.ticketPriceBasis}
                 vatPercent={draft.ticketVatPercent}
+                currency={currency}
                 onAmountChange={(ticketFeeHuf) => patch({ ticketFeeHuf })}
                 onPriceBasisChange={(ticketPriceBasis) => patch({ ticketPriceBasis })}
                 onVatPercentChange={(ticketVatPercent) => patch({ ticketVatPercent })}
