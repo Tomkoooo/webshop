@@ -12,6 +12,20 @@ import { homepageSnapshotSchema } from "@wse/core/features/homepage-cms/types/ho
 import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 import type { PageDefinition } from "@wse/sdk/templates/types"
 import { deepMergeRecords } from "@wse/core/lib/deep-merge-records"
+import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
+import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+
+function normalizeParsedContentSync<T>(
+  templateId: string,
+  pageKey: string,
+  data: T,
+  def: PageDefinition<unknown> | null
+): T {
+  if (templateId === "world-darts-festival" && pageKey === "page:home" && def) {
+    return normalizeWdfHomeContent(data, def.defaultContent as HomeContent) as T
+  }
+  return data
+}
 
 async function findPageDefinitionByTemplateId(
   templateId: string,
@@ -55,18 +69,23 @@ function parseWithDef<T>(
       const homeParsed = homepageSnapshotSchema.safeParse(data)
       const refParsed = homepageSnapshotSchema.safeParse(ref)
       if (homeParsed.success && refParsed.success) {
-        const merged = insertMissingHomepageBlocks(homeParsed.data, refParsed.data)
+        const mergedHome = insertMissingHomepageBlocks(homeParsed.data, refParsed.data)
         const allowed = resolveAllowedHomepageBlockTypes(def)
-        return pruneAndDedupeHomepageBlocks(merged, allowed) as T
+        return normalizeParsedContentSync(
+          templateId,
+          pageKey,
+          pruneAndDedupeHomepageBlocks(mergedHome, allowed) as T,
+          def
+        )
       }
     }
-    return data
+    return normalizeParsedContentSync(templateId, pageKey, data, def)
   } catch (error) {
     console.error(
       `[PageContentService] Failed to parse content for ${templateId}/${pageKey}; falling back to default.`,
       error
     )
-    return def.defaultContent as T
+    return normalizeParsedContentSync(templateId, pageKey, def.defaultContent as T, def)
   }
 }
 

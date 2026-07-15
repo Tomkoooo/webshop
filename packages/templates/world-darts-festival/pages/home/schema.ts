@@ -34,6 +34,12 @@ const feeItemSchema = z.object({
   badge: z.string().default(""),
 })
 
+const prizeTableSchema = z.object({
+  title: z.string(),
+  headers: z.array(z.string()).default([]),
+  rows: z.array(z.array(z.string())).default([]),
+})
+
 const sponsorSchema = z.object({
   name: z.string(),
   image: z.string(),
@@ -78,6 +84,11 @@ export const homeSchema = z.object({
     ctaLabel: z.string(),
     ctaHref: z.string(),
   }),
+  prizeMoney: z.object({
+    heading: z.string(),
+    intro: z.string().default(""),
+    tables: z.array(prizeTableSchema).default([]),
+  }),
   sponsors: z.object({
     heading: z.string(),
     logos: z.array(sponsorSchema).default([]),
@@ -92,10 +103,10 @@ export const homeSchema = z.object({
   }),
   meta: z
     .object({
-      seoTitle: z.string().default("Event Structure"),
+      seoTitle: z.string().default("World Darts Festival"),
       seoDescription: z.string().default(""),
     })
-    .default({ seoTitle: "Event Structure", seoDescription: "" }),
+    .default({ seoTitle: "World Darts Festival", seoDescription: "" }),
 })
 
 export type HomeContent = z.infer<typeof homeSchema>

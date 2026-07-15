@@ -25,6 +25,8 @@ import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/r
 import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
+import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
+import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
 import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
@@ -101,6 +103,12 @@ export function HomeVisualSurfaceEditor({
       : null
 
   const normalizeDraft = (value: Record<string, unknown>) => {
+    if (templateId === "world-darts-festival") {
+      return normalizeWdfHomeContent(
+        value,
+        mod.pages.home.defaultContent as HomeContent
+      ) as Record<string, unknown>
+    }
     if (!campaignFallback) return value
     return normalizeCampaignContent(value, campaignFallback) as Record<string, unknown>
   }

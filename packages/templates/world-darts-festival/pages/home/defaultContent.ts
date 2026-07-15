@@ -22,6 +22,7 @@ export const homeDefaultContent: HomeContent = {
       },
       { type: "link", label: "Helyszín", href: "/#venue" },
       { type: "link", label: "Program", href: "/#schedule" },
+      { type: "link", label: "Díjazás", href: "/#prize-money" },
       { type: "link", label: "Kapcsolat", href: "/#contact" },
     ],
   },
@@ -100,6 +101,30 @@ export const homeDefaultContent: HomeContent = {
     ctaLabel: "Register now",
     ctaHref: "/jegyek",
   },
+  prizeMoney: {
+    heading: "Prize money",
+    intro: "Prize tables for each tournament at the World Darts Festival.",
+    tables: [
+      {
+        title: "WDF World Masters",
+        headers: ["Place", "Men", "Women", "Para"],
+        rows: [
+          ["Winner", "€5,000", "€3,500", "€1,500"],
+          ["Runner-up", "€2,500", "€1,750", "€750"],
+          ["Semi-finalist", "€1,000", "€750", "€350"],
+        ],
+      },
+      {
+        title: "Hungarian Open",
+        headers: ["Place", "Men", "Women"],
+        rows: [
+          ["Winner", "€2,000", "€1,500"],
+          ["Runner-up", "€1,000", "€750"],
+          ["Semi-finalist", "€500", "€350"],
+        ],
+      },
+    ],
+  },
   sponsors: {
     heading: "Sponsors and partners",
     logos: [
@@ -117,7 +142,7 @@ export const homeDefaultContent: HomeContent = {
     sendButtonLabel: "Üzenet küldése",
   },
   meta: {
-    seoTitle: "World Darts Festival — Event Structure",
+    seoTitle: "World Darts Festival",
     seoDescription: "Book tickets and register for the World Darts Festival in Budapest.",
   },
 }

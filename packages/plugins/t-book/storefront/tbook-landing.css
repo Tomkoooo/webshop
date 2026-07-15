@@ -40,6 +40,21 @@
   --theme-accent-foreground: var(--tl-accent-foreground);
   --theme-border: var(--tl-border);
 
+  --color-background: var(--tl-background);
+  --color-foreground: var(--tl-foreground);
+  --color-primary: var(--tl-primary);
+  --color-primary-foreground: var(--tl-primary-foreground);
+  --color-secondary: var(--tl-secondary);
+  --color-secondary-foreground: var(--tl-secondary-foreground);
+  --color-muted: var(--tl-muted);
+  --color-muted-foreground: var(--tl-muted-foreground);
+  --color-accent: var(--tl-accent);
+  --color-accent-foreground: var(--tl-accent-foreground);
+  --color-border: var(--tl-border);
+  --color-surface: var(--tl-surface);
+  --color-card: var(--tl-card);
+  --color-card-foreground: var(--tl-card-foreground);
+
   --background: var(--tl-background);
   --foreground: var(--tl-foreground);
   --card: var(--tl-card);

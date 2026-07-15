@@ -38,8 +38,8 @@ export function TBookListRender({ content }: { content: TBookListContent }) {
             key={event.title}
             className="flex flex-col rounded-2xl border border-border/60 bg-surface p-5 shadow-sm"
           >
-            <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Ticket className="size-5" aria-hidden />
+            <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/15">
+              <Ticket className="size-5 text-primary" aria-hidden />
             </div>
             <h2 className="text-lg font-semibold text-foreground">{event.title}</h2>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">

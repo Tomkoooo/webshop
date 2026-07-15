@@ -143,10 +143,17 @@ export function DefaultModernVisualCmsChrome({
   const NavbarCmp = mod.chrome.Navbar
   const FooterCmp = mod.chrome.Footer
   const isMinecraftCamp = templateId === "minecraft-camp"
+  const isWorldDartsFestival = templateId === "world-darts-festival"
   const previewSurfaceClass = isMinecraftCamp && minecraftFontVariable
     ? `minecraft-camp-preview minecraft-page-mineshow ${minecraftFontVariable}`
-    : ""
-  const previewBgClass = isMinecraftCamp ? "bg-[#b8d88a]" : "bg-background"
+    : isWorldDartsFestival
+      ? "world-darts-festival-preview"
+      : ""
+  const previewBgClass = isMinecraftCamp
+    ? "bg-[#b8d88a]"
+    : isWorldDartsFestival
+      ? "bg-[#0A0A0F]"
+      : "bg-background"
 
   const wrapLayout = (mode: "edit" | "review", main: React.ReactNode) => (
     <>

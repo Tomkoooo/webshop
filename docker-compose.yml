@@ -211,6 +211,26 @@ networks:
 #     -t ghcr.io/your-org/sakkmed:latest .
 #
 # =============================================================================
+# EXAMPLE — v2 site app (world-darts-festival / WDF)
+# =============================================================================
+# WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:world-darts-festival
+# WEBSHOP_CONTAINER_NAME=world-darts-festival
+# DATABASE_URL=mongodb+srv://...
+# NEXT_PUBLIC_APP_URL=https://worlddartsfestival.com
+# NEXTAUTH_URL=https://worlddartsfestival.com
+# AUTH_URL=https://worlddartsfestival.com
+# ENABLE_SHOP=false
+# (no DEPLOYMENT_KEY — identity is baked in the image)
+#
+# Optional: tBook API on a separate admin host
+# NEXT_PUBLIC_TBOOK_API_BASE=https://admin.tbook.example.com/api/plugins/t-book
+#
+# Build image (CI tag world-darts-festival on engine-v2):
+#   docker build --build-arg SITE_APP=apps/world-darts-festival \
+#     --build-arg SITE_APP_SERVER=apps/world-darts-festival/server.js \
+#     -t ghcr.io/your-org/webshop-engine:world-darts-festival .
+#
+# =============================================================================
 # EXAMPLE — two deployments, ONE database (engine-v2 branch images)
 # =============================================================================
 # Same DATABASE_URL on both containers. Different public URL per host.

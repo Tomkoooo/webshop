@@ -1,11 +1,11 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
 import { CmsImage } from "@wse/cms-bridge"
 import { ContactInquiryForm } from "@wse/core/components/site-contact/ContactInquiryForm"
 import { EditableDocText } from "@wse/core/features/template-cms/primitives/EditableDocText"
+import { EditableDocLink } from "@wse/core/features/template-cms/primitives/EditableDocLink"
 import { CmsListAddButton, CmsListItemToolbar } from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
 import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-edit-context"
 import { cn } from "@wse/core/lib/utils"
@@ -90,6 +90,119 @@ function ScheduleDay({
   )
 }
 
+function PrizeMoneyTable({
+  tableIndex,
+  title,
+  headers,
+  rows,
+}: {
+  tableIndex: number
+  title: string
+  headers: string[]
+  rows: string[][]
+}) {
+  const edit = useSurfaceDocEdit()
+  const basePath = `prizeMoney.tables.${tableIndex}`
+  const headersPath = `${basePath}.headers`
+  const rowsPath = `${basePath}.rows`
+
+  const addColumn = () => {
+    edit.setPath(headersPath, [...headers, "Column"])
+    edit.setPath(
+      rowsPath,
+      rows.map((row) => [...row, ""])
+    )
+  }
+
+  const removeColumn = (colIndex: number) => {
+    if (headers.length <= 1) return
+    edit.setPath(
+      headersPath,
+      headers.filter((_, i) => i !== colIndex)
+    )
+    edit.setPath(
+      rowsPath,
+      rows.map((row) => row.filter((_, i) => i !== colIndex))
+    )
+  }
+
+  const addRow = () => {
+    edit.setPath(rowsPath, [...rows, headers.map(() => "")])
+  }
+
+  const removeRow = (rowIndex: number) => {
+    edit.setPath(
+      rowsPath,
+      rows.filter((_, i) => i !== rowIndex)
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-background">
+      <div className="border-b border-border bg-muted/30 px-5 py-4">
+        <h3 className="text-lg font-semibold">
+          <EditableDocText path={`${basePath}.title`} value={title} />
+        </h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-surface">
+              {headers.map((header, colIndex) => (
+                <th key={colIndex} className="px-4 py-3 text-left font-semibold">
+                  <div className="flex items-start justify-between gap-2">
+                    <EditableDocText path={`${headersPath}.${colIndex}`} value={header} />
+                    {edit.enabled && headers.length > 1 ? (
+                      <button
+                        type="button"
+                        className="cms-admin-control shrink-0 rounded px-1 text-xs text-destructive hover:bg-destructive/10"
+                        aria-label="Oszlop törlése"
+                        onClick={() => removeColumn(colIndex)}
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                </th>
+              ))}
+              {edit.enabled ? <th className="w-10 px-2" aria-hidden /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={rowIndex} className="border-b border-border/60 last:border-0">
+                {row.map((cell, colIndex) => (
+                  <td key={colIndex} className="px-4 py-3 text-muted-foreground">
+                    <EditableDocText path={`${rowsPath}.${rowIndex}.${colIndex}`} value={cell} />
+                  </td>
+                ))}
+                {edit.enabled ? (
+                  <td className="px-2 py-3">
+                    <button
+                      type="button"
+                      className="cms-admin-control rounded px-1 text-xs text-destructive hover:bg-destructive/10"
+                      aria-label="Sor törlése"
+                      onClick={() => removeRow(rowIndex)}
+                    >
+                      ×
+                    </button>
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {edit.enabled ? (
+        <div className="flex flex-wrap gap-2 border-t border-border/60 px-4 py-3">
+          <CmsListAddButton label="Sor hozzáadása" onClick={addRow} />
+          <CmsListAddButton label="Oszlop hozzáadása" onClick={addColumn} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageDeps>) {
   const c = content
   const edit = useSurfaceDocEdit()
@@ -103,13 +216,13 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           path="hero.heroImage"
           src={c.hero.heroImage}
           alt={c.hero.title}
-          className="absolute inset-0"
+          className="absolute inset-0 z-0"
           frameClassName="size-full"
           imageClassName="size-full object-cover"
           fill
           usageLabel="Hero kép"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 pt-32 sm:pb-16">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
             <EditableDocText path="hero.tagline" value={c.hero.tagline} />
@@ -121,18 +234,20 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
             <EditableDocText path="hero.subtitle" value={c.hero.subtitle} multiline />
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link
+            <EditableDocLink
+              labelPath="hero.primaryCtaLabel"
+              hrefPath="hero.primaryCtaHref"
+              label={c.hero.primaryCtaLabel}
               href={c.hero.primaryCtaHref}
               className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              <EditableDocText path="hero.primaryCtaLabel" value={c.hero.primaryCtaLabel} />
-            </Link>
-            <Link
+            />
+            <EditableDocLink
+              labelPath="hero.secondaryCtaLabel"
+              hrefPath="hero.secondaryCtaHref"
+              label={c.hero.secondaryCtaLabel}
               href={c.hero.secondaryCtaHref}
               className="inline-flex min-h-11 items-center rounded-lg border border-border bg-background/80 px-6 py-2.5 text-sm font-semibold backdrop-blur hover:bg-muted"
-            >
-              <EditableDocText path="hero.secondaryCtaLabel" value={c.hero.secondaryCtaLabel} />
-            </Link>
+            />
           </div>
         </div>
       </section>
@@ -147,12 +262,13 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
             <p className="text-muted-foreground leading-relaxed">
               <EditableDocText path="festival.body" value={c.festival.body} multiline />
             </p>
-            <Link
+            <EditableDocLink
+              labelPath="festival.ctaLabel"
+              hrefPath="festival.ctaHref"
+              label={c.festival.ctaLabel}
               href={c.festival.ctaHref}
               className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              <EditableDocText path="festival.ctaLabel" value={c.festival.ctaLabel} />
-            </Link>
+            />
           </div>
           <CmsImage
             path="festival.image"
@@ -192,12 +308,13 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               <p className="mt-2 flex-1 text-sm text-muted-foreground">
                 <EditableDocText path={`infoCards.${index}.body`} value={card.body} multiline />
               </p>
-              <Link
+              <EditableDocLink
+                labelPath={`infoCards.${index}.ctaLabel`}
+                hrefPath={`infoCards.${index}.ctaHref`}
+                label={card.ctaLabel}
                 href={card.ctaHref}
                 className="mt-4 inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
-              >
-                <EditableDocText path={`infoCards.${index}.ctaLabel`} value={card.ctaLabel} />
-              </Link>
+              />
             </article>
           ))}
           {edit.enabled ? (
@@ -241,14 +358,13 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               <p className="text-sm text-muted-foreground">
                 <EditableDocText path="venue.accessBody" value={c.venue.accessBody} multiline />
               </p>
-              <a
+              <EditableDocLink
+                labelPath="venue.mapLabel"
+                hrefPath="venue.mapHref"
+                label={c.venue.mapLabel}
                 href={c.venue.mapHref}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
-              >
-                <EditableDocText path="venue.mapLabel" value={c.venue.mapLabel} />
-              </a>
+              />
             </div>
           </div>
         </div>
@@ -343,13 +459,69 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
             </div>
           ) : null}
           <div className="mt-8 text-center">
-            <Link
+            <EditableDocLink
+              labelPath="fees.ctaLabel"
+              hrefPath="fees.ctaHref"
+              label={c.fees.ctaLabel}
               href={c.fees.ctaHref}
               className="inline-flex min-h-11 items-center rounded-lg bg-primary px-8 py-2.5 text-sm font-semibold text-primary-foreground"
-            >
-              <EditableDocText path="fees.ctaLabel" value={c.fees.ctaLabel} />
-            </Link>
+            />
           </div>
+        </div>
+      </section>
+
+      {/* Prize money */}
+      <section id="prize-money" className="scroll-mt-24 py-16">
+        <div className="mx-auto max-w-5xl space-y-8 px-4">
+          <div className="text-center">
+            <SectionHeading className="mb-3">
+              <EditableDocText path="prizeMoney.heading" value={c.prizeMoney.heading} />
+            </SectionHeading>
+            {c.prizeMoney.intro ? (
+              <p className="mx-auto max-w-2xl text-muted-foreground">
+                <EditableDocText path="prizeMoney.intro" value={c.prizeMoney.intro} multiline />
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-6">
+            {c.prizeMoney.tables.map((table, index) => (
+              <div key={index} className="relative">
+                {edit.enabled ? (
+                  <CmsListItemToolbar
+                    onRemove={() =>
+                      edit.setPath(
+                        "prizeMoney.tables",
+                        c.prizeMoney.tables.filter((_, i) => i !== index)
+                      )
+                    }
+                  />
+                ) : null}
+                <PrizeMoneyTable
+                  tableIndex={index}
+                  title={table.title}
+                  headers={table.headers}
+                  rows={table.rows}
+                />
+              </div>
+            ))}
+          </div>
+          {edit.enabled ? (
+            <div className="text-center">
+              <CmsListAddButton
+                label="Verseny táblázat hozzáadása"
+                onClick={() =>
+                  edit.setPath("prizeMoney.tables", [
+                    ...c.prizeMoney.tables,
+                    {
+                      title: "New tournament",
+                      headers: ["Place", "Prize"],
+                      rows: [["Winner", "€0"]],
+                    },
+                  ])
+                }
+              />
+            </div>
+          ) : null}
         </div>
       </section>
 

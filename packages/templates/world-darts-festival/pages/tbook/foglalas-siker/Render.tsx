@@ -8,8 +8,8 @@ export function TBookSuccessRender({ content }: { content: TBookSuccessContent }
   const c = content
   return (
     <div className="mx-auto max-w-lg px-4 py-16 text-center">
-      <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-success/15 text-success">
-        <CheckCircle2 className="size-9" aria-hidden />
+      <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-success/15">
+        <CheckCircle2 className="size-9 text-success" aria-hidden />
       </div>
       <h1 className="text-2xl font-bold text-foreground md:text-3xl">
         <EditableDocText path="successTitle" value={c.successTitle} />
