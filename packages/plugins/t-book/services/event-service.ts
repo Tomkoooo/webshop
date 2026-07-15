@@ -9,9 +9,11 @@ import {
   eventGroupInputSchema,
   eventInputSchema,
   hotelInputSchema,
+  hotelInputUpdateSchema,
   type EventGroupInput,
   type EventInput,
   type HotelInput,
+  type HotelUpdateInput,
 } from "../lib/schemas"
 import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
 import { resolveEventHeroImage } from "../lib/event-hero"
@@ -328,8 +330,8 @@ export class TBookEventService {
     return hotel
   }
 
-  static async updateHotel(id: string, input: Partial<HotelInput>, organizationId?: string): Promise<void> {
-    const parsed = hotelInputSchema.partial().parse(input)
+  static async updateHotel(id: string, input: HotelUpdateInput, organizationId?: string): Promise<void> {
+    const parsed = hotelInputUpdateSchema.parse(input)
     await dbConnect()
     const existing = await TBookHotel.findById(oid(id)).lean()
     if (!existing) throw new Error("Szállás nem található.")

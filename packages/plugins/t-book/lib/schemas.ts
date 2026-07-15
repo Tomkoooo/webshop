@@ -291,26 +291,32 @@ export const eventInputSchema = z.object({
   sortOrder: z.number().int().default(0),
 })
 
-export const hotelInputSchema = z
-  .object({
-    groupId: z.string().optional(),
-    eventId: z.string().optional(),
-    name: z.string().min(1, "Név kötelező"),
-    description: z.string().optional().default(""),
-    address: z.string().optional().default(""),
-    distanceFromVenueKm: z.number().min(0).nullable().optional(),
-    contactEmail: z.string().optional().default(""),
-    contactPhone: z.string().optional().default(""),
-    gallery: z.array(z.string()).default([]),
-    currency: tBookCurrencySchema.optional(),
-    registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
-    pricing: tBookHotelPricingSchema,
-    status: tBookStatusSchema.default("draft"),
-    sortOrder: z.number().int().default(0),
-  })
-  .refine((data) => Boolean(data.groupId || data.eventId), {
+export const hotelInputBaseSchema = z.object({
+  groupId: z.string().optional(),
+  eventId: z.string().optional(),
+  name: z.string().min(1, "Név kötelező"),
+  description: z.string().optional().default(""),
+  address: z.string().optional().default(""),
+  distanceFromVenueKm: z.number().min(0).nullable().optional(),
+  contactEmail: z.string().optional().default(""),
+  contactPhone: z.string().optional().default(""),
+  gallery: z.array(z.string()).default([]),
+  currency: tBookCurrencySchema.optional(),
+  registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
+  pricing: tBookHotelPricingSchema,
+  status: tBookStatusSchema.default("draft"),
+  sortOrder: z.number().int().default(0),
+})
+
+export const hotelInputSchema = hotelInputBaseSchema.refine(
+  (data) => Boolean(data.groupId || data.eventId),
+  {
     message: "groupId vagy eventId kötelező",
-  })
+  }
+)
+
+/** Partial hotel patch — base schema only (Zod disallows .partial() on refined schemas). */
+export const hotelInputUpdateSchema = hotelInputBaseSchema.partial()
 
 export const selectionsSchema = z.record(
   z.string(),
@@ -354,5 +360,6 @@ export const createBookingSchema = z.object({
 export type EventGroupInput = z.infer<typeof eventGroupInputSchema>
 export type EventInput = z.infer<typeof eventInputSchema>
 export type HotelInput = z.infer<typeof hotelInputSchema>
+export type HotelUpdateInput = z.infer<typeof hotelInputUpdateSchema>
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>
 export type CreateBookingInput = z.infer<typeof createBookingSchema>
