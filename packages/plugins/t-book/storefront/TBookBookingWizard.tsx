@@ -126,15 +126,7 @@ export function TBookBookingWizard({
   const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
   const availablePackages = useMemo(() => {
     if (!selectedHotel || !roomTypeKey) return []
-    return matchingPackageDeals(
-      {
-        ...selectedHotel.pricing,
-        roomTypes: selectedHotel.pricing.roomTypes,
-        packages: selectedHotel.pricing.packages ?? [],
-      },
-      nights,
-      roomTypeKey
-    )
+    return matchingPackageDeals(selectedHotel.pricing, nights, roomTypeKey)
   }, [selectedHotel, nights, roomTypeKey])
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
 

@@ -1,5 +1,6 @@
 import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, formatTBookMoney } from "../lib/currency"
+import type { TBookHotelPricing, TBookOptionDef } from "../lib/pricing-types"
 
 export function resolveTBookApiBase(override?: string): string {
   const trimmed = override?.replace(/\/$/, "")
@@ -39,33 +40,11 @@ export type TBookPublicEvent = {
   attendeeFieldSchema: TBookPublicAttendeeFieldDef[]
 }
 
-export type TBookPublicOptionDef = {
-  key: string
-  label: string
-  type: "select" | "multiselect" | "number" | "checkbox"
-  required?: boolean
-  defaultValue?: string | number | boolean | string[] | null
-  choices?: { value: string; label: string; priceHuf: number; priceMode: string }[]
-  unitPriceHuf?: number
-  priceMode?: string
-  min?: number
-  max?: number
-  dependsOn?: { key: string; values: string[] } | null
-}
+export type TBookPublicOptionDef = TBookOptionDef
 
-export type TBookPublicRoomType = {
-  key: string
-  label: string
-  baseRateHuf: number
-}
+export type TBookPublicRoomType = TBookHotelPricing["roomTypes"][number]
 
-export type TBookPublicPackageDeal = {
-  key: string
-  label: string
-  nights: number
-  priceHuf: number
-  roomTypeKey?: string | null
-}
+export type TBookPublicPackageDeal = NonNullable<TBookHotelPricing["packages"]>[number]
 
 export type TBookPublicHotel = {
   id: string
@@ -76,19 +55,7 @@ export type TBookPublicHotel = {
   gallery: string[]
   currency?: string
   registrationFieldSchema?: TBookPublicAttendeeFieldDef[]
-  pricing: {
-    priceBasis: "net" | "gross"
-    vatPercent: number
-    roomTypes: TBookPublicRoomType[]
-    packages?: TBookPublicPackageDeal[]
-    extrasSection?: {
-      label: string
-      description?: string
-      options: TBookPublicOptionDef[]
-    } | null
-    /** @deprecated legacy — use extrasSection */
-    addonGroups?: { key: string; label: string; options: TBookPublicOptionDef[] }[]
-  }
+  pricing: TBookHotelPricing
 }
 
 export type TBookPriceQuote = {
