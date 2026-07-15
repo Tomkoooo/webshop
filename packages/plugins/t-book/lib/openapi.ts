@@ -1,6 +1,6 @@
 /**
  * OpenAPI 3.1 spec for the tBook public API (API-key protected endpoints used
- * by future landing pages). Served at `GET /api/plugins/t-book/openapi`.
+ * by landing pages and external frontends). Served at `GET /api/plugins/t-book/openapi`.
  */
 
 const priceLine = {
@@ -29,7 +29,7 @@ const quote = {
 const selections = {
   type: "object",
   description:
-    "Kulcs-érték pár opciók a hotel konfigurációja szerint (pl. { room_type: 'suite', meals: 'half_board', accessibility: true }).",
+    "Kulcs-érték pár opciók a hotel konfigurációja szerint. Szállás: `room_type`, `package_deal`. Extrák: a hotel `extrasSection.options` kulcsai.",
   additionalProperties: {
     oneOf: [
       { type: "string" },
@@ -40,14 +40,138 @@ const selections = {
   },
 } as const
 
+const attendeeField = {
+  type: "object",
+  properties: {
+    key: { type: "string", description: "Gép kulcs (pl. full_name, birth_year)." },
+    label: { type: "string" },
+    type: {
+      type: "string",
+      enum: ["text", "email", "phone", "number", "date", "select"],
+    },
+    required: { type: "boolean" },
+    helpText: { type: "string" },
+    choices: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { value: { type: "string" }, label: { type: "string" } },
+      },
+    },
+    min: { type: "number" },
+    max: { type: "number" },
+    sortOrder: { type: "integer" },
+  },
+} as const
+
+const optionDef = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    label: { type: "string" },
+    type: { type: "string", enum: ["select", "multiselect", "number", "checkbox"] },
+    required: { type: "boolean" },
+    defaultValue: {},
+    choices: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          value: { type: "string" },
+          label: { type: "string" },
+          priceHuf: { type: "number" },
+          priceMode: {
+            type: "string",
+            enum: ["fixed", "per_person", "per_night", "per_person_per_night", "percent"],
+          },
+        },
+      },
+    },
+    unitPriceHuf: { type: "number" },
+    priceMode: {
+      type: "string",
+      enum: ["fixed", "per_person", "per_night", "per_person_per_night", "percent"],
+    },
+    min: { type: "number" },
+    max: { type: "number" },
+    sortOrder: { type: "integer" },
+  },
+} as const
+
+const packageDeal = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    label: { type: "string" },
+    nights: { type: "integer", minimum: 1 },
+    priceHuf: { type: "number", minimum: 0, description: "Egységár (egy csomag)." },
+    maxGuests: {
+      type: ["integer", "null"],
+      minimum: 1,
+      description:
+        "Max. vendég egy csomagban. Ha megadva, a szerver ceil(guests / maxGuests) csomagot számol (pl. 4 fő + max 2 → 2× ár). Ha null/Hiányzik: egy csomag fix ára érvényes vendégszám függetlenül.",
+    },
+    roomTypeKey: {
+      type: ["string", "null"],
+      description: "Ha megadva, csak ehhez a szobatípushoz köthető (both / room_nights mód).",
+    },
+    sortOrder: { type: "integer" },
+  },
+} as const
+
+const hotelPricing = {
+  type: "object",
+  properties: {
+    priceBasis: { type: "string", enum: ["net", "gross"] },
+    vatPercent: { type: "number" },
+    accommodationMode: {
+      type: "string",
+      enum: ["room_nights", "packages", "both"],
+      description:
+        "`room_nights`: szobatípus + éjszaka. `packages`: csak csomagajánlat. `both`: szoba + opcionális csomag.",
+    },
+    roomTypes: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          label: { type: "string" },
+          baseRateHuf: { type: "number", description: "Alapdíj vendég / éj." },
+          sortOrder: { type: "integer" },
+        },
+      },
+    },
+    packages: {
+      type: "array",
+      items: packageDeal,
+      description: "Fix csomagajánlatok. `selections.package_deal` kulccsal választható.",
+    },
+    extrasSection: {
+      type: ["object", "null"],
+      properties: {
+        label: { type: "string" },
+        description: { type: "string" },
+        options: { type: "array", items: optionDef },
+      },
+    },
+  },
+} as const
+
 export function buildTBookOpenApiSpec(baseUrl: string) {
   return {
     openapi: "3.1.0",
     info: {
       title: "tBook public API",
-      version: "1.0.0",
-      description:
-        "Esemény + szállás foglalási API külső landing oldalaknak. Minden végpont a csoporthoz tartozó API kulcsot várja az `X-TBook-Api-Key` fejlécben (vagy `Authorization: Bearer <kulcs>`). Stripe és számlázási titkok kizárólag a szerveren élnek — a kliens csak checkout URL-t kap.",
+      version: "1.1.0",
+      description: [
+        "Esemény + szállás foglalási API külső landing oldalaknak.",
+        "Minden végpont a csoporthoz tartozó API kulcsot várja az `X-TBook-Api-Key` fejlécben (vagy `Authorization: Bearer <kulcs>`).",
+        "",
+        "**Foglalási mezők:** az esemény `attendeeFieldSchema` a csoport alapmezőiből és az esemény felülírásából áll össze (csoport `defaultAttendeeFieldSchema` + esemény `attendeeFieldSchemaMode`: `extend` | `replace`). A nyilvános API a már **feloldott** sémát adja vissza.",
+        "",
+        "**Csomagajánlatok:** ha egy csomagnál `maxGuests` meg van adva, a szállás alapár = `priceHuf × ceil(guests / maxGuests)`.",
+      ].join("\n"),
     },
     servers: [{ url: `${baseUrl}/api/plugins/t-book` }],
     components: {
@@ -57,28 +181,7 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
       schemas: {
         PriceQuote: quote,
         Selections: selections,
-        AttendeeField: {
-          type: "object",
-          properties: {
-            key: { type: "string" },
-            label: { type: "string" },
-            type: {
-              type: "string",
-              enum: ["text", "email", "phone", "number", "date", "select"],
-            },
-            required: { type: "boolean" },
-            helpText: { type: "string" },
-            choices: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: { value: { type: "string" }, label: { type: "string" } },
-              },
-            },
-            min: { type: "number" },
-            max: { type: "number" },
-          },
-        },
+        AttendeeField: attendeeField,
         AttendeePayload: {
           type: "object",
           required: ["fields"],
@@ -87,8 +190,25 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               type: "object",
               additionalProperties: { oneOf: [{ type: "string" }, { type: "number" }] },
             },
+            members: {
+              type: "array",
+              description: "Csapat regisztráció (`registrationUnit: team`) esetén csapattagok.",
+              items: {
+                type: "object",
+                required: ["fields"],
+                properties: {
+                  fields: {
+                    type: "object",
+                    additionalProperties: { oneOf: [{ type: "string" }, { type: "number" }] },
+                  },
+                },
+              },
+            },
           },
         },
+        PackageDeal: packageDeal,
+        HotelPricing: hotelPricing,
+        OptionDef: optionDef,
         Event: {
           type: "object",
           properties: {
@@ -101,19 +221,39 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                 address: { type: "string" },
                 lat: { type: ["number", "null"] },
                 lng: { type: ["number", "null"] },
+                mapEmbedUrl: { type: "string" },
               },
             },
             startDate: { type: "string", format: "date-time" },
             endDate: { type: "string", format: "date-time" },
-            nights: { type: "integer" },
+            startTime: { type: ["string", "null"], description: "HH:mm (24h), opcionális." },
+            endTime: { type: ["string", "null"], description: "HH:mm (24h), opcionális." },
+            nights: { type: "integer", description: "Esemény hossza éjszakákban." },
             ticketFeeHuf: { type: "number" },
-            ticketFeeMode: { type: "string", enum: ["per_person", "per_booking"] },
+            ticketFeeMode: {
+              type: "string",
+              enum: ["per_person", "per_booking", "per_team"],
+            },
+            registrationUnit: {
+              type: "string",
+              enum: ["person", "team"],
+              description: "`guests` jelentése: fő vagy csapat.",
+            },
+            teamMemberLimit: {
+              type: ["integer", "null"],
+              description: "Csapatonként max. tag (team regisztráció).",
+            },
+            teamMemberFieldSchema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/AttendeeField" },
+            },
+            currency: { type: "string", description: "ISO 4217 (pl. HUF, EUR)." },
             heroImage: { type: "string" },
             attendeeFieldSchema: {
               type: "array",
               items: { $ref: "#/components/schemas/AttendeeField" },
               description:
-                "Eseményenként konfigurálható résztvevői mezők — minden jegyhez külön kitöltendő.",
+                "Feloldott foglalási mezők (csoport alap + esemény kiegészítés/felülírás). Egy elem minden jegyhez / résztvevőhöz.",
             },
           },
         },
@@ -124,11 +264,15 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
             name: { type: "string" },
             description: { type: "string" },
             address: { type: "string" },
+            distanceFromVenueKm: { type: ["number", "null"] },
             gallery: { type: "array", items: { type: "string" } },
-            pricing: {
-              type: "object",
-              description: "Alapdíj + dinamikus opció séma (select/number/checkbox/multiselect).",
+            currency: { type: "string" },
+            registrationFieldSchema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/AttendeeField" },
+              description: "Szállás-specifikus extra mezők (összeolvad az esemény mezőivel foglaláskor).",
             },
+            pricing: { $ref: "#/components/schemas/HotelPricing" },
           },
         },
       },
@@ -173,6 +317,11 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                     properties: {
                       ok: { type: "boolean" },
                       event: { $ref: "#/components/schemas/Event" },
+                      groupBookingOptions: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/OptionDef" },
+                        description: "Csoport szintű foglalási opciók (extrák), minden eseményhez.",
+                      },
                       hotels: { type: "array", items: { $ref: "#/components/schemas/Hotel" } },
                     },
                   },
@@ -197,7 +346,10 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                     eventId: { type: "string" },
                     guests: { type: "integer", minimum: 1 },
                     hotelId: { type: ["string", "null"] },
-                    nights: { type: ["integer", "null"] },
+                    nights: {
+                      type: ["integer", "null"],
+                      description: "Éjszakák (room_nights / both). packages módban a csomag határozza meg.",
+                    },
                     selections: { $ref: "#/components/schemas/Selections" },
                   },
                 },

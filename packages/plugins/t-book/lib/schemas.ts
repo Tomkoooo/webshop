@@ -104,6 +104,7 @@ export const tBookPackageDealSchema = z.object({
   label: z.string().min(1),
   nights: z.number().int().min(1).max(60),
   priceHuf: z.number().min(0),
+  maxGuests: z.number().int().min(1).max(50).nullable().optional(),
   roomTypeKey: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
 })
@@ -234,11 +235,14 @@ export const tBookHotelPricingSchema = z
 /** @deprecated alias */
 export const tBookAccommodationPricingSchema = tBookHotelPricingSchema
 
+export const tBookRegistrationFieldsModeSchema = z.enum(["extend", "replace"]).default("extend")
+
 export const eventGroupInputSchema = z.object({
   name: z.string().min(1, "Név kötelező"),
   description: z.string().optional().default(""),
   status: tBookStatusSchema.default("draft"),
   defaultBookingOptions: z.array(tBookOptionDefSchema).default([]),
+  defaultAttendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   defaultPriceBasis: tBookPriceBasisSchema.default("net"),
   defaultVatPercent: tBookVatPercentSchema,
   listOnTBookSite: z.boolean().default(false),
@@ -282,6 +286,7 @@ export const eventInputSchema = z.object({
   voucherHeaderImage: z.string().optional().default(""),
   vouchersEnabled: z.boolean().default(true),
   attendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
+  attendeeFieldSchemaMode: tBookRegistrationFieldsModeSchema,
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })

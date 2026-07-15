@@ -19,6 +19,7 @@ import {
   findRoomType,
   findPackageDeal,
   normalizeHotelPricing,
+  packageUnitsForGuests,
   resolveAccommodationMode,
 } from "./hotel-pricing"
 
@@ -362,13 +363,19 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     const roomType = findRoomType(acc, roomTypeKey)
     const packageKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
     const packageDeal = packageKey ? findPackageDeal(acc, packageKey) : null
+    const packageUnits =
+      packageDeal != null ? packageUnitsForGuests(packageDeal, guests) : 1
 
     if (mode === "packages" && packageDeal) {
       effectiveNights = packageDeal.nights
-      accommodationBaseHuf = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+      const unitGross = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+      accommodationBaseHuf = roundHuf(unitGross * packageUnits)
       lines.push({
         key: "accommodation_base",
-        label: packageDeal.label,
+        label:
+          packageUnits > 1
+            ? `${packageDeal.label} × ${packageUnits}`
+            : packageDeal.label,
         amountHuf: accommodationBaseHuf,
       })
     } else if (roomType) {
@@ -377,10 +384,14 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
         packageDeal.nights === effectiveNights &&
         (!packageDeal.roomTypeKey || packageDeal.roomTypeKey === roomTypeKey)
       ) {
-        accommodationBaseHuf = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+        const unitGross = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
+        accommodationBaseHuf = roundHuf(unitGross * packageUnits)
         lines.push({
           key: "accommodation_base",
-          label: `${packageDeal.label} (${roomType.label})`,
+          label:
+            packageUnits > 1
+              ? `${packageDeal.label} (${roomType.label}) × ${packageUnits}`
+              : `${packageDeal.label} (${roomType.label})`,
           amountHuf: accommodationBaseHuf,
         })
       } else {

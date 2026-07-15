@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -30,7 +30,12 @@ import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
 import { formatEventSchedule, toTimeInputValue } from "../lib/event-schedule"
-import { registrationUnitLabel, ticketFeeModeLabel } from "../lib/registration-fields"
+import {
+  REGISTRATION_FIELDS_MODE_LABELS,
+  registrationUnitLabel,
+  resolveEventAttendeeFieldSchema,
+  ticketFeeModeLabel,
+} from "../lib/registration-fields"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 function toDateInputValue(value?: string): string {
@@ -68,6 +73,7 @@ type EventDraft = {
   voucherHeaderImage: string
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
+  attendeeFieldSchemaMode: AdminEvent["attendeeFieldSchemaMode"]
 }
 
 export function EventFormPage({
@@ -84,6 +90,9 @@ export function EventFormPage({
   const [groupName, setGroupName] = useState("")
   const [groupVoucherHeaderImage, setGroupVoucherHeaderImage] = useState("")
   const [groupDefaultHeroImage, setGroupDefaultHeroImage] = useState("")
+  const [groupDefaultAttendeeFieldSchema, setGroupDefaultAttendeeFieldSchema] = useState<
+    TBookAttendeeFieldDef[]
+  >([])
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<EventDraft>({
@@ -108,16 +117,23 @@ export function EventFormPage({
     voucherHeaderImage: "",
     vouchersEnabled: true,
     attendeeFieldSchema: [],
+    attendeeFieldSchemaMode: "extend",
   })
 
   useEffect(() => {
     const loads: Promise<void>[] = [
-      tBookAdminApi<{ group: { name: string; voucherHeaderImage?: string; defaultHeroImage?: string } }>(
-        `groups/${groupId}`
-      ).then((g) => {
+      tBookAdminApi<{
+        group: {
+          name: string
+          voucherHeaderImage?: string
+          defaultHeroImage?: string
+          defaultAttendeeFieldSchema?: TBookAttendeeFieldDef[]
+        }
+      }>(`groups/${groupId}`).then((g) => {
         setGroupName(g.group.name)
         setGroupVoucherHeaderImage(g.group.voucherHeaderImage ?? "")
         setGroupDefaultHeroImage(g.group.defaultHeroImage ?? "")
+        setGroupDefaultAttendeeFieldSchema(g.group.defaultAttendeeFieldSchema ?? [])
       }),
     ]
     if (eventId) {
@@ -146,6 +162,7 @@ export function EventFormPage({
             voucherHeaderImage: e.voucherHeaderImage ?? "",
             vouchersEnabled: e.vouchersEnabled !== false,
             attendeeFieldSchema: e.attendeeFieldSchema ?? [],
+            attendeeFieldSchemaMode: e.attendeeFieldSchemaMode ?? "extend",
           })
         })
       )
@@ -162,6 +179,16 @@ export function EventFormPage({
   }, [orgCurrency, isEdit])
 
   const patch = (partial: Partial<EventDraft>) => setDraft((d) => ({ ...d, ...partial }))
+
+  const effectiveAttendeeFieldSchema = useMemo(
+    () =>
+      resolveEventAttendeeFieldSchema(
+        groupDefaultAttendeeFieldSchema,
+        draft.attendeeFieldSchema,
+        draft.attendeeFieldSchemaMode
+      ),
+    [groupDefaultAttendeeFieldSchema, draft.attendeeFieldSchema, draft.attendeeFieldSchemaMode]
+  )
 
   const save = async () => {
     if (!draft.name.trim()) {
@@ -192,6 +219,7 @@ export function EventFormPage({
       voucherHeaderImage: draft.voucherHeaderImage,
       vouchersEnabled: draft.vouchersEnabled,
       attendeeFieldSchema: draft.attendeeFieldSchema,
+      attendeeFieldSchemaMode: draft.attendeeFieldSchemaMode,
       status: draft.status,
     }
     try {
@@ -379,6 +407,26 @@ export function EventFormPage({
           ) : null}
           {step === 3 ? (
             <div className="space-y-8">
+              <TBookField label="Csoport mezők kezelése">
+                <TBookSelect
+                  value={draft.attendeeFieldSchemaMode}
+                  onChange={(e) =>
+                    patch({
+                      attendeeFieldSchemaMode: e.target.value as EventDraft["attendeeFieldSchemaMode"],
+                    })
+                  }
+                >
+                  <option value="extend">{REGISTRATION_FIELDS_MODE_LABELS.extend}</option>
+                  <option value="replace">{REGISTRATION_FIELDS_MODE_LABELS.replace}</option>
+                </TBookSelect>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {draft.attendeeFieldSchemaMode === "replace"
+                    ? "Csak az alábbi esemény-specifikus mezők lesznek a foglalási űrlapon."
+                    : groupDefaultAttendeeFieldSchema.length > 0
+                      ? `${groupDefaultAttendeeFieldSchema.length} csoport mező öröklődik; az azonos kulcsú eseménymező felülírja.`
+                      : "A csoportnál még nincs alap mező — csak az esemény mezői lesznek érvényben."}
+                </p>
+              </TBookField>
               <AttendeeFieldsEditor
                 fields={draft.attendeeFieldSchema}
                 onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
@@ -470,7 +518,7 @@ export function EventFormPage({
                 : "—"}
             </p>
             <p className="text-xs text-neutral-400">
-              {draft.attendeeFieldSchema.length} foglalási mező ·{" "}
+              {effectiveAttendeeFieldSchema.length} foglalási mező ·{" "}
               {draft.registrationUnit === "team" ? "csapat" : "személy"} regisztráció
               {draft.capacity ? ` · max ${draft.capacity}` : ""}
             </p>

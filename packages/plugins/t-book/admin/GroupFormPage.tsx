@@ -17,11 +17,14 @@ import {
 import { TBookWizard } from "./TBookWizard"
 import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookSingleMediaField } from "./TBookMediaField"
+import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
+import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 type GroupDraft = {
   name: string
   description: string
   status: AdminGroup["status"]
+  defaultAttendeeFieldSchema: TBookAttendeeFieldDef[]
   listOnTBookSite: boolean
   listingTitle: string
   listingUrl: string
@@ -33,6 +36,7 @@ type GroupDraft = {
 const STEPS = [
   { id: "basics", title: "Alapadatok" },
   { id: "description", title: "Leírás" },
+  { id: "registration", title: "Foglalási adatok" },
   { id: "voucher", title: "Képek & jegyek" },
   { id: "listing", title: "tBook megjelenés" },
 ]
@@ -47,6 +51,7 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
     name: "",
     description: "",
     status: "draft",
+    defaultAttendeeFieldSchema: [],
     listOnTBookSite: false,
     listingTitle: "",
     listingUrl: "",
@@ -63,6 +68,7 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
           name: res.group.name,
           description: res.group.description,
           status: res.group.status,
+          defaultAttendeeFieldSchema: res.group.defaultAttendeeFieldSchema ?? [],
           listOnTBookSite: res.group.listOnTBookSite ?? false,
           listingTitle: res.group.listingTitle ?? "",
           listingUrl: res.group.listingUrl ?? "",
@@ -87,6 +93,7 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
       description: draft.description,
       status: draft.status,
       defaultBookingOptions: [],
+      defaultAttendeeFieldSchema: draft.defaultAttendeeFieldSchema,
       defaultPriceBasis: "net" as const,
       defaultVatPercent: 27,
       listOnTBookSite: draft.listOnTBookSite,
@@ -180,6 +187,20 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
             />
           ) : null}
           {step === 2 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Alapértelmezett foglalási mezők minden csoportbeli eseményhez. Az események
+                kiegészíthetik vagy teljesen felülírhatják ezt a listát.
+              </p>
+              <AttendeeFieldsEditor
+                fields={draft.defaultAttendeeFieldSchema}
+                onChange={(defaultAttendeeFieldSchema) =>
+                  setDraft((d) => ({ ...d, defaultAttendeeFieldSchema }))
+                }
+              />
+            </div>
+          ) : null}
+          {step === 3 ? (
             <div className="space-y-6">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
@@ -207,7 +228,7 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
               </div>
             </div>
           ) : null}
-          {step === 3 ? (
+          {step === 4 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Ha bekapcsolod, az aktív eseményekkel rendelkező csoport megjelenhet a nyilvános

@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose"
 import type { TBookStatus } from "../lib/schemas"
+import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 import type { TBookOptionDef } from "../lib/pricing-types"
 import type { TBookPriceBasis } from "../lib/vat"
 
@@ -11,6 +12,8 @@ export interface ITBookEventGroup extends Document {
   status: TBookStatus
   /** Default booking options inherited by every event in this group. */
   defaultBookingOptions: TBookOptionDef[]
+  /** Base registration fields inherited by events (unless an event replaces them). */
+  defaultAttendeeFieldSchema: TBookAttendeeFieldDef[]
   defaultPriceBasis: TBookPriceBasis
   defaultVatPercent: number
   /** Show this group on the public tBook integrations directory. */
@@ -78,6 +81,33 @@ const OptionDefSchema = new Schema(
   { _id: false }
 )
 
+const AttendeeFieldChoiceSchema = new Schema(
+  {
+    value: { type: String, required: true },
+    label: { type: String, required: true },
+  },
+  { _id: false }
+)
+
+const AttendeeFieldDefSchema = new Schema(
+  {
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["text", "email", "phone", "number", "date", "select"],
+      required: true,
+    },
+    required: { type: Boolean, default: false },
+    helpText: { type: String, default: "" },
+    choices: { type: [AttendeeFieldChoiceSchema], default: undefined },
+    min: { type: Number },
+    max: { type: Number },
+    sortOrder: { type: Number, default: 0 },
+  },
+  { _id: false }
+)
+
 const TBookEventGroupSchema = new Schema<ITBookEventGroup>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: "TBookOrganization", default: null, index: true },
@@ -85,6 +115,7 @@ const TBookEventGroupSchema = new Schema<ITBookEventGroup>(
     description: { type: String, default: "" },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     defaultBookingOptions: { type: [OptionDefSchema], default: [] },
+    defaultAttendeeFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
     defaultPriceBasis: { type: String, enum: ["net", "gross"], default: "net" },
     defaultVatPercent: { type: Number, default: 27, min: 0, max: 100 },
     listOnTBookSite: { type: Boolean, default: false },

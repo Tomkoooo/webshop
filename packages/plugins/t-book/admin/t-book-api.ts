@@ -17,6 +17,7 @@ export type AdminGroup = {
   description: string
   status: "draft" | "active" | "archived"
   defaultBookingOptions: TBookOptionDef[]
+  defaultAttendeeFieldSchema: TBookAttendeeFieldDef[]
   defaultPriceBasis: TBookPriceBasis
   defaultVatPercent: number
   listOnTBookSite: boolean
@@ -53,6 +54,7 @@ export type AdminEvent = {
   voucherHeaderImage: string
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
+  attendeeFieldSchemaMode: "extend" | "replace"
   status: "draft" | "active" | "archived"
   sortOrder: number
 }

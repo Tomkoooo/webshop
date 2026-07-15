@@ -41,6 +41,8 @@ export interface ITBookEvent extends Document {
   vouchersEnabled: boolean
   /** Per-participant data fields collected at booking (name, age, nationality, etc.). */
   attendeeFieldSchema: TBookAttendeeFieldDef[]
+  /** How event fields combine with group defaults (`extend` or `replace`). */
+  attendeeFieldSchemaMode: "extend" | "replace"
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -140,6 +142,11 @@ const TBookEventSchema = new Schema<ITBookEvent>(
         ),
       ],
       default: [],
+    },
+    attendeeFieldSchemaMode: {
+      type: String,
+      enum: ["extend", "replace"],
+      default: "extend",
     },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },

@@ -39,8 +39,8 @@ export function PackageDealsEditor({
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         {packagesOnly
-          ? `Fix árú csomagajánlatok (pl. „3 éj egyágyas”, „3 éj kétágyas”). A vendég csak a csomagot választja — nincs külön szobatípus-választó (${priceBasisLabel}, ${currency}).`
-          : `Fix árú csomagajánlatok (pl. 3 éjszaka adott szobatípusban). Ha a vendég ezt választja, a per-éjszaka számítás helyett a csomagár érvényes (${priceBasisLabel}, ${currency}).`}
+          ? `Fix árú csomagajánlatok (pl. „3 éj egyágyas”, „3 éj kétágyas”). Állítsd be a max. fő/csomag értéket — több vendég esetén a rendszer automatikusan több csomagot számol (${priceBasisLabel}, ${currency}).`
+          : `Fix árú csomagajánlatok (pl. 3 éjszaka adott szobatípusban). Max. fő/csomag megadásakor a csomagár egységenként számolódik (${priceBasisLabel}, ${currency}).`}
       </p>
       {packages.length === 0 ? (
         <p className={tBookEmptyStateClass}>
@@ -55,7 +55,7 @@ export function PackageDealsEditor({
               key={index}
               className={`grid grid-cols-12 gap-2 items-end ${tBookPanelCompactClass}`}
             >
-              <div className={packagesOnly ? "col-span-5" : "col-span-4"}>
+              <div className={packagesOnly ? "col-span-5" : "col-span-3"}>
                 <TBookField label="Csomag neve (vendég látja)">
                   <TBookInput
                     placeholder="3 éjszaka csomag"
@@ -85,8 +85,23 @@ export function PackageDealsEditor({
                   />
                 </TBookField>
               </div>
+              <div className="col-span-2">
+                <TBookField label="Max. fő/csomag">
+                  <TBookInput
+                    type="number"
+                    min={1}
+                    max={50}
+                    placeholder="Üres = korlátlan"
+                    value={pkg.maxGuests ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim()
+                      update(index, { maxGuests: raw ? Number(raw) || null : null })
+                    }}
+                  />
+                </TBookField>
+              </div>
               {!packagesOnly ? (
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <TBookField label="Szobatípus (opcionális)">
                     <TBookSelect
                       value={pkg.roomTypeKey ?? ""}
@@ -116,6 +131,9 @@ export function PackageDealsEditor({
               </div>
               <p className="col-span-12 text-xs text-muted-foreground -mt-1">
                 {pkg.nights} éj · {formatMoney(pkg.priceHuf, currency)} ({priceBasisLabel})
+                {pkg.maxGuests != null && pkg.maxGuests > 0
+                  ? ` · max ${pkg.maxGuests} fő/csomag`
+                  : ""}
               </p>
             </div>
           ))}
@@ -133,6 +151,7 @@ export function PackageDealsEditor({
               label: "",
               nights: 3,
               priceHuf: 0,
+              maxGuests: packagesOnly ? 1 : null,
               roomTypeKey: null,
               sortOrder: packages.length,
             },

@@ -7,7 +7,9 @@ import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
   findPackageDeal,
+  formatPackageDealCapacityLabel,
   guestPackageDeals,
+  packageUnitsForGuests,
   hotelRequiresPackageSelection,
   hotelShowsPackageSelection,
   hotelShowsRoomSelection,
@@ -188,6 +190,10 @@ export function TBookBookingWizard({
   const packagesRequired = selectedHotel ? hotelRequiresPackageSelection(selectedHotel.pricing) : false
   const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
   const packageDealKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+  const selectedPackage = packageDealKey && selectedHotel
+    ? findPackageDeal(selectedHotel.pricing, packageDealKey)
+    : null
+  const packageUnits = selectedPackage ? packageUnitsForGuests(selectedPackage, guests) : 1
   const availablePackages = useMemo(() => {
     if (!selectedHotel || !showPackages) return []
     return guestPackageDeals(
@@ -484,9 +490,19 @@ export function TBookBookingWizard({
                       <option key={pkg.key} value={pkg.key}>
                         {pkg.label} — {formatHuf(pkg.priceHuf, displayCurrency)}
                         {pkg.nights > 1 ? ` (${pkg.nights} éj)` : ""}
+                        {pkg.maxGuests != null && pkg.maxGuests > 0 ? ` · max ${pkg.maxGuests} fő` : ""}
                       </option>
                     ))}
                   </select>
+                  {selectedPackage?.maxGuests != null && selectedPackage.maxGuests > 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {formatPackageDealCapacityLabel(selectedPackage, guests) ??
+                        `Max ${selectedPackage.maxGuests} fő/csomag`}
+                      {packageUnits > 1
+                        ? ` · ${formatHuf(selectedPackage.priceHuf * packageUnits, displayCurrency)} összesen`
+                        : null}
+                    </p>
+                  ) : null}
                 </label>
               ) : null}
 

@@ -273,12 +273,46 @@ export function HomeVisualSurfaceEditor({
                         ok?: boolean
                         eventCount?: number
                         error?: string
+                        capabilities?: {
+                          apiVersion?: string
+                          hotelCount?: number
+                          packageHotels?: number
+                          packageDeals?: number
+                          roomHotels?: number
+                          eventsWithRegistrationFields?: number
+                          teamEvents?: number
+                        }
                       }
                       if (!res.ok || !data.ok) {
                         throw new Error(data.error ?? "Kapcsolat teszt sikertelen.")
                       }
+                      const cap = data.capabilities
+                      const detailParts: string[] = []
+                      if (cap?.hotelCount) {
+                        const hotelBits: string[] = []
+                        if (cap.packageHotels) {
+                          hotelBits.push(
+                            `${cap.packageHotels} csomagos (${cap.packageDeals ?? 0} ajánlat)`
+                          )
+                        }
+                        if (cap.roomHotels) hotelBits.push(`${cap.roomHotels} szobás`)
+                        detailParts.push(
+                          `${cap.hotelCount} szállás${hotelBits.length ? `: ${hotelBits.join(", ")}` : ""}`
+                        )
+                      }
+                      if (cap?.eventsWithRegistrationFields) {
+                        detailParts.push(
+                          `${cap.eventsWithRegistrationFields} regisztrációs mezővel`
+                        )
+                      }
+                      if (cap?.teamEvents) {
+                        detailParts.push(`${cap.teamEvents} csapat esemény`)
+                      }
+                      if (cap?.apiVersion) detailParts.push(`API v${cap.apiVersion}`)
+                      const suffix =
+                        detailParts.length > 0 ? ` · ${detailParts.join(" · ")}` : ""
                       toast.success(
-                        `Kapcsolat rendben — ${data.eventCount ?? 0} aktív esemény érhető el.`
+                        `Kapcsolat rendben — ${data.eventCount ?? 0} aktív esemény érhető el${suffix}.`
                       )
                     })
                     .catch((err) => {

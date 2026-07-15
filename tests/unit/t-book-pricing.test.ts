@@ -330,8 +330,8 @@ const packageOnlyPricing = {
   accommodationMode: "packages" as const,
   roomTypes: [],
   packages: [
-    { key: "single_3n", label: "3 éj egyágyas", nights: 3, priceHuf: 120000, sortOrder: 0 },
-    { key: "double_3n", label: "3 éj kétágyas", nights: 3, priceHuf: 150000, sortOrder: 1 },
+    { key: "single_3n", label: "3 éj egyágyas", nights: 3, priceHuf: 120000, maxGuests: 1, sortOrder: 0 },
+    { key: "double_3n", label: "3 éj kétágyas", nights: 3, priceHuf: 150000, maxGuests: 2, sortOrder: 1 },
   ],
   extrasSection: null,
 }
@@ -358,16 +358,42 @@ describe("package-only accommodation", () => {
     expect(errors.some((e) => e.message.includes("Ismeretlen opció"))).toBe(false)
   })
 
-  it("quotes flat package price without guest multiplier", () => {
+  it("quotes flat package price without maxGuests (legacy flat rate)", () => {
+    const legacyPricing = {
+      ...packageOnlyPricing,
+      packages: [{ key: "flat", label: "Flat csomag", nights: 3, priceHuf: 120000 }],
+    }
+    const quote = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      guests: 4,
+      nights: 3,
+      accommodation: legacyPricing,
+      selections: { package_deal: "flat" },
+    })
+    expect(quote.accommodationBaseHuf).toBe(120000)
+  })
+
+  it("multiplies package price by required units when maxGuests is set", () => {
     const quote = calculateBookingQuote({
       ticketFeeHuf: 0,
       guests: 4,
       nights: 3,
       accommodation: packageOnlyPricing,
-      selections: { package_deal: "single_3n" },
+      selections: { package_deal: "double_3n" },
     })
-    expect(quote.accommodationBaseHuf).toBe(120000)
-    expect(quote.nights).toBe(3)
-    expect(quote.lines.find((l) => l.key === "accommodation_base")?.label).toBe("3 éj egyágyas")
+    expect(quote.accommodationBaseHuf).toBe(300000)
+    expect(quote.lines.find((l) => l.key === "accommodation_base")?.label).toBe("3 éj kétágyas × 2")
+  })
+
+  it("uses one package unit when guests fit maxGuests", () => {
+    const quote = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      guests: 2,
+      nights: 3,
+      accommodation: packageOnlyPricing,
+      selections: { package_deal: "double_3n" },
+    })
+    expect(quote.accommodationBaseHuf).toBe(150000)
+    expect(quote.lines.find((l) => l.key === "accommodation_base")?.label).toBe("3 éj kétágyas")
   })
 })

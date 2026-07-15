@@ -29,9 +29,9 @@ packages/plugins/t-book/
 
 ## Data model
 
-- **Event group** — container + one API key (`tbk_…`). Only the SHA-256 hash and a display hint are stored; the plaintext is shown once on create/rotate. Public endpoints resolve their scope from the key. Optional **tBook directory** listing fields (`listOnTBookSite`, `listingTitle`, `listingUrl`, `listingImage`).
-- **Event** — name, location, start/end dates, base ticket fee (`per_person` or `per_booking`), capacity, status, **`attendeeFieldSchema`** (per-event participant data fields). Can be standalone or nested in a group; reorderable.
-- **Hotel** — n per group. `pricing` holds room types + **foglalási szakaszok** (addon groups) with priced booking options.
+- **Event group** — container + one API key (`tbk_…`). Only the SHA-256 hash and a display hint are stored; the plaintext is shown once on create/rotate. Public endpoints resolve their scope from the key. Optional **tBook directory** listing fields (`listOnTBookSite`, `listingTitle`, `listingUrl`, `listingImage`). **`defaultAttendeeFieldSchema`** — base registration fields inherited by events (extend or replace per event).
+- **Event** — name, location, start/end dates, base ticket fee (`per_person`, `per_booking`, or `per_team`), capacity, status, **`attendeeFieldSchema`** (event-specific participant fields), **`attendeeFieldSchemaMode`** (`extend` | `replace`). Can be standalone or nested in a group; reorderable.
+- **Hotel** — n per group. `pricing` holds room types, **package deals** (`packages[]` with optional `maxGuests` per unit), and **foglalási szakaszok** (addon groups) with priced booking options. `accommodationMode`: `room_nights` | `packages` | `both`.
 - **Booking** — **kapcsolattartó** (`customer`: name, email, phone, note) + optional billing, guest count, **`attendees[]`** (one row per ticket with key-value fields), raw `selections` map for hotel pricing, frozen `quote` breakdown, Stripe ids, status.
 
 ## Kapcsolattartó vs résztvevők
@@ -41,7 +41,9 @@ packages/plugins/t-book/
 | **Kapcsolattartó** | `customer` | Always | Person who books and pays — contact for emails, Stripe, support. Required even when booking for others (especially with hotel). |
 | **Résztvevő** | `attendees[i].fields` | When event has `attendeeFieldSchema` | One object per ticket/guest — name, age, nationality, etc. for eligibility checks. |
 
-Configure participant fields per event in admin: **Esemény szerkesztése → Résztvevői adatok**. Use the **Verseny sablon** for tournaments (name, email, birth year, nationality) or add custom fields.
+Configure participant fields per event in admin: **Esemény szerkesztése → Résztvevői adatok**. Group defaults: **Csoport szerkesztése → Foglalási adatok**. Events in **extend** mode inherit group fields and can override same keys; **replace** mode uses only event fields. The public API returns the **resolved** schema.
+
+Use the **Verseny sablon** for tournaments (name, email, birth year, nationality) or add custom fields.
 
 Field types: `text`, `email`, `phone`, `number`, `date`, `select`. Internal keys are auto-generated from labels (hidden from moderators).
 
@@ -58,9 +60,11 @@ Each hotel option (`TBookOptionDef`) is a priced selector (room type, meals, ext
 
 Hotel add-ons use **foglalási szakaszok** (visual sections) containing **foglalási mezők** (individual questions). See admin hotel editor step **Extrák és felárak**.
 
+**Package deals:** each package can set `maxGuests` (persons per unit). When set, accommodation price = `priceHuf × ceil(guests / maxGuests)` (e.g. 4 guests + 2-bed package → 2 units). When `maxGuests` is omitted, one package price applies regardless of guest count (legacy flat rate).
+
 ## API
 
-Base: `/api/plugins/t-book`. OpenAPI spec: `GET /api/plugins/t-book/openapi`.
+Base: `/api/plugins/t-book`. OpenAPI spec: `GET /api/plugins/t-book/openapi` (v1.1.0 — package `maxGuests`, resolved `attendeeFieldSchema`, full hotel pricing schema).
 
 **Public directory (no API key):**
 
@@ -96,9 +100,12 @@ Base: `/api/plugins/t-book`. OpenAPI spec: `GET /api/plugins/t-book/openapi`.
   ],
   "hotelId": "...",
   "nights": 3,
-  "selections": { "room_type": "standard", "meals": "half_board" }
+  "selections": { "package_deal": "double_3n" }
 }
 ```
+
+- `selections.package_deal` — package key from `hotels[].pricing.packages[].key`.
+- When the chosen package has `maxGuests`, the quote multiplies `priceHuf` by `ceil(guests / maxGuests)`.
 
 - `customer` — always required (kapcsolattartó).
 - `attendees` — required when the event defines `attendeeFieldSchema`; length must equal `guests`.

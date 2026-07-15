@@ -27,7 +27,7 @@ import {
   type TBookAttendeeFieldDef,
 } from "../lib/attendee-fields"
 import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
-import { mergeRegistrationFieldSchemas } from "../lib/registration-fields"
+import { mergeRegistrationFieldSchemas, resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -136,7 +136,11 @@ export class TBookBookingService {
       currency: eventCurrency,
       hotelCurrency,
       registrationFieldSchema: mergeRegistrationFieldSchemas(
-        event.attendeeFieldSchema,
+        resolveEventAttendeeFieldSchema(
+          group?.defaultAttendeeFieldSchema,
+          event.attendeeFieldSchema,
+          event.attendeeFieldSchemaMode ?? "extend"
+        ),
         hotelRegistrationFields
       ),
     }

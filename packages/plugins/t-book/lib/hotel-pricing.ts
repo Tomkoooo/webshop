@@ -315,6 +315,29 @@ export function guestPackageDeals(
   return matchingPackageDeals(normalized, nights ?? 1, roomTypeKey)
 }
 
+/** Package units required for a guest count (1 when maxGuests is unset). */
+export function packageUnitsForGuests(
+  packageDeal: Pick<TBookPackageDeal, "maxGuests">,
+  guests: number
+): number {
+  const cap = packageDeal.maxGuests
+  if (cap == null || cap < 1) return 1
+  return Math.max(1, Math.ceil(Math.max(1, guests) / cap))
+}
+
+export function formatPackageDealCapacityLabel(
+  packageDeal: Pick<TBookPackageDeal, "maxGuests">,
+  guests?: number
+): string | null {
+  const cap = packageDeal.maxGuests
+  if (cap == null || cap < 1) return null
+  if (guests != null && guests > cap) {
+    const units = packageUnitsForGuests(packageDeal, guests)
+    return `${units} csomag szükséges (${guests} fő, max ${cap} fő/csomag)`
+  }
+  return `Max ${cap} fő/csomag`
+}
+
 /** Rough count of distinct customer configuration paths (for admin UX). */
 function choicePaths(option: TBookOptionDef): number {
   switch (option.type) {

@@ -6,7 +6,7 @@ import { TBookEventService } from "../services/event-service"
 import { TBookBookingService } from "../services/booking-service"
 import { TBookCheckoutService } from "../services/checkout-service"
 import { extractApiKeyFromRequest, hashApiKey } from "../lib/api-key"
-import { fetchPublicEventsForStorefront } from "../lib/fetch-public-storefront"
+import { probeTBookStorefrontCapabilities } from "../lib/storefront-capabilities"
 import { resolveTBookServerApiBase } from "../lib/tbook-api-base"
 import { checkRateLimit, clientKeyFromRequest } from "../lib/rate-limit"
 import { parseBookingFilters } from "../lib/booking-query"
@@ -17,6 +17,7 @@ import type { ITBookEventGroup } from "../models/TBookEventGroup"
 import type { ITBookEvent } from "../models/TBookEvent"
 import type { ITBookHotel } from "../models/TBookHotel"
 import { orgIdFromAuth, resolveTBookAdminAuth } from "../lib/admin-api-auth"
+import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { OrgAuthError } from "../lib/org-auth"
 import { handleTBookOrgApi, handleTBookSystemApi } from "./org-handlers"
 import {
@@ -32,6 +33,7 @@ function serializeGroup(g: ITBookEventGroup) {
     description: g.description,
     status: g.status,
     defaultBookingOptions: g.defaultBookingOptions ?? [],
+    defaultAttendeeFieldSchema: normalizeAttendeeFieldSchema(g.defaultAttendeeFieldSchema ?? []),
     defaultPriceBasis: g.defaultPriceBasis ?? "net",
     defaultVatPercent: g.defaultVatPercent ?? 27,
     listOnTBookSite: Boolean(g.listOnTBookSite),
@@ -75,6 +77,7 @@ function serializeEvent(e: ITBookEvent) {
     voucherHeaderImage: e.voucherHeaderImage ?? "",
     vouchersEnabled: e.vouchersEnabled !== false,
     attendeeFieldSchema: e.attendeeFieldSchema ?? [],
+    attendeeFieldSchemaMode: e.attendeeFieldSchemaMode ?? "extend",
     status: e.status,
     sortOrder: e.sortOrder,
   }
@@ -312,11 +315,18 @@ async function handleTBookAdminApi(
       typeof body.apiBase === "string" && body.apiBase.trim()
         ? body.apiBase.trim()
         : resolveTBookServerApiBase()
-    const { events, error } = await fetchPublicEventsForStorefront(apiKey, apiBaseOverride || undefined)
-    if (error) {
-      return json({ ok: false, error, eventCount: 0 })
+    const { capabilities, error } = await probeTBookStorefrontCapabilities(
+      apiKey,
+      apiBaseOverride || undefined
+    )
+    if (error || !capabilities) {
+      return json({ ok: false, error: error ?? "Kapcsolat teszt sikertelen.", eventCount: 0 })
     }
-    return json({ ok: true, eventCount: events.length })
+    return json({
+      ok: true,
+      eventCount: capabilities.eventCount,
+      capabilities,
+    })
   }
 
   if (segment === "geocode" && method === "POST" && path.length === 1) {

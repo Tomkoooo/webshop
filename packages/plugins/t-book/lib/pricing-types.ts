@@ -82,6 +82,8 @@ export type TBookPackageDeal = {
   label: string
   nights: number
   priceHuf: number
+  /** When set, package price applies per unit; guests need ceil(guests / maxGuests) units. */
+  maxGuests?: number | null
   /** When set, package applies only to this room type. */
   roomTypeKey?: string | null
   sortOrder?: number

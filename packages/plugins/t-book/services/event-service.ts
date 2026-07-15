@@ -15,6 +15,7 @@ import {
 } from "../lib/schemas"
 import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
 import { resolveEventHeroImage } from "../lib/event-hero"
+import { resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
@@ -71,6 +72,7 @@ export class TBookEventService {
     const apiKey = generateApiKey()
     const group = await TBookEventGroup.create({
       ...parsed,
+      defaultAttendeeFieldSchema: normalizeAttendeeFieldSchema(parsed.defaultAttendeeFieldSchema),
       ...(organizationId ? { organizationId: oid(organizationId) } : {}),
       apiKeyHash: hashApiKey(apiKey),
       apiKeyHint: apiKeyHint(apiKey),
@@ -96,7 +98,11 @@ export class TBookEventService {
     const parsed = eventGroupInputSchema.partial().parse(input)
     await dbConnect()
     await assertGroupInOrg(id, organizationId)
-    await TBookEventGroup.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: parsed })
+    const patch: Record<string, unknown> = { ...parsed }
+    if (parsed.defaultAttendeeFieldSchema !== undefined) {
+      patch.defaultAttendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.defaultAttendeeFieldSchema)
+    }
+    await TBookEventGroup.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
 
   static async deleteGroup(id: string, organizationId?: string): Promise<void> {
@@ -424,7 +430,7 @@ export class TBookEventService {
   static async listPublicEventsForGroup(groupId: mongoose.Types.ObjectId) {
     await dbConnect()
     const group = await TBookEventGroup.findById(groupId)
-      .select("defaultHeroImage")
+      .select("defaultHeroImage defaultAttendeeFieldSchema")
       .lean()
     const events = await TBookEvent.find({ groupId, status: "active" })
       .sort({ sortOrder: 1, startDate: 1 })
@@ -451,7 +457,11 @@ export class TBookEventService {
       teamMemberFieldSchema: normalizeAttendeeFieldSchema(e.teamMemberFieldSchema ?? []),
       currency: normalizeTBookCurrency(e.currency),
       heroImage: resolveEventHeroImage(e, group),
-      attendeeFieldSchema: normalizeAttendeeFieldSchema(e.attendeeFieldSchema ?? []),
+      attendeeFieldSchema: resolveEventAttendeeFieldSchema(
+        group?.defaultAttendeeFieldSchema,
+        e.attendeeFieldSchema,
+        e.attendeeFieldSchemaMode ?? "extend"
+      ),
     }))
   }
 
@@ -485,7 +495,11 @@ export class TBookEventService {
         teamMemberFieldSchema: normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? []),
         currency: normalizeTBookCurrency(event.currency),
         heroImage: resolveEventHeroImage(event, group),
-        attendeeFieldSchema: normalizeAttendeeFieldSchema(event.attendeeFieldSchema ?? []),
+        attendeeFieldSchema: resolveEventAttendeeFieldSchema(
+          group?.defaultAttendeeFieldSchema,
+          event.attendeeFieldSchema,
+          event.attendeeFieldSchemaMode ?? "extend"
+        ),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
       hotels: activeHotels.map((h) => ({
