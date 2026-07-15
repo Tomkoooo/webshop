@@ -36,6 +36,12 @@ function safeMetadata(metadata: unknown) {
   }
 }
 
+function normalizeAuthEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const email = value.trim().toLowerCase()
+  return email || null
+}
+
 function formatAuthCause(cause: unknown) {
   if (cause instanceof Error) {
     return {
@@ -138,8 +144,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role?: "ADMIN" | "USER" }).role ?? "USER"
       }
 
-      const lookupEmail =
-        typeof token.email === "string" ? token.email.trim().toLowerCase() : ""
+      const lookupEmail = normalizeAuthEmail(token.email)
       if (lookupEmail) {
         try {
           const client = await clientPromise
@@ -164,7 +169,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         session.user.role = (token.role as "ADMIN" | "USER") || "USER"
 
-        const lookupEmail = typeof token.email === "string" ? token.email : session.user.email
+        const lookupEmail =
+          normalizeAuthEmail(token.email) ?? normalizeAuthEmail(session.user.email)
 
         if (!lookupEmail) {
           return session

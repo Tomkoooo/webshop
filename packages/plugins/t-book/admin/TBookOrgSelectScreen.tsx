@@ -45,6 +45,12 @@ export function TBookOrgSelectScreen() {
       description="Válaszd ki, melyik szervezet admin felületére szeretnél belépni."
     >
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {!error && organizations.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Nincs elérhető szervezet a fiókodhoz. Kérd meg a szervezet adminját, hogy adjon hozzá, vagy
+          fogadd el a meghívót e-mailben.
+        </p>
+      ) : null}
       <div className="grid gap-3 md:grid-cols-2">
         {organizations.map((org) => (
           <Card key={org.id}>

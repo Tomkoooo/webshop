@@ -34,7 +34,7 @@ export default async function AdminLayout({
 
   if (multiTenantAdmin) {
     if (!access.allowed) {
-      redirect("/")
+      redirect("/auth/no-admin-access")
     }
   } else if (session.user.role !== "ADMIN") {
     redirect("/")

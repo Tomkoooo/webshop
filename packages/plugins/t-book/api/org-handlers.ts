@@ -4,6 +4,7 @@ import { isMultiTenantAdminEnabled } from "@wse/core/lib/site-features"
 import { TBookOrgService } from "../services/org-service"
 import {
   OrgAuthError,
+  assertUserOrganizationAccess,
   requireOrgContext,
   requireOrgPermission,
   requireSystemAdmin,
@@ -24,6 +25,12 @@ function handleError(err: unknown) {
     return json({ error: err.message }, 400)
   }
   return json({ error: "Hiba történt" }, 500)
+}
+
+async function resolveMemberRoleIds(organizationId: string, raw: unknown): Promise<string[]> {
+  const roleIds = Array.isArray(raw) ? raw.map(String).filter(Boolean) : []
+  if (roleIds.length > 0) return roleIds
+  return TBookOrgService.getDefaultMemberRoleIds(organizationId)
 }
 
 export async function handleTBookOrgApi(
@@ -53,9 +60,11 @@ export async function handleTBookOrgApi(
     }
 
     if (segment === "switch" && method === "POST") {
+      const session = await auth()
+      if (!session?.user?.id) return json({ error: "Bejelentkezés szükséges." }, 401)
       const body = await request.json()
-      const organizationId = String(body.organizationId ?? "")
-      await requireOrgContext(organizationId)
+      const organizationId = String(body.organizationId ?? "").trim()
+      await assertUserOrganizationAccess(session.user.id, organizationId)
       const jar = await cookies()
       jar.set(activeOrgCookieOptions(organizationId))
       return json({ ok: true, organizationId })
@@ -122,7 +131,7 @@ export async function handleTBookOrgApi(
       const ctx = await requireOrgPermission("member:manage")
       const body = await request.json()
       const email = String(body.email ?? "").trim()
-      const roleIds = Array.isArray(body.roleIds) ? body.roleIds.map(String) : []
+      const roleIds = await resolveMemberRoleIds(ctx.organizationId, body.roleIds)
       const user = await TBookOrgService.findUserByEmail(email)
       if (!user) {
         return json({ error: "Felhasználó nem található — használd a meghívót." }, 404)
@@ -171,10 +180,11 @@ export async function handleTBookOrgApi(
     if (segment === "invites" && method === "POST") {
       const ctx = await requireOrgPermission("member:invite")
       const body = await request.json()
+      const roleIds = await resolveMemberRoleIds(ctx.organizationId, body.roleIds)
       const result = await TBookOrgService.createInvite({
         organizationId: ctx.organizationId,
         email: String(body.email ?? ""),
-        roleIds: Array.isArray(body.roleIds) ? body.roleIds.map(String) : [],
+        roleIds,
         invitedByUserId: ctx.userId,
       })
       return json({ ok: true, ...result })

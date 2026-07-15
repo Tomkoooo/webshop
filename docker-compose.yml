@@ -238,6 +238,8 @@ networks:
 # Container 1 — tBook admin (apps/tbook, API + Stripe + számlázás):
 #   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2
 #   NEXT_PUBLIC_APP_URL=https://admin.tbook.example.com
+#   BOOTSTRAP_SYSTEM_ADMIN_EMAILS=you@example.com
+#   ENABLE_SHOP=false
 #
 # Container 2 — API tester UI (/tbook-test, calls admin API):
 #   WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:engine-v2

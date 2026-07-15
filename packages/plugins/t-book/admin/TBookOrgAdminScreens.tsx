@@ -49,7 +49,9 @@ export function TBookOrgMembersScreen() {
       const [membersRes, rolesRes] = await Promise.all([tbookOrgApi.members(), tbookOrgApi.roles()])
       setMembers(membersRes.members)
       setRoles(rolesRes.roles)
-      if (!roleId && rolesRes.roles[0]) setRoleId(rolesRes.roles[0].id)
+      const viewer = rolesRes.roles.find((r) => r.name === "Viewer")
+      const defaultRoleId = viewer?.id ?? rolesRes.roles[0]?.id ?? ""
+      setRoleId((current) => current || defaultRoleId)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hiba")

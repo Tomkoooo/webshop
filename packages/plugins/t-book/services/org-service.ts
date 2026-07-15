@@ -446,4 +446,19 @@ export class TBookOrgService {
     }).lean()
     return role ? String(role._id) : null
   }
+
+  /** Default role for new members when none is selected (Viewer, else first role). */
+  static async getDefaultMemberRoleIds(organizationId: string): Promise<string[]> {
+    await dbConnect()
+    const viewer = await TBookOrgRole.findOne({
+      organizationId: oid(organizationId),
+      name: "Viewer",
+      isBuiltIn: true,
+    }).lean()
+    if (viewer) return [String(viewer._id)]
+    const any = await TBookOrgRole.findOne({ organizationId: oid(organizationId) })
+      .sort({ isBuiltIn: -1, name: 1 })
+      .lean()
+    return any ? [String(any._id)] : []
+  }
 }

@@ -93,6 +93,27 @@ export async function requireSystemAdmin() {
   return { userId }
 }
 
+/** Validates that a signed-in user may activate the given org (member or system admin). */
+export async function assertUserOrganizationAccess(
+  userId: string,
+  organizationId: string
+): Promise<void> {
+  const orgId = organizationId.trim()
+  if (!orgId) throw new OrgAuthError("Hiányzó szervezet azonosító.", 400)
+
+  await dbConnect()
+  const org = await TBookOrganization.findById(oid(orgId)).lean()
+  if (!org) throw new OrgAuthError("Szervezet nem található.", 404)
+  if (org.status === "suspended") throw new OrgAuthError("A szervezet fel van függesztve.", 403)
+
+  if (await isUserSystemAdmin(userId)) return
+
+  const membership = await resolveMembershipPermissions(orgId, userId)
+  if (!membership) {
+    throw new OrgAuthError("Nincs hozzáférésed ehhez a szervezethez.", 403)
+  }
+}
+
 export async function requireOrgContext(preferredOrgId?: string | null): Promise<OrgAuthContext> {
   const userId = await getSessionUserId()
   if (!userId) throw new OrgAuthError("Bejelentkezés szükséges.", 401)

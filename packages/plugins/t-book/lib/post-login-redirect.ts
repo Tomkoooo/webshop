@@ -43,7 +43,7 @@ export async function resolveTBookPostLoginRedirect(callbackUrl?: string | null)
   }
   if (orgIds.length > 1) return "/admin/org/select"
   if (isSystemAdmin) return "/admin"
-  return "/"
+  return "/auth/no-admin-access"
 }
 
 export async function redirectTBookAfterAdminLogin(callbackUrl?: string | null): Promise<never> {
