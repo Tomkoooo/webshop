@@ -289,7 +289,35 @@ export const tBookEligibilityPresetSchema = z.enum([
   "under18_female",
   "women",
   "custom",
+  "form_rules",
 ])
+
+export const tBookEligibilityFormRuleSchema = z.object({
+  id: z.string().min(1),
+  fieldKey: z.string().min(1),
+  op: z.enum([
+    "equals",
+    "not_equals",
+    "contains",
+    "regex",
+    "min",
+    "max",
+    "min_age",
+    "max_age",
+    "in",
+    "not_in",
+  ]),
+  value: z.string().default(""),
+  message: z.string().optional(),
+})
+
+export const tBookEligibilityFormRulesSchema = z
+  .object({
+    logic: z.enum(["and", "or"]).default("and"),
+    rules: z.array(tBookEligibilityFormRuleSchema).default([]),
+  })
+  .nullable()
+  .optional()
 
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
@@ -323,6 +351,7 @@ export const eventInputSchema = z.object({
   eligibilityAllowedGenders: z.array(z.string()).default([]),
   eligibilityBirthDateFieldKey: z.string().nullable().optional(),
   eligibilityGenderFieldKey: z.string().nullable().optional(),
+  eligibilityFormRules: tBookEligibilityFormRulesSchema,
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -362,6 +391,7 @@ export const eventUpdateSchema = z.object({
   eligibilityAllowedGenders: z.array(z.string()).optional(),
   eligibilityBirthDateFieldKey: z.string().nullable().optional(),
   eligibilityGenderFieldKey: z.string().nullable().optional(),
+  eligibilityFormRules: tBookEligibilityFormRulesSchema,
   status: tBookStatusSchema.optional(),
   sortOrder: z.number().int().optional(),
 })

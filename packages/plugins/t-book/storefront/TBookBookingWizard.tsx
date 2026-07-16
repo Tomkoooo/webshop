@@ -151,7 +151,7 @@ function applyEventDetailToWizardState(
   setters.setHotels(detail.hotels)
   setters.setNights(eventDetail?.nights ?? 1)
   setters.setAttendees(emptyAttendeeRows(1, rosterSize, withMembers))
-  // Default: ticket only — guest opts into a hotel via cards
+  // Default: entry only — guest opts into a hotel via cards
   setters.setSelectedHotelId(null)
   setters.setSelections({})
   setters.setError(null)
@@ -612,8 +612,8 @@ export function TBookBookingWizard({
               {registrationUnit === "team"
                 ? "Number of teams"
                 : playersPerTicket > 1
-                  ? `Number of tickets / entries (${playersPerTicket} players / ticket)`
-                  : "Number of tickets / entries"}
+                  ? `${copy.guestsLabel} (${playersPerTicket} players / entry)`
+                  : copy.guestsLabel}
             </span>
             <input
               type="number"
@@ -625,8 +625,8 @@ export function TBookBookingWizard({
             />
             <p className="text-xs text-muted-foreground">
               {playersPerTicket > 1
-                ? `${guests} ticket${guests === 1 ? "" : "s"} × ${playersPerTicket} players = ${maxAccommodationGuests} entries.`
-                : "Entry fees are charged per ticket / entry."}
+                ? `${guests} ${guests === 1 ? "entry" : "entries"} × ${playersPerTicket} players = ${maxAccommodationGuests} players.`
+                : "Entry fees are charged per entry."}
             </p>
           </label>
 
@@ -886,8 +886,8 @@ export function TBookBookingWizard({
                 <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {playersPerTicket > 1
-                    ? `${playersPerTicket} player forms required per ticket (${guests} ticket${
-                        guests === 1 ? "" : "s"
+                    ? `${playersPerTicket} player forms required per entry (${guests} ${
+                        guests === 1 ? "entry" : "entries"
                       } → ${accommodationGuests} guests). `
                     : registrationUnit === "team"
                       ? `Enter details for each team member (max ${playersPerTicket} per team). `
@@ -1074,7 +1074,7 @@ export function TBookBookingWizard({
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">
-                {registrationUnit === "team" ? "Teams" : "Tickets / entries"}
+                {registrationUnit === "team" ? "Teams" : "Entries"}
               </dt>
               <dd className="font-medium">
                 {guests} {guestUnitLabel}

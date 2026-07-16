@@ -26,7 +26,12 @@ import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
 import { CurrencySelect } from "./CurrencySelect"
 import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
-import { ELIGIBILITY_PRESET_LABELS } from "../lib/eligibility"
+import {
+  ELIGIBILITY_OP_LABELS,
+  ELIGIBILITY_PRESET_LABELS,
+  type TBookEligibilityMatchOp,
+  type TBookEligibilityRulesConfig,
+} from "../lib/eligibility"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
@@ -82,6 +87,7 @@ type EventDraft = {
   eligibilityAllowedGenders: string
   eligibilityBirthDateFieldKey: string
   eligibilityGenderFieldKey: string
+  eligibilityFormRules: TBookEligibilityRulesConfig
 }
 
 export function EventFormPage({
@@ -133,6 +139,7 @@ export function EventFormPage({
     eligibilityAllowedGenders: "",
     eligibilityBirthDateFieldKey: "",
     eligibilityGenderFieldKey: "",
+    eligibilityFormRules: { logic: "and", rules: [] },
   })
 
   useEffect(() => {
@@ -185,6 +192,18 @@ export function EventFormPage({
             eligibilityAllowedGenders: (e.eligibilityAllowedGenders ?? []).join(", "),
             eligibilityBirthDateFieldKey: e.eligibilityBirthDateFieldKey ?? "",
             eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? "",
+            eligibilityFormRules: e.eligibilityFormRules
+              ? {
+                  logic: e.eligibilityFormRules.logic,
+                  rules: e.eligibilityFormRules.rules.map((r) => ({
+                    id: r.id,
+                    fieldKey: r.fieldKey,
+                    op: r.op as TBookEligibilityMatchOp,
+                    value: r.value,
+                    message: r.message,
+                  })),
+                }
+              : { logic: "and", rules: [] },
           })
         })
       )
@@ -252,6 +271,8 @@ export function EventFormPage({
         .filter(Boolean),
       eligibilityBirthDateFieldKey: draft.eligibilityBirthDateFieldKey.trim() || null,
       eligibilityGenderFieldKey: draft.eligibilityGenderFieldKey.trim() || null,
+      eligibilityFormRules:
+        draft.eligibilityFormRules.rules.length > 0 ? draft.eligibilityFormRules : null,
       status: draft.status,
     }
     try {
@@ -502,7 +523,7 @@ export function EventFormPage({
                 </div>
               ) : null}
               <div className="border-t border-border pt-6 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Eligibilitás (kor / nem)</h3>
+                <h3 className="text-sm font-semibold text-foreground">Belépési feltételek</h3>
                 <TBookField label="Előbeállítás">
                   <TBookSelect
                     value={draft.eligibilityPreset}
@@ -519,8 +540,8 @@ export function EventFormPage({
                     ))}
                   </TBookSelect>
                   <p className="text-xs text-muted-foreground mt-1">
-                    A foglaláskor ellenőrizzük a születési dátum / nem mezőket. Ha nincs megadva
-                    mezőkulcs, automatikusan felismerjük a regisztrációs űrlapról.
+                    Üres esemény űrlapnál a csoport „Résztvevői mezők” sémája érvényes (extend mód).
+                    Az űrlap szabályok a feloldott mezőkre futnak.
                   </p>
                 </TBookField>
                 {draft.eligibilityPreset === "custom" ? (
@@ -552,22 +573,159 @@ export function EventFormPage({
                     </TBookField>
                   </div>
                 ) : null}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <TBookField label="Születési dátum mező kulcs (opcionális)">
-                    <TBookInput
-                      value={draft.eligibilityBirthDateFieldKey}
-                      onChange={(e) => patch({ eligibilityBirthDateFieldKey: e.target.value })}
-                      placeholder="birth_date"
-                    />
-                  </TBookField>
-                  <TBookField label="Nem mező kulcs (opcionális)">
-                    <TBookInput
-                      value={draft.eligibilityGenderFieldKey}
-                      onChange={(e) => patch({ eligibilityGenderFieldKey: e.target.value })}
-                      placeholder="gender"
-                    />
-                  </TBookField>
-                </div>
+                {(draft.eligibilityPreset === "custom" ||
+                  draft.eligibilityPreset === "under18" ||
+                  draft.eligibilityPreset === "under18_female" ||
+                  draft.eligibilityPreset === "women") && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <TBookField label="Születési dátum mező kulcs (opcionális)">
+                      <TBookInput
+                        value={draft.eligibilityBirthDateFieldKey}
+                        onChange={(e) => patch({ eligibilityBirthDateFieldKey: e.target.value })}
+                        placeholder="birth_date"
+                      />
+                    </TBookField>
+                    <TBookField label="Nem mező kulcs (opcionális)">
+                      <TBookInput
+                        value={draft.eligibilityGenderFieldKey}
+                        onChange={(e) => patch({ eligibilityGenderFieldKey: e.target.value })}
+                        placeholder="gender"
+                      />
+                    </TBookField>
+                  </div>
+                )}
+                {(draft.eligibilityPreset === "form_rules" ||
+                  draft.eligibilityPreset === "custom") && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <TBookField label="Szabályok kapcsolata">
+                        <TBookSelect
+                          value={draft.eligibilityFormRules.logic}
+                          onChange={(e) =>
+                            patch({
+                              eligibilityFormRules: {
+                                ...draft.eligibilityFormRules,
+                                logic: e.target.value as "and" | "or",
+                              },
+                            })
+                          }
+                        >
+                          <option value="and">És (mind igaz)</option>
+                          <option value="or">Vagy (legalább egy igaz)</option>
+                        </TBookSelect>
+                      </TBookField>
+                      <button
+                        type="button"
+                        className={tBookGhostButtonClass}
+                        onClick={() =>
+                          patch({
+                            eligibilityFormRules: {
+                              ...draft.eligibilityFormRules,
+                              rules: [
+                                ...draft.eligibilityFormRules.rules,
+                                {
+                                  id: `rule-${Date.now()}`,
+                                  fieldKey: effectiveAttendeeFieldSchema[0]?.key || "",
+                                  op: "equals",
+                                  value: "",
+                                  message: "",
+                                },
+                              ],
+                            },
+                          })
+                        }
+                      >
+                        Szabály hozzáadása
+                      </button>
+                    </div>
+                    {draft.eligibilityFormRules.rules.map((rule, index) => (
+                      <div
+                        key={rule.id}
+                        className="grid gap-2 rounded-lg bg-muted/40 p-3 sm:grid-cols-2"
+                      >
+                        <TBookField label="Mező">
+                          <TBookSelect
+                            value={rule.fieldKey}
+                            onChange={(e) => {
+                              const rules = draft.eligibilityFormRules.rules.map((r, i) =>
+                                i === index ? { ...r, fieldKey: e.target.value } : r
+                              )
+                              patch({
+                                eligibilityFormRules: { ...draft.eligibilityFormRules, rules },
+                              })
+                            }}
+                          >
+                            <option value="">— válassz —</option>
+                            {effectiveAttendeeFieldSchema.map((f) => (
+                              <option key={f.key} value={f.key}>
+                                {f.label} ({f.key}) · {f.type}
+                              </option>
+                            ))}
+                          </TBookSelect>
+                        </TBookField>
+                        <TBookField label="Feltétel">
+                          <TBookSelect
+                            value={rule.op}
+                            onChange={(e) => {
+                              const rules = draft.eligibilityFormRules.rules.map((r, i) =>
+                                i === index
+                                  ? { ...r, op: e.target.value as TBookEligibilityMatchOp }
+                                  : r
+                              )
+                              patch({
+                                eligibilityFormRules: { ...draft.eligibilityFormRules, rules },
+                              })
+                            }}
+                          >
+                            {Object.entries(ELIGIBILITY_OP_LABELS).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </TBookSelect>
+                        </TBookField>
+                        <TBookField label="Érték / regex">
+                          <TBookInput
+                            value={rule.value}
+                            onChange={(e) => {
+                              const rules = draft.eligibilityFormRules.rules.map((r, i) =>
+                                i === index ? { ...r, value: e.target.value } : r
+                              )
+                              patch({
+                                eligibilityFormRules: { ...draft.eligibilityFormRules, rules },
+                              })
+                            }}
+                          />
+                        </TBookField>
+                        <TBookField label="Hibaüzenet (opcionális)">
+                          <TBookInput
+                            value={rule.message || ""}
+                            onChange={(e) => {
+                              const rules = draft.eligibilityFormRules.rules.map((r, i) =>
+                                i === index ? { ...r, message: e.target.value } : r
+                              )
+                              patch({
+                                eligibilityFormRules: { ...draft.eligibilityFormRules, rules },
+                              })
+                            }}
+                          />
+                        </TBookField>
+                        <button
+                          type="button"
+                          className={`${tBookGhostButtonClass} sm:col-span-2`}
+                          onClick={() => {
+                            const rules = draft.eligibilityFormRules.rules.filter((_, i) => i !== index)
+                            patch({
+                              eligibilityFormRules: { ...draft.eligibilityFormRules, rules },
+                            })
+                          }}
+                        >
+                          Szabály törlése
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : null}

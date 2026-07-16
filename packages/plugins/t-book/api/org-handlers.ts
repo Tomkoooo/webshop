@@ -97,18 +97,9 @@ export async function handleTBookOrgApi(
 
     if (segment === "settings" && method === "GET") {
       const ctx = await requireOrgPermission("org:read")
-      const org = await TBookOrgService.getOrganization(ctx.organizationId)
-      if (!org) return json({ error: "Szervezet nem található." }, 404)
-      return json({
-        ok: true,
-        organization: {
-          id: String(org._id),
-          name: org.name,
-          slug: org.slug,
-          status: org.status,
-          settings: org.settings,
-        },
-      })
+      const organization = await TBookOrgService.getOrgSettingsPublic(ctx.organizationId)
+      if (!organization) return json({ error: "Szervezet nem található." }, 404)
+      return json({ ok: true, organization })
     }
 
     if (segment === "settings" && method === "PUT") {
@@ -117,6 +108,11 @@ export async function handleTBookOrgApi(
       await TBookOrgService.updateOrgSettings(ctx.organizationId, {
         name: body.name,
         currency: body.currency,
+        stripe: body.stripe,
+        smtp: body.smtp,
+        szamlazz: body.szamlazz,
+        emailTemplates: body.emailTemplates,
+        voucherPdfLayout: body.voucherPdfLayout,
       })
       return json({ ok: true })
     }

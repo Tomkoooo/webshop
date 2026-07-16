@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookStatus } from "../lib/schemas"
 import type { TBookPriceBasis } from "../lib/vat"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
-import type { TBookEligibilityPreset } from "../lib/eligibility"
+import type { TBookEligibilityPreset, TBookEligibilityRulesConfig } from "../lib/eligibility"
 
 export interface ITBookEvent extends Document {
   /** Denormalized org scope for admin queries. */
@@ -52,6 +52,8 @@ export interface ITBookEvent extends Document {
   eligibilityAllowedGenders: string[]
   eligibilityBirthDateFieldKey: string | null
   eligibilityGenderFieldKey: string | null
+  /** Form-field based eligibility (AND/OR + ops / regex). */
+  eligibilityFormRules: TBookEligibilityRulesConfig | null
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -160,7 +162,7 @@ const TBookEventSchema = new Schema<ITBookEvent>(
     },
     eligibilityPreset: {
       type: String,
-      enum: ["none", "under18", "under18_female", "women", "custom"],
+      enum: ["none", "under18", "under18_female", "women", "custom", "form_rules"],
       default: "none",
     },
     eligibilityMinAge: { type: Number, default: null, min: 0, max: 120 },
@@ -168,6 +170,30 @@ const TBookEventSchema = new Schema<ITBookEvent>(
     eligibilityAllowedGenders: { type: [String], default: [] },
     eligibilityBirthDateFieldKey: { type: String, default: null },
     eligibilityGenderFieldKey: { type: String, default: null },
+    eligibilityFormRules: {
+      type: new Schema(
+        {
+          logic: { type: String, enum: ["and", "or"], default: "and" },
+          rules: {
+            type: [
+              new Schema(
+                {
+                  id: { type: String, required: true },
+                  fieldKey: { type: String, required: true },
+                  op: { type: String, required: true },
+                  value: { type: String, default: "" },
+                  message: { type: String, default: "" },
+                },
+                { _id: false }
+              ),
+            ],
+            default: [],
+          },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },
   },

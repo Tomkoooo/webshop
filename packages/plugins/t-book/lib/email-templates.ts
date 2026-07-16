@@ -18,7 +18,7 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
             <p><strong>Létszám:</strong> {{guests}} fő</p>
             <p><strong>Szállás:</strong> {{hotelName}}</p>
             <p><strong>Éjszakák:</strong> {{nights}}</p>
-            <p><strong>Fizetett összeg:</strong> {{totalHuf}} Ft</p>
+            <p><strong>Fizetett összeg:</strong> {{total}}</p>
           </div>
           <p>Foglalás azonosító: {{bookingId}}</p>
           <p style="font-size:12px;color:#666;">Ez egy automatikus üzenet. A számlát külön e-mailben küldjük. A belépőjegy(ek) PDF csatolmányban érkeznek külön e-mailben.</p>
@@ -33,7 +33,9 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
         "hotelName",
         "guests",
         "nights",
+        "total",
         "totalHuf",
+        "currency",
         "bookingId",
       ],
     },

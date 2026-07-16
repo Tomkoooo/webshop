@@ -68,6 +68,31 @@ export default async function AdminLayout({
     redirect("/admin")
   }
 
+  // Org-only tenants manage integrations under /admin/org/settings — not center CMS/billing/mail.
+  if (multiTenantAdmin && !access.isSystemAdmin && pathname) {
+    const systemOnlyPrefixes = [
+      "/admin/cms",
+      "/admin/emails",
+      "/admin/payment",
+      "/admin/templates",
+      "/admin/users",
+      "/admin/info",
+      "/admin/shipping",
+      "/admin/coupons",
+      "/admin/shop",
+      "/admin/newsletters",
+      "/admin/products",
+      "/admin/categories",
+      "/admin/reviews",
+      "/admin/orders",
+      "/admin/stats",
+      "/admin/contact",
+    ]
+    if (systemOnlyPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      redirect("/admin/org/settings")
+    }
+  }
+
   await ensureDeploymentPluginFeatureFlags()
 
   const [

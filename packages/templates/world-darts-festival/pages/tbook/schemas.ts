@@ -6,7 +6,7 @@ const metaSchema = z.object({
 })
 
 export const tBookListContentSchema = z.object({
-  pageTitle: z.string().default("Tickets & events"),
+  pageTitle: z.string().default("Entries & events"),
   pageIntro: z
     .string()
     .default(
@@ -23,12 +23,12 @@ export const tBookListContentSchema = z.object({
 })
 
 export const tBookBookingContentSchema = z.object({
-  stepTicket: z.string().default("Tickets & stay"),
+  stepTicket: z.string().default("Entry & stay"),
   stepDetails: z.string().default("Your details"),
   stepReview: z.string().default("Payment"),
-  guestsLabel: z.string().default("Number of tickets"),
+  guestsLabel: z.string().default("Number of entries"),
   hotelLabel: z.string().default("Accommodation"),
-  hotelNone: z.string().default("Ticket only (no accommodation)"),
+  hotelNone: z.string().default("Entry only (no accommodation)"),
   nightsLabel: z.string().default("Nights"),
   roomTypeLabel: z.string().default("Room type"),
   customerHeading: z.string().default("Contact person"),

@@ -9,6 +9,7 @@ import TBookOrganization from "../models/TBookOrganization"
 import TBookOrgMembership from "../models/TBookOrgMembership"
 import TBookOrgRole from "../models/TBookOrgRole"
 import type { TBookPermission } from "./permissions"
+import { syncBuiltInRolePermissions } from "./sync-built-in-roles"
 
 export type OrgAuthContext = {
   userId: string
@@ -69,6 +70,9 @@ export async function resolveMembershipPermissions(
   }).lean()
 
   if (!membership) return null
+
+  // Ensure built-in roles pick up permissions added after the org was created.
+  await syncBuiltInRolePermissions(organizationId)
 
   const roles = await TBookOrgRole.find({
     _id: { $in: membership.roleIds ?? [] },

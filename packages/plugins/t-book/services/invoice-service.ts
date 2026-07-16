@@ -16,8 +16,7 @@ function parseVatPercent(): number {
  * integration. Invoice lines mirror the price breakdown (ticket, base rate,
  * option add-ons); negative/zero lines are folded into the total.
  */
-export function bookingToInvoiceOrder(booking: ITBookBooking): IOrder {
-  const vatPercent = parseVatPercent()
+export function bookingToInvoiceOrder(booking: ITBookBooking, vatPercent = parseVatPercent()): IOrder {
   const billing = booking.billing ?? {
     name: booking.customer.name,
     zip: "",
@@ -69,8 +68,12 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
   if (!booking) return
   if (booking.invoiceStatus === "issued") return
 
-  const invoicingEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
-  if (!invoicingEnabled) return
+  const { resolveOrgSzamlazz } = await import("../lib/org-integrations")
+  const orgSzamlazz = await resolveOrgSzamlazz(
+    booking.organizationId ? String(booking.organizationId) : organizationId
+  )
+  const platformEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
+  if (!orgSzamlazz && !platformEnabled) return
 
   if (!booking.billing) {
     booking.invoiceStatus = "failed"
@@ -88,9 +91,21 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
   }
 
   try {
-    const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking), {
-      currency: bookingCurrency,
-    })
+    const vatPercent = orgSzamlazz?.vatPercent ?? parseVatPercent()
+    const result = await InvoicingSzamlazzService.issueInvoice(
+      bookingToInvoiceOrder(booking, vatPercent),
+      {
+        currency: bookingCurrency,
+        credentials: orgSzamlazz
+          ? {
+              agentKey: orgSzamlazz.agentKey,
+              sellerName: orgSzamlazz.sellerName,
+              sellerBank: orgSzamlazz.sellerBank,
+              sellerBankAccount: orgSzamlazz.sellerBankAccount,
+            }
+          : undefined,
+      }
+    )
     booking.invoiceStatus = "issued"
     booking.invoiceId = result.invoiceId
     booking.invoicePdfFileName = result.pdfFileName ?? null

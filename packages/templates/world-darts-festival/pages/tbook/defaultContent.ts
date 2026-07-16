@@ -5,7 +5,7 @@ import type {
 } from "./schemas"
 
 export const tBookListDefaultContent: TBookListContent = {
-  pageTitle: "Tickets & events",
+  pageTitle: "Entries & events",
   pageIntro:
     "Choose an event, enter participant details, and pay securely online. Accommodation is optional.",
   emptyTitle: "No events available right now",
@@ -14,16 +14,16 @@ export const tBookListDefaultContent: TBookListContent = {
   bookCta: "Book now",
   perPerson: "/ person",
   perBooking: "/ booking",
-  meta: { seoTitle: "Tickets", seoDescription: "" },
+  meta: { seoTitle: "Entries", seoDescription: "" },
 }
 
 export const tBookBookingDefaultContent: TBookBookingContent = {
-  stepTicket: "Tickets & stay",
+  stepTicket: "Entry & stay",
   stepDetails: "Your details",
   stepReview: "Payment",
-  guestsLabel: "Number of tickets",
+  guestsLabel: "Number of entries",
   hotelLabel: "Accommodation",
-  hotelNone: "Ticket only (no accommodation)",
+  hotelNone: "Entry only (no accommodation)",
   nightsLabel: "Nights",
   roomTypeLabel: "Room type",
   customerHeading: "Contact person",

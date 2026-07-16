@@ -80,7 +80,14 @@ export function EditableDocImage({
   }
 
   return (
-    <div className={cn("group relative", className)}>
+    <div
+      className={cn(
+        "group relative",
+        className,
+        // When the upload panel is open, lift above sibling overlays (e.g. hero copy).
+        panelOpen && "z-30"
+      )}
+    >
       <div
         className={cn(
           "relative",
@@ -88,7 +95,16 @@ export function EditableDocImage({
         )}
       >
         {framedImage}
-        <div className="cms-admin-control absolute inset-x-2 bottom-2 flex justify-end opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        {/*
+          Fill/hero images often sit under a z-10 content layer at the bottom.
+          Anchor controls at the top so they stay visible and clickable.
+        */}
+        <div
+          className={cn(
+            "cms-admin-control pointer-events-auto absolute inset-x-2 z-30 flex justify-end transition-opacity",
+            useFill ? "top-2 opacity-100" : "bottom-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+          )}
+        >
           <Button
             type="button"
             size="sm"
@@ -103,7 +119,7 @@ export function EditableDocImage({
       </div>
 
       {panelOpen ? (
-        <div className="cms-admin-control relative z-20 mt-2 space-y-2 rounded-lg bg-card p-3 shadow-sm ring-1 ring-border/60">
+        <div className="cms-admin-control pointer-events-auto relative z-40 mt-2 space-y-2 rounded-lg bg-card p-3 shadow-sm ring-1 ring-border/60">
           {usageLabel ? (
             <p className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{usageLabel}</span>

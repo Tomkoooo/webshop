@@ -85,6 +85,7 @@ function serializeEvent(e: ITBookEvent) {
     eligibilityAllowedGenders: e.eligibilityAllowedGenders ?? [],
     eligibilityBirthDateFieldKey: e.eligibilityBirthDateFieldKey ?? null,
     eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? null,
+    eligibilityFormRules: e.eligibilityFormRules ?? null,
     status: e.status,
     sortOrder: e.sortOrder,
   }

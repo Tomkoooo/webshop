@@ -1,5 +1,5 @@
 import { logMailer } from "@wse/core/lib/mailer-log"
-import { MailerService } from "@wse/core/services/mailer"
+import { sendOrgTemplatedEmail } from "./org-integrations"
 
 export type SendVoucherEmailInput = {
   to: string
@@ -10,13 +10,15 @@ export type SendVoucherEmailInput = {
   guests: number
   pdfBuffer: Buffer
   pdfFilename: string
+  organizationId?: string | null
   logContext?: Record<string, unknown>
 }
 
 export async function sendVoucherEmail(input: SendVoucherEmailInput) {
   const bookingId = input.bookingId
   try {
-    await MailerService.sendEmail({
+    await sendOrgTemplatedEmail({
+      organizationId: input.organizationId ?? null,
       to: input.to,
       templateType: "t_book_voucher_delivery",
       data: {
@@ -34,18 +36,13 @@ export async function sendVoucherEmail(input: SendVoucherEmailInput) {
           contentType: "application/pdf",
         },
       ],
-      logContext: {
-        flow: "t_book_voucher_delivery",
-        bookingId,
-        pluginId: "t-book",
-        ...input.logContext,
-      },
     })
   } catch (error) {
     logMailer("error", "t_book_voucher_delivery_failed", {
       bookingId,
       to: input.to,
       error: error instanceof Error ? error.message : String(error),
+      ...input.logContext,
     })
     throw error
   }

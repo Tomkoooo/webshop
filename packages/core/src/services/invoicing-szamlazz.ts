@@ -112,9 +112,19 @@ function mapPaymentMethod(order: IOrder) {
   return PaymentMethods.BankTransfer;
 }
 
+export type SzamlazzCredentialOverride = {
+  agentKey?: string
+  sellerName?: string
+  sellerBank?: string
+  sellerBankAccount?: string
+}
+
 export class InvoicingSzamlazzService {
-  private static getClient(requestInvoiceDownload: boolean = true) {
-    const authToken = process.env.SZAMLAZZ_AGENT_KEY;
+  private static getClient(
+    requestInvoiceDownload: boolean = true,
+    override?: SzamlazzCredentialOverride
+  ) {
+    const authToken = override?.agentKey?.trim() || process.env.SZAMLAZZ_AGENT_KEY;
     const user = process.env.SZAMLAZZ_USER;
     const password = process.env.SZAMLAZZ_PASSWORD;
 
@@ -124,8 +134,8 @@ export class InvoicingSzamlazzService {
 
     return new Client({
       authToken,
-      user,
-      password,
+      user: authToken ? undefined : user,
+      password: authToken ? undefined : password,
       eInvoice: true,
       requestInvoiceDownload,
       downloadedInvoiceCount: 1,
@@ -134,13 +144,13 @@ export class InvoicingSzamlazzService {
     });
   }
 
-  private static buildSeller() {
+  private static buildSeller(override?: SzamlazzCredentialOverride) {
     return new Seller({
       bank: {
-        name: process.env.SZAMLAZZ_SELLER_BANK_NAME || "",
-        accountNumber: process.env.SZAMLAZZ_SELLER_BANK_ACCOUNT || "",
+        name: override?.sellerBank || process.env.SZAMLAZZ_SELLER_BANK_NAME || "",
+        accountNumber: override?.sellerBankAccount || process.env.SZAMLAZZ_SELLER_BANK_ACCOUNT || "",
       },
-      issuerName: process.env.SZAMLAZZ_ISSUER_NAME || "",
+      issuerName: override?.sellerName || process.env.SZAMLAZZ_ISSUER_NAME || "",
       email: {
         replyToAddress: process.env.EMAIL_FROM || "",
         subject: process.env.SZAMLAZZ_EMAIL_SUBJECT || "Számla",
@@ -181,15 +191,15 @@ export class InvoicingSzamlazzService {
 
   static async issueInvoice(
     order: IOrder,
-    opts?: { currency?: string | null }
+    opts?: { currency?: string | null; credentials?: SzamlazzCredentialOverride }
   ): Promise<InvoiceIssueResult> {
     const currencyCode = resolveSzamlazzCurrency(opts?.currency);
-    const client = this.getClient(true);
+    const client = this.getClient(true, opts?.credentials);
     const invoice = new Invoice({
       paymentMethod: mapPaymentMethod(order),
       currency: szamlazzCurrencyObject(currencyCode),
       language: szamlazzLanguage(currencyCode),
-      seller: this.buildSeller(),
+      seller: this.buildSeller(opts?.credentials),
       buyer: this.buildBuyer(order),
       items: this.buildItems(order),
       orderNumber: formatOrderNumber(order._id),

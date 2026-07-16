@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@wse/core/lib/db";
-import { getStripeClient, getStripeWebhookSecret } from "@wse/core/services/stripe";
 import {
   handleCheckoutSessionAsyncPaymentFailed,
   handleCheckoutSessionCompletedLike,
@@ -17,15 +16,24 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const stripe = getStripeClient();
-    const webhookSecret = getStripeWebhookSecret();
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
       return NextResponse.json({ error: "Missing stripe signature" }, { status: 400 });
     }
 
     const rawBody = await req.text();
-    const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    // Prefer platform webhook secret; fall back to per-org Stripe webhook secrets (tBook).
+    let event: import("stripe").Stripe.Event;
+    try {
+      const { resolveStripeWebhookSecretForSignature } = await import(
+        "@wse/plugin-t-book/lib/org-integrations"
+      );
+      ;({ event } = await resolveStripeWebhookSecretForSignature(rawBody, signature));
+    } catch {
+      const { getStripeClient, getStripeWebhookSecret } = await import("@wse/core/services/stripe");
+      const stripe = getStripeClient();
+      event = stripe.webhooks.constructEvent(rawBody, signature, getStripeWebhookSecret());
+    }
 
     await dbConnect();
 

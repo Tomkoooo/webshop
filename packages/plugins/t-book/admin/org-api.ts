@@ -40,9 +40,15 @@ export const tbookOrgApi = {
   settings: () =>
     orgFetch<{
       ok: true
-      organization: { id: string; name: string; slug: string; settings: { currency: string } }
+      organization: {
+        id: string
+        name: string
+        slug: string
+        status?: string
+        settings: Record<string, unknown> & { currency: string }
+      }
     }>("/settings"),
-  updateSettings: (body: { name?: string; currency?: string }) =>
+  updateSettings: (body: Record<string, unknown>) =>
     orgFetch<{ ok: true }>("/settings", { method: "PUT", body: JSON.stringify(body) }),
   members: () =>
     orgFetch<{

@@ -44,7 +44,7 @@ export function AccommodationOptionCards({
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium">Accommodation</legend>
       <p className="text-xs text-muted-foreground">
-        Choose ticket only, or add a hotel stay. Ticket only is selected by default.
+        Choose entry only, or add a hotel stay. Entry only is selected by default.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <button
@@ -62,7 +62,7 @@ export function AccommodationOptionCards({
               <Ticket className="size-4" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-semibold">Ticket only</span>
+              <span className="block text-sm font-semibold">Entry only</span>
               <span className="mt-1 block text-xs text-muted-foreground">
                 Entry fees only — no hotel booking.
               </span>

@@ -117,17 +117,46 @@ export function isAdminNavItemActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
+/** Center/platform routes that org-only tenants should not see (multi-tenant). */
+const MULTI_TENANT_SYSTEM_ONLY_HREFS = new Set([
+  "/admin/cms",
+  "/admin/templates",
+  "/admin/emails",
+  "/admin/payment",
+  "/admin/users",
+  "/admin/info",
+  "/admin/shipping",
+  "/admin/coupons",
+  "/admin/shop/featured",
+  "/admin/shop/trading",
+  "/admin/shop/product-suggestions",
+  "/admin/newsletters",
+  "/admin/products",
+  "/admin/categories",
+  "/admin/reviews",
+  "/admin/orders",
+  "/admin/stats",
+  "/admin/contact",
+])
+
 export function filterAdminNavItems(
   items: AdminNavItem[],
   options: {
     enabledFeatures?: Partial<Record<AdminFeatureKey, boolean>>
     shopEnabled?: boolean
+    /** When true with multiTenantAdmin, hide platform CMS/billing/mail nav. */
+    multiTenantOrgOnly?: boolean
   }
 ): AdminNavItem[] {
-  const { enabledFeatures, shopEnabled = true } = options
+  const { enabledFeatures, shopEnabled = true, multiTenantOrgOnly = false } = options
   return items.filter((item) => {
     if (item.requiresShop && !shopEnabled) return false
     if (item.featureKey && !enabledFeatures?.[item.featureKey]) return false
+    if (multiTenantOrgOnly) {
+      if (MULTI_TENANT_SYSTEM_ONLY_HREFS.has(item.href)) return false
+      if (item.href.startsWith("/admin/cms")) return false
+      if (item.href.startsWith("/admin/shop")) return false
+    }
     return true
   })
 }

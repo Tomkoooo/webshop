@@ -8,6 +8,10 @@ import { getAppBaseUrl } from "@wse/core/services/stripe"
 import type { TBookAttendeeFieldDef } from "./attendee-fields"
 import { formatAttendeeFieldValue } from "./attendee-fields"
 import { formatEventSchedule } from "./event-schedule"
+import {
+  normalizeVoucherPdfLayout,
+  type VoucherPdfLayout,
+} from "./voucher-pdf-layout"
 
 const ROBOTO_FONT_URL =
   "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
@@ -16,6 +20,14 @@ const A4_WIDTH = 595.28
 const A4_HEIGHT = 841.89
 const MARGIN = 48
 const HEADER_HEIGHT = 120
+
+function hexToRgb(hex: string) {
+  const cleaned = hex.replace("#", "").trim()
+  if (cleaned.length !== 6) return rgb(0.1, 0.1, 0.1)
+  const n = Number.parseInt(cleaned, 16)
+  if (!Number.isFinite(n)) return rgb(0.1, 0.1, 0.1)
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255)
+}
 
 let cachedFontBytes: ArrayBuffer | null = null
 
@@ -107,34 +119,37 @@ export type VoucherPdfPageInput = {
 export type BuildVoucherPdfInput = {
   headerImage: string
   pages: VoucherPdfPageInput[]
+  layout?: VoucherPdfLayout | null
 }
 
 async function embedHeaderImage(
   pdf: PDFDocument,
   page: PDFPage,
   headerImage: string,
-  font: PDFFont
+  font: PDFFont,
+  margin: number,
+  headerHeight: number
 ): Promise<number> {
-  const contentWidth = page.getWidth() - MARGIN * 2
-  let y = page.getHeight() - MARGIN
+  const contentWidth = page.getWidth() - margin * 2
+  let y = page.getHeight() - margin
 
   const imageBytes = await resolveHeaderImageBytes(headerImage)
   if (imageBytes) {
     try {
       const isPng = headerImage.toLowerCase().includes(".png") || imageBytes[0] === 0x89
       const embedded = isPng ? await pdf.embedPng(imageBytes) : await pdf.embedJpg(imageBytes)
-      const scale = Math.min(contentWidth / embedded.width, HEADER_HEIGHT / embedded.height)
+      const scale = Math.min(contentWidth / embedded.width, headerHeight / embedded.height)
       const w = embedded.width * scale
       const h = embedded.height * scale
       page.drawImage(embedded, {
-        x: MARGIN + (contentWidth - w) / 2,
+        x: margin + (contentWidth - w) / 2,
         y: y - h,
         width: w,
         height: h,
       })
       y -= h + 16
     } catch {
-      y = drawLines(page, font, [""], MARGIN, y, 10, 12)
+      y = drawLines(page, font, [""], margin, y, 10, 12)
     }
   }
 
@@ -145,134 +160,195 @@ async function drawVoucherPage(
   pdf: PDFDocument,
   font: PDFFont,
   input: VoucherPdfPageInput,
-  headerImage: string
+  headerImage: string,
+  layout: VoucherPdfLayout
 ): Promise<void> {
+  const margin = layout.margin || MARGIN
   const page = pdf.addPage([A4_WIDTH, A4_HEIGHT])
-  const contentWidth = page.getWidth() - MARGIN * 2
-  let y = await embedHeaderImage(pdf, page, headerImage, font)
+  const contentWidth = page.getWidth() - margin * 2
+  const primary = hexToRgb(layout.primaryColor || "#111827")
+  const bodySize = layout.bodyFontSize || 11
+  const titleSize = layout.titleFontSize || 20
+  let y = page.getHeight() - margin
 
-  y = drawLines(
-    page,
-    font,
-    wrapText(input.eventName, font, 18, contentWidth),
-    MARGIN,
-    y,
-    18,
-    22,
-    rgb(0.05, 0.05, 0.05)
-  )
-  y -= 8
+  const enabled = (type: string) =>
+    layout.blocks.find((b) => b.type === type && b.enabled !== false)
 
-  y = drawLines(
-    page,
-    font,
-    wrapText(
-      formatEventDateRange(input.startDate, input.endDate, input.startTime, input.endTime),
+  if (enabled("headerImage")) {
+    y = await embedHeaderImage(
+      pdf,
+      page,
+      headerImage,
       font,
-      11,
-      contentWidth
-    ),
-    MARGIN,
-    y,
-    11,
-    14,
-    rgb(0.3, 0.3, 0.3)
-  )
+      margin,
+      layout.headerHeight || HEADER_HEIGHT
+    )
+  }
 
-  if (input.locationAddress) {
+  if (enabled("title")) {
+    const block = enabled("title")!
+    const size = block.fontSize || titleSize
     y = drawLines(
       page,
       font,
-      wrapText(input.locationAddress, font, 11, contentWidth),
-      MARGIN,
+      wrapText(input.eventName, font, size, contentWidth),
+      margin,
       y,
-      11,
-      14,
+      size,
+      size + 4,
+      block.color ? hexToRgb(block.color) : primary
+    )
+    y -= 8
+  }
+
+  if (enabled("eventSchedule")) {
+    const block = enabled("eventSchedule")!
+    const size = block.fontSize || bodySize
+    y = drawLines(
+      page,
+      font,
+      wrapText(
+        formatEventDateRange(input.startDate, input.endDate, input.startTime, input.endTime),
+        font,
+        size,
+        contentWidth
+      ),
+      margin,
+      y,
+      size,
+      size + 3,
+      rgb(0.3, 0.3, 0.3)
+    )
+  }
+
+  if (enabled("location") && input.locationAddress) {
+    const block = enabled("location")!
+    const size = block.fontSize || bodySize
+    y = drawLines(
+      page,
+      font,
+      wrapText(input.locationAddress, font, size, contentWidth),
+      margin,
+      y,
+      size,
+      size + 3,
       rgb(0.3, 0.3, 0.3)
     )
   }
 
   y -= 12
   page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: page.getWidth() - MARGIN, y },
+    start: { x: margin, y },
+    end: { x: page.getWidth() - margin, y },
     thickness: 0.5,
     color: rgb(0.85, 0.85, 0.85),
   })
   y -= 20
 
-  y = drawLines(page, font, ["Résztvevő"], MARGIN, y, 10, 12, rgb(0.45, 0.45, 0.45))
-  y = drawLines(
-    page,
-    font,
-    wrapText(input.displayName, font, 16, contentWidth),
-    MARGIN,
-    y,
-    16,
-    20
-  )
-
-  for (const field of input.attendeeFieldSchema) {
-    const value = input.attendeeFields[field.key]
-    if (value == null || value === "") continue
-    const formatted = formatAttendeeFieldValue(field, value)
-    if (formatted === "—") continue
+  if (enabled("subtitle")) {
+    y = drawLines(page, font, ["Résztvevő"], margin, y, 10, 12, rgb(0.45, 0.45, 0.45))
     y = drawLines(
       page,
       font,
-      wrapText(`${field.label}: ${formatted}`, font, 10, contentWidth),
-      MARGIN,
+      wrapText(input.displayName, font, 16, contentWidth),
+      margin,
       y,
-      10,
-      13,
-      rgb(0.35, 0.35, 0.35)
+      16,
+      20
+    )
+  } else {
+    // Keep participant name visible even if subtitle block was never added historically
+    y = drawLines(page, font, ["Résztvevő"], margin, y, 10, 12, rgb(0.45, 0.45, 0.45))
+    y = drawLines(
+      page,
+      font,
+      wrapText(input.displayName, font, 16, contentWidth),
+      margin,
+      y,
+      16,
+      20
+    )
+  }
+
+  if (enabled("attendeeFields")) {
+    for (const field of input.attendeeFieldSchema) {
+      const value = input.attendeeFields[field.key]
+      if (value == null || value === "") continue
+      const formatted = formatAttendeeFieldValue(field, value)
+      if (formatted === "—") continue
+      y = drawLines(
+        page,
+        font,
+        wrapText(`${field.label}: ${formatted}`, font, 10, contentWidth),
+        margin,
+        y,
+        10,
+        13,
+        rgb(0.35, 0.35, 0.35)
+      )
+    }
+  }
+
+  for (const block of layout.blocks.filter((b) => b.type === "customText" && b.enabled !== false)) {
+    if (!block.text?.trim()) continue
+    const size = block.fontSize || bodySize
+    y -= 8
+    y = drawLines(
+      page,
+      font,
+      wrapText(block.text, font, size, contentWidth),
+      margin,
+      y,
+      size,
+      size + 3,
+      block.color ? hexToRgb(block.color) : rgb(0.25, 0.25, 0.25)
     )
   }
 
   y -= 16
 
-  const qrSize = 160
-  const qrPng = await QRCode.toBuffer(input.token, {
-    type: "png",
-    width: 400,
-    margin: 1,
-    errorCorrectionLevel: "M",
-  })
-  const qrImage = await pdf.embedPng(qrPng)
-  page.drawImage(qrImage, {
-    x: (page.getWidth() - qrSize) / 2,
-    y: y - qrSize,
-    width: qrSize,
-    height: qrSize,
-  })
-  y -= qrSize + 12
+  if (enabled("qrCode")) {
+    const qrSize = 160
+    const qrPng = await QRCode.toBuffer(input.token, {
+      type: "png",
+      width: 400,
+      margin: 1,
+      errorCorrectionLevel: "M",
+    })
+    const qrImage = await pdf.embedPng(qrPng)
+    page.drawImage(qrImage, {
+      x: (page.getWidth() - qrSize) / 2,
+      y: y - qrSize,
+      width: qrSize,
+      height: qrSize,
+    })
+    y -= qrSize + 12
+  }
 
-  const shortToken = input.token.slice(0, 8).toUpperCase()
-  drawLines(
-    page,
-    font,
-    [
+  if (enabled("footer") || layout.showPageNumbers) {
+    const shortToken = input.token.slice(0, 8).toUpperCase()
+    const footerLines = [
       `Jegykód: ${shortToken}`,
       `Foglalás: ${input.bookingId.slice(-8).toUpperCase()}`,
-      `${input.pageIndex}/${input.pageCount}`,
-    ],
-    MARGIN,
-    MARGIN + 24,
-    9,
-    12,
-    rgb(0.5, 0.5, 0.5)
-  )
+    ]
+    if (layout.showPageNumbers) {
+      footerLines.push(`${input.pageIndex}/${input.pageCount}`)
+    }
+    const customFooter = enabled("footer")?.text?.trim()
+    if (customFooter) footerLines.push(customFooter)
+    else footerLines.push("Mutassa be ezt a QR-kódot a beléptetésnél.")
 
-  drawLines(
-    page,
-    font,
-    ["Mutassa be ezt a QR-kódot a beléptetésnél."],
-    MARGIN,
-    MARGIN,
-    8,
-    10,
-    rgb(0.55, 0.55, 0.55)
-  )
+    drawLines(
+      page,
+      font,
+      footerLines,
+      margin,
+      margin + 36,
+      enabled("footer")?.fontSize || 9,
+      12,
+      rgb(0.5, 0.5, 0.5)
+    )
+  }
 }
 
 /** Build a multi-page voucher PDF — one page per guest. */
@@ -281,10 +357,27 @@ export async function buildVoucherPdf(input: BuildVoucherPdfInput): Promise<Uint
   const pdf = await PDFDocument.create()
   pdf.registerFontkit(fontkit)
   const font = await pdf.embedFont(fontBytes)
+  const layout = normalizeVoucherPdfLayout(input.layout)
+
+  // Ensure subtitle (participant name) exists in older layouts
+  if (!layout.blocks.some((b) => b.type === "subtitle")) {
+    const titleIdx = layout.blocks.findIndex((b) => b.type === "title")
+    layout.blocks.splice(titleIdx + 1, 0, {
+      id: "subtitle",
+      type: "subtitle",
+      enabled: true,
+    })
+  }
 
   const pageCount = input.pages.length
   for (let i = 0; i < pageCount; i += 1) {
-    await drawVoucherPage(pdf, font, { ...input.pages[i], pageIndex: i + 1, pageCount }, input.headerImage)
+    await drawVoucherPage(
+      pdf,
+      font,
+      { ...input.pages[i], pageIndex: i + 1, pageCount },
+      input.headerImage,
+      layout
+    )
   }
 
   return pdf.save()

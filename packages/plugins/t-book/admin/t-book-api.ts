@@ -56,12 +56,22 @@ export type AdminEvent = {
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   attendeeFieldSchemaMode: "extend" | "replace"
-  eligibilityPreset: "none" | "under18" | "under18_female" | "women" | "custom"
+  eligibilityPreset: "none" | "under18" | "under18_female" | "women" | "custom" | "form_rules"
   eligibilityMinAge: number | null
   eligibilityMaxAge: number | null
   eligibilityAllowedGenders: string[]
   eligibilityBirthDateFieldKey: string | null
   eligibilityGenderFieldKey: string | null
+  eligibilityFormRules: {
+    logic: "and" | "or"
+    rules: Array<{
+      id: string
+      fieldKey: string
+      op: string
+      value: string
+      message?: string
+    }>
+  } | null
   status: "draft" | "active" | "archived"
   sortOrder: number
 }

@@ -1,6 +1,40 @@
 import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "./attendee-fields"
 
-export type TBookEligibilityPreset = "none" | "under18" | "under18_female" | "women" | "custom"
+export type TBookEligibilityPreset =
+  | "none"
+  | "under18"
+  | "under18_female"
+  | "women"
+  | "custom"
+  | "form_rules"
+
+export type TBookEligibilityMatchOp =
+  | "equals"
+  | "not_equals"
+  | "contains"
+  | "regex"
+  | "min"
+  | "max"
+  | "min_age"
+  | "max_age"
+  | "in"
+  | "not_in"
+
+export type TBookEligibilityRule = {
+  id: string
+  fieldKey: string
+  op: TBookEligibilityMatchOp
+  /** Comparison value (string/number). For `in`/`not_in`, comma-separated. */
+  value: string
+  /** Shown when the rule fails. */
+  message?: string
+}
+
+export type TBookEligibilityRulesConfig = {
+  /** Logical combination of rules. */
+  logic: "and" | "or"
+  rules: TBookEligibilityRule[]
+}
 
 export type TBookEligibilityRules = {
   minAge: number | null
@@ -8,6 +42,7 @@ export type TBookEligibilityRules = {
   allowedGenders: string[] | null
   birthDateFieldKey: string | null
   genderFieldKey: string | null
+  formRules: TBookEligibilityRulesConfig | null
 }
 
 export type EligibilityEventLike = {
@@ -17,6 +52,7 @@ export type EligibilityEventLike = {
   eligibilityAllowedGenders?: string[] | null
   eligibilityBirthDateFieldKey?: string | null
   eligibilityGenderFieldKey?: string | null
+  eligibilityFormRules?: TBookEligibilityRulesConfig | null
   startDate?: Date | string
 }
 
@@ -88,9 +124,28 @@ function detectGenderField(schemas: TBookAttendeeFieldDef[]): string | null {
   return null
 }
 
+function normalizeFormRules(
+  raw: TBookEligibilityRulesConfig | null | undefined
+): TBookEligibilityRulesConfig | null {
+  if (!raw || !Array.isArray(raw.rules) || raw.rules.length === 0) return null
+  const rules = raw.rules
+    .filter((r) => r && typeof r === "object" && String(r.fieldKey || "").trim())
+    .map((r, i) => ({
+      id: String(r.id || `rule-${i}`),
+      fieldKey: String(r.fieldKey).trim(),
+      op: (r.op || "equals") as TBookEligibilityMatchOp,
+      value: r.value != null ? String(r.value) : "",
+      message: r.message != null ? String(r.message) : undefined,
+    }))
+  if (rules.length === 0) return null
+  return { logic: raw.logic === "or" ? "or" : "and", rules }
+}
+
 export function resolveEligibilityRules(event: EligibilityEventLike): TBookEligibilityRules | null {
   const preset = event.eligibilityPreset ?? "none"
   if (preset === "none") return null
+
+  const formRules = normalizeFormRules(event.eligibilityFormRules)
 
   const custom = {
     minAge: event.eligibilityMinAge ?? null,
@@ -101,6 +156,7 @@ export function resolveEligibilityRules(event: EligibilityEventLike): TBookEligi
         : null,
     birthDateFieldKey: event.eligibilityBirthDateFieldKey?.trim() || null,
     genderFieldKey: event.eligibilityGenderFieldKey?.trim() || null,
+    formRules,
   }
 
   switch (preset) {
@@ -110,17 +166,91 @@ export function resolveEligibilityRules(event: EligibilityEventLike): TBookEligi
       return { ...custom, maxAge: 17, minAge: null, allowedGenders: ["female"] }
     case "women":
       return { ...custom, minAge: 18, maxAge: null, allowedGenders: ["female"] }
+    case "form_rules":
+      if (!formRules) return null
+      return {
+        minAge: null,
+        maxAge: null,
+        allowedGenders: null,
+        birthDateFieldKey: custom.birthDateFieldKey,
+        genderFieldKey: custom.genderFieldKey,
+        formRules,
+      }
     case "custom":
       if (
         custom.minAge == null &&
         custom.maxAge == null &&
-        !custom.allowedGenders?.length
+        !custom.allowedGenders?.length &&
+        !formRules
       ) {
         return null
       }
       return custom
     default:
       return null
+  }
+}
+
+function listValues(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+function evaluateFormRule(
+  rule: TBookEligibilityRule,
+  fields: Record<string, string | number>,
+  fieldDefs: TBookAttendeeFieldDef[],
+  referenceDate: Date
+): boolean {
+  const raw = fields[rule.fieldKey]
+  const asString = raw == null ? "" : String(raw).trim()
+  const def = fieldDefs.find((f) => f.key === rule.fieldKey)
+  const expected = rule.value
+
+  switch (rule.op) {
+    case "equals":
+      return asString.toLowerCase() === expected.trim().toLowerCase()
+    case "not_equals":
+      return asString.toLowerCase() !== expected.trim().toLowerCase()
+    case "contains":
+      return asString.toLowerCase().includes(expected.trim().toLowerCase())
+    case "regex": {
+      try {
+        return new RegExp(expected).test(asString)
+      } catch {
+        return false
+      }
+    }
+    case "min": {
+      const n = Number(asString)
+      const min = Number(expected)
+      return Number.isFinite(n) && Number.isFinite(min) && n >= min
+    }
+    case "max": {
+      const n = Number(asString)
+      const max = Number(expected)
+      return Number.isFinite(n) && Number.isFinite(max) && n <= max
+    }
+    case "min_age":
+    case "max_age": {
+      const birth =
+        def?.type === "date" || def?.type === "number"
+          ? parseBirthDate(raw)
+          : parseBirthDate(asString)
+      if (!birth) return false
+      const age = ageOnDate(birth, referenceDate)
+      const bound = Number(expected)
+      if (!Number.isFinite(bound)) return false
+      return rule.op === "min_age" ? age >= bound : age <= bound
+    }
+    case "in":
+      return listValues(expected).includes(asString.toLowerCase())
+    case "not_in":
+      return !listValues(expected).includes(asString.toLowerCase())
+    default:
+      return true
   }
 }
 
@@ -224,7 +354,40 @@ export function validateEligibility(
             playerIndex: row.playerIndex,
             message: `${prefix}: ez az esemény csak női résztvevők számára nyitott.`,
           })
+        } else if (!femaleOnly) {
+          const allowed = new Set(rules.allowedGenders.map(normalizeGender))
+          if (!allowed.has(normalizeGender(String(raw)))) {
+            issues.push({
+              ticketIndex: row.ticketIndex,
+              playerIndex: row.playerIndex,
+              message: `${prefix}: a megadott nem nem engedélyezett ennél az eseménynél.`,
+            })
+          }
         }
+      }
+    }
+
+    if (rules.formRules) {
+      const results = rules.formRules.rules.map((rule) => {
+        const ok = evaluateFormRule(rule, row.fields, allSchemas, referenceDate)
+        return { rule, ok }
+      })
+      const passes =
+        rules.formRules.logic === "or"
+          ? results.some((r) => r.ok)
+          : results.every((r) => r.ok)
+
+      if (!passes) {
+        const failed = results.filter((r) => !r.ok)
+        const detail =
+          failed[0]?.rule.message ||
+          failed.map((f) => `${f.rule.fieldKey} ${f.rule.op} ${f.rule.value}`).join("; ") ||
+          "űrlap feltételek"
+        issues.push({
+          ticketIndex: row.ticketIndex,
+          playerIndex: row.playerIndex,
+          message: `${prefix}: nem felel meg a belépési feltételeknek (${detail}).`,
+        })
       }
     }
   }
@@ -237,5 +400,25 @@ export const ELIGIBILITY_PRESET_LABELS: Record<TBookEligibilityPreset, string> =
   under18: "U18 (18 év alatti)",
   under18_female: "U18 lányok",
   women: "Női verseny (18+)",
-  custom: "Egyedi szabályok",
+  custom: "Egyedi kor / nem",
+  form_rules: "Űrlap mező szabályok",
+}
+
+export const ELIGIBILITY_OP_LABELS: Record<TBookEligibilityMatchOp, string> = {
+  equals: "Egyenlő",
+  not_equals: "Nem egyenlő",
+  contains: "Tartalmazza",
+  regex: "Regex",
+  min: "Minimum érték",
+  max: "Maximum érték",
+  min_age: "Minimum életkor (dátum mező)",
+  max_age: "Maximum életkor (dátum mező)",
+  in: "Egyik érték (vesszővel)",
+  not_in: "Nem ezek közül",
+}
+
+export function normalizeEligibilityFormRules(
+  raw: unknown
+): TBookEligibilityRulesConfig | null {
+  return normalizeFormRules(raw as TBookEligibilityRulesConfig)
 }

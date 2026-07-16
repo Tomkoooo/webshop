@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Puzzle,
+  Settings,
   Shield,
   ShoppingCart,
   Users,
@@ -83,13 +84,20 @@ export function AdminSidebar({
 
   const onLinkClick = useCallback(() => setOpenMobile(false), [setOpenMobile])
 
+  const orgOnly = multiTenantAdmin && !isSystemAdmin
+
   const primaryItems = useMemo(
     () =>
-      filterAdminNavItems(adminPrimaryItems, { enabledFeatures, shopEnabled }).filter((item) => {
+      filterAdminNavItems(adminPrimaryItems, {
+        enabledFeatures,
+        shopEnabled,
+        multiTenantOrgOnly: orgOnly,
+      }).filter((item) => {
+        if (orgOnly) return false
         if (shopEnabled) return true
         return item.href !== "/admin" && item.href !== "/admin/stats"
       }),
-    [enabledFeatures, shopEnabled]
+    [enabledFeatures, shopEnabled, orgOnly]
   )
 
   const visibleGroups = useMemo(
@@ -97,10 +105,14 @@ export function AdminSidebar({
       adminNavGroups
         .map((group) => ({
           ...group,
-          items: filterAdminNavItems(group.items, { enabledFeatures, shopEnabled }),
+          items: filterAdminNavItems(group.items, {
+            enabledFeatures,
+            shopEnabled,
+            multiTenantOrgOnly: orgOnly,
+          }),
         }))
         .filter((group) => group.items.length > 0),
-    [enabledFeatures, shopEnabled]
+    [enabledFeatures, shopEnabled, orgOnly]
   )
 
   const flattenedPluginItems =
@@ -111,7 +123,8 @@ export function AdminSidebar({
   const primaryHrefs = primaryItems.map((i) => i.href)
 
   const contentModeItems: AdminSidebarNavItem[] = []
-  if (!shopEnabled && contentModeNav && flattenedPluginItems.length === 0) {
+  // Org-only tenants use plugin nav + org settings — not site CMS content-mode chrome.
+  if (!orgOnly && !shopEnabled && contentModeNav && flattenedPluginItems.length === 0) {
     contentModeItems.push({
       href: contentModeNav.overviewHref,
       label: contentModeNav.overviewLabel,
@@ -171,10 +184,24 @@ export function AdminSidebar({
                   </SidebarMenuItem>
                 ) : null}
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/org")}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      pathname.startsWith("/admin/org/members") ||
+                      pathname.startsWith("/admin/org/roles")
+                    }
+                  >
                     <Link href="/admin/org/members" onClick={onLinkClick}>
                       <Users className="size-4" />
-                      <span>Szervezet</span>
+                      <span>Tagok</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/org/settings")}>
+                    <Link href="/admin/org/settings" onClick={onLinkClick}>
+                      <Settings className="size-4" />
+                      <span>Szervezet beállítások</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

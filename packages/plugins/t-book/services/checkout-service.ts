@@ -1,7 +1,6 @@
 import mongoose from "mongoose"
 import dbConnect from "@wse/core/lib/db"
-import { FeatureFlagService } from "@wse/core/services/feature-flags"
-import { getAppBaseUrl, getStripeClient } from "@wse/core/services/stripe"
+import { getAppBaseUrl } from "@wse/core/services/stripe"
 import {
   clampReservationTtlMs,
   reservationEndsAt,
@@ -9,6 +8,7 @@ import {
 } from "@wse/core/services/reservation-ttl"
 import TBookBooking from "../models/TBookBooking"
 import { normalizeTBookCurrency, stripeCurrencyCode, toStripeUnitAmount } from "../lib/currency"
+import { assertOrgStripeReady, getOrgStripeClient } from "../lib/org-integrations"
 import { TBookBookingService } from "./booking-service"
 import type { CreateBookingInput } from "../lib/schemas"
 
@@ -19,11 +19,6 @@ async function resolveCheckoutCurrency(booking: { currency?: string | null }) {
 }
 
 export class TBookCheckoutService {
-  static async assertStripeEnabled() {
-    const enabled = await FeatureFlagService.isEnabled("stripePayments", false)
-    if (!enabled) throw new Error("A Stripe fizetés jelenleg nem elérhető.")
-  }
-
   /**
    * Full public booking flow: validate + price server-side, persist a pending
    * booking, then return a Stripe Checkout URL. Secrets never leave the server.
@@ -32,17 +27,18 @@ export class TBookCheckoutService {
     input: CreateBookingInput,
     opts?: { groupId?: mongoose.Types.ObjectId; returnBaseUrl?: string }
   ) {
-    await TBookCheckoutService.assertStripeEnabled()
-
     const booking = await TBookBookingService.createPendingBooking(input, {
       groupId: opts?.groupId,
     })
+
+    const organizationId = booking.organizationId ? String(booking.organizationId) : null
+    await assertOrgStripeReady(organizationId)
 
     const now = new Date()
     const ttlMs = clampReservationTtlMs(null)
     const expiresAt = reservationEndsAt(now, ttlMs)
 
-    const stripe = getStripeClient()
+    const stripe = await getOrgStripeClient(organizationId)
     const storefrontBase =
       booking.checkoutReturnBaseUrl?.trim() ||
       input.returnBaseUrl?.trim() ||
@@ -54,7 +50,7 @@ export class TBookCheckoutService {
 
     const description = [
       `${booking.guests} fő`,
-      booking.hotelName ? `${booking.hotelName}, ${booking.nights} éj` : "csak jegy",
+      booking.hotelName ? `${booking.hotelName}, ${booking.nights} éj` : "csak belépő",
     ].join(" · ")
 
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -65,11 +61,13 @@ export class TBookCheckoutService {
       metadata: {
         tBookBookingId: bookingId,
         checkoutKind: TBOOK_CHECKOUT_KIND,
+        tBookOrganizationId: organizationId ?? "",
       },
       payment_intent_data: {
         metadata: {
           tBookBookingId: bookingId,
           checkoutKind: TBOOK_CHECKOUT_KIND,
+          tBookOrganizationId: organizationId ?? "",
         },
       },
       line_items: [
@@ -129,7 +127,9 @@ export class TBookCheckoutService {
       booking.status !== "paid" &&
       booking.status !== "confirmed"
     ) {
-      const stripe = getStripeClient()
+      const stripe = await getOrgStripeClient(
+        booking.organizationId ? String(booking.organizationId) : null
+      )
       const checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId)
       if (checkoutSession.payment_status === "paid") {
         await TBookCheckoutService.finalizeBookingFromStripeSession(checkoutSession)

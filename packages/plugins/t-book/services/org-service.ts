@@ -145,13 +145,185 @@ export class TBookOrgService {
 
   static async updateOrgSettings(
     organizationId: string,
-    patch: { name?: string; currency?: string }
+    patch: {
+      name?: string
+      currency?: string
+      stripe?: {
+        enabled?: boolean
+        secretKey?: string
+        webhookSecret?: string
+        publishableKey?: string
+        clearSecretKey?: boolean
+        clearWebhookSecret?: boolean
+      }
+      smtp?: {
+        host?: string
+        port?: number
+        user?: string
+        pass?: string
+        fromEmail?: string
+        fromName?: string
+        clearPass?: boolean
+      }
+      szamlazz?: {
+        enabled?: boolean
+        agentKey?: string
+        sellerName?: string
+        sellerBank?: string
+        sellerBankAccount?: string
+        vatPercent?: number
+        clearAgentKey?: boolean
+      }
+      emailTemplates?: {
+        bookingConfirmation?: { subject: string; body: string } | null
+        voucherDelivery?: { subject: string; body: string } | null
+      }
+      voucherPdfLayout?: unknown
+    }
   ): Promise<void> {
     await dbConnect()
+    const { encryptOrgSecret } = await import("../lib/org-secrets")
+    const { normalizeVoucherPdfLayout } = await import("../lib/voucher-pdf-layout")
+
     const update: Record<string, unknown> = {}
     if (patch.name !== undefined) update.name = patch.name.trim()
-    if (patch.currency !== undefined) update["settings.currency"] = normalizeTBookCurrency(patch.currency)
+    if (patch.currency !== undefined) {
+      update["settings.currency"] = normalizeTBookCurrency(patch.currency)
+    }
+
+    if (patch.stripe) {
+      if (patch.stripe.enabled !== undefined) {
+        update["settings.stripe.enabled"] = Boolean(patch.stripe.enabled)
+      }
+      if (patch.stripe.publishableKey !== undefined) {
+        update["settings.stripe.publishableKey"] = String(patch.stripe.publishableKey).trim()
+      }
+      if (patch.stripe.clearSecretKey) update["settings.stripe.secretKeyEnc"] = ""
+      else if (patch.stripe.secretKey?.trim()) {
+        update["settings.stripe.secretKeyEnc"] = encryptOrgSecret(patch.stripe.secretKey)
+      }
+      if (patch.stripe.clearWebhookSecret) update["settings.stripe.webhookSecretEnc"] = ""
+      else if (patch.stripe.webhookSecret?.trim()) {
+        update["settings.stripe.webhookSecretEnc"] = encryptOrgSecret(patch.stripe.webhookSecret)
+      }
+    }
+
+    if (patch.smtp) {
+      if (patch.smtp.host !== undefined) update["settings.smtp.host"] = String(patch.smtp.host).trim()
+      if (patch.smtp.port !== undefined) update["settings.smtp.port"] = Number(patch.smtp.port) || 587
+      if (patch.smtp.user !== undefined) update["settings.smtp.user"] = String(patch.smtp.user).trim()
+      if (patch.smtp.fromEmail !== undefined) {
+        update["settings.smtp.fromEmail"] = String(patch.smtp.fromEmail).trim()
+      }
+      if (patch.smtp.fromName !== undefined) {
+        update["settings.smtp.fromName"] = String(patch.smtp.fromName).trim()
+      }
+      if (patch.smtp.clearPass) update["settings.smtp.passEnc"] = ""
+      else if (patch.smtp.pass?.trim()) {
+        update["settings.smtp.passEnc"] = encryptOrgSecret(patch.smtp.pass)
+      }
+    }
+
+    if (patch.szamlazz) {
+      if (patch.szamlazz.enabled !== undefined) {
+        update["settings.szamlazz.enabled"] = Boolean(patch.szamlazz.enabled)
+      }
+      if (patch.szamlazz.sellerName !== undefined) {
+        update["settings.szamlazz.sellerName"] = String(patch.szamlazz.sellerName).trim()
+      }
+      if (patch.szamlazz.sellerBank !== undefined) {
+        update["settings.szamlazz.sellerBank"] = String(patch.szamlazz.sellerBank).trim()
+      }
+      if (patch.szamlazz.sellerBankAccount !== undefined) {
+        update["settings.szamlazz.sellerBankAccount"] = String(patch.szamlazz.sellerBankAccount).trim()
+      }
+      if (patch.szamlazz.vatPercent !== undefined) {
+        update["settings.szamlazz.vatPercent"] = Number(patch.szamlazz.vatPercent) || 27
+      }
+      if (patch.szamlazz.clearAgentKey) update["settings.szamlazz.agentKeyEnc"] = ""
+      else if (patch.szamlazz.agentKey?.trim()) {
+        update["settings.szamlazz.agentKeyEnc"] = encryptOrgSecret(patch.szamlazz.agentKey)
+      }
+    }
+
+    if (patch.emailTemplates) {
+      if (patch.emailTemplates.bookingConfirmation !== undefined) {
+        update["settings.emailTemplates.bookingConfirmation"] =
+          patch.emailTemplates.bookingConfirmation
+      }
+      if (patch.emailTemplates.voucherDelivery !== undefined) {
+        update["settings.emailTemplates.voucherDelivery"] = patch.emailTemplates.voucherDelivery
+      }
+    }
+
+    if (patch.voucherPdfLayout !== undefined) {
+      update["settings.voucherPdfLayout"] = normalizeVoucherPdfLayout(
+        patch.voucherPdfLayout as Parameters<typeof normalizeVoucherPdfLayout>[0]
+      )
+    }
+
     await TBookOrganization.updateOne({ _id: oid(organizationId) }, { $set: update })
+  }
+
+  static async getOrgSettingsPublic(organizationId: string) {
+    await dbConnect()
+    const org = await TBookOrganization.findById(oid(organizationId)).lean()
+    if (!org) return null
+    const { maskSecret } = await import("../lib/org-secrets")
+    const { normalizeVoucherPdfLayout, DEFAULT_VOUCHER_PDF_LAYOUT } = await import(
+      "../lib/voucher-pdf-layout"
+    )
+    const { buildTBookEmailTemplateSeeds } = await import("../lib/email-templates")
+
+    const stripe = org.settings?.stripe
+    const smtp = org.settings?.smtp
+    const szamlazz = org.settings?.szamlazz
+    const defaults = buildTBookEmailTemplateSeeds(org.name)
+
+    return {
+      id: String(org._id),
+      name: org.name,
+      slug: org.slug,
+      status: org.status,
+      settings: {
+        currency: org.settings?.currency || "HUF",
+        stripe: {
+          enabled: Boolean(stripe?.enabled),
+          publishableKey: stripe?.publishableKey || "",
+          secretKey: maskSecret(stripe?.secretKeyEnc),
+          webhookSecret: maskSecret(stripe?.webhookSecretEnc),
+        },
+        smtp: {
+          host: smtp?.host || "",
+          port: smtp?.port || 587,
+          user: smtp?.user || "",
+          fromEmail: smtp?.fromEmail || "",
+          fromName: smtp?.fromName || "",
+          pass: maskSecret(smtp?.passEnc),
+        },
+        szamlazz: {
+          enabled: Boolean(szamlazz?.enabled),
+          sellerName: szamlazz?.sellerName || "",
+          sellerBank: szamlazz?.sellerBank || "",
+          sellerBankAccount: szamlazz?.sellerBankAccount || "",
+          vatPercent: szamlazz?.vatPercent ?? 27,
+          agentKey: maskSecret(szamlazz?.agentKeyEnc),
+        },
+        emailTemplates: {
+          bookingConfirmation: org.settings?.emailTemplates?.bookingConfirmation || {
+            subject: defaults[0]?.subject || "",
+            body: defaults[0]?.body || "",
+          },
+          voucherDelivery: org.settings?.emailTemplates?.voucherDelivery || {
+            subject: defaults[1]?.subject || "",
+            body: defaults[1]?.body || "",
+          },
+        },
+        voucherPdfLayout: normalizeVoucherPdfLayout(
+          org.settings?.voucherPdfLayout ?? DEFAULT_VOUCHER_PDF_LAYOUT
+        ),
+      },
+    }
   }
 
   // ---- Members ------------------------------------------------------------
@@ -174,7 +346,15 @@ export class TBookOrgService {
       userId: String(m.userId),
       status: m.status,
       user: userMap.get(String(m.userId)) ?? null,
-      roles: (m.roleIds ?? []).map((rid) => roleMap.get(String(rid))).filter(Boolean),
+      roles: (m.roleIds ?? [])
+        .map((rid) => roleMap.get(String(rid)))
+        .filter((r): r is NonNullable<typeof r> => Boolean(r))
+        .map((r) => ({
+          id: String(r._id),
+          name: r.name,
+          permissions: r.permissions ?? [],
+          isBuiltIn: Boolean(r.isBuiltIn),
+        })),
       createdAt: m.createdAt,
     }))
   }

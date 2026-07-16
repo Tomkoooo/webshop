@@ -143,7 +143,11 @@ export async function issueVouchersForBooking(bookingId: string): Promise<string
     pageCount: tokens.length,
   }))
 
-  const pdfBytes = await buildVoucherPdf({ headerImage, pages: pdfPages })
+  const { resolveOrgVoucherPdfLayout } = await import("../lib/org-integrations")
+  const layout = await resolveOrgVoucherPdfLayout(
+    booking.organizationId ? String(booking.organizationId) : null
+  )
+  const pdfBytes = await buildVoucherPdf({ headerImage, pages: pdfPages, layout })
   const pdfFileName = await MediaService.processUpload(
     Buffer.from(pdfBytes),
     `voucher-${bookingId}.pdf`,
@@ -179,6 +183,7 @@ export async function issueVouchersForBooking(bookingId: string): Promise<string
     guests: booking.guests,
     pdfBuffer,
     pdfFilename: `jegy-${bookingId.slice(-8)}.pdf`,
+    organizationId: booking.organizationId ? String(booking.organizationId) : null,
   })
   const now = new Date()
   await TBookVoucher.updateMany(
@@ -391,6 +396,7 @@ export async function sendVoucherById(
     guests: booking.guests,
     pdfBuffer,
     pdfFilename: `jegy-${voucher.displayName.replace(/\s+/g, "-").slice(0, 24)}.pdf`,
+    organizationId: booking.organizationId ? String(booking.organizationId) : null,
     logContext: { voucherId, manualSend: true },
   })
 
@@ -441,6 +447,7 @@ export async function sendBookingVouchers(
     guests: booking.guests,
     pdfBuffer,
     pdfFilename: `jegy-${bookingId.slice(-8)}.pdf`,
+    organizationId: booking.organizationId ? String(booking.organizationId) : null,
     logContext: { manualSend: true },
   })
 

@@ -1,16 +1,28 @@
 import { logMailer } from "@wse/core/lib/mailer-log"
-import { MailerService } from "@wse/core/services/mailer"
 import type { ITBookBooking } from "../models/TBookBooking"
+import { formatTBookMoney } from "./currency"
+import { sendOrgTemplatedEmail } from "./org-integrations"
 
 export async function sendBookingConfirmationEmail(
   booking: Pick<
     ITBookBooking,
-    "_id" | "customer" | "eventName" | "hotelName" | "guests" | "nights" | "totalHuf"
+    | "_id"
+    | "customer"
+    | "eventName"
+    | "hotelName"
+    | "guests"
+    | "nights"
+    | "totalHuf"
+    | "currency"
+    | "organizationId"
   >
 ) {
   const bookingId = String(booking._id)
+  const currency = booking.currency || "HUF"
+  const totalFormatted = formatTBookMoney(booking.totalHuf, currency)
   try {
-    await MailerService.sendEmail({
+    await sendOrgTemplatedEmail({
+      organizationId: booking.organizationId ? String(booking.organizationId) : null,
       to: booking.customer.email,
       templateType: "t_book_booking_confirmation",
       data: {
@@ -20,13 +32,10 @@ export async function sendBookingConfirmationEmail(
         hotelName: booking.hotelName || "—",
         guests: booking.guests,
         nights: booking.nights || 0,
-        totalHuf: booking.totalHuf.toLocaleString("hu-HU"),
+        totalHuf: totalFormatted,
+        total: totalFormatted,
+        currency,
         bookingId,
-      },
-      logContext: {
-        flow: "t_book_booking_confirmation",
-        bookingId,
-        pluginId: "t-book",
       },
     })
   } catch (error) {

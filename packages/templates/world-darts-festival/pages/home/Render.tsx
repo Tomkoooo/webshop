@@ -224,7 +224,12 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
 
   const sections: Record<WdfHomeSectionId, ReactNode> = {
     hero: (
-      <section className="relative flex min-h-[min(90svh,720px)] items-end overflow-hidden wdf-hero-glow">
+      <section
+        className={cn(
+          "relative flex min-h-[min(90svh,720px)] items-end wdf-hero-glow",
+          edit.enabled ? "overflow-visible" : "overflow-hidden"
+        )}
+      >
         <CmsImage
           path="hero.heroImage"
           src={c.hero.heroImage}
@@ -236,7 +241,14 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           usageLabel="Hero kép"
         />
         <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/70 to-background/20" />
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 pt-32 sm:pb-16">
+        <div
+          className={cn(
+            "relative z-10 mx-auto w-full max-w-6xl px-4 pb-12 pt-32 sm:pb-16",
+            // Let hero image CMS controls receive hover/clicks under this layer.
+            edit.enabled &&
+              "pointer-events-none [&_.cms-inline-edit-field]:pointer-events-auto [&_.cms-editable-cta-wrap]:pointer-events-auto"
+          )}
+        >
           <Reveal mode="mount" variant="fade" delayMs={0}>
             <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
               <EditableDocText path="hero.tagline" value={c.hero.tagline} />
@@ -597,7 +609,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                   src={logo.image}
                   alt={logo.name}
                   className="w-full max-w-[160px]"
-                  imageClassName="mx-auto h-12 w-auto max-w-[160px] object-contain opacity-80 grayscale transition hover:opacity-100 hover:grayscale-0"
+                  imageClassName="mx-auto h-12 w-auto max-w-[160px] object-contain opacity-80 transition hover:opacity-100"
                   width={160}
                   height={48}
                   usageLabel="Sponsor logo"
