@@ -9,10 +9,24 @@ export type HeadcountEventLike = {
   attendeeFieldSchema?: TBookAttendeeFieldDef[]
 }
 
-/** Fixed player roster size per ticket/team (default 1). */
+/**
+ * Players / hotel guests per ticket.
+ * - Explicit `playersPerTicket` (e.g. pair = 2)
+ * - Team events: fall back to `teamMemberLimit` when set
+ * - Otherwise 1
+ */
 export function resolvePlayersPerTicket(event: HeadcountEventLike): number {
-  const n = event.playersPerTicket ?? 1
-  return Math.max(1, Math.min(100, Math.floor(n)))
+  const explicit = event.playersPerTicket
+  if (explicit != null && explicit > 1) {
+    return Math.max(1, Math.min(100, Math.floor(explicit)))
+  }
+  if ((event.registrationUnit ?? "person") === "team" && event.teamMemberLimit != null) {
+    return Math.max(1, Math.min(100, Math.floor(event.teamMemberLimit)))
+  }
+  if (explicit != null && explicit >= 1) {
+    return Math.max(1, Math.min(100, Math.floor(explicit)))
+  }
+  return 1
 }
 
 /** Ticket count × players per ticket — used for hotel/package capacity. */
@@ -32,13 +46,13 @@ export function playerFieldSchema(event: HeadcountEventLike): TBookAttendeeField
 }
 
 export function needsPlayerMemberForms(event: HeadcountEventLike): boolean {
-  if (!usesFixedPlayerRoster(event)) {
-    return (
-      (event.registrationUnit ?? "person") === "team" &&
-      (event.teamMemberFieldSchema?.length ?? 0) > 0
-    )
+  if (usesFixedPlayerRoster(event)) {
+    return playerFieldSchema(event).length > 0
   }
-  return playerFieldSchema(event).length > 0
+  return (
+    (event.registrationUnit ?? "person") === "team" &&
+    (event.teamMemberFieldSchema?.length ?? 0) > 0
+  )
 }
 
 export function playerRosterSize(event: HeadcountEventLike): number | null {

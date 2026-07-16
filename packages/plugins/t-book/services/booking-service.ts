@@ -28,7 +28,10 @@ import {
 } from "../lib/attendee-fields"
 import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
 import { mergeRegistrationFieldSchemas, resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
-import { accommodationGuestCount } from "../lib/registration-headcount"
+import {
+  accommodationGuestCount,
+  resolvePlayersPerTicket,
+} from "../lib/registration-headcount"
 import { validateEligibility } from "../lib/eligibility"
 
 function oid(id: string): mongoose.Types.ObjectId {
@@ -192,7 +195,7 @@ export class TBookBookingService {
 
     const registrationUnit = event.registrationUnit ?? "person"
     const teamMemberFieldSchema = normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? [])
-    const playersPerTicket = event.playersPerTicket ?? 1
+    const playersPerTicket = resolvePlayersPerTicket(event)
     const attendeeIssues = validateAttendees(
       registrationFieldSchema,
       parsed.guests,
@@ -247,7 +250,7 @@ export class TBookBookingService {
       attendeeFieldSchema: registrationFieldSchema,
       teamMemberFieldSchema,
       teamMemberLimit: event.teamMemberLimit ?? null,
-      playersPerTicket: event.playersPerTicket ?? 1,
+      playersPerTicket: resolvePlayersPerTicket(event),
       attendees,
       guests: parsed.guests,
       nights,

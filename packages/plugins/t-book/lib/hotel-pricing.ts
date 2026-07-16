@@ -318,27 +318,42 @@ export function guestPackageDeals(
   return matchingPackageDeals(normalized, nights ?? 1, roomTypeKey)
 }
 
-/** Package units required for a guest count (1 when maxGuests is unset). */
+/**
+ * Package units required for a guest count.
+ * Unset/null maxGuests defaults to 1 (one guest per package unit) so room
+ * packages scale with headcount — e.g. 4 guests → 4× single.
+ */
 export function packageUnitsForGuests(
   packageDeal: Pick<TBookPackageDeal, "maxGuests">,
   guests: number
 ): number {
-  const cap = packageDeal.maxGuests
-  if (cap == null || cap < 1) return 1
+  const cap =
+    packageDeal.maxGuests != null && packageDeal.maxGuests > 0
+      ? packageDeal.maxGuests
+      : 1
   return Math.max(1, Math.ceil(Math.max(1, guests) / cap))
+}
+
+export function packageDealCapacity(
+  packageDeal: Pick<TBookPackageDeal, "maxGuests">
+): number {
+  return packageDeal.maxGuests != null && packageDeal.maxGuests > 0
+    ? packageDeal.maxGuests
+    : 1
 }
 
 export function formatPackageDealCapacityLabel(
   packageDeal: Pick<TBookPackageDeal, "maxGuests">,
   guests?: number
 ): string | null {
-  const cap = packageDeal.maxGuests
-  if (cap == null || cap < 1) return null
-  if (guests != null && guests > cap) {
+  const cap = packageDealCapacity(packageDeal)
+  if (guests != null && guests > 0) {
     const units = packageUnitsForGuests(packageDeal, guests)
-    return `${units} csomag szükséges (${guests} fő, max ${cap} fő/csomag)`
+    if (units > 1) {
+      return `${units} packages needed (${guests} guests, max ${cap}/package)`
+    }
   }
-  return `Max ${cap} fő/csomag`
+  return `Max ${cap} guest${cap === 1 ? "" : "s"}/package`
 }
 
 export function parsePackageUnits(

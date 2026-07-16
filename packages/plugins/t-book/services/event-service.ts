@@ -7,11 +7,15 @@ import TBookBooking from "../models/TBookBooking"
 import TBookOrganization from "../models/TBookOrganization"
 import {
   eventGroupInputSchema,
+  eventGroupUpdateSchema,
   eventInputSchema,
+  eventUpdateSchema,
   hotelInputSchema,
   hotelInputUpdateSchema,
   type EventGroupInput,
+  type EventGroupUpdateInput,
   type EventInput,
+  type EventUpdateInput,
   type HotelInput,
   type HotelUpdateInput,
 } from "../lib/schemas"
@@ -96,14 +100,22 @@ export class TBookEventService {
     return group
   }
 
-  static async updateGroup(id: string, input: Partial<EventGroupInput>, organizationId?: string): Promise<void> {
-    const parsed = eventGroupInputSchema.partial().parse(input)
+  static async updateGroup(
+    id: string,
+    input: EventGroupUpdateInput | Partial<EventGroupInput>,
+    organizationId?: string
+  ): Promise<void> {
+    const parsed = eventGroupUpdateSchema.parse(input)
     await dbConnect()
     await assertGroupInOrg(id, organizationId)
-    const patch: Record<string, unknown> = { ...parsed }
+    const patch: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value !== undefined) patch[key] = value
+    }
     if (parsed.defaultAttendeeFieldSchema !== undefined) {
       patch.defaultAttendeeFieldSchema = normalizeAttendeeFieldSchema(parsed.defaultAttendeeFieldSchema)
     }
+    if (Object.keys(patch).length === 0) return
     await TBookEventGroup.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
 
@@ -189,15 +201,22 @@ export class TBookEventService {
     return event
   }
 
-  static async updateEvent(id: string, input: Partial<EventInput>, organizationId?: string): Promise<void> {
-    const parsed = eventInputSchema.partial().parse(input)
+  static async updateEvent(
+    id: string,
+    input: EventUpdateInput | Partial<EventInput>,
+    organizationId?: string
+  ): Promise<void> {
+    const parsed = eventUpdateSchema.parse(input)
     await dbConnect()
     const existing = await TBookEvent.findById(oid(id)).lean()
     if (!existing) throw new Error("Esemény nem található.")
     if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
       throw new Error("Az esemény nem tartozik ehhez a szervezethez.")
     }
-    const patch: Record<string, unknown> = { ...parsed }
+    const patch: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value !== undefined) patch[key] = value
+    }
     if (parsed.groupId !== undefined) {
       patch.groupId = parsed.groupId ? oid(parsed.groupId) : null
       if (parsed.groupId) await assertGroupInOrg(parsed.groupId, organizationId)
@@ -208,12 +227,10 @@ export class TBookEventService {
     if (parsed.teamMemberFieldSchema !== undefined) {
       patch.teamMemberFieldSchema = normalizeAttendeeFieldSchema(parsed.teamMemberFieldSchema)
     }
-    if (parsed.teamMemberLimit !== undefined) {
-      patch.teamMemberLimit = parsed.teamMemberLimit
-    }
     if (parsed.currency !== undefined) {
       patch.currency = normalizeTBookCurrency(parsed.currency)
     }
+    if (Object.keys(patch).length === 0) return
     await TBookEvent.updateOne({ _id: oid(id), ...orgFilter(organizationId) }, { $set: patch })
   }
 
@@ -338,8 +355,10 @@ export class TBookEventService {
     if (organizationId && existing.organizationId && String(existing.organizationId) !== organizationId) {
       throw new Error("A szállás nem tartozik ehhez a szervezethez.")
     }
-    const patch: Record<string, unknown> = { ...parsed }
-    delete patch.eventId
+    const patch: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value !== undefined && key !== "eventId") patch[key] = value
+    }
     if (parsed.pricing) {
       const normalized = assignPricingKeys(normalizeHotelPricing(parsed.pricing))
       patch.pricing = serializeHotelPricing(normalized)

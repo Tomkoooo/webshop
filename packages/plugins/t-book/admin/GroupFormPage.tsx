@@ -75,13 +75,10 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
       return
     }
     setSaving(true)
-    const payload = {
+    const listingPayload = {
       name: draft.name.trim(),
       description: draft.description,
       status: draft.status,
-      defaultBookingOptions: [],
-      defaultPriceBasis: "net" as const,
-      defaultVatPercent: 27,
       listOnTBookSite: draft.listOnTBookSite,
       listingTitle: draft.listingTitle.trim(),
       listingUrl: draft.listingUrl.trim(),
@@ -89,16 +86,22 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
     }
     try {
       if (isEdit && groupId) {
+        // Partial update only — never send defaults that would wipe voucher/hero/options.
         await tBookAdminApi(`groups/${groupId}`, {
           method: "PUT",
-          body: JSON.stringify(payload),
+          body: JSON.stringify(listingPayload),
         })
         toast.success("Csoport mentve")
         router.push(`/admin/plugins/t-book/groups/${groupId}`)
       } else {
         const result = await tBookAdminApi<{ apiKey: string; id: string }>("groups", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            ...listingPayload,
+            defaultBookingOptions: [],
+            defaultPriceBasis: "net" as const,
+            defaultVatPercent: 27,
+          }),
         })
         toast.success("Csoport létrehozva — add hozzá a szállásokat")
         if (result.apiKey) {

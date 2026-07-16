@@ -13,9 +13,9 @@ export type BillingFormState = {
 }
 
 const BILLING_TYPE_LABELS: Record<TBookBillingType, string> = {
-  personal: "Magánszemély",
-  company: "Cég / vállalkozás",
-  sport: "Sportegyesület / szervezet",
+  personal: "Personal",
+  company: "Company / business",
+  sport: "Sports club / organisation",
 }
 
 export function emptyBillingForm(customerName = ""): BillingFormState {
@@ -50,16 +50,16 @@ export function BookingBillingForm({
   const patch = (partial: Partial<BillingFormState>) => onChange({ ...billing, ...partial })
 
   return (
-    <div className="space-y-4 rounded-xl border border-border p-4">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold">Számlázási adatok</h3>
+        <h3 className="text-sm font-semibold">Billing details</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          A fizetés után ezekkel az adatokkal állítjuk ki a számlát.
+          Used for the invoice after successful payment.
         </p>
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Számla típusa</legend>
+        <legend className="text-sm font-medium">Invoice type</legend>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(BILLING_TYPE_LABELS) as TBookBillingType[]).map((type) => (
             <label
@@ -86,7 +86,7 @@ export function BookingBillingForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1 sm:col-span-2">
           <span className="text-sm font-medium">
-            {billing.billingType === "personal" ? "Számlázási név" : "Szervezet / cég neve"} *
+            {billing.billingType === "personal" ? "Billing name" : "Organisation / company name"} *
           </span>
           <input
             className={inputClassName}
@@ -96,7 +96,7 @@ export function BookingBillingForm({
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Irányítószám *</span>
+          <span className="text-sm font-medium">Postal code *</span>
           <input
             className={inputClassName}
             value={billing.zip}
@@ -105,7 +105,7 @@ export function BookingBillingForm({
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Város *</span>
+          <span className="text-sm font-medium">City *</span>
           <input
             className={inputClassName}
             value={billing.city}
@@ -114,7 +114,7 @@ export function BookingBillingForm({
           />
         </label>
         <label className="block space-y-1 sm:col-span-2">
-          <span className="text-sm font-medium">Utca, házszám *</span>
+          <span className="text-sm font-medium">Street address *</span>
           <input
             className={inputClassName}
             value={billing.street}
@@ -124,7 +124,7 @@ export function BookingBillingForm({
         </label>
         {billing.billingType === "company" ? (
           <label className="block space-y-1 sm:col-span-2">
-            <span className="text-sm font-medium">Adószám *</span>
+            <span className="text-sm font-medium">Tax number *</span>
             <input
               className={inputClassName}
               value={billing.taxNumber}
@@ -135,7 +135,7 @@ export function BookingBillingForm({
           </label>
         ) : billing.billingType === "sport" ? (
           <label className="block space-y-1 sm:col-span-2">
-            <span className="text-sm font-medium">Adószám / nyilvántartási szám (opcionális)</span>
+            <span className="text-sm font-medium">Tax / registration number (optional)</span>
             <input
               className={inputClassName}
               value={billing.taxNumber}

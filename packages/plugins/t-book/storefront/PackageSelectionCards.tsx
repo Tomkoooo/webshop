@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { BedDouble, Calendar, Users } from "lucide-react"
 import type { TBookPublicPackageDeal } from "./tbook-public-api"
 import { formatHuf } from "./tbook-public-api"
+import { packageUnitsForGuests } from "../lib/hotel-pricing"
 import type { PackageCombinationSuggestion } from "../lib/package-optimization"
 
 type Props = {
@@ -30,9 +31,9 @@ function groupPackagesByNights(packages: TBookPublicPackageDeal[]) {
 }
 
 function roomKindLabel(pkg: TBookPublicPackageDeal): string {
-  const cap = pkg.maxGuests ?? 1
-  if (cap >= 2) return "Kétágyas"
-  return "Egyágyas"
+  const cap = pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1
+  if (cap >= 2) return "Double / twin"
+  return "Single"
 }
 
 export function PackageSelectionCards({
@@ -73,15 +74,24 @@ export function PackageSelectionCards({
 
   return (
     <div className="space-y-5">
-      {suggestions.length > 1 ? (
+      <p className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        Prices below update for <strong className="text-foreground">{accommodationGuests}</strong>{" "}
+        hotel guest{accommodationGuests === 1 ? "" : "s"}.
+      </p>
+
+      {suggestions.length > 0 ? (
         <div className="space-y-2">
           <p className="text-sm font-medium">
-            Ajánlott elosztás ({accommodationGuests} fő szálláshoz)
+            Suggested room mix ({accommodationGuests} guests)
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {suggestions.map((suggestion) => {
               const selected =
                 activePackageUnits != null && JSON.stringify(activePackageUnits) === suggestion.id
+              const planTotal = Object.entries(suggestion.units).reduce((sum, [key, qty]) => {
+                const pkg = packages.find((p) => p.key === key)
+                return sum + (pkg?.priceHuf ?? 0) * qty
+              }, 0)
               return (
                 <button
                   key={suggestion.id}
@@ -91,7 +101,11 @@ export function PackageSelectionCards({
                 >
                   <p className="text-sm font-semibold">{suggestion.label}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {suggestion.totalUnits} szoba · {suggestion.totalCapacity} fő kapacitás
+                    {suggestion.totalUnits} room{suggestion.totalUnits === 1 ? "" : "s"} ·{" "}
+                    {suggestion.totalCapacity} guest capacity
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-foreground">
+                    {formatHuf(planTotal, displayCurrency)}
                   </p>
                 </button>
               )
@@ -104,13 +118,15 @@ export function PackageSelectionCards({
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-2">
             <Calendar className="size-4" aria-hidden />
-            Szállás időszaka
+            Stay length
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Stay length">
             {groups.map(([nights]) => (
               <button
                 key={nights}
                 type="button"
+                role="tab"
+                aria-selected={selectedNights === nights}
                 className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                   selectedNights === nights
                     ? "border-primary bg-primary/10 text-foreground"
@@ -118,7 +134,7 @@ export function PackageSelectionCards({
                 }`}
                 onClick={() => setSelectedNights(nights)}
               >
-                {nights} éj
+                {nights} night{nights === 1 ? "" : "s"}
               </button>
             ))}
           </div>
@@ -128,7 +144,7 @@ export function PackageSelectionCards({
       <div className="space-y-2">
         <p className="text-sm font-medium flex items-center gap-2">
           <BedDouble className="size-4" aria-hidden />
-          {packagesRequired ? "Válassz szobacsomagot" : "Szobacsomag (opcionális)"}
+          {packagesRequired ? "Choose a room package" : "Room package (optional)"}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {!packagesRequired ? (
@@ -137,18 +153,18 @@ export function PackageSelectionCards({
               className={cardClass(!packageDealKey && !activePackageUnits)}
               onClick={onClearPackage}
             >
-              <p className="text-sm font-semibold">Per-éjszaka ár</p>
-              <p className="mt-1 text-xs text-muted-foreground">Csomag nélkül, éjszakánkénti díj</p>
+              <p className="text-sm font-semibold">Per-night rate</p>
+              <p className="mt-1 text-xs text-muted-foreground">No package — nightly pricing</p>
             </button>
           ) : null}
           {packagesForPeriod.map((pkg) => {
+            const unitsNeeded = packageUnitsForGuests(pkg, accommodationGuests)
             const selected =
-              packageDealKey === pkg.key ||
-              (activePackageUnits != null && (activePackageUnits[pkg.key] ?? 0) > 0)
-            const unitsNeeded =
-              pkg.maxGuests != null && pkg.maxGuests > 0
-                ? Math.ceil(accommodationGuests / pkg.maxGuests)
-                : 1
+              (packageDealKey === pkg.key && !activePackageUnits) ||
+              (activePackageUnits != null &&
+                Object.keys(activePackageUnits).length === 1 &&
+                (activePackageUnits[pkg.key] ?? 0) === unitsNeeded)
+            const lineTotal = pkg.priceHuf * unitsNeeded
             return (
               <button
                 key={pkg.key}
@@ -160,19 +176,16 @@ export function PackageSelectionCards({
                 <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
                   <Users className="size-3.5" aria-hidden />
                   {roomKindLabel(pkg)}
-                  {pkg.maxGuests != null && pkg.maxGuests > 0 ? ` · max ${pkg.maxGuests} fő` : ""}
+                  {` · up to ${pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1} guest(s)`}
                 </p>
                 <p className="mt-2 text-sm font-medium text-foreground">
                   {formatHuf(pkg.priceHuf, displayCurrency)}
-                  {pkg.nights > 1 ? ` · ${pkg.nights} éj` : ""}
+                  {pkg.nights > 1 ? ` / ${pkg.nights} nights` : ""} each
                 </p>
-                {pkg.maxGuests != null && pkg.maxGuests > 0 && accommodationGuests > 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {unitsNeeded > 1
-                      ? `${unitsNeeded}× = ${formatHuf(pkg.priceHuf * unitsNeeded, displayCurrency)} összesen`
-                      : "1 szoba elegendő"}
-                  </p>
-                ) : null}
+                <p className="mt-1 text-xs font-medium text-foreground">
+                  {unitsNeeded}× room{unitsNeeded === 1 ? "" : "s"} ={" "}
+                  {formatHuf(lineTotal, displayCurrency)}
+                </p>
               </button>
             )
           })}

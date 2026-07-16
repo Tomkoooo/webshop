@@ -140,15 +140,15 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
         <XCircle className="mx-auto size-14 text-muted-foreground" aria-hidden />
-        <h1 className="mt-4 text-2xl font-bold">Fizetés megszakítva</h1>
+        <h1 className="mt-4 text-2xl font-bold">Payment cancelled</h1>
         <p className="mt-3 text-muted-foreground">
-          A fizetést megszakítottad. Ha mégis szeretnél foglalni, indítsd újra a folyamatot.
+          You cancelled the payment. To complete a booking, start the process again.
         </p>
         <Link
           href="/jegyek"
           className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
-          Vissza az eseményekhez
+          Back to events
         </Link>
       </div>
     )
@@ -170,7 +170,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
 
   const body = copy.successBody.replace("{bookingId}", bookingId ?? "—")
   const backHref = returnTo?.trim() || checkout?.returnBaseUrl?.trim() || "/jegyek"
-  const backLabel = backHref.includes("/jegyek") ? "Vissza a jegyekhez" : copy.successCta
+  const backLabel = backHref.includes("/jegyek") ? "Back to tickets" : copy.successCta
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
@@ -181,7 +181,8 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
       ) : null}
       <p className="mt-3 text-muted-foreground">{body}</p>
       <p className="mt-2 text-xs text-muted-foreground">
-        A visszaigazolást e-mailben is elküldjük{checkout?.invoiceReady ? ", a számlával együtt" : ""}.
+        A confirmation email is on its way
+        {checkout?.invoiceReady ? ", including your invoice" : ""}.
       </p>
 
       {downloadLinks && (checkout?.vouchersReady || checkout?.invoiceReady) ? (
@@ -192,7 +193,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
             >
               <Download className="size-4" aria-hidden />
-              Jegyek letöltése (PDF)
+              Download tickets (PDF)
             </a>
           ) : null}
           {checkout.invoiceReady ? (
@@ -201,20 +202,20 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
             >
               <Download className="size-4" aria-hidden />
-              Számla letöltése (PDF)
+              Download invoice (PDF)
             </a>
           ) : null}
         </div>
       ) : pollingAssets ? (
         <p className="mt-4 inline-flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3.5 animate-spin" aria-hidden />
-          Jegyek és számla előkészítése…
+          Preparing tickets and invoice…
         </p>
       ) : (
         <p className="mt-4 text-xs text-muted-foreground">
           {checkout?.invoiceStatus === "failed"
-            ? "A számla kiállítása sikertelen — ügyfélszolgálatunk segít."
-            : "Ha a letöltés nem jelenik meg, ellenőrizd az e-mail fiókod is."}
+            ? "Invoice generation failed — please contact support."
+            : "If downloads do not appear, check your email as well."}
         </p>
       )}
 

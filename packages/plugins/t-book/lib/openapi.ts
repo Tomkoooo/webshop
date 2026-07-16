@@ -114,7 +114,7 @@ const packageDeal = {
       type: ["integer", "null"],
       minimum: 1,
       description:
-        "Max. vendég egy csomagban. Ha megadva, a szerver ceil(guests / maxGuests) csomagot számol (pl. 4 fő + max 2 → 2× ár). Ha null/Hiányzik: egy csomag fix ára érvényes vendégszám függetlenül.",
+        "Max guests per package unit. Server charges priceHuf × ceil(guests / maxGuests). When null/missing, maxGuests defaults to 1 (e.g. 4 guests → 4× single).",
     },
     roomTypeKey: {
       type: ["string", "null"],

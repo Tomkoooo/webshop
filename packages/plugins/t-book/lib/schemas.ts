@@ -253,6 +253,26 @@ export const eventGroupInputSchema = z.object({
   voucherHeaderImage: z.string().optional().default(""),
 })
 
+/**
+ * Partial group PATCH — no Zod defaults (defaults on .partial() would overwrite
+ * omitted fields, e.g. status→draft or voucherHeaderImage→"").
+ */
+export const eventGroupUpdateSchema = z.object({
+  name: z.string().min(1, "Név kötelező").optional(),
+  description: z.string().optional(),
+  status: tBookStatusSchema.optional(),
+  defaultBookingOptions: z.array(tBookOptionDefSchema).optional(),
+  defaultAttendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).optional(),
+  defaultPriceBasis: z.enum(["net", "gross"]).optional(),
+  defaultVatPercent: z.number().min(0).max(100).optional(),
+  listOnTBookSite: z.boolean().optional(),
+  listingTitle: z.string().optional(),
+  listingUrl: z.string().optional(),
+  listingImage: z.string().optional(),
+  defaultHeroImage: z.string().optional(),
+  voucherHeaderImage: z.string().optional(),
+})
+
 export const tBookEventTimeSchema = z.preprocess(
   (value) => {
     const trimmed = String(value ?? "").trim()
@@ -307,6 +327,45 @@ export const eventInputSchema = z.object({
   sortOrder: z.number().int().default(0),
 })
 
+/** Partial event PATCH — no Zod defaults / preprocess (avoids wiping omitted fields). */
+export const eventUpdateSchema = z.object({
+  groupId: z.string().nullable().optional(),
+  name: z.string().min(1, "Név kötelező").optional(),
+  description: z.string().optional(),
+  location: tBookLocationSchema.optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  startTime: z
+    .union([z.null(), z.string().regex(TBOOK_TIME_PATTERN, "Érvényes időpont: HH:mm (pl. 09:00)")])
+    .optional(),
+  endTime: z
+    .union([z.null(), z.string().regex(TBOOK_TIME_PATTERN, "Érvényes időpont: HH:mm (pl. 09:00)")])
+    .optional(),
+  currency: z.string().min(3).max(3).optional(),
+  ticketFeeHuf: z.number().min(0).optional(),
+  ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).optional(),
+  registrationUnit: z.enum(["person", "team"]).optional(),
+  playersPerTicket: z.number().int().min(1).max(100).optional(),
+  teamMemberLimit: z.number().int().min(1).max(100).nullable().optional(),
+  teamMemberFieldSchema: z.array(tBookAttendeeFieldDefSchema).optional(),
+  ticketPriceBasis: z.enum(["net", "gross"]).optional(),
+  ticketVatPercent: z.number().min(0).max(100).optional(),
+  capacity: z.number().int().min(0).nullable().optional(),
+  heroImage: z.string().optional(),
+  voucherHeaderImage: z.string().optional(),
+  vouchersEnabled: z.boolean().optional(),
+  attendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).optional(),
+  attendeeFieldSchemaMode: z.enum(["extend", "replace"]).optional(),
+  eligibilityPreset: tBookEligibilityPresetSchema.optional(),
+  eligibilityMinAge: z.number().int().min(0).max(120).nullable().optional(),
+  eligibilityMaxAge: z.number().int().min(0).max(120).nullable().optional(),
+  eligibilityAllowedGenders: z.array(z.string()).optional(),
+  eligibilityBirthDateFieldKey: z.string().nullable().optional(),
+  eligibilityGenderFieldKey: z.string().nullable().optional(),
+  status: tBookStatusSchema.optional(),
+  sortOrder: z.number().int().optional(),
+})
+
 export const hotelInputBaseSchema = z.object({
   groupId: z.string().optional(),
   eventId: z.string().optional(),
@@ -331,8 +390,26 @@ export const hotelInputSchema = hotelInputBaseSchema.refine(
   }
 )
 
-/** Partial hotel patch — base schema only (Zod disallows .partial() on refined schemas). */
-export const hotelInputUpdateSchema = hotelInputBaseSchema.partial()
+/**
+ * Partial hotel PATCH — no Zod defaults (`.partial()` on create schema would
+ * apply defaults for omitted keys and wipe e.g. status / gallery).
+ */
+export const hotelInputUpdateSchema = z.object({
+  groupId: z.string().optional(),
+  eventId: z.string().optional(),
+  name: z.string().min(1, "Név kötelező").optional(),
+  description: z.string().optional(),
+  address: z.string().optional(),
+  distanceFromVenueKm: z.number().min(0).nullable().optional(),
+  contactEmail: z.string().optional(),
+  contactPhone: z.string().optional(),
+  gallery: z.array(z.string()).optional(),
+  currency: z.string().min(3).max(3).optional(),
+  registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).optional(),
+  pricing: tBookHotelPricingSchema.optional(),
+  status: tBookStatusSchema.optional(),
+  sortOrder: z.number().int().optional(),
+})
 
 export const tBookBillingTypeSchema = z.enum(["personal", "company", "sport"])
 
@@ -395,7 +472,9 @@ export const createBookingSchema = z.object({
 })
 
 export type EventGroupInput = z.infer<typeof eventGroupInputSchema>
+export type EventGroupUpdateInput = z.infer<typeof eventGroupUpdateSchema>
 export type EventInput = z.infer<typeof eventInputSchema>
+export type EventUpdateInput = z.infer<typeof eventUpdateSchema>
 export type HotelInput = z.infer<typeof hotelInputSchema>
 export type HotelUpdateInput = z.infer<typeof hotelInputUpdateSchema>
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>

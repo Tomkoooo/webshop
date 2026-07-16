@@ -131,6 +131,28 @@ describe("ticket-only booking (accommodation optional)", () => {
     expect(quote.accommodationGuests).toBe(2)
     expect(quote.accommodationBaseHuf).toBe(40000)
   })
+
+  it("scales package price by guests when maxGuests is unset (defaults to 1)", () => {
+    const quote = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      ticketFeeMode: "per_booking",
+      guests: 4,
+      accommodationGuests: 4,
+      nights: 6,
+      accommodation: {
+        accommodationMode: "packages",
+        roomTypes: [],
+        packages: [
+          { key: "single_6", label: "Single 6 nights", nights: 6, priceHuf: 1000, maxGuests: null },
+        ],
+        addonGroups: [],
+        priceBasis: "gross",
+        vatPercent: 0,
+      },
+      selections: { package_deal: "single_6" },
+    })
+    expect(quote.accommodationBaseHuf).toBe(4000)
+  })
 })
 
 describe("booking quote with accommodation", () => {
@@ -379,7 +401,7 @@ describe("package-only accommodation", () => {
     expect(errors.some((e) => e.message.includes("Ismeretlen opció"))).toBe(false)
   })
 
-  it("quotes flat package price without maxGuests (legacy flat rate)", () => {
+  it("scales package price when maxGuests is unset (defaults to 1 guest/unit)", () => {
     const legacyPricing = {
       ...packageOnlyPricing,
       packages: [{ key: "flat", label: "Flat csomag", nights: 3, priceHuf: 120000 }],
@@ -391,7 +413,7 @@ describe("package-only accommodation", () => {
       accommodation: legacyPricing,
       selections: { package_deal: "flat" },
     })
-    expect(quote.accommodationBaseHuf).toBe(120000)
+    expect(quote.accommodationBaseHuf).toBe(480000)
   })
 
   it("multiplies package price by required units when maxGuests is set", () => {

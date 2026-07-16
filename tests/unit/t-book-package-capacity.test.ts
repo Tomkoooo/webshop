@@ -5,9 +5,9 @@ import {
 } from "@wse/plugin-t-book/lib/hotel-pricing"
 
 describe("packageUnitsForGuests", () => {
-  it("returns 1 when maxGuests is unset", () => {
-    expect(packageUnitsForGuests({ maxGuests: null }, 8)).toBe(1)
-    expect(packageUnitsForGuests({}, 8)).toBe(1)
+  it("defaults unset maxGuests to 1 so units scale with guests", () => {
+    expect(packageUnitsForGuests({ maxGuests: null }, 8)).toBe(8)
+    expect(packageUnitsForGuests({}, 8)).toBe(8)
   })
 
   it("ceil-divides guests by maxGuests", () => {
@@ -20,11 +20,11 @@ describe("packageUnitsForGuests", () => {
 describe("formatPackageDealCapacityLabel", () => {
   it("describes required units when guests exceed capacity", () => {
     expect(formatPackageDealCapacityLabel({ maxGuests: 2 }, 4)).toBe(
-      "2 csomag szükséges (4 fő, max 2 fő/csomag)"
+      "2 packages needed (4 guests, max 2/package)"
     )
   })
 
   it("shows per-unit limit when guests fit", () => {
-    expect(formatPackageDealCapacityLabel({ maxGuests: 2 }, 2)).toBe("Max 2 fő/csomag")
+    expect(formatPackageDealCapacityLabel({ maxGuests: 2 }, 2)).toBe("Max 2 guests/package")
   })
 })

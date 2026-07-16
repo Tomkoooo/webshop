@@ -16,6 +16,16 @@ describe("registration-headcount", () => {
     ).toBe(6)
   })
 
+  it("uses teamMemberLimit as team size for hotel headcount", () => {
+    expect(
+      accommodationGuestCount(2, {
+        registrationUnit: "team",
+        teamMemberLimit: 5,
+        playersPerTicket: 1,
+      })
+    ).toBe(10)
+  })
+
   it("requires player member forms when roster > 1", () => {
     expect(
       needsPlayerMemberForms({

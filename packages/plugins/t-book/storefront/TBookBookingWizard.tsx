@@ -12,6 +12,7 @@ import {
   hotelRequiresPackageSelection,
   hotelShowsPackageSelection,
   hotelShowsRoomSelection,
+  packageUnitsForGuests,
   resolveAccommodationMode,
 } from "../lib/hotel-pricing"
 import { suggestPackageCombinations } from "../lib/package-optimization"
@@ -43,7 +44,6 @@ import {
   quoteBooking,
   type TBookBookingAttendeePayload,
   type TBookPriceQuote,
-  type TBookPublicAttendeeFieldDef,
   type TBookPublicEvent,
   type TBookPublicHotel,
   type TBookSelections,
@@ -190,6 +190,8 @@ export function TBookBookingWizard({
   const [billing, setBilling] = useState<BillingFormState>(() => emptyBillingForm())
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
+  const [detailsTab, setDetailsTab] = useState<"guests" | "billing">("guests")
+  const [liveQuoteLoading, setLiveQuoteLoading] = useState(false)
 
   const selectedHotel = useMemo(
     () => hotels.find((h) => h.id === selectedHotelId) ?? null,
@@ -231,11 +233,8 @@ export function TBookBookingWizard({
   }, [selectedHotel, showPackages, packagesRequired, nights, showRooms, roomTypeKey])
   const packageSuggestions = useMemo(() => {
     if (!selectedHotel || !showPackages || accommodationGuests < 1) return []
-    const packages = availablePackages.filter(
-      (p) => p.maxGuests != null && p.maxGuests > 0
-    )
-    if (packages.length === 0) return []
-    return suggestPackageCombinations(accommodationGuests, packages)
+    if (availablePackages.length === 0) return []
+    return suggestPackageCombinations(accommodationGuests, availablePackages)
   }, [selectedHotel, showPackages, accommodationGuests, availablePackages])
   const activePackageUnits = useMemo(() => {
     const raw = selections[PACKAGE_UNITS_SELECTION_KEY]
@@ -253,9 +252,38 @@ export function TBookBookingWizard({
     if (pkg && pkg.nights !== nights) setNights(pkg.nights)
   }, [selectedHotel, accommodationMode, packageDealKey, nights])
 
+  /** Keep selected package unit counts in sync with hotel headcount. */
+  useEffect(() => {
+    if (!selectedHotel || accommodationGuests < 1) return
+    setSelections((s) => {
+      const unitsRaw = s[PACKAGE_UNITS_SELECTION_KEY]
+      if (unitsRaw && typeof unitsRaw === "object" && !Array.isArray(unitsRaw)) {
+        const keys = Object.keys(unitsRaw as Record<string, number>)
+        if (keys.length === 1) {
+          const key = keys[0]
+          const pkg = findPackageDeal(selectedHotel.pricing, key)
+          if (!pkg) return s
+          const needed = packageUnitsForGuests(pkg, accommodationGuests)
+          if ((unitsRaw as Record<string, number>)[key] === needed) return s
+          return { ...s, [PACKAGE_UNITS_SELECTION_KEY]: { [key]: needed } }
+        }
+        return s
+      }
+      const dealKey = String(s[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+      if (!dealKey) return s
+      const pkg = findPackageDeal(selectedHotel.pricing, dealKey)
+      if (!pkg) return s
+      const needed = packageUnitsForGuests(pkg, accommodationGuests)
+      const next: TBookSelections = { ...s }
+      delete next[PACKAGE_DEAL_SELECTION_KEY]
+      next[PACKAGE_UNITS_SELECTION_KEY] = { [dealKey]: needed }
+      return next
+    })
+  }, [accommodationGuests, selectedHotel])
+
   const loadEvent = useCallback(async () => {
     if (!apiKey.trim()) {
-      setError("A tBook API kulcs nincs beállítva.")
+      setError("tBook API key is not configured.")
       setLoading(false)
       return
     }
@@ -321,6 +349,20 @@ export function TBookBookingWizard({
     setQuote(null)
   }
 
+  const selectPackageForGuests = (key: string, pkgNights: number) => {
+    if (!selectedHotel) return
+    const pkg = findPackageDeal(selectedHotel.pricing, key)
+    const units = pkg ? packageUnitsForGuests(pkg, accommodationGuests) : 1
+    setSelections((s) => {
+      const next: TBookSelections = { ...s }
+      delete next[PACKAGE_DEAL_SELECTION_KEY]
+      next[PACKAGE_UNITS_SELECTION_KEY] = { [key]: units }
+      return next
+    })
+    if (packagesRequired) setNights(pkgNights)
+    setQuote(null)
+  }
+
   const runQuote = async () => {
     if (!event) return
     setSubmitting(true)
@@ -339,12 +381,40 @@ export function TBookBookingWizard({
       setQuote(res.quote)
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Árajánlat sikertelen")
+      setError(err instanceof Error ? err.message : "Could not calculate price")
       return false
     } finally {
       setSubmitting(false)
     }
   }
+
+  useEffect(() => {
+    if (!event || !apiKey.trim() || step !== 1) return
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      setLiveQuoteLoading(true)
+      quoteBooking(apiKey.trim(), {
+        eventId: event.id,
+        guests,
+        hotelId: selectedHotelId,
+        nights: selectedHotelId ? nights : null,
+        selections: selectedHotelId ? selections : null,
+      })
+        .then((res) => {
+          if (!cancelled) setQuote(res.quote)
+        })
+        .catch(() => {
+          if (!cancelled) setQuote(null)
+        })
+        .finally(() => {
+          if (!cancelled) setLiveQuoteLoading(false)
+        })
+    }, 350)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [apiKey, event, guests, selectedHotelId, nights, selections, step])
 
   const runBooking = async () => {
     if (!event) return
@@ -369,7 +439,7 @@ export function TBookBookingWizard({
       )
       window.location.href = res.checkoutUrl
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Foglalás sikertelen")
+      setError(err instanceof Error ? err.message : "Booking failed")
       setSubmitting(false)
     }
   }
@@ -404,8 +474,49 @@ export function TBookBookingWizard({
           )
         }))
 
+  const guestsDetailsValid =
+    registrationFieldSchema.length === 0 && !needsPlayerMembers
+      ? true
+      : attendees.every((row) => {
+          const teamFieldsOk =
+            registrationFieldSchema.length === 0 ||
+            registrationFieldSchema.every((field) => {
+              if (!field.required) return true
+              const val = row.fields[field.key]
+              return val != null && String(val).trim() !== ""
+            })
+          if (!teamFieldsOk) return false
+          if (!needsPlayerMembers) return true
+          const members = row.members ?? []
+          const requiredMembers = fixedRosterSize ?? 1
+          if (members.length !== requiredMembers) return false
+          return members.every((member) =>
+            playerFields.every((field) => {
+              if (!field.required) return true
+              const val = member.fields[field.key]
+              return val != null && String(val).trim() !== ""
+            })
+          )
+        })
+
   const goNext = async () => {
     if (step === 2) {
+      if (!guestsDetailsValid) {
+        setDetailsTab("guests")
+        setError("Please complete participant details for every guest.")
+        return
+      }
+      if (
+        !customer.name.trim() ||
+        !customer.email.trim() ||
+        !customer.phone.trim() ||
+        !isBillingFormValid(billing)
+      ) {
+        setDetailsTab("billing")
+        setError("Please complete contact and billing details.")
+        return
+      }
+      setError(null)
       const ok = await runQuote()
       if (ok) setStep(3)
       return
@@ -427,7 +538,7 @@ export function TBookBookingWizard({
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
         <p className="font-medium text-destructive">{error}</p>
         <Link href="/jegyek" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
-          ← Vissza az eseményekhez
+          ← Back to events
         </Link>
       </div>
     )
@@ -443,7 +554,7 @@ export function TBookBookingWizard({
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Vissza az eseményekhez
+          Back to events
         </Link>
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">{event.name}</h1>
@@ -470,9 +581,9 @@ export function TBookBookingWizard({
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">
               {registrationUnit === "team"
-                ? "Csapatok száma"
+                ? "Number of teams"
                 : playersPerTicket > 1
-                  ? `Jegyek száma (${playersPerTicket} játékos / jegy)`
+                  ? `Number of tickets (${playersPerTicket} players / ticket)`
                   : copy.guestsLabel}
             </span>
             <input
@@ -485,10 +596,15 @@ export function TBookBookingWizard({
             />
             {playersPerTicket > 1 ? (
               <p className="text-xs text-muted-foreground">
-                Szálláshoz összesen {accommodationGuests} fő ({guests} jegy × {playersPerTicket}{" "}
-                játékos)
+                Hotel guests: {accommodationGuests} ({guests} ticket
+                {guests === 1 ? "" : "s"} × {playersPerTicket} players)
               </p>
-            ) : null}
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Hotel packages are priced for {accommodationGuests} guest
+                {accommodationGuests === 1 ? "" : "s"}.
+              </p>
+            )}
           </label>
 
           <label className="block space-y-1.5">
@@ -555,15 +671,7 @@ export function TBookBookingWizard({
                   accommodationGuests={accommodationGuests}
                   displayCurrency={displayCurrency}
                   suggestions={packageSuggestions}
-                  onSelectPackage={(key, pkgNights) => {
-                    setSelections((s) => {
-                      const next: TBookSelections = { ...s, [PACKAGE_DEAL_SELECTION_KEY]: key }
-                      delete next[PACKAGE_UNITS_SELECTION_KEY]
-                      return next
-                    })
-                    if (packagesRequired) setNights(pkgNights)
-                    setQuote(null)
-                  }}
+                  onSelectPackage={selectPackageForGuests}
                   onApplyPlan={applyPackagePlan}
                   onClearPackage={() => {
                     setSelections((s) => {
@@ -575,6 +683,33 @@ export function TBookBookingWizard({
                     setQuote(null)
                   }}
                 />
+              ) : null}
+
+              {quote || liveQuoteLoading ? (
+                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">{copy.totalLabel}</p>
+                    {liveQuoteLoading ? (
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
+                    ) : quote ? (
+                      <p className="text-lg font-semibold tabular-nums">
+                        {formatHuf(quote.totalHuf, displayCurrency)}
+                      </p>
+                    ) : null}
+                  </div>
+                  {quote ? (
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {quote.lines.map((line) => (
+                        <li key={line.key} className="flex justify-between gap-2">
+                          <span>{line.label}</span>
+                          <span className="tabular-nums">
+                            {formatHuf(line.amountHuf, displayCurrency)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
               ) : null}
 
               {extrasSection ? (
@@ -622,163 +757,220 @@ export function TBookBookingWizard({
 
       {step === 2 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
-            <p className="text-sm text-muted-foreground">{copy.customerHint}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                className={INPUT}
-                placeholder="Név *"
-                value={customer.name}
-                onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
-                required
-              />
-              <input
-                className={INPUT}
-                type="email"
-                placeholder="Email *"
-                value={customer.email}
-                onChange={(e) => setCustomer((c) => ({ ...c, email: e.target.value }))}
-                required
-              />
-              <input
-                className={`${INPUT} sm:col-span-2`}
-                type="tel"
-                placeholder="Telefon *"
-                value={customer.phone}
-                onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
-                required
-              />
-            </div>
+          <div
+            className="flex gap-1 rounded-xl border border-border bg-muted/30 p-1"
+            role="tablist"
+            aria-label="Details"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={detailsTab === "guests"}
+              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                detailsTab === "guests"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setDetailsTab("guests")}
+            >
+              {copy.attendeesHeading}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={detailsTab === "billing"}
+              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                detailsTab === "billing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setDetailsTab("billing")}
+            >
+              Billing
+            </button>
           </div>
 
-          <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
+          {detailsTab === "guests" ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {playersPerTicket > 1
+                    ? `${playersPerTicket} player forms required per ticket (${guests} ticket${
+                        guests === 1 ? "" : "s"
+                      } → ${accommodationGuests} guests). `
+                    : registrationUnit === "team"
+                      ? `Enter details for each team member (max ${playersPerTicket} per team). `
+                      : ""}
+                  {copy.attendeesHint}
+                </p>
+              </div>
 
-          {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
-            <div className="space-y-4 border-t border-border pt-4">
-              <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
-              <p className="text-sm text-muted-foreground">
-                {selectedHotel && (selectedHotel.registrationFieldSchema?.length ?? 0) > 0
-                  ? `Az esemény és a választott szállás (${selectedHotel.name}) által kért adatok. `
-                  : ""}
-                {playersPerTicket > 1
-                  ? `Jegyenként ${playersPerTicket} játékos adata szükséges. `
-                  : ""}
-                {copy.attendeesHint}
-              </p>
-              {attendees.map((attendee, index) => (
-                <div key={index} className="space-y-3 rounded-xl border border-border p-4">
-                  <p className="text-sm font-semibold">
-                    {index + 1}. {guestUnitLabel}
-                  </p>
-                  {registrationFieldSchema.length > 0 ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {registrationFieldSchema.map((field) => (
-                        <AttendeeFieldInput
-                          key={field.key}
-                          field={field}
-                          value={attendee.fields[field.key]}
-                          onChange={(value) =>
-                            setAttendees((rows) =>
-                              rows.map((row, i) =>
-                                i === index ? { ...row, fields: { ...row.fields, [field.key]: value } } : row
+              {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
+                attendees.map((attendee, index) => (
+                  <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                    <p className="text-sm font-semibold">
+                      {index + 1}. {guestUnitLabel}
+                    </p>
+                    {registrationFieldSchema.length > 0 ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {registrationFieldSchema.map((field) => (
+                          <AttendeeFieldInput
+                            key={field.key}
+                            field={field}
+                            value={attendee.fields[field.key]}
+                            onChange={(value) =>
+                              setAttendees((rows) =>
+                                rows.map((row, i) =>
+                                  i === index
+                                    ? { ...row, fields: { ...row.fields, [field.key]: value } }
+                                    : row
+                                )
                               )
-                            )
-                          }
-                          inputClassName={INPUT}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                  {needsPlayerMembers ? (
-                    <div className="space-y-3 border-t border-border pt-3">
-                      <p className="text-sm font-medium">
-                        {registrationUnit === "team" ? "Csapattagok" : "Játékosok"}
-                      </p>
-                      {(attendee.members ?? []).map((member, memberIndex) => (
-                        <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
-                          <p className="text-xs font-semibold text-muted-foreground">
-                            {memberIndex + 1}. játékos
-                          </p>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {playerFields.map((field) => (
-                              <AttendeeFieldInput
-                                key={field.key}
-                                field={field}
-                                value={member.fields[field.key]}
-                                onChange={(value) =>
+                            }
+                            inputClassName={INPUT}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                    {needsPlayerMembers ? (
+                      <div className="space-y-3 border-t border-border pt-3">
+                        <p className="text-sm font-medium">
+                          {registrationUnit === "team" ? "Team members" : "Players"}
+                        </p>
+                        {(attendee.members ?? []).map((member, memberIndex) => (
+                          <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
+                            <p className="text-xs font-semibold text-muted-foreground">
+                              Player {memberIndex + 1}
+                            </p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              {playerFields.map((field) => (
+                                <AttendeeFieldInput
+                                  key={field.key}
+                                  field={field}
+                                  value={member.fields[field.key]}
+                                  onChange={(value) =>
+                                    setAttendees((rows) =>
+                                      rows.map((row, i) =>
+                                        i === index
+                                          ? {
+                                              ...row,
+                                              members: (row.members ?? []).map((m, mi) =>
+                                                mi === memberIndex
+                                                  ? { fields: { ...m.fields, [field.key]: value } }
+                                                  : m
+                                              ),
+                                            }
+                                          : row
+                                      )
+                                    )
+                                  }
+                                  inputClassName={INPUT}
+                                />
+                              ))}
+                            </div>
+                            {fixedRosterSize == null && (attendee.members ?? []).length > 1 ? (
+                              <button
+                                type="button"
+                                className="text-xs text-destructive hover:underline"
+                                onClick={() =>
                                   setAttendees((rows) =>
                                     rows.map((row, i) =>
                                       i === index
                                         ? {
                                             ...row,
-                                            members: (row.members ?? []).map((m, mi) =>
-                                              mi === memberIndex
-                                                ? { fields: { ...m.fields, [field.key]: value } }
-                                                : m
+                                            members: (row.members ?? []).filter(
+                                              (_, mi) => mi !== memberIndex
                                             ),
                                           }
                                         : row
                                     )
                                   )
                                 }
-                                inputClassName={INPUT}
-                              />
-                            ))}
+                              >
+                                Remove player
+                              </button>
+                            ) : null}
                           </div>
-                          {fixedRosterSize == null && (attendee.members ?? []).length > 1 ? (
-                            <button
-                              type="button"
-                              className="text-xs text-destructive hover:underline"
-                              onClick={() =>
-                                setAttendees((rows) =>
-                                  rows.map((row, i) =>
-                                    i === index
-                                      ? {
-                                          ...row,
-                                          members: (row.members ?? []).filter(
-                                            (_, mi) => mi !== memberIndex
-                                          ),
-                                        }
-                                      : row
-                                  )
+                        ))}
+                        {fixedRosterSize == null &&
+                        (teamMemberLimit == null ||
+                          (attendee.members ?? []).length < teamMemberLimit) ? (
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-primary hover:underline"
+                            onClick={() =>
+                              setAttendees((rows) =>
+                                rows.map((row, i) =>
+                                  i === index
+                                    ? {
+                                        ...row,
+                                        members: [...(row.members ?? []), { fields: {} }],
+                                      }
+                                    : row
                                 )
-                              }
-                            >
-                              Játékos eltávolítása
-                            </button>
-                          ) : null}
-                        </div>
-                      ))}
-                      {fixedRosterSize == null &&
-                      (teamMemberLimit == null ||
-                        (attendee.members ?? []).length < teamMemberLimit) ? (
-                        <button
-                          type="button"
-                          className="text-sm font-medium text-primary hover:underline"
-                          onClick={() =>
-                            setAttendees((rows) =>
-                              rows.map((row, i) =>
-                                i === index
-                                  ? {
-                                      ...row,
-                                      members: [...(row.members ?? []), { fields: {} }],
-                                    }
-                                  : row
                               )
-                            )
-                          }
-                        >
-                          + Játékos hozzáadása
-                          {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                            }
+                          >
+                            + Add player
+                            {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                  No participant fields are required for this event. Continue to billing.
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground"
+                  onClick={() => setDetailsTab("billing")}
+                >
+                  Continue to billing
+                  <ArrowRight className="size-4" aria-hidden />
+                </button>
+              </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
+                <p className="text-sm text-muted-foreground">{copy.customerHint}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    className={INPUT}
+                    placeholder="Name *"
+                    value={customer.name}
+                    onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
+                    required
+                  />
+                  <input
+                    className={INPUT}
+                    type="email"
+                    placeholder="Email *"
+                    value={customer.email}
+                    onChange={(e) => setCustomer((c) => ({ ...c, email: e.target.value }))}
+                    required
+                  />
+                  <input
+                    className={`${INPUT} sm:col-span-2`}
+                    type="tel"
+                    placeholder="Phone *"
+                    value={customer.phone}
+                    onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
+            </div>
+          )}
         </section>
       ) : null}
 
@@ -787,25 +979,31 @@ export function TBookBookingWizard({
           <h2 className="text-lg font-semibold">{copy.reviewHeading}</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Esemény</dt>
+              <dt className="text-muted-foreground">Event</dt>
               <dd className="font-medium text-right">{event.name}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">
-                {registrationUnit === "team" ? "Csapatok" : copy.guestsLabel}
+                {registrationUnit === "team" ? "Teams" : copy.guestsLabel}
               </dt>
               <dd className="font-medium">
                 {guests} {guestUnitLabel}
               </dd>
             </div>
+            {playersPerTicket > 1 ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Hotel guests</dt>
+                <dd className="font-medium">{accommodationGuests}</dd>
+              </div>
+            ) : null}
             {selectedHotel ? (
               <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Szállás</dt>
+                <dt className="text-muted-foreground">Accommodation</dt>
                 <dd className="font-medium text-right">{selectedHotel.name}</dd>
               </div>
             ) : null}
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Kapcsolattartó</dt>
+              <dt className="text-muted-foreground">Contact</dt>
               <dd className="font-medium text-right">{customer.name}</dd>
             </div>
           </dl>

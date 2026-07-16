@@ -172,6 +172,7 @@ export function validateHotelSelections(
           })
           continue
         }
+        // null maxGuests → capacity 1 (same as packageUnitsForGuests)
         const cap = pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1
         capacity += qty * cap
       }
