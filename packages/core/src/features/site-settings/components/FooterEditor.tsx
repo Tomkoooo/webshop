@@ -103,6 +103,10 @@ export function FooterEditor({
             <Label className={adminFieldLabel}>Nyitvatartás</Label>
             <Input value={state.organizerSection?.openingHours ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, openingHours: e.target.value } }))} />
           </div>
+          <div className="space-y-1.5">
+            <Label className={adminFieldLabel}>Adószám</Label>
+            <Input value={state.organizerSection?.taxNumber ?? ""} onChange={(e) => setState((prev) => ({ ...prev, organizerSection: { ...prev.organizerSection!, taxNumber: e.target.value } }))} />
+          </div>
           <p className="text-xs text-muted-foreground">A tábor helyszíne a főoldal Kapcsolat szekciójában szerkeszthető.</p>
         </CardContent>
       </Card>

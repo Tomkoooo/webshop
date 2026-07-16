@@ -18,10 +18,11 @@ export function shouldProxyPublicTBookRoute(
   if (segment === "quote" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && path[1] === "status" && method === "GET") return true
+  // Guest success-page polls + PDF downloads (no API key; booking lives upstream)
   if (segment === "checkout" && path[1] === "status" && method === "GET") return true
   if (segment === "checkout" && path[1] === "invoice" && method === "GET") return true
   if (segment === "checkout" && path[1] === "vouchers" && method === "GET") return true
-  if (segment === "checkout" && path[1] === "return" && method === "GET") return true
+  // checkout/return stays local — redirects to this host's /foglalas/siker
   return false
 }
 
@@ -50,10 +51,13 @@ export async function proxyTBookPublicRequest(
   }
 
   const upstreamRes = await fetch(target, init)
-  const body = await upstreamRes.text()
+  // arrayBuffer preserves PDF/binary (invoice, vouchers) as well as JSON text
+  const body = await upstreamRes.arrayBuffer()
   const responseHeaders = new Headers()
   const upstreamContentType = upstreamRes.headers.get("content-type")
   if (upstreamContentType) responseHeaders.set("Content-Type", upstreamContentType)
+  const disposition = upstreamRes.headers.get("content-disposition")
+  if (disposition) responseHeaders.set("Content-Disposition", disposition)
   const cors = corsHeaders?.(request)
   if (cors) {
     for (const [key, value] of Object.entries(cors)) {

@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@wse/core/components/ui/button"
 import {
   tBookAdminApi,
-  formatHuf,
+  formatMoney,
   TBOOK_STATUS_LABELS,
   type AdminEvent,
   type AdminGroup,
@@ -152,7 +152,10 @@ export function EventsAdmin({ path }: { path: string[] }) {
                   {event.location?.address ? ` · ${event.location.address}` : ""}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Jegy: <span className="text-foreground font-semibold">{formatHuf(event.ticketFeeHuf)}</span>
+                    Jegy:{" "}
+                    <span className="text-foreground font-semibold">
+                      {formatMoney(event.ticketFeeHuf, event.currency)}
+                    </span>
                   {event.ticketPriceBasis === "net" ? " nettó" : " bruttó"}
                   {event.ticketFeeMode === "per_person" ? " / fő" : " / foglalás"}
                   {event.capacity != null ? ` · kapacitás: ${event.capacity} fő` : ""}

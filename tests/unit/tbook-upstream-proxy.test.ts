@@ -66,6 +66,11 @@ describe("tBook upstream proxy helpers", () => {
     expect(shouldProxyPublicTBookRoute("quote", ["quote"], "POST")).toBe(true)
     expect(shouldProxyPublicTBookRoute("bookings", ["bookings"], "POST")).toBe(true)
     expect(shouldProxyPublicTBookRoute("bookings", ["bookings", "status"], "GET")).toBe(true)
+    expect(shouldProxyPublicTBookRoute("checkout", ["checkout", "status"], "GET")).toBe(true)
+    expect(shouldProxyPublicTBookRoute("checkout", ["checkout", "invoice"], "GET")).toBe(true)
+    expect(shouldProxyPublicTBookRoute("checkout", ["checkout", "vouchers"], "GET")).toBe(true)
+    // return stays local so thin storefronts redirect to their own success page
+    expect(shouldProxyPublicTBookRoute("checkout", ["checkout", "return"], "GET")).toBe(false)
     expect(shouldProxyPublicTBookRoute("admin", ["connection-test"], "POST")).toBe(false)
     expect(shouldProxyPublicTBookRoute("directory", ["directory"], "GET")).toBe(false)
   })

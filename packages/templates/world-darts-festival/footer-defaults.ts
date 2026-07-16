@@ -30,6 +30,7 @@ export const wdfFooterDefaults: FooterSettings = {
     registeredAddress: "",
     mailingAddress: "",
     openingHours: "",
+    taxNumber: "",
   },
   paymentMethodsNote: "",
 }

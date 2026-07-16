@@ -25,6 +25,8 @@ export type FooterOrganizerSection = {
   registeredAddress: string
   mailingAddress: string
   openingHours: string
+  /** Tax / VAT ID (adószám). */
+  taxNumber?: string
 }
 
 export type FooterSettings = {
@@ -79,6 +81,7 @@ function normalize(
     registeredAddress: "",
     mailingAddress: "",
     openingHours: "",
+    taxNumber: "",
   }
 
   return {
@@ -130,6 +133,9 @@ function normalize(
       openingHours: settings?.organizerSection?.openingHours?.trim()
         ? settings.organizerSection.openingHours
         : defaultOrganizer.openingHours,
+      taxNumber: settings?.organizerSection?.taxNumber?.trim()
+        ? settings.organizerSection.taxNumber
+        : defaultOrganizer.taxNumber ?? "",
     },
     paymentMethodsNote:
       settings?.paymentMethodsNote?.trim() !== undefined &&

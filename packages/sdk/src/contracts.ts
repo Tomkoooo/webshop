@@ -18,6 +18,8 @@ export type FooterOrganizerSection = {
   registeredAddress: string
   mailingAddress: string
   openingHours: string
+  /** Tax / VAT ID (adószám) shown in the organizer block. */
+  taxNumber?: string
 }
 
 export type FooterContactEntry = {

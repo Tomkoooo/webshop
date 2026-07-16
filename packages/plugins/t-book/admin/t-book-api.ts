@@ -96,6 +96,7 @@ export type AdminBookingRow = {
   nights: number
   selections: TBookSelections
   totalHuf: number
+  currency: string
   status: string
   invoiceStatus: string
   invoiceId: string | null

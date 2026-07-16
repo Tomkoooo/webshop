@@ -90,7 +90,8 @@ export function CmsFooterChromeSidebar({
           <span className="text-xs text-muted-foreground">{contactEntries.length} elem</span>
         </header>
         <p className="text-xs text-muted-foreground">
-          Kulcs–érték párok: szöveg, link, e-mail vagy telefon.
+          Kulcs–érték párok a lábléc Kapcsolat oszlopában (pl. E-mail, Telefon, Adószám).
+          Típus: szöveg, link, e-mail vagy telefon.
         </p>
         <div className="space-y-2">
           {contactEntries.map((entry, index) => (
@@ -176,6 +177,60 @@ export function CmsFooterChromeSidebar({
           <Plus className="size-3.5" />
           Kapcsolati sor
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs"
+          onClick={() =>
+            patch({
+              contactEntries: [
+                ...contactEntries,
+                { label: "Adószám", value: "", kind: "text" },
+              ],
+            })
+          }
+        >
+          + Adószám sor
+        </Button>
+      </section>
+
+      <section className="space-y-3 border-t border-border/40 pt-4">
+        <p className="text-sm font-semibold text-foreground">Szervező blokk</p>
+        <p className="text-xs text-muted-foreground">
+          Cégadatok a láblécben (név, adószám, címek).
+        </p>
+        {(
+          [
+            ["title", "Blokk cím"],
+            ["companyName", "Cégnév"],
+            ["taxNumber", "Adószám"],
+            ["registeredAddress", "Székhely"],
+            ["mailingAddress", "Levelezési cím"],
+            ["openingHours", "Nyitvatartás"],
+          ] as const
+        ).map(([key, label]) => (
+          <div key={key} className="space-y-1.5">
+            <Label className={adminFieldLabel}>{label}</Label>
+            <Input
+              className="h-8 text-xs"
+              value={settings.organizerSection?.[key] ?? ""}
+              onChange={(e) =>
+                patch({
+                  organizerSection: {
+                    title: settings.organizerSection?.title ?? "",
+                    companyName: settings.organizerSection?.companyName ?? "",
+                    registeredAddress: settings.organizerSection?.registeredAddress ?? "",
+                    mailingAddress: settings.organizerSection?.mailingAddress ?? "",
+                    openingHours: settings.organizerSection?.openingHours ?? "",
+                    taxNumber: settings.organizerSection?.taxNumber ?? "",
+                    [key]: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+        ))}
       </section>
 
       <section className="space-y-3 border-t border-border/40 pt-4">

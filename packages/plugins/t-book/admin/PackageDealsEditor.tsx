@@ -39,8 +39,8 @@ export function PackageDealsEditor({
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         {packagesOnly
-          ? `Fix árú csomagajánlatok (pl. „3 éj egyágyas”, „3 éj kétágyas”). Állítsd be a max. fő/csomag értéket — több vendég esetén a rendszer automatikusan több csomagot számol (${priceBasisLabel}, ${currency}).`
-          : `Fix árú csomagajánlatok (pl. 3 éjszaka adott szobatípusban). Max. fő/csomag megadásakor a csomagár egységenként számolódik (${priceBasisLabel}, ${currency}).`}
+          ? `Fix árú csomagajánlatok. A „Férőhely / csomag” határozza meg a szobatípust: 1 = egyágyas, 2 = kétágyas. Több vendégnél a rendszer automatikusan több csomagot számol (${priceBasisLabel}, ${currency}).`
+          : `Fix árú csomagajánlatok (pl. 3 éjszaka). A „Férőhely / csomag” a kapacitás egységenként (1 = single, 2 = double); a csomagár × ceil(vendégek / férőhely) (${priceBasisLabel}, ${currency}).`}
       </p>
       {packages.length === 0 ? (
         <p className={tBookEmptyStateClass}>
@@ -86,12 +86,13 @@ export function PackageDealsEditor({
                 </TBookField>
               </div>
               <div className="col-span-2">
-                <TBookField label="Max. fő/csomag">
+                <TBookField label="Férőhely / csomag">
                   <TBookInput
                     type="number"
                     min={1}
                     max={50}
-                    placeholder="Üres = korlátlan"
+                    placeholder={packagesOnly ? "1 = single" : "Üres → 1"}
+                    title="1 = egyágyas (single), 2 = kétágyas (double). Ennyi vendég fér egy csomagegységbe."
                     value={pkg.maxGuests ?? ""}
                     onChange={(e) => {
                       const raw = e.target.value.trim()
@@ -132,8 +133,10 @@ export function PackageDealsEditor({
               <p className="col-span-12 text-xs text-muted-foreground -mt-1">
                 {pkg.nights} éj · {formatMoney(pkg.priceHuf, currency)} ({priceBasisLabel})
                 {pkg.maxGuests != null && pkg.maxGuests > 0
-                  ? ` · max ${pkg.maxGuests} fő/csomag`
-                  : ""}
+                  ? ` · ${pkg.maxGuests === 1 ? "egyágyas" : pkg.maxGuests === 2 ? "kétágyas" : `${pkg.maxGuests} fő/csomag`}`
+                  : packagesOnly
+                    ? " · egyágyas (alapértelmezett)"
+                    : ""}
               </p>
             </div>
           ))}

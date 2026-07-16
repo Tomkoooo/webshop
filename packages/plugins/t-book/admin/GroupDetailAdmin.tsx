@@ -9,7 +9,7 @@ import { adminSectionTitle } from "@wse/core/lib/admin-ui"
 import { normalizeHotelPricing } from "../lib/hotel-pricing"
 import {
   tBookAdminApi,
-  formatHuf,
+  formatMoney,
   TBOOK_STATUS_LABELS,
   type AdminEvent,
   type AdminGroup,
@@ -234,7 +234,10 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
                     {event.location?.address ? ` · ${event.location.address}` : ""}
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    Jegy: <span className="text-foreground font-semibold">{formatHuf(event.ticketFeeHuf)}</span>
+                    Jegy:{" "}
+                    <span className="text-foreground font-semibold">
+                      {formatMoney(event.ticketFeeHuf, event.currency)}
+                    </span>
                     {event.ticketPriceBasis === "net" ? " nettó" : " bruttó"}
                     {event.ticketFeeMode === "per_person" ? " / fő" : " / foglalás"}
                   </p>

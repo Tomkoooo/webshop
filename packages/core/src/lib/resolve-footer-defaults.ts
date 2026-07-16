@@ -31,6 +31,7 @@ export const ENGINE_SHOP_FOOTER_DEFAULTS: FooterSettings = {
     registeredAddress: "",
     mailingAddress: "",
     openingHours: "",
+    taxNumber: "",
   },
   paymentMethodsNote: "",
 }

@@ -179,6 +179,9 @@ export function TBookBookingWizard({
   const [hotels, setHotels] = useState<TBookPublicHotel[]>(initialEventDetail?.hotels ?? [])
 
   const [guests, setGuests] = useState(1)
+  /** How many entries need rooms: all / a subset / none. */
+  const [accommodationNeed, setAccommodationNeed] = useState<"all" | "some" | "none">("all")
+  const [accommodationGuestOverride, setAccommodationGuestOverride] = useState(1)
   const [nights, setNights] = useState(initialEventDetail?.event?.nights ?? 1)
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(
     initialEventDetail?.hotels[0]?.id ?? null
@@ -201,9 +204,13 @@ export function TBookBookingWizard({
     () =>
       mergeRegistrationFieldSchemas(
         event?.attendeeFieldSchema,
-        selectedHotel?.registrationFieldSchema
+        accommodationNeed === "none" ? undefined : selectedHotel?.registrationFieldSchema
       ),
-    [event?.attendeeFieldSchema, selectedHotel?.registrationFieldSchema]
+    [
+      event?.attendeeFieldSchema,
+      accommodationNeed,
+      selectedHotel?.registrationFieldSchema,
+    ]
   )
   const registrationUnit = event?.registrationUnit ?? "person"
   const playersPerTicket = event ? resolvePlayersPerTicket(event) : 1
@@ -212,9 +219,19 @@ export function TBookBookingWizard({
   const fixedRosterSize = event ? playerRosterSize(event) : null
   const guestUnitLabel = registrationUnitLabel(registrationUnit, guests)
   const needsPlayerMembers = event ? needsPlayerMemberForms(event) : false
-  const accommodationGuests = event ? accommodationGuestCount(guests, event) : guests
+  const maxAccommodationGuests = event ? accommodationGuestCount(guests, event) : guests
+  const accommodationGuests =
+    accommodationNeed === "none"
+      ? 0
+      : accommodationNeed === "some"
+        ? Math.min(Math.max(1, accommodationGuestOverride), maxAccommodationGuests)
+        : maxAccommodationGuests
+  const effectiveHotelId = accommodationNeed === "none" ? null : selectedHotelId
   const playerFields = event ? playerFieldSchema(event) : teamMemberFieldSchema
-  const displayCurrency = hotelDisplayCurrency(selectedHotel, event)
+  const displayCurrency = hotelDisplayCurrency(
+    accommodationNeed === "none" ? null : selectedHotel,
+    event
+  )
   const accommodationMode = selectedHotel
     ? resolveAccommodationMode(selectedHotel.pricing)
     : "room_nights"
@@ -232,10 +249,10 @@ export function TBookBookingWizard({
     )
   }, [selectedHotel, showPackages, packagesRequired, nights, showRooms, roomTypeKey])
   const packageSuggestions = useMemo(() => {
-    if (!selectedHotel || !showPackages || accommodationGuests < 1) return []
+    if (!effectiveHotelId || !selectedHotel || !showPackages || accommodationGuests < 1) return []
     if (availablePackages.length === 0) return []
     return suggestPackageCombinations(accommodationGuests, availablePackages)
-  }, [selectedHotel, showPackages, accommodationGuests, availablePackages])
+  }, [effectiveHotelId, selectedHotel, showPackages, accommodationGuests, availablePackages])
   const activePackageUnits = useMemo(() => {
     const raw = selections[PACKAGE_UNITS_SELECTION_KEY]
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -252,9 +269,16 @@ export function TBookBookingWizard({
     if (pkg && pkg.nights !== nights) setNights(pkg.nights)
   }, [selectedHotel, accommodationMode, packageDealKey, nights])
 
+  useEffect(() => {
+    if (accommodationNeed !== "some") return
+    setAccommodationGuestOverride((prev) =>
+      Math.min(Math.max(1, prev), Math.max(1, maxAccommodationGuests))
+    )
+  }, [accommodationNeed, maxAccommodationGuests])
+
   /** Keep selected package unit counts in sync with hotel headcount. */
   useEffect(() => {
-    if (!selectedHotel || accommodationGuests < 1) return
+    if (!effectiveHotelId || !selectedHotel || accommodationGuests < 1) return
     setSelections((s) => {
       const unitsRaw = s[PACKAGE_UNITS_SELECTION_KEY]
       if (unitsRaw && typeof unitsRaw === "object" && !Array.isArray(unitsRaw)) {
@@ -279,7 +303,7 @@ export function TBookBookingWizard({
       next[PACKAGE_UNITS_SELECTION_KEY] = { [dealKey]: needed }
       return next
     })
-  }, [accommodationGuests, selectedHotel])
+  }, [accommodationGuests, effectiveHotelId, selectedHotel])
 
   const loadEvent = useCallback(async () => {
     if (!apiKey.trim()) {
@@ -373,9 +397,10 @@ export function TBookBookingWizard({
         {
           eventId: event.id,
           guests,
-          hotelId: selectedHotelId,
-          nights: selectedHotelId ? nights : null,
-          selections: selectedHotelId ? selections : null,
+          accommodationGuests,
+          hotelId: effectiveHotelId,
+          nights: effectiveHotelId ? nights : null,
+          selections: effectiveHotelId ? selections : null,
         }
       )
       setQuote(res.quote)
@@ -396,9 +421,10 @@ export function TBookBookingWizard({
       quoteBooking(apiKey.trim(), {
         eventId: event.id,
         guests,
-        hotelId: selectedHotelId,
-        nights: selectedHotelId ? nights : null,
-        selections: selectedHotelId ? selections : null,
+        accommodationGuests,
+        hotelId: effectiveHotelId,
+        nights: effectiveHotelId ? nights : null,
+        selections: effectiveHotelId ? selections : null,
       })
         .then((res) => {
           if (!cancelled) setQuote(res.quote)
@@ -414,7 +440,7 @@ export function TBookBookingWizard({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [apiKey, event, guests, selectedHotelId, nights, selections, step])
+  }, [apiKey, event, guests, accommodationGuests, effectiveHotelId, nights, selections, step])
 
   const runBooking = async () => {
     if (!event) return
@@ -426,15 +452,16 @@ export function TBookBookingWizard({
         {
           eventId: event.id,
           guests,
+          accommodationGuests,
           customer,
           billing,
           returnBaseUrl:
             typeof window !== "undefined" ? window.location.origin : undefined,
           attendees:
             registrationFieldSchema.length > 0 || needsPlayerMembers ? attendees : undefined,
-          hotelId: selectedHotelId,
-          nights: selectedHotelId ? nights : null,
-          selections: selectedHotelId ? selections : null,
+          hotelId: effectiveHotelId,
+          nights: effectiveHotelId ? nights : null,
+          selections: effectiveHotelId ? selections : null,
         }
       )
       window.location.href = res.checkoutUrl
@@ -444,7 +471,12 @@ export function TBookBookingWizard({
     }
   }
 
-  const canProceedStep1 = guests >= 1
+  const canProceedStep1 =
+    guests >= 1 &&
+    (hotels.length === 0 ||
+      accommodationNeed === "none" ||
+      Boolean(selectedHotelId)) &&
+    (accommodationNeed !== "some" || accommodationGuests >= 1)
   const canProceedStep2 =
     customer.name.trim() &&
     customer.email.trim() &&
@@ -583,8 +615,8 @@ export function TBookBookingWizard({
               {registrationUnit === "team"
                 ? "Number of teams"
                 : playersPerTicket > 1
-                  ? `Number of tickets (${playersPerTicket} players / ticket)`
-                  : copy.guestsLabel}
+                  ? `Number of tickets / entries (${playersPerTicket} players / ticket)`
+                  : "Number of tickets / entries"}
             </span>
             <input
               type="number"
@@ -594,37 +626,113 @@ export function TBookBookingWizard({
               value={guests}
               onChange={(e) => setGuests(Number(e.target.value))}
             />
-            {playersPerTicket > 1 ? (
+            <p className="text-xs text-muted-foreground">
+              {playersPerTicket > 1
+                ? `${guests} ticket${guests === 1 ? "" : "s"} × ${playersPerTicket} players = ${maxAccommodationGuests} entries.`
+                : "Entry fees are charged per ticket / entry."}
+            </p>
+          </label>
+
+          {hotels.length > 0 ? (
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium">Accommodation</legend>
               <p className="text-xs text-muted-foreground">
-                Hotel guests: {accommodationGuests} ({guests} ticket
-                {guests === 1 ? "" : "s"} × {playersPerTicket} players)
+                Need rooms for all entries, only some of them, or none?
               </p>
-            ) : (
+              <div className="grid gap-2 sm:grid-cols-3">
+                {(
+                  [
+                    {
+                      value: "all" as const,
+                      label: "All entries",
+                      hint: `${maxAccommodationGuests} guest${maxAccommodationGuests === 1 ? "" : "s"}`,
+                    },
+                    {
+                      value: "some" as const,
+                      label: "Some entries",
+                      hint: "Choose how many",
+                    },
+                    {
+                      value: "none" as const,
+                      label: "No accommodation",
+                      hint: "Tickets only",
+                    },
+                  ] as const
+                ).map((opt) => {
+                  const selected = accommodationNeed === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`rounded-xl border px-3 py-3 text-left transition-colors ${
+                        selected
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border bg-surface hover:border-primary/40"
+                      }`}
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setAccommodationNeed(opt.value)
+                        if (opt.value === "some") {
+                          setAccommodationGuestOverride(Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride)))
+                        }
+                        setQuote(null)
+                      }}
+                    >
+                      <span className="block text-sm font-medium">{opt.label}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">{opt.hint}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {accommodationNeed === "some" ? (
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium">
+                    Guests needing accommodation (max {maxAccommodationGuests})
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={maxAccommodationGuests}
+                    className={INPUT}
+                    value={accommodationGuestOverride}
+                    onChange={(e) => {
+                      setAccommodationGuestOverride(Number(e.target.value) || 1)
+                      setQuote(null)
+                    }}
+                  />
+                </label>
+              ) : null}
+            </fieldset>
+          ) : null}
+
+          {accommodationNeed !== "none" && hotels.length > 0 ? (
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{copy.hotelLabel}</span>
+              <select
+                className={INPUT}
+                value={selectedHotelId ?? ""}
+                onChange={(e) => setSelectedHotelId(e.target.value || null)}
+              >
+                <option value="">Select hotel…</option>
+                {hotels.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                    {h.distanceFromVenueKm != null ? ` (${h.distanceFromVenueKm} km)` : ""}
+                  </option>
+                ))}
+              </select>
               <p className="text-xs text-muted-foreground">
                 Hotel packages are priced for {accommodationGuests} guest
-                {accommodationGuests === 1 ? "" : "s"}.
+                {accommodationGuests === 1 ? "" : "s"}
+                {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                  ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
+                  : ""}
+                .
               </p>
-            )}
-          </label>
+            </label>
+          ) : null}
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium">{copy.hotelLabel}</span>
-            <select
-              className={INPUT}
-              value={selectedHotelId ?? ""}
-              onChange={(e) => setSelectedHotelId(e.target.value || null)}
-            >
-              <option value="">{copy.hotelNone}</option>
-              {hotels.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name}
-                  {h.distanceFromVenueKm != null ? ` (${h.distanceFromVenueKm} km)` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedHotel ? (
+          {effectiveHotelId && selectedHotel ? (
             <div className="space-y-4 border-t border-border pt-4">
               {showRooms ? (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -984,24 +1092,22 @@ export function TBookBookingWizard({
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">
-                {registrationUnit === "team" ? "Teams" : copy.guestsLabel}
+                {registrationUnit === "team" ? "Teams" : "Tickets / entries"}
               </dt>
               <dd className="font-medium">
                 {guests} {guestUnitLabel}
               </dd>
             </div>
-            {playersPerTicket > 1 ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Hotel guests</dt>
-                <dd className="font-medium">{accommodationGuests}</dd>
-              </div>
-            ) : null}
-            {selectedHotel ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Accommodation</dt>
-                <dd className="font-medium text-right">{selectedHotel.name}</dd>
-              </div>
-            ) : null}
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Accommodation</dt>
+              <dd className="font-medium text-right">
+                {effectiveHotelId && selectedHotel
+                  ? `${selectedHotel.name} · ${accommodationGuests} guest${
+                      accommodationGuests === 1 ? "" : "s"
+                    }`
+                  : "None"}
+              </dd>
+            </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Contact</dt>
               <dd className="font-medium text-right">{customer.name}</dd>

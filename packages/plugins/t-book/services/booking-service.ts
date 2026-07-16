@@ -85,7 +85,18 @@ export class TBookBookingService {
     let nights = 0
     const selections: TBookSelections = (parsed.selections ?? {}) as TBookSelections
 
-    if (parsed.hotelId) {
+    const maxHotelGuests = accommodationGuestCount(parsed.guests, event)
+    let hotelGuests =
+      parsed.accommodationGuests == null ? maxHotelGuests : parsed.accommodationGuests
+    if (hotelGuests > maxHotelGuests) {
+      throw new Error(
+        `Szállás létszám legfeljebb ${maxHotelGuests} fő lehet (${parsed.guests} belépő).`
+      )
+    }
+
+    const wantsHotel = Boolean(parsed.hotelId) && hotelGuests > 0
+
+    if (wantsHotel && parsed.hotelId) {
       const hotelQuery: Record<string, unknown> = {
         _id: oid(parsed.hotelId),
         status: "active",
@@ -98,11 +109,7 @@ export class TBookBookingService {
       const hotel = await TBookHotel.findOne(hotelQuery).lean()
       if (!hotel) throw new Error("Szállás nem található ehhez az eseményhez.")
 
-      const errors = validateHotelSelections(
-        hotel.pricing,
-        selections,
-        accommodationGuestCount(parsed.guests, event)
-      )
+      const errors = validateHotelSelections(hotel.pricing, selections, hotelGuests)
       if (errors.length > 0) {
         throw new Error(errors.map((e) => e.message).join(" "))
       }
@@ -113,10 +120,13 @@ export class TBookBookingService {
       hotelRegistrationFields = hotel.registrationFieldSchema ?? []
       nights = parsed.nights ?? eventNights(event)
     } else if (groupOptions.length > 0) {
+      hotelGuests = 0
       const errors = validateSelections(groupOptions, selections)
       if (errors.length > 0) {
         throw new Error(errors.map((e) => e.message).join(" "))
       }
+    } else {
+      hotelGuests = 0
     }
 
     const eventCurrency = normalizeTBookCurrency(event.currency)
@@ -128,7 +138,7 @@ export class TBookBookingService {
       ticketPriceBasis: event.ticketPriceBasis ?? "gross",
       ticketVatPercent: event.ticketVatPercent ?? 27,
       guests: parsed.guests,
-      accommodationGuests: accommodationGuestCount(parsed.guests, event),
+      accommodationGuests: hotelGuests,
       nights,
       accommodation,
       groupOptions,
@@ -170,6 +180,7 @@ export class TBookBookingService {
       {
         eventId: parsed.eventId,
         guests: parsed.guests,
+        accommodationGuests: parsed.accommodationGuests,
         hotelId: parsed.hotelId,
         nights: parsed.nights,
         selections: parsed.selections,
@@ -231,14 +242,16 @@ export class TBookBookingService {
       ? await TBookEventGroup.findById(event.groupId).lean()
       : null
 
+    const hasHotel = Boolean(hotelName) && (quote.accommodationGuests ?? 0) > 0
+
     return TBookBooking.create({
       organizationId: group?.organizationId ?? event.organizationId ?? null,
       groupId: event.groupId,
       eventId: event._id,
-      hotelId: parsed.hotelId ? oid(parsed.hotelId) : null,
+      hotelId: hasHotel && parsed.hotelId ? oid(parsed.hotelId) : null,
       eventName: event.name,
       groupName: group?.name ?? "",
-      hotelName,
+      hotelName: hasHotel ? hotelName : "",
       customer: {
         name: parsed.customer.name.trim(),
         email: parsed.customer.email.trim().toLowerCase(),

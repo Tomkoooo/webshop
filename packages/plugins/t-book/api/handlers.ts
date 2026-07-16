@@ -176,11 +176,26 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       return json(buildTBookOpenApiSpec(getPublicAppBaseUrl()), 200, request)
     }
 
-    // ---- Stripe success/cancel landing (no key: browser redirect; legacy URL) ---
+    // ---- Legacy Stripe return: always redirect to this host's success page ---
+    // (Finalize + email happen via /checkout/status poll — proxied when upstream.)
     if (segment === "checkout" && path[1] === "return" && method === "GET") {
       return handleCheckoutReturn(request)
     }
 
+    // ---- Public directory (no API key) ------------------------------------
+    if (segment === "directory" && method === "GET" && path.length === 1) {
+      const listings = await TBookEventService.listPublicDirectory()
+      return json({ ok: true, listings }, 200, request)
+    }
+
+    // ---- Thin storefronts (WDF): proxy booking/checkout to upstream tBook ----
+    // Must run before local checkout handlers — bookings live on the upstream DB.
+    const upstreamBase = getTBookUpstreamApiBase()
+    if (upstreamBase && shouldProxyPublicTBookRoute(segment, path, method)) {
+      return proxyTBookPublicRequest(request, upstreamBase, path, corsHeaders)
+    }
+
+    // ---- Stripe success polling + guest PDF downloads (local / primary host) ---
     if (segment === "checkout" && path[1] === "status" && method === "GET" && path.length === 2) {
       const url = new URL(request.url)
       const bookingId = url.searchParams.get("bookingId") || ""
@@ -237,17 +252,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       }
     }
 
-    // ---- Public directory (no API key) ------------------------------------
-    if (segment === "directory" && method === "GET" && path.length === 1) {
-      const listings = await TBookEventService.listPublicDirectory()
-      return json({ ok: true, listings }, 200, request)
-    }
-
-    // ---- Public, API-key protected ----------------------------------------
-    const upstreamBase = getTBookUpstreamApiBase()
-    if (upstreamBase && shouldProxyPublicTBookRoute(segment, path, method)) {
-      return proxyTBookPublicRequest(request, upstreamBase, path, corsHeaders)
-    }
+    // ---- Public, API-key protected (local) ---------------------------------
 
     if (segment === "events" && method === "GET" && path.length === 1) {
       const { groupId } = await requireApiKeyGroup(request)
@@ -582,6 +587,7 @@ async function handleTBookAdminApi(
         nights: b.nights,
         selections: b.selections,
         totalHuf: b.totalHuf,
+        currency: b.currency ?? "HUF",
         status: b.status,
         invoiceStatus: b.invoiceStatus,
         invoiceId: b.invoiceId,
@@ -654,6 +660,7 @@ async function handleTBookAdminApi(
         selections: booking.selections,
         quote: booking.quote,
         totalHuf: booking.totalHuf,
+        currency: booking.currency ?? "HUF",
         status: booking.status,
         stripeSessionId: booking.stripeSessionId,
         paidAt: booking.paidAt,

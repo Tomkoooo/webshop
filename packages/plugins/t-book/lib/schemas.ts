@@ -449,6 +449,8 @@ export const selectionsSchema = z.record(
 export const quoteRequestSchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
+  /** Hotel headcount; omit for all entries. Use 0 with no hotelId for tickets-only. */
+  accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
   hotelId: z.string().nullable().optional(),
   nights: z.number().int().min(1).max(60).nullable().optional(),
   selections: selectionsSchema.nullable().optional(),
@@ -457,6 +459,7 @@ export const quoteRequestSchema = z.object({
 export const createBookingSchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
+  accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
   customer: z.object({
     name: z.string().min(1, "Név kötelező"),
     email: z.string().email("Érvényes email szükséges"),

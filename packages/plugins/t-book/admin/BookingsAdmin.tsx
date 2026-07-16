@@ -14,7 +14,7 @@ import {
 } from "@wse/core/components/ui/dialog"
 import {
   tBookAdminApi,
-  formatHuf,
+  formatMoney,
   BOOKING_STATUS_LABELS,
   INVOICE_STATUS_LABELS,
   TBOOK_ADMIN_API,
@@ -25,6 +25,7 @@ import {
   type AdminGroup,
   type AdminVoucher,
 } from "./t-book-api"
+import { useOrgCurrency } from "./use-org-currency"
 import { SendVoucherDialog } from "./SendVoucherDialog"
 import {
   formatAttendeeFieldValue,
@@ -424,12 +425,14 @@ function BookingDetailDialog({
               {booking.quote.lines.map((line) => (
                 <div key={line.key} className="flex justify-between">
                   <span className="text-muted-foreground">{line.label}</span>
-                  <span className="text-foreground">{formatHuf(line.amountHuf)}</span>
+                  <span className="text-foreground">
+                    {formatMoney(line.amountHuf, booking.currency)}
+                  </span>
                 </div>
               ))}
               <div className="flex justify-between border-t border-border mt-2 pt-2 font-semibold">
                 <span>Összesen</span>
-                <span>{formatHuf(booking.totalHuf)}</span>
+                <span>{formatMoney(booking.totalHuf, booking.currency)}</span>
               </div>
               </CardContent>
             </Card>
@@ -515,6 +518,7 @@ function BookingDetailDialog({
 }
 
 export function BookingsAdmin() {
+  const { currency: orgCurrency } = useOrgCurrency()
   const [rows, setRows] = useState<AdminBookingRow[]>([])
   const [events, setEvents] = useState<AdminEvent[]>([])
   const [groups, setGroups] = useState<AdminGroup[]>([])
@@ -701,7 +705,7 @@ export function BookingsAdmin() {
         </span>
         <span>
           Fizetett bevétel a szűrésben:{" "}
-          <strong className="text-foreground">{formatHuf(revenue)}</strong>
+          <strong className="text-foreground">{formatMoney(revenue, orgCurrency)}</strong>
         </span>
         <span>
           Vendégek: <strong className="text-foreground">{guests}</strong>
@@ -766,7 +770,7 @@ export function BookingsAdmin() {
                       {formatSelections(row.selections ?? {}) || "—"}
                     </td>
                     <td className="p-3 whitespace-nowrap font-semibold text-foreground">
-                      {formatHuf(row.totalHuf)}
+                      {formatMoney(row.totalHuf, row.currency || orgCurrency)}
                     </td>
                     <td className="p-3">
                       <TBookStatusBadge status={row.status} labels={BOOKING_STATUS_LABELS} />

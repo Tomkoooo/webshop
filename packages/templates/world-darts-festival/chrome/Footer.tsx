@@ -7,7 +7,11 @@ import { Button } from "@wse/core/components/ui/button"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { hasContactFieldValue } from "@wse/core/lib/contact-display"
 import { FooterLegalLinks } from "@wse/core/templates/chrome/FooterLegalLinks"
-import type { FooterSettings, FooterContactEntry } from "@wse/core/services/footer-settings"
+import type {
+  FooterSettings,
+  FooterContactEntry,
+  FooterOrganizerSection,
+} from "@wse/core/services/footer-settings"
 import type { ChromeProps, SiteContactEntry } from "@wse/sdk/templates/types"
 
 const WDF_DEFAULT_QUICK_LINKS = [
@@ -115,6 +119,22 @@ export function Footer({
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName)
 
+  const organizer: FooterOrganizerSection = footerSettings?.organizerSection ?? {
+    title: "",
+    companyName: "",
+    registeredAddress: "",
+    mailingAddress: "",
+    openingHours: "",
+    taxNumber: "",
+  }
+  const hasOrganizer =
+    Boolean(organizer.companyName?.trim()) ||
+    Boolean(organizer.registeredAddress?.trim()) ||
+    Boolean(organizer.mailingAddress?.trim()) ||
+    Boolean(organizer.openingHours?.trim()) ||
+    Boolean(organizer.taxNumber?.trim()) ||
+    Boolean(organizer.title?.trim())
+
   const patchSettings = (patch: Partial<FooterSettings>) => {
     if (!cmsEditable || !onSettingsChange) return
     void onSettingsChange({
@@ -128,6 +148,9 @@ export function Footer({
       newsletterPlaceholder: footerSettings?.newsletterPlaceholder ?? "",
       copyrightText: footerSettings?.copyrightText ?? "",
       socialLinks: footerSettings?.socialLinks ?? [],
+      contactEntries: footerSettings?.contactEntries ?? [],
+      organizerSection: footerSettings?.organizerSection ?? organizer,
+      paymentMethodsNote: footerSettings?.paymentMethodsNote ?? "",
       ...patch,
     })
   }
@@ -138,7 +161,7 @@ export function Footer({
   return (
     <footer className="border-t border-border bg-surface text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-12">
-        <div className="grid gap-10 md:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
             {logoSrc ? (
               <FallbackImage
@@ -199,38 +222,105 @@ export function Footer({
                   <ContactEntryRow key={`${entry.label}-${index}`} entry={entry} />
                 ))}
               </div>
-            ) : contactEmails.length > 0 ? (
-              <ul className="space-y-1">
-                {contactEmails.map((entry) => (
-                  <li key={entry.id}>
-                    <a
-                      href={`mailto:${entry.email}`}
-                      className="block text-muted-foreground hover:text-primary"
-                    >
-                      {entry.label ? (
-                        <span>
-                          <span className="text-foreground/80">{entry.label}: </span>
-                          {entry.email}
-                        </span>
-                      ) : (
-                        entry.email
-                      )}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : hasContactFieldValue(email) ? (
-              <a href={`mailto:${email}`} className="block text-muted-foreground hover:text-primary">
-                {email}
-              </a>
-            ) : null}
-            {!useContactEntries && hasContactFieldValue(phone) ? (
-              <p className="text-muted-foreground">{phone}</p>
-            ) : null}
-            {!useContactEntries && hasContactFieldValue(address) ? (
-              <p className="text-muted-foreground">{address}</p>
-            ) : null}
+            ) : (
+              <>
+                {contactEmails.length > 0 ? (
+                  <ul className="space-y-1">
+                    {contactEmails.map((entry) => (
+                      <li key={entry.id}>
+                        <a
+                          href={`mailto:${entry.email}`}
+                          className="block text-muted-foreground hover:text-primary"
+                        >
+                          {entry.label ? (
+                            <span>
+                              <span className="text-foreground/80">{entry.label}: </span>
+                              {entry.email}
+                            </span>
+                          ) : (
+                            entry.email
+                          )}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : hasContactFieldValue(email) ? (
+                  <a
+                    href={`mailto:${email}`}
+                    className="block text-muted-foreground hover:text-primary"
+                  >
+                    {email}
+                  </a>
+                ) : null}
+                {hasContactFieldValue(phone) ? (
+                  <p className="text-muted-foreground">{phone}</p>
+                ) : null}
+                {hasContactFieldValue(address) ? (
+                  <p className="text-muted-foreground">{address}</p>
+                ) : null}
+              </>
+            )}
           </div>
+
+          {hasOrganizer || cmsEditable ? (
+            <div className="space-y-2 text-sm">
+              {cmsEditable ? (
+                <input
+                  value={organizer.title}
+                  onChange={(event) =>
+                    patchSettings({
+                      organizerSection: { ...organizer, title: event.target.value },
+                    })
+                  }
+                  className={controlClass}
+                  placeholder="Organizer title"
+                />
+              ) : organizer.title?.trim() ? (
+                <p className="font-semibold">{organizer.title}</p>
+              ) : (
+                <p className="font-semibold">Organizer</p>
+              )}
+              {(
+                [
+                  ["companyName", "Company"],
+                  ["taxNumber", "Tax number"],
+                  ["registeredAddress", "Registered address"],
+                  ["mailingAddress", "Mailing address"],
+                  ["openingHours", "Opening hours"],
+                ] as const
+              ).map(([key, placeholder]) => {
+                const value = organizer[key] ?? ""
+                if (cmsEditable) {
+                  return (
+                    <input
+                      key={key}
+                      value={value}
+                      onChange={(event) =>
+                        patchSettings({
+                          organizerSection: { ...organizer, [key]: event.target.value },
+                        })
+                      }
+                      className={controlClass}
+                      placeholder={placeholder}
+                    />
+                  )
+                }
+                if (!value.trim()) return null
+                return (
+                  <p key={key} className="text-muted-foreground">
+                    {key === "taxNumber" ? (
+                      <>
+                        <span className="text-foreground/80">Tax number: </span>
+                        {value}
+                      </>
+                    ) : (
+                      value
+                    )}
+                  </p>
+                )
+              })}
+            </div>
+          ) : null}
 
           <div className="space-y-2 text-sm">
             {cmsEditable ? (

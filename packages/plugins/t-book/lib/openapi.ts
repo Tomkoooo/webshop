@@ -386,6 +386,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                   properties: {
                     eventId: { type: "string" },
                     guests: { type: "integer", minimum: 1 },
+                    accommodationGuests: {
+                      type: ["integer", "null"],
+                      minimum: 0,
+                      description:
+                        "Szállás létszám (lehet kevesebb, mint a belépők). Üres = minden belépő. 0 = nincs szállás.",
+                    },
                     hotelId: { type: ["string", "null"] },
                     nights: {
                       type: ["integer", "null"],
@@ -431,6 +437,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                   properties: {
                     eventId: { type: "string" },
                     guests: { type: "integer", minimum: 1 },
+                    accommodationGuests: {
+                      type: ["integer", "null"],
+                      minimum: 0,
+                      description:
+                        "Szállás létszám (lehet kevesebb, mint a belépők). Üres = minden belépő. 0 = nincs szállás.",
+                    },
                     customer: {
                       type: "object",
                       description:
