@@ -25,6 +25,7 @@ import {
   TBookPrimaryButton,
   TBookStatusBadge,
 } from "./t-book-admin-ui"
+import { GroupDefaultsPanel } from "./GroupDefaultsPanel"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 
 export function GroupDetailAdmin({ groupId }: { groupId: string }) {
@@ -115,6 +116,8 @@ export function GroupDetailAdmin({ groupId }: { groupId: string }) {
           </p>
         ) : null}
       </div>
+
+      <GroupDefaultsPanel groupId={groupId} />
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -26,6 +26,7 @@ import { TBookSingleMediaField } from "./TBookMediaField"
 import { TBookNetPriceField } from "./TBookNetPriceField"
 import { CurrencySelect } from "./CurrencySelect"
 import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
+import { ELIGIBILITY_PRESET_LABELS } from "../lib/eligibility"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
@@ -63,6 +64,7 @@ type EventDraft = {
   ticketFeeHuf: number
   ticketFeeMode: AdminEvent["ticketFeeMode"]
   registrationUnit: AdminEvent["registrationUnit"]
+  playersPerTicket: string
   teamMemberLimit: string
   teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
@@ -74,6 +76,12 @@ type EventDraft = {
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   attendeeFieldSchemaMode: AdminEvent["attendeeFieldSchemaMode"]
+  eligibilityPreset: AdminEvent["eligibilityPreset"]
+  eligibilityMinAge: string
+  eligibilityMaxAge: string
+  eligibilityAllowedGenders: string
+  eligibilityBirthDateFieldKey: string
+  eligibilityGenderFieldKey: string
 }
 
 export function EventFormPage({
@@ -107,6 +115,7 @@ export function EventFormPage({
     ticketFeeHuf: 0,
     ticketFeeMode: "per_person",
     registrationUnit: "person",
+    playersPerTicket: "1",
     teamMemberLimit: "",
     teamMemberFieldSchema: [],
     ticketPriceBasis: "net",
@@ -118,6 +127,12 @@ export function EventFormPage({
     vouchersEnabled: true,
     attendeeFieldSchema: [],
     attendeeFieldSchemaMode: "extend",
+    eligibilityPreset: "none",
+    eligibilityMinAge: "",
+    eligibilityMaxAge: "",
+    eligibilityAllowedGenders: "",
+    eligibilityBirthDateFieldKey: "",
+    eligibilityGenderFieldKey: "",
   })
 
   useEffect(() => {
@@ -152,6 +167,7 @@ export function EventFormPage({
             ticketFeeHuf: e.ticketFeeHuf,
             ticketFeeMode: e.ticketFeeMode,
             registrationUnit: e.registrationUnit ?? "person",
+            playersPerTicket: String(e.playersPerTicket ?? 1),
             teamMemberLimit: e.teamMemberLimit != null ? String(e.teamMemberLimit) : "",
             teamMemberFieldSchema: e.teamMemberFieldSchema ?? [],
             ticketPriceBasis: e.ticketPriceBasis ?? "net",
@@ -163,6 +179,12 @@ export function EventFormPage({
             vouchersEnabled: e.vouchersEnabled !== false,
             attendeeFieldSchema: e.attendeeFieldSchema ?? [],
             attendeeFieldSchemaMode: e.attendeeFieldSchemaMode ?? "extend",
+            eligibilityPreset: e.eligibilityPreset ?? "none",
+            eligibilityMinAge: e.eligibilityMinAge != null ? String(e.eligibilityMinAge) : "",
+            eligibilityMaxAge: e.eligibilityMaxAge != null ? String(e.eligibilityMaxAge) : "",
+            eligibilityAllowedGenders: (e.eligibilityAllowedGenders ?? []).join(", "),
+            eligibilityBirthDateFieldKey: e.eligibilityBirthDateFieldKey ?? "",
+            eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? "",
           })
         })
       )
@@ -209,6 +231,7 @@ export function EventFormPage({
       ticketFeeHuf: draft.ticketFeeHuf,
       ticketFeeMode: draft.ticketFeeMode,
       registrationUnit: draft.registrationUnit,
+      playersPerTicket: draft.playersPerTicket ? Number(draft.playersPerTicket) : 1,
       teamMemberLimit: draft.teamMemberLimit ? Number(draft.teamMemberLimit) : null,
       teamMemberFieldSchema: draft.teamMemberFieldSchema,
       ticketPriceBasis: draft.ticketPriceBasis,
@@ -220,6 +243,15 @@ export function EventFormPage({
       vouchersEnabled: draft.vouchersEnabled,
       attendeeFieldSchema: draft.attendeeFieldSchema,
       attendeeFieldSchemaMode: draft.attendeeFieldSchemaMode,
+      eligibilityPreset: draft.eligibilityPreset,
+      eligibilityMinAge: draft.eligibilityMinAge ? Number(draft.eligibilityMinAge) : null,
+      eligibilityMaxAge: draft.eligibilityMaxAge ? Number(draft.eligibilityMaxAge) : null,
+      eligibilityAllowedGenders: draft.eligibilityAllowedGenders
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      eligibilityBirthDateFieldKey: draft.eligibilityBirthDateFieldKey.trim() || null,
+      eligibilityGenderFieldKey: draft.eligibilityGenderFieldKey.trim() || null,
       status: draft.status,
     }
     try {
@@ -380,7 +412,7 @@ export function EventFormPage({
                   </TBookSelect>
                 </TBookField>
               </div>
-              <TBookField label={`Kapacitás (üres = korlátlan, ${draft.registrationUnit === "team" ? "csapat" : "fő"})`}>
+              <TBookField label={`Kapacitás (üres = korlátlan, ${draft.registrationUnit === "team" ? "csapat" : "jegy"})`}>
                 <TBookInput
                   type="number"
                   min={0}
@@ -388,8 +420,27 @@ export function EventFormPage({
                   onChange={(e) => patch({ capacity: e.target.value })}
                 />
               </TBookField>
+              <TBookField
+                label={
+                  draft.registrationUnit === "team"
+                    ? "Játékosok / csapat (fix létszám)"
+                    : "Játékosok / jegy (pl. pár = 2)"
+                }
+              >
+                <TBookInput
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={draft.playersPerTicket}
+                  onChange={(e) => patch({ playersPerTicket: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ennyi játékos adatot kell megadni jegyenként. A szállás és csomagajánlatok
+                  számítása: jegyek × játékosok (pl. 1 párjegy × 2 = 2 fő szálláshoz).
+                </p>
+              </TBookField>
               {draft.registrationUnit === "team" ? (
-                <TBookField label="Max. csapattag / csapat (üres = korlátlan)">
+                <TBookField label="Max. csapattag / csapat (üres = korlátlan, fix létszám felett)">
                   <TBookInput
                     type="number"
                     min={1}
@@ -397,9 +448,12 @@ export function EventFormPage({
                     value={draft.teamMemberLimit}
                     onChange={(e) => patch({ teamMemberLimit: e.target.value })}
                     placeholder="pl. 5"
+                    disabled={Number(draft.playersPerTicket) > 1}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Korlátozza, hány tag adható meg csapatonként a foglalási űrlapon.
+                    {Number(draft.playersPerTicket) > 1
+                      ? "Fix játékosszám esetén a fenti mező határozza meg a csapattagok számát."
+                      : "Korlátozza, hány tag adható meg csapatonként a foglalási űrlapon."}
                   </p>
                 </TBookField>
               ) : null}
@@ -432,9 +486,13 @@ export function EventFormPage({
                 onChange={(attendeeFieldSchema) => patch({ attendeeFieldSchema })}
                 registrationUnit={draft.registrationUnit}
               />
-              {draft.registrationUnit === "team" ? (
+              {draft.registrationUnit === "team" || Number(draft.playersPerTicket) > 1 ? (
                 <div className="border-t border-border pt-6 space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground">Csapattagok adatai</h3>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {Number(draft.playersPerTicket) > 1 && draft.registrationUnit === "person"
+                      ? "Játékos adatok (jegyenként)"
+                      : "Csapattagok adatai"}
+                  </h3>
                   <AttendeeFieldsEditor
                     fields={draft.teamMemberFieldSchema}
                     onChange={(teamMemberFieldSchema) => patch({ teamMemberFieldSchema })}
@@ -443,6 +501,74 @@ export function EventFormPage({
                   />
                 </div>
               ) : null}
+              <div className="border-t border-border pt-6 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Eligibilitás (kor / nem)</h3>
+                <TBookField label="Előbeállítás">
+                  <TBookSelect
+                    value={draft.eligibilityPreset}
+                    onChange={(e) =>
+                      patch({
+                        eligibilityPreset: e.target.value as EventDraft["eligibilityPreset"],
+                      })
+                    }
+                  >
+                    {Object.entries(ELIGIBILITY_PRESET_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </TBookSelect>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    A foglaláskor ellenőrizzük a születési dátum / nem mezőket. Ha nincs megadva
+                    mezőkulcs, automatikusan felismerjük a regisztrációs űrlapról.
+                  </p>
+                </TBookField>
+                {draft.eligibilityPreset === "custom" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <TBookField label="Minimum életkor">
+                      <TBookInput
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={draft.eligibilityMinAge}
+                        onChange={(e) => patch({ eligibilityMinAge: e.target.value })}
+                      />
+                    </TBookField>
+                    <TBookField label="Maximum életkor">
+                      <TBookInput
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={draft.eligibilityMaxAge}
+                        onChange={(e) => patch({ eligibilityMaxAge: e.target.value })}
+                      />
+                    </TBookField>
+                    <TBookField label="Engedélyezett nem értékek (vesszővel)">
+                      <TBookInput
+                        value={draft.eligibilityAllowedGenders}
+                        onChange={(e) => patch({ eligibilityAllowedGenders: e.target.value })}
+                        placeholder="female, nő"
+                      />
+                    </TBookField>
+                  </div>
+                ) : null}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <TBookField label="Születési dátum mező kulcs (opcionális)">
+                    <TBookInput
+                      value={draft.eligibilityBirthDateFieldKey}
+                      onChange={(e) => patch({ eligibilityBirthDateFieldKey: e.target.value })}
+                      placeholder="birth_date"
+                    />
+                  </TBookField>
+                  <TBookField label="Nem mező kulcs (opcionális)">
+                    <TBookInput
+                      value={draft.eligibilityGenderFieldKey}
+                      onChange={(e) => patch({ eligibilityGenderFieldKey: e.target.value })}
+                      placeholder="gender"
+                    />
+                  </TBookField>
+                </div>
+              </div>
             </div>
           ) : null}
           {step === 4 ? (

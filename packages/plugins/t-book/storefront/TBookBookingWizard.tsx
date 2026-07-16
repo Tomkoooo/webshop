@@ -6,20 +6,35 @@ import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
+  PACKAGE_UNITS_SELECTION_KEY,
   findPackageDeal,
-  formatPackageDealCapacityLabel,
   guestPackageDeals,
-  packageUnitsForGuests,
   hotelRequiresPackageSelection,
   hotelShowsPackageSelection,
   hotelShowsRoomSelection,
   resolveAccommodationMode,
 } from "../lib/hotel-pricing"
+import { suggestPackageCombinations } from "../lib/package-optimization"
+import {
+  accommodationGuestCount,
+  needsPlayerMemberForms,
+  playerFieldSchema,
+  playerRosterSize,
+  resolvePlayersPerTicket,
+} from "../lib/registration-headcount"
+import { PackageSelectionCards } from "./PackageSelectionCards"
+import {
+  BookingBillingForm,
+  emptyBillingForm,
+  isBillingFormValid,
+  type BillingFormState,
+} from "./BookingBillingForm"
 import {
   AttendeeFieldInput,
   BookingOptionField,
   BookingStepIndicator,
   optionVisible,
+  selectionOptionValue,
 } from "./booking-fields"
 import {
   createBooking,
@@ -64,9 +79,18 @@ type Copy = {
 const INPUT =
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
 
-function emptyAttendeeRows(count: number, withTeamMembers: boolean): TBookBookingAttendeePayload[] {
+function emptyAttendeeRows(
+  count: number,
+  memberCount: number,
+  withMembers: boolean
+): TBookBookingAttendeePayload[] {
   return Array.from({ length: count }, () =>
-    withTeamMembers ? { fields: {}, members: [{ fields: {} }] } : { fields: {} }
+    withMembers
+      ? {
+          fields: {},
+          members: Array.from({ length: memberCount }, () => ({ fields: {} })),
+        }
+      : { fields: {} }
   )
 }
 
@@ -120,10 +144,13 @@ function applyEventDetailToWizardState(
     return
   }
   const firstHotel = detail.hotels[0] ?? null
-  setters.setEvent(detail.event)
+  const eventDetail = detail.event
+  const rosterSize = eventDetail ? resolvePlayersPerTicket(eventDetail) : 1
+  const withMembers = eventDetail ? needsPlayerMemberForms(eventDetail) : false
+  setters.setEvent(eventDetail)
   setters.setHotels(detail.hotels)
-  setters.setNights(detail.event.nights)
-  setters.setAttendees(emptyAttendeeRows(1, false))
+  setters.setNights(eventDetail?.nights ?? 1)
+  setters.setAttendees(emptyAttendeeRows(1, rosterSize, withMembers))
   setters.setSelectedHotelId(firstHotel?.id ?? null)
   setters.setSelections(defaultSelectionsForHotel(firstHotel))
   setters.setError(null)
@@ -160,6 +187,7 @@ export function TBookBookingWizard({
     defaultSelectionsForHotel(initialEventDetail?.hotels[0] ?? null)
   )
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "", note: "" })
+  const [billing, setBilling] = useState<BillingFormState>(() => emptyBillingForm())
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
 
@@ -176,11 +204,14 @@ export function TBookBookingWizard({
     [event?.attendeeFieldSchema, selectedHotel?.registrationFieldSchema]
   )
   const registrationUnit = event?.registrationUnit ?? "person"
+  const playersPerTicket = event ? resolvePlayersPerTicket(event) : 1
   const teamMemberFieldSchema = event?.teamMemberFieldSchema ?? []
   const teamMemberLimit = event?.teamMemberLimit ?? null
+  const fixedRosterSize = event ? playerRosterSize(event) : null
   const guestUnitLabel = registrationUnitLabel(registrationUnit, guests)
-  const needsTeamMembers =
-    registrationUnit === "team" && teamMemberFieldSchema.length > 0
+  const needsPlayerMembers = event ? needsPlayerMemberForms(event) : false
+  const accommodationGuests = event ? accommodationGuestCount(guests, event) : guests
+  const playerFields = event ? playerFieldSchema(event) : teamMemberFieldSchema
   const displayCurrency = hotelDisplayCurrency(selectedHotel, event)
   const accommodationMode = selectedHotel
     ? resolveAccommodationMode(selectedHotel.pricing)
@@ -190,10 +221,6 @@ export function TBookBookingWizard({
   const packagesRequired = selectedHotel ? hotelRequiresPackageSelection(selectedHotel.pricing) : false
   const roomTypeKey = String(selections[ROOM_TYPE_SELECTION_KEY] ?? "")
   const packageDealKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
-  const selectedPackage = packageDealKey && selectedHotel
-    ? findPackageDeal(selectedHotel.pricing, packageDealKey)
-    : null
-  const packageUnits = selectedPackage ? packageUnitsForGuests(selectedPackage, guests) : 1
   const availablePackages = useMemo(() => {
     if (!selectedHotel || !showPackages) return []
     return guestPackageDeals(
@@ -202,6 +229,21 @@ export function TBookBookingWizard({
       showRooms ? roomTypeKey : undefined
     )
   }, [selectedHotel, showPackages, packagesRequired, nights, showRooms, roomTypeKey])
+  const packageSuggestions = useMemo(() => {
+    if (!selectedHotel || !showPackages || accommodationGuests < 1) return []
+    const packages = availablePackages.filter(
+      (p) => p.maxGuests != null && p.maxGuests > 0
+    )
+    if (packages.length === 0) return []
+    return suggestPackageCombinations(accommodationGuests, packages)
+  }, [selectedHotel, showPackages, accommodationGuests, availablePackages])
+  const activePackageUnits = useMemo(() => {
+    const raw = selections[PACKAGE_UNITS_SELECTION_KEY]
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      return raw as Record<string, number>
+    }
+    return null
+  }, [selections])
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
 
   useEffect(() => {
@@ -239,9 +281,12 @@ export function TBookBookingWizard({
   }, [loadEvent, serverProvided])
 
   useEffect(() => {
-    setAttendees(emptyAttendeeRows(guests, needsTeamMembers))
+    if (!event) return
+    setAttendees(
+      emptyAttendeeRows(guests, resolvePlayersPerTicket(event), needsPlayerMemberForms(event))
+    )
     setQuote(null)
-  }, [guests, registrationFieldSchema.length, needsTeamMembers])
+  }, [guests, event, registrationFieldSchema.length])
 
   useEffect(() => {
     if (!selectedHotel) {
@@ -254,6 +299,25 @@ export function TBookBookingWizard({
 
   const patchSelection = (key: string, value: string | number | boolean | string[]) => {
     setSelections((s) => ({ ...s, [key]: value }))
+    setQuote(null)
+  }
+
+  useEffect(() => {
+    if (billing.billingType === "personal" && customer.name.trim() && !billing.name.trim()) {
+      setBilling((b) => ({ ...b, name: customer.name }))
+    }
+  }, [customer.name, billing.billingType, billing.name])
+
+  const applyPackagePlan = (units: Record<string, number>) => {
+    setSelections((s) => {
+      const next: TBookSelections = { ...s }
+      delete next[PACKAGE_DEAL_SELECTION_KEY]
+      next[PACKAGE_UNITS_SELECTION_KEY] = units
+      const firstKey = Object.keys(units)[0]
+      const pkg = firstKey && selectedHotel ? findPackageDeal(selectedHotel.pricing, firstKey) : null
+      if (pkg) setNights(pkg.nights)
+      return next
+    })
     setQuote(null)
   }
 
@@ -293,8 +357,11 @@ export function TBookBookingWizard({
           eventId: event.id,
           guests,
           customer,
+          billing,
+          returnBaseUrl:
+            typeof window !== "undefined" ? window.location.origin : undefined,
           attendees:
-            registrationFieldSchema.length > 0 || needsTeamMembers ? attendees : undefined,
+            registrationFieldSchema.length > 0 || needsPlayerMembers ? attendees : undefined,
           hotelId: selectedHotelId,
           nights: selectedHotelId ? nights : null,
           selections: selectedHotelId ? selections : null,
@@ -312,7 +379,8 @@ export function TBookBookingWizard({
     customer.name.trim() &&
     customer.email.trim() &&
     customer.phone.trim() &&
-    (registrationFieldSchema.length === 0 && !needsTeamMembers
+    isBillingFormValid(billing) &&
+    (registrationFieldSchema.length === 0 && !needsPlayerMembers
       ? true
       : attendees.every((row) => {
           const teamFieldsOk =
@@ -323,12 +391,12 @@ export function TBookBookingWizard({
               return val != null && String(val).trim() !== ""
             })
           if (!teamFieldsOk) return false
-          if (!needsTeamMembers) return true
+          if (!needsPlayerMembers) return true
           const members = row.members ?? []
-          if (members.length === 0) return false
-          if (teamMemberLimit != null && members.length > teamMemberLimit) return false
+          const requiredMembers = fixedRosterSize ?? 1
+          if (members.length !== requiredMembers) return false
           return members.every((member) =>
-            teamMemberFieldSchema.every((field) => {
+            playerFields.every((field) => {
               if (!field.required) return true
               const val = member.fields[field.key]
               return val != null && String(val).trim() !== ""
@@ -401,7 +469,11 @@ export function TBookBookingWizard({
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">
-              {registrationUnit === "team" ? "Csapatok száma" : copy.guestsLabel}
+              {registrationUnit === "team"
+                ? "Csapatok száma"
+                : playersPerTicket > 1
+                  ? `Jegyek száma (${playersPerTicket} játékos / jegy)`
+                  : copy.guestsLabel}
             </span>
             <input
               type="number"
@@ -411,6 +483,12 @@ export function TBookBookingWizard({
               value={guests}
               onChange={(e) => setGuests(Number(e.target.value))}
             />
+            {playersPerTicket > 1 ? (
+              <p className="text-xs text-muted-foreground">
+                Szálláshoz összesen {accommodationGuests} fő ({guests} jegy × {playersPerTicket}{" "}
+                játékos)
+              </p>
+            ) : null}
           </label>
 
           <label className="block space-y-1.5">
@@ -469,41 +547,34 @@ export function TBookBookingWizard({
               ) : null}
 
               {showPackages && availablePackages.length > 0 ? (
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium">
-                    {packagesRequired ? "Csomagajánlat" : "Csomagajánlat (opcionális)"}
-                  </span>
-                  <select
-                    className={INPUT}
-                    value={packageDealKey}
-                    onChange={(e) => {
-                      patchSelection(PACKAGE_DEAL_SELECTION_KEY, e.target.value)
-                      if (packagesRequired && e.target.value) {
-                        const pkg = findPackageDeal(selectedHotel.pricing, e.target.value)
-                        if (pkg) setNights(pkg.nights)
-                      }
-                    }}
-                    required={packagesRequired}
-                  >
-                    {!packagesRequired ? <option value="">Per-éjszaka ár</option> : null}
-                    {availablePackages.map((pkg) => (
-                      <option key={pkg.key} value={pkg.key}>
-                        {pkg.label} — {formatHuf(pkg.priceHuf, displayCurrency)}
-                        {pkg.nights > 1 ? ` (${pkg.nights} éj)` : ""}
-                        {pkg.maxGuests != null && pkg.maxGuests > 0 ? ` · max ${pkg.maxGuests} fő` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedPackage?.maxGuests != null && selectedPackage.maxGuests > 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      {formatPackageDealCapacityLabel(selectedPackage, guests) ??
-                        `Max ${selectedPackage.maxGuests} fő/csomag`}
-                      {packageUnits > 1
-                        ? ` · ${formatHuf(selectedPackage.priceHuf * packageUnits, displayCurrency)} összesen`
-                        : null}
-                    </p>
-                  ) : null}
-                </label>
+                <PackageSelectionCards
+                  packages={availablePackages}
+                  packagesRequired={packagesRequired}
+                  packageDealKey={packageDealKey}
+                  activePackageUnits={activePackageUnits}
+                  accommodationGuests={accommodationGuests}
+                  displayCurrency={displayCurrency}
+                  suggestions={packageSuggestions}
+                  onSelectPackage={(key, pkgNights) => {
+                    setSelections((s) => {
+                      const next: TBookSelections = { ...s, [PACKAGE_DEAL_SELECTION_KEY]: key }
+                      delete next[PACKAGE_UNITS_SELECTION_KEY]
+                      return next
+                    })
+                    if (packagesRequired) setNights(pkgNights)
+                    setQuote(null)
+                  }}
+                  onApplyPlan={applyPackagePlan}
+                  onClearPackage={() => {
+                    setSelections((s) => {
+                      const next: TBookSelections = { ...s }
+                      delete next[PACKAGE_DEAL_SELECTION_KEY]
+                      delete next[PACKAGE_UNITS_SELECTION_KEY]
+                      return next
+                    })
+                    setQuote(null)
+                  }}
+                />
               ) : null}
 
               {extrasSection ? (
@@ -519,7 +590,7 @@ export function TBookBookingWizard({
                       <BookingOptionField
                         key={option.key}
                         option={option}
-                        value={selections[option.key]}
+                        value={selectionOptionValue(selections, option.key)}
                         visible={optionVisible(option, selections)}
                         onChange={(v) => patchSelection(option.key, v)}
                         inputClassName={INPUT}
@@ -535,7 +606,7 @@ export function TBookBookingWizard({
                       <BookingOptionField
                         key={option.key}
                         option={option}
-                        value={selections[option.key]}
+                        value={selectionOptionValue(selections, option.key)}
                         visible={optionVisible(option, selections)}
                         onChange={(v) => patchSelection(option.key, v)}
                         inputClassName={INPUT}
@@ -581,12 +652,17 @@ export function TBookBookingWizard({
             </div>
           </div>
 
-          {registrationFieldSchema.length > 0 || needsTeamMembers ? (
+          <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
+
+          {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
             <div className="space-y-4 border-t border-border pt-4">
               <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
               <p className="text-sm text-muted-foreground">
                 {selectedHotel && (selectedHotel.registrationFieldSchema?.length ?? 0) > 0
                   ? `Az esemény és a választott szállás (${selectedHotel.name}) által kért adatok. `
+                  : ""}
+                {playersPerTicket > 1
+                  ? `Jegyenként ${playersPerTicket} játékos adata szükséges. `
                   : ""}
                 {copy.attendeesHint}
               </p>
@@ -614,16 +690,18 @@ export function TBookBookingWizard({
                       ))}
                     </div>
                   ) : null}
-                  {needsTeamMembers ? (
+                  {needsPlayerMembers ? (
                     <div className="space-y-3 border-t border-border pt-3">
-                      <p className="text-sm font-medium">Csapattagok</p>
+                      <p className="text-sm font-medium">
+                        {registrationUnit === "team" ? "Csapattagok" : "Játékosok"}
+                      </p>
                       {(attendee.members ?? []).map((member, memberIndex) => (
                         <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
                           <p className="text-xs font-semibold text-muted-foreground">
-                            {memberIndex + 1}. tag
+                            {memberIndex + 1}. játékos
                           </p>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            {teamMemberFieldSchema.map((field) => (
+                            {playerFields.map((field) => (
                               <AttendeeFieldInput
                                 key={field.key}
                                 field={field}
@@ -648,7 +726,7 @@ export function TBookBookingWizard({
                               />
                             ))}
                           </div>
-                          {(attendee.members ?? []).length > 1 ? (
+                          {fixedRosterSize == null && (attendee.members ?? []).length > 1 ? (
                             <button
                               type="button"
                               className="text-xs text-destructive hover:underline"
@@ -667,13 +745,14 @@ export function TBookBookingWizard({
                                 )
                               }
                             >
-                              Tag eltávolítása
+                              Játékos eltávolítása
                             </button>
                           ) : null}
                         </div>
                       ))}
-                      {teamMemberLimit == null ||
-                      (attendee.members ?? []).length < teamMemberLimit ? (
+                      {fixedRosterSize == null &&
+                      (teamMemberLimit == null ||
+                        (attendee.members ?? []).length < teamMemberLimit) ? (
                         <button
                           type="button"
                           className="text-sm font-medium text-primary hover:underline"
@@ -690,7 +769,7 @@ export function TBookBookingWizard({
                             )
                           }
                         >
-                          + Csapattag hozzáadása
+                          + Játékos hozzáadása
                           {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
                         </button>
                       ) : null}

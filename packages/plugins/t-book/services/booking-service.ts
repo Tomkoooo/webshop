@@ -28,6 +28,8 @@ import {
 } from "../lib/attendee-fields"
 import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
 import { mergeRegistrationFieldSchemas, resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
+import { accommodationGuestCount } from "../lib/registration-headcount"
+import { validateEligibility } from "../lib/eligibility"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -93,7 +95,11 @@ export class TBookBookingService {
       const hotel = await TBookHotel.findOne(hotelQuery).lean()
       if (!hotel) throw new Error("Szállás nem található ehhez az eseményhez.")
 
-      const errors = validateHotelSelections(hotel.pricing, selections)
+      const errors = validateHotelSelections(
+        hotel.pricing,
+        selections,
+        accommodationGuestCount(parsed.guests, event)
+      )
       if (errors.length > 0) {
         throw new Error(errors.map((e) => e.message).join(" "))
       }
@@ -119,6 +125,7 @@ export class TBookBookingService {
       ticketPriceBasis: event.ticketPriceBasis ?? "gross",
       ticketVatPercent: event.ticketVatPercent ?? 27,
       guests: parsed.guests,
+      accommodationGuests: accommodationGuestCount(parsed.guests, event),
       nights,
       accommodation,
       groupOptions,
@@ -185,6 +192,7 @@ export class TBookBookingService {
 
     const registrationUnit = event.registrationUnit ?? "person"
     const teamMemberFieldSchema = normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? [])
+    const playersPerTicket = event.playersPerTicket ?? 1
     const attendeeIssues = validateAttendees(
       registrationFieldSchema,
       parsed.guests,
@@ -193,10 +201,22 @@ export class TBookBookingService {
       {
         teamMemberFieldSchema,
         teamMemberLimit: event.teamMemberLimit ?? null,
+        playersPerTicket: playersPerTicket > 1 ? playersPerTicket : null,
       }
     )
     if (attendeeIssues.length > 0) {
       throw new Error(attendeeIssues.map((issue) => issue.message).join(" "))
+    }
+
+    const eligibilityIssues = validateEligibility(
+      event,
+      parsed.attendees,
+      registrationFieldSchema,
+      teamMemberFieldSchema,
+      playersPerTicket > 1 ? playersPerTicket : null
+    )
+    if (eligibilityIssues.length > 0) {
+      throw new Error(eligibilityIssues.map((issue) => issue.message).join(" "))
     }
     const attendees = normalizeAttendeePayload(
       registrationFieldSchema,
@@ -222,10 +242,12 @@ export class TBookBookingService {
         phone: parsed.customer.phone.trim(),
         note: parsed.customer.note?.trim() ?? "",
       },
-      billing: parsed.billing ?? null,
+      billing: parsed.billing,
+      checkoutReturnBaseUrl: parsed.returnBaseUrl?.trim() || null,
       attendeeFieldSchema: registrationFieldSchema,
       teamMemberFieldSchema,
       teamMemberLimit: event.teamMemberLimit ?? null,
+      playersPerTicket: event.playersPerTicket ?? 1,
       attendees,
       guests: parsed.guests,
       nights,

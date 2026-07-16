@@ -44,6 +44,7 @@ export type AdminEvent = {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit: "person" | "team"
+  playersPerTicket: number
   teamMemberLimit: number | null
   teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
@@ -55,6 +56,12 @@ export type AdminEvent = {
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   attendeeFieldSchemaMode: "extend" | "replace"
+  eligibilityPreset: "none" | "under18" | "under18_female" | "women" | "custom"
+  eligibilityMinAge: number | null
+  eligibilityMaxAge: number | null
+  eligibilityAllowedGenders: string[]
+  eligibilityBirthDateFieldKey: string | null
+  eligibilityGenderFieldKey: string | null
   status: "draft" | "active" | "archived"
   sortOrder: number
 }

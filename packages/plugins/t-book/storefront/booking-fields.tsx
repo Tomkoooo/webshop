@@ -11,8 +11,18 @@ export function optionVisible(option: TBookPublicOptionDef, selections: TBookSel
   if (!option.dependsOn) return true
   const current = selections[option.dependsOn.key]
   if (current == null) return false
+  if (typeof current === "object" && !Array.isArray(current)) return false
   const values = Array.isArray(current) ? current.map(String) : [String(current)]
   return option.dependsOn.values.some((v) => values.includes(v))
+}
+
+export function selectionOptionValue(
+  selections: TBookSelections,
+  key: string
+): string | number | boolean | string[] | undefined {
+  const value = selections[key]
+  if (value != null && typeof value === "object" && !Array.isArray(value)) return undefined
+  return value as string | number | boolean | string[] | undefined
 }
 
 export function BookingOptionField({

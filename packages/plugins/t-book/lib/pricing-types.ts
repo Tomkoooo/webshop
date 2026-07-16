@@ -124,7 +124,12 @@ export type TBookAccommodationPricing = TBookHotelPricing
 
 export type TBookTicketFeeMode = "per_person" | "per_booking" | "per_team"
 
-export type TBookSelectionValue = string | number | boolean | string[]
+export type TBookSelectionValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | Record<string, number>
 export type TBookSelections = Record<string, TBookSelectionValue>
 
 export type TBookPriceLine = {
@@ -135,6 +140,8 @@ export type TBookPriceLine = {
 
 export type TBookPriceQuote = {
   guests: number
+  /** Headcount used for hotel/package pricing (may exceed ticket count). */
+  accommodationGuests?: number
   nights: number
   ticketSubtotalHuf: number
   accommodationBaseHuf: number
@@ -151,6 +158,8 @@ export type TBookQuoteInput = {
   ticketPriceBasis?: TBookPriceBasis
   ticketVatPercent?: number
   guests: number
+  /** Hotel/package headcount; defaults to `guests` when omitted. */
+  accommodationGuests?: number
   /** Required when accommodation is selected. */
   nights?: number
   /** Omit for ticket-only bookings — accommodation is optional per booking. */

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookStatus } from "../lib/schemas"
 import type { TBookPriceBasis } from "../lib/vat"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
+import type { TBookEligibilityPreset } from "../lib/eligibility"
 
 export interface ITBookEvent extends Document {
   /** Denormalized org scope for admin queries. */
@@ -27,6 +28,8 @@ export interface ITBookEvent extends Document {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit: "person" | "team"
+  /** Players per ticket/team (1 = individual). Drives roster forms and hotel headcount. */
+  playersPerTicket: number
   teamMemberLimit: number | null
   teamMemberFieldSchema: TBookAttendeeFieldDef[]
   ticketPriceBasis: TBookPriceBasis
@@ -43,6 +46,12 @@ export interface ITBookEvent extends Document {
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   /** How event fields combine with group defaults (`extend` or `replace`). */
   attendeeFieldSchemaMode: "extend" | "replace"
+  eligibilityPreset: TBookEligibilityPreset
+  eligibilityMinAge: number | null
+  eligibilityMaxAge: number | null
+  eligibilityAllowedGenders: string[]
+  eligibilityBirthDateFieldKey: string | null
+  eligibilityGenderFieldKey: string | null
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -73,6 +82,7 @@ const TBookEventSchema = new Schema<ITBookEvent>(
       default: "per_person",
     },
     registrationUnit: { type: String, enum: ["person", "team"], default: "person" },
+    playersPerTicket: { type: Number, default: 1, min: 1, max: 100 },
     teamMemberLimit: { type: Number, default: null, min: 1, max: 100 },
     teamMemberFieldSchema: {
       type: [
@@ -148,6 +158,16 @@ const TBookEventSchema = new Schema<ITBookEvent>(
       enum: ["extend", "replace"],
       default: "extend",
     },
+    eligibilityPreset: {
+      type: String,
+      enum: ["none", "under18", "under18_female", "women", "custom"],
+      default: "none",
+    },
+    eligibilityMinAge: { type: Number, default: null, min: 0, max: 120 },
+    eligibilityMaxAge: { type: Number, default: null, min: 0, max: 120 },
+    eligibilityAllowedGenders: { type: [String], default: [] },
+    eligibilityBirthDateFieldKey: { type: String, default: null },
+    eligibilityGenderFieldKey: { type: String, default: null },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },
   },

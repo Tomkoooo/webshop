@@ -263,6 +263,14 @@ export const tBookEventTimeSchema = z.preprocess(
     .optional()
 )
 
+export const tBookEligibilityPresetSchema = z.enum([
+  "none",
+  "under18",
+  "under18_female",
+  "women",
+  "custom",
+])
+
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
   name: z.string().min(1, "Név kötelező"),
@@ -276,6 +284,8 @@ export const eventInputSchema = z.object({
   ticketFeeHuf: z.number().min(0),
   ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).default("per_person"),
   registrationUnit: z.enum(["person", "team"]).default("person"),
+  /** Players per ticket/team — drives roster forms and hotel headcount. */
+  playersPerTicket: z.number().int().min(1).max(100).default(1),
   /** Max listed members per team registration (null = unlimited). */
   teamMemberLimit: z.number().int().min(1).max(100).nullable().optional(),
   teamMemberFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
@@ -287,6 +297,12 @@ export const eventInputSchema = z.object({
   vouchersEnabled: z.boolean().default(true),
   attendeeFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   attendeeFieldSchemaMode: tBookRegistrationFieldsModeSchema,
+  eligibilityPreset: tBookEligibilityPresetSchema.default("none"),
+  eligibilityMinAge: z.number().int().min(0).max(120).nullable().optional(),
+  eligibilityMaxAge: z.number().int().min(0).max(120).nullable().optional(),
+  eligibilityAllowedGenders: z.array(z.string()).default([]),
+  eligibilityBirthDateFieldKey: z.string().nullable().optional(),
+  eligibilityGenderFieldKey: z.string().nullable().optional(),
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -318,9 +334,39 @@ export const hotelInputSchema = hotelInputBaseSchema.refine(
 /** Partial hotel patch — base schema only (Zod disallows .partial() on refined schemas). */
 export const hotelInputUpdateSchema = hotelInputBaseSchema.partial()
 
+export const tBookBillingTypeSchema = z.enum(["personal", "company", "sport"])
+
+export type TBookBillingType = z.infer<typeof tBookBillingTypeSchema>
+
+export const tBookBillingSchema = z
+  .object({
+    billingType: tBookBillingTypeSchema.default("personal"),
+    name: z.string().min(1, "Számlázási név kötelező"),
+    zip: z.string().min(1, "Irányítószám kötelező"),
+    city: z.string().min(1, "Város kötelező"),
+    street: z.string().min(1, "Cím kötelező"),
+    countryCode: z.string().default("HU"),
+    taxNumber: z.string().optional().default(""),
+  })
+  .superRefine((data, ctx) => {
+    if (data.billingType === "company" && !data.taxNumber?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Adószám kötelező cég esetén",
+        path: ["taxNumber"],
+      })
+    }
+  })
+
 export const selectionsSchema = z.record(
   z.string(),
-  z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.array(z.string()),
+    z.record(z.string(), z.number().int().min(0)),
+  ])
 )
 
 export const quoteRequestSchema = z.object({
@@ -340,17 +386,8 @@ export const createBookingSchema = z.object({
     phone: z.string().min(6, "Telefonszám kötelező"),
     note: z.string().max(2000).optional().default(""),
   }),
-  billing: z
-    .object({
-      name: z.string().min(1),
-      zip: z.string().min(1),
-      city: z.string().min(1),
-      street: z.string().min(1),
-      countryCode: z.string().default("HU"),
-      taxNumber: z.string().optional().default(""),
-    })
-    .nullable()
-    .optional(),
+  billing: tBookBillingSchema,
+  returnBaseUrl: z.string().url().optional(),
   hotelId: z.string().nullable().optional(),
   nights: z.number().int().min(1).max(60).nullable().optional(),
   selections: selectionsSchema.nullable().optional(),

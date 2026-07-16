@@ -21,7 +21,10 @@ export type TBookCustomer = {
   note: string
 }
 
+export type TBookBillingType = "personal" | "company" | "sport"
+
 export type TBookBillingInfo = {
+  billingType: TBookBillingType
   name: string
   zip: string
   city: string
@@ -45,6 +48,7 @@ export interface ITBookBooking extends Document {
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   teamMemberFieldSchema: TBookAttendeeFieldDef[]
   teamMemberLimit: number | null
+  playersPerTicket: number
   /** Per-ticket participant data — one row per guest when schema is configured. */
   attendees: TBookBookingAttendee[]
   guests: number
@@ -62,6 +66,8 @@ export interface ITBookBooking extends Document {
   invoiceId: string | null
   invoicePdfFileName: string | null
   invoiceError: string | null
+  /** Storefront origin for post-payment redirect (e.g. WDF site). */
+  checkoutReturnBaseUrl: string | null
   expiresAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -79,6 +85,11 @@ const CustomerSchema = new Schema<TBookCustomer>(
 
 const BillingSchema = new Schema<TBookBillingInfo>(
   {
+    billingType: {
+      type: String,
+      enum: ["personal", "company", "sport"],
+      default: "personal",
+    },
     name: { type: String, required: true },
     zip: { type: String, required: true },
     city: { type: String, required: true },
@@ -162,6 +173,7 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     attendeeFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
     teamMemberFieldSchema: { type: [AttendeeFieldDefSchema], default: [] },
     teamMemberLimit: { type: Number, default: null },
+    playersPerTicket: { type: Number, default: 1, min: 1 },
     attendees: { type: [BookingAttendeeSchema], default: [] },
     guests: { type: Number, required: true, min: 1 },
     nights: { type: Number, default: 0, min: 0 },
@@ -186,6 +198,7 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     invoiceId: { type: String, default: null },
     invoicePdfFileName: { type: String, default: null },
     invoiceError: { type: String, default: null },
+    checkoutReturnBaseUrl: { type: String, default: null },
     expiresAt: { type: Date, default: null },
   },
   { timestamps: true }

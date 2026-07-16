@@ -13,6 +13,9 @@ export const ROOM_TYPE_SELECTION_KEY = "room_type"
 /** Selection key for an optional fixed package deal instead of per-night pricing. */
 export const PACKAGE_DEAL_SELECTION_KEY = "package_deal"
 
+/** Multi-package plan: package key → unit count (mixed room types). */
+export const PACKAGE_UNITS_SELECTION_KEY = "package_units"
+
 export const ACCOMMODATION_MODE_LABELS: Record<TBookAccommodationMode, string> = {
   room_nights: "Szobatípus / éjszaka (per fő / éj)",
   packages: "Csak csomagajánlatok",
@@ -336,6 +339,19 @@ export function formatPackageDealCapacityLabel(
     return `${units} csomag szükséges (${guests} fő, max ${cap} fő/csomag)`
   }
   return `Max ${cap} fő/csomag`
+}
+
+export function parsePackageUnits(
+  selections: Record<string, unknown>
+): Record<string, number> | null {
+  const raw = selections[PACKAGE_UNITS_SELECTION_KEY]
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null
+  const units: Record<string, number> = {}
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const qty = Number(value)
+    if (Number.isFinite(qty) && qty > 0) units[key] = Math.floor(qty)
+  }
+  return Object.keys(units).length > 0 ? units : null
 }
 
 /** Rough count of distinct customer configuration paths (for admin UX). */

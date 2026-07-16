@@ -43,9 +43,14 @@ export class TBookCheckoutService {
     const expiresAt = reservationEndsAt(now, ttlMs)
 
     const stripe = getStripeClient()
-    const baseUrl = opts?.returnBaseUrl || getAppBaseUrl()
+    const storefrontBase =
+      booking.checkoutReturnBaseUrl?.trim() ||
+      input.returnBaseUrl?.trim() ||
+      opts?.returnBaseUrl?.trim() ||
+      getAppBaseUrl()
     const bookingId = booking._id.toString()
     const currency = await resolveCheckoutCurrency(booking)
+    const returnTo = encodeURIComponent(storefrontBase)
 
     const description = [
       `${booking.guests} fő`,
@@ -54,8 +59,8 @@ export class TBookCheckoutService {
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
-      success_url: `${baseUrl}/api/plugins/t-book/checkout/return?bookingId=${bookingId}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/api/plugins/t-book/checkout/return?bookingId=${bookingId}&cancelled=1`,
+      success_url: `${storefrontBase}/foglalas/siker?bookingId=${bookingId}&session_id={CHECKOUT_SESSION_ID}&return_to=${returnTo}`,
+      cancel_url: `${storefrontBase}/foglalas/siker?bookingId=${bookingId}&cancelled=1&return_to=${returnTo}`,
       client_reference_id: bookingId,
       metadata: {
         tBookBookingId: bookingId,
@@ -132,11 +137,51 @@ export class TBookCheckoutService {
     }
 
     const latest = await TBookBooking.findById(bookingId).lean()
-    return {
-      status: latest?.status ?? booking.status,
-      invoiceStatus: latest?.invoiceStatus ?? booking.invoiceStatus,
-      totalHuf: latest?.totalHuf ?? booking.totalHuf,
+    const resolved = latest ?? booking
+    const paid = resolved.status === "paid" || resolved.status === "confirmed"
+
+    let vouchersReady = false
+    if (paid) {
+      const TBookVoucher = (await import("../models/TBookVoucher")).default
+      vouchersReady =
+        (await TBookVoucher.countDocuments({
+          bookingId: resolved._id,
+          pdfFileName: { $exists: true, $ne: null },
+        })) > 0
     }
+
+    return {
+      status: resolved.status,
+      invoiceStatus: resolved.invoiceStatus ?? "none",
+      invoiceReady: resolved.invoiceStatus === "issued",
+      invoiceError: resolved.invoiceError ?? null,
+      vouchersReady,
+      eventName: resolved.eventName,
+      totalHuf: resolved.totalHuf,
+      guests: resolved.guests,
+      returnBaseUrl: resolved.checkoutReturnBaseUrl ?? null,
+    }
+  }
+
+  static async downloadInvoiceForGuestCheckout(
+    bookingId: string,
+    stripeSessionId: string | null | undefined
+  ): Promise<Buffer | null> {
+    const { loadBookingForGuestCheckout } = await import("../lib/booking-checkout-access")
+    const booking = await loadBookingForGuestCheckout(bookingId, stripeSessionId)
+    if (booking.invoiceStatus !== "issued") return null
+    const { downloadBookingInvoicePdf } = await import("./invoice-service")
+    return downloadBookingInvoicePdf(bookingId)
+  }
+
+  static async downloadVouchersForGuestCheckout(
+    bookingId: string,
+    stripeSessionId: string | null | undefined
+  ): Promise<Buffer | null> {
+    const { loadBookingForGuestCheckout } = await import("../lib/booking-checkout-access")
+    await loadBookingForGuestCheckout(bookingId, stripeSessionId)
+    const { getVoucherPdfForBooking } = await import("./voucher-service")
+    return getVoucherPdfForBooking(bookingId)
   }
 
   /** Idempotent webhook finalization: mark paid, issue invoice, send email. */
@@ -165,14 +210,18 @@ export class TBookCheckoutService {
     )
     if (!booking) return null
 
-    const { issueBookingInvoice } = await import("./invoice-service")
-    void issueBookingInvoice(booking._id.toString())
-
     const { sendBookingConfirmationEmail } = await import("../lib/send-booking-email")
-    void sendBookingConfirmationEmail(booking)
+    await sendBookingConfirmationEmail(booking)
 
     const { issueVouchersForBooking } = await import("./voucher-service")
-    void issueVouchersForBooking(booking._id.toString())
+    try {
+      await issueVouchersForBooking(booking._id.toString())
+    } catch (error) {
+      console.error("[t-book] voucher issue failed", booking._id.toString(), error)
+    }
+
+    const { issueBookingInvoice } = await import("./invoice-service")
+    void issueBookingInvoice(booking._id.toString())
 
     return booking._id.toString()
   }

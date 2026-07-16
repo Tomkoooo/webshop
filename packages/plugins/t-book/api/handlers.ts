@@ -67,6 +67,7 @@ function serializeEvent(e: ITBookEvent) {
     ticketFeeHuf: e.ticketFeeHuf,
     ticketFeeMode: e.ticketFeeMode,
     registrationUnit: e.registrationUnit ?? "person",
+    playersPerTicket: e.playersPerTicket ?? 1,
     teamMemberLimit: e.teamMemberLimit ?? null,
     teamMemberFieldSchema: e.teamMemberFieldSchema ?? [],
     ticketPriceBasis: e.ticketPriceBasis ?? "gross",
@@ -78,6 +79,12 @@ function serializeEvent(e: ITBookEvent) {
     vouchersEnabled: e.vouchersEnabled !== false,
     attendeeFieldSchema: e.attendeeFieldSchema ?? [],
     attendeeFieldSchemaMode: e.attendeeFieldSchemaMode ?? "extend",
+    eligibilityPreset: e.eligibilityPreset ?? "none",
+    eligibilityMinAge: e.eligibilityMinAge ?? null,
+    eligibilityMaxAge: e.eligibilityMaxAge ?? null,
+    eligibilityAllowedGenders: e.eligibilityAllowedGenders ?? [],
+    eligibilityBirthDateFieldKey: e.eligibilityBirthDateFieldKey ?? null,
+    eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? null,
     status: e.status,
     sortOrder: e.sortOrder,
   }
@@ -169,9 +176,65 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       return json(buildTBookOpenApiSpec(getPublicAppBaseUrl()), 200, request)
     }
 
-    // ---- Stripe success/cancel landing (no key: it's a browser redirect) ---
+    // ---- Stripe success/cancel landing (no key: browser redirect; legacy URL) ---
     if (segment === "checkout" && path[1] === "return" && method === "GET") {
       return handleCheckoutReturn(request)
+    }
+
+    if (segment === "checkout" && path[1] === "status" && method === "GET" && path.length === 2) {
+      const url = new URL(request.url)
+      const bookingId = url.searchParams.get("bookingId") || ""
+      const sessionId = url.searchParams.get("session_id")
+      if (!sessionId) {
+        return json({ error: "session_id kötelező" }, 400, request)
+      }
+      try {
+        const result = await TBookCheckoutService.getCheckoutStatus(bookingId, sessionId)
+        return json({ ok: true, ...result }, 200, request)
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode ?? 400
+        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+      }
+    }
+
+    if (segment === "checkout" && path[1] === "invoice" && method === "GET" && path.length === 2) {
+      const url = new URL(request.url)
+      const bookingId = url.searchParams.get("bookingId") || ""
+      const sessionId = url.searchParams.get("session_id")
+      try {
+        const pdf = await TBookCheckoutService.downloadInvoiceForGuestCheckout(bookingId, sessionId)
+        if (!pdf) return json({ error: "Számla PDF nem érhető el" }, 404, request)
+        return new NextResponse(new Uint8Array(pdf), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="szamla-${bookingId.slice(-8)}.pdf"`,
+          },
+        })
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode ?? 400
+        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+      }
+    }
+
+    if (segment === "checkout" && path[1] === "vouchers" && method === "GET" && path.length === 2) {
+      const url = new URL(request.url)
+      const bookingId = url.searchParams.get("bookingId") || ""
+      const sessionId = url.searchParams.get("session_id")
+      try {
+        const pdf = await TBookCheckoutService.downloadVouchersForGuestCheckout(bookingId, sessionId)
+        if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404, request)
+        return new NextResponse(new Uint8Array(pdf), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="jegy-${bookingId.slice(-8)}.pdf"`,
+          },
+        })
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode ?? 400
+        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+      }
     }
 
     // ---- Public directory (no API key) ------------------------------------
@@ -253,41 +316,26 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
   }
 }
 
-/** Minimal HTML landing after Stripe redirect; also a webhook fallback. */
+/** Legacy Stripe return URL — redirect to the storefront success page. */
 async function handleCheckoutReturn(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const bookingId = url.searchParams.get("bookingId") || ""
   const sessionId = url.searchParams.get("session_id")
   const cancelled = url.searchParams.get("cancelled") === "1"
 
-  let status = "unknown"
-  if (!cancelled && bookingId) {
+  if (!cancelled && bookingId && sessionId) {
     try {
-      const result = await TBookCheckoutService.getCheckoutStatus(bookingId, sessionId)
-      status = result.status
+      await TBookCheckoutService.getCheckoutStatus(bookingId, sessionId)
     } catch {
-      status = "unknown"
+      // Still redirect — success page will poll / show error state.
     }
   }
 
-  const paid = status === "paid" || status === "confirmed"
-  const title = cancelled
-    ? "Fizetés megszakítva"
-    : paid
-      ? "Sikeres fizetés!"
-      : "Fizetés feldolgozás alatt"
-  const body = cancelled
-    ? "A fizetést megszakítottad. A foglalásod nem jött létre véglegesen."
-    : paid
-      ? "Köszönjük a foglalást! A visszaigazolást és a számlát e-mailben küldjük."
-      : "A fizetés feldolgozása folyamatban van. Hamarosan e-mailt küldünk a visszaigazolásról."
-
-  return new NextResponse(
-    `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#fff}main{max-width:28rem;padding:2rem;text-align:center}h1{font-size:1.5rem}p{color:#a3a3a3;line-height:1.6}code{color:#737373;font-size:.75rem}</style></head>
-<body><main><h1>${title}</h1><p>${body}</p><code>Foglalás: ${bookingId}</code></main></body></html>`,
-    { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
-  )
+  const target = new URL("/foglalas/siker", url.origin)
+  if (bookingId) target.searchParams.set("bookingId", bookingId)
+  if (sessionId) target.searchParams.set("session_id", sessionId)
+  if (cancelled) target.searchParams.set("cancelled", "1")
+  return NextResponse.redirect(target, 302)
 }
 
 async function handleTBookAdminApi(

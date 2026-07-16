@@ -110,6 +110,27 @@ describe("ticket-only booking (accommodation optional)", () => {
     expect(quote.guests).toBe(1)
     expect(quote.totalHuf).toBe(1000)
   })
+
+  it("uses accommodationGuests for room pricing while tickets use guests", () => {
+    const quote = calculateBookingQuote({
+      ticketFeeHuf: 10000,
+      ticketFeeMode: "per_booking",
+      guests: 1,
+      accommodationGuests: 2,
+      nights: 2,
+      accommodation: {
+        roomTypes: [{ key: "std", label: "Standard", baseRateHuf: 10000, baseRateMode: "per_person_per_night" }],
+        packages: [],
+        addonGroups: [],
+        priceBasis: "gross",
+        vatPercent: 27,
+      },
+      selections: { room_type: "std" },
+    })
+    expect(quote.ticketSubtotalHuf).toBe(10000)
+    expect(quote.accommodationGuests).toBe(2)
+    expect(quote.accommodationBaseHuf).toBe(40000)
+  })
 })
 
 describe("booking quote with accommodation", () => {

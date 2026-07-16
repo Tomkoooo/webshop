@@ -18,6 +18,7 @@ import {
   type TBookPriceQuote,
   type TBookPublicEvent,
 } from "./tbook-public-api"
+import { selectionOptionValue } from "./booking-fields"
 
 const STORAGE_KEY = "tbook_test_api_key"
 
@@ -342,6 +343,16 @@ export function TBookTestPlayground({
         eventId: selectedEventId,
         guests,
         customer,
+        billing: {
+          billingType: "personal",
+          name: customer.name || "Teszt Vásárló",
+          zip: "1011",
+          city: "Budapest",
+          street: "Teszt utca 1",
+          countryCode: "HU",
+          taxNumber: "",
+        },
+        returnBaseUrl: typeof window !== "undefined" ? window.location.origin : undefined,
         attendees: attendeeFieldSchema.length > 0 ? attendees : undefined,
         hotelId: selectedHotelId,
         nights: selectedHotelId ? nights : null,
@@ -499,7 +510,7 @@ export function TBookTestPlayground({
                       <OptionField
                         key={option.key}
                         option={option}
-                        value={selections[option.key]}
+                        value={selectionOptionValue(selections, option.key)}
                         visible={optionVisible(option, selections)}
                         onChange={(v) => patchSelection(option.key, v)}
                       />
@@ -516,7 +527,7 @@ export function TBookTestPlayground({
                       <OptionField
                         key={option.key}
                         option={option}
-                        value={selections[option.key]}
+                        value={selectionOptionValue(selections, option.key)}
                         visible={optionVisible(option, selections)}
                         onChange={(v) => patchSelection(option.key, v)}
                       />

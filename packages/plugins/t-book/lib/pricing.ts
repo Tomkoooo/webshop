@@ -15,11 +15,13 @@ import { mergeOptionSchemas } from "./option-merge"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
+  PACKAGE_UNITS_SELECTION_KEY,
   flattenAddonOptions,
   findRoomType,
   findPackageDeal,
   normalizeHotelPricing,
   packageUnitsForGuests,
+  parsePackageUnits,
   resolveAccommodationMode,
 } from "./hotel-pricing"
 
@@ -138,7 +140,8 @@ export type TBookSelectionError = { key: string; message: string }
 
 export function validateHotelSelections(
   pricing: import("./pricing-types").TBookHotelPricing,
-  selections: TBookSelections
+  selections: TBookSelections,
+  guests?: number
 ): TBookSelectionError[] {
   const normalized = normalizeHotelPricing(pricing)
   const mode = resolveAccommodationMode(normalized)
@@ -149,13 +152,35 @@ export function validateHotelSelections(
     typeof packageKey === "string" && packageKey
       ? findPackageDeal(normalized, packageKey)
       : null
+  const packageUnits = parsePackageUnits(selections as Record<string, unknown>)
 
   if (mode === "packages") {
-    if (!packageDeal) {
+    if (!packageDeal && !packageUnits) {
       errors.push({
         key: PACKAGE_DEAL_SELECTION_KEY,
         message: "Kötelező csomagajánlat választás",
       })
+    }
+    if (packageUnits) {
+      let capacity = 0
+      for (const [key, qty] of Object.entries(packageUnits)) {
+        const pkg = findPackageDeal(normalized, key)
+        if (!pkg) {
+          errors.push({
+            key: PACKAGE_UNITS_SELECTION_KEY,
+            message: `Érvénytelen csomag: ${key}`,
+          })
+          continue
+        }
+        const cap = pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1
+        capacity += qty * cap
+      }
+      if (guests != null && capacity > 0 && capacity < guests) {
+        errors.push({
+          key: PACKAGE_UNITS_SELECTION_KEY,
+          message: `A választott csomagok összesen ${capacity} főt fednek le, de ${guests} fő szálláshely szükséges.`,
+        })
+      }
     }
   } else {
     const roomKey = selections[ROOM_TYPE_SELECTION_KEY]
@@ -193,6 +218,7 @@ export function validateSelections(
   for (const key of Object.keys(selections)) {
     if (key === ROOM_TYPE_SELECTION_KEY) continue
     if (key === PACKAGE_DEAL_SELECTION_KEY) continue
+    if (key === PACKAGE_UNITS_SELECTION_KEY) continue
     if (!known.has(key)) {
       errors.push({ key, message: `Ismeretlen opció: ${key}` })
     }
@@ -308,6 +334,10 @@ function optionAmountHuf(
  */
 export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   const guests = Math.max(1, Math.floor(input.guests || 1))
+  const accommodationGuests = Math.max(
+    1,
+    Math.floor(input.accommodationGuests ?? input.guests ?? 1)
+  )
   const nights = Math.max(0, Math.floor(input.nights ?? 0))
   const ticketFeeMode = input.ticketFeeMode ?? "per_person"
 
@@ -363,43 +393,59 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     const roomType = findRoomType(acc, roomTypeKey)
     const packageKey = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
     const packageDeal = packageKey ? findPackageDeal(acc, packageKey) : null
-    const packageUnits =
-      packageDeal != null ? packageUnitsForGuests(packageDeal, guests) : 1
+    const packageUnits = parsePackageUnits(selections as Record<string, unknown>)
 
-    if (mode === "packages" && packageDeal) {
+    if (mode === "packages" && packageUnits) {
+      for (const [key, qty] of Object.entries(packageUnits)) {
+        const pkg = findPackageDeal(acc, key)
+        if (!pkg) continue
+        effectiveNights = Math.max(effectiveNights, pkg.nights)
+        const unitGross = roundHuf(toGrossHuf(pkg.priceHuf, accBasis, accVat))
+        const lineAmount = roundHuf(unitGross * qty)
+        accommodationBaseHuf += lineAmount
+        lines.push({
+          key: `package_unit:${key}`,
+          label: qty > 1 ? `${pkg.label} × ${qty}` : pkg.label,
+          amountHuf: lineAmount,
+        })
+      }
+    } else if (mode === "packages" && packageDeal) {
       effectiveNights = packageDeal.nights
+      const packageUnitCount = packageUnitsForGuests(packageDeal, accommodationGuests)
       const unitGross = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
-      accommodationBaseHuf = roundHuf(unitGross * packageUnits)
+      accommodationBaseHuf = roundHuf(unitGross * packageUnitCount)
       lines.push({
         key: "accommodation_base",
         label:
-          packageUnits > 1
-            ? `${packageDeal.label} × ${packageUnits}`
+          packageUnitCount > 1
+            ? `${packageDeal.label} × ${packageUnitCount}`
             : packageDeal.label,
         amountHuf: accommodationBaseHuf,
       })
     } else if (roomType) {
+      const packageUnitCount =
+        packageDeal != null ? packageUnitsForGuests(packageDeal, accommodationGuests) : 1
       if (
         packageDeal &&
         packageDeal.nights === effectiveNights &&
         (!packageDeal.roomTypeKey || packageDeal.roomTypeKey === roomTypeKey)
       ) {
         const unitGross = roundHuf(toGrossHuf(packageDeal.priceHuf, accBasis, accVat))
-        accommodationBaseHuf = roundHuf(unitGross * packageUnits)
+        accommodationBaseHuf = roundHuf(unitGross * packageUnitCount)
         lines.push({
           key: "accommodation_base",
           label:
-            packageUnits > 1
-              ? `${packageDeal.label} (${roomType.label}) × ${packageUnits}`
+            packageUnitCount > 1
+              ? `${packageDeal.label} (${roomType.label}) × ${packageUnitCount}`
               : `${packageDeal.label} (${roomType.label})`,
           amountHuf: accommodationBaseHuf,
         })
       } else {
         const roomGross = toGrossHuf(roomType.baseRateHuf, accBasis, accVat)
-        accommodationBaseHuf = roundHuf(roomGross * guests * effectiveNights)
+        accommodationBaseHuf = roundHuf(roomGross * accommodationGuests * effectiveNights)
         lines.push({
           key: "accommodation_base",
-          label: `${roomType.label} (${guests} fő, ${effectiveNights} éj)`,
+          label: `${roomType.label} (${accommodationGuests} fő, ${effectiveNights} éj)`,
           amountHuf: accommodationBaseHuf,
         })
       }
@@ -414,13 +460,20 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   const selections = input.selections ?? {}
   const accNormalized = input.accommodation ? normalizeHotelPricing(input.accommodation) : null
   const packageKeyForNights = String(selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+  const packageUnitsForNights = parsePackageUnits(selections as Record<string, unknown>)
   const packageForNights =
     accNormalized && packageKeyForNights
       ? findPackageDeal(accNormalized, packageKeyForNights)
       : null
+  const firstPackageFromUnits =
+    accNormalized && packageUnitsForNights
+      ? findPackageDeal(accNormalized, Object.keys(packageUnitsForNights)[0] ?? "")
+      : null
   const quotedNights =
-    input.accommodation && resolveAccommodationMode(accNormalized!) === "packages" && packageForNights
-      ? packageForNights.nights
+    input.accommodation &&
+    resolveAccommodationMode(accNormalized!) === "packages" &&
+    (packageForNights || firstPackageFromUnits)
+      ? (packageForNights ?? firstPackageFromUnits)!.nights
       : input.accommodation
         ? Math.max(1, nights)
         : nights
@@ -432,7 +485,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     if (!isOptionApplicable(option, selections)) continue
     const value = resolveSelectionValue(option, selections)
     if (value == null) continue
-    const result = optionAmountHuf(option, value, guests, effectiveNights, optionBaseHuf)
+    const result = optionAmountHuf(option, value, accommodationGuests, effectiveNights, optionBaseHuf)
     if (!result) continue
     const amountHuf = roundHuf(result.amountHuf)
     accommodationOptionsHuf += amountHuf
@@ -448,6 +501,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   const accommodationSubtotalHuf = accommodationBaseHuf + accommodationOptionsHuf
   return {
     guests,
+    accommodationGuests,
     nights: quotedNights,
     ticketSubtotalHuf,
     accommodationBaseHuf,

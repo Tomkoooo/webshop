@@ -17,27 +17,20 @@ import {
 import { TBookWizard } from "./TBookWizard"
 import { TBookRichTextField } from "./TBookRichTextField"
 import { TBookSingleMediaField } from "./TBookMediaField"
-import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
-import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 
 type GroupDraft = {
   name: string
   description: string
   status: AdminGroup["status"]
-  defaultAttendeeFieldSchema: TBookAttendeeFieldDef[]
   listOnTBookSite: boolean
   listingTitle: string
   listingUrl: string
   listingImage: string
-  defaultHeroImage: string
-  voucherHeaderImage: string
 }
 
 const STEPS = [
   { id: "basics", title: "Alapadatok" },
   { id: "description", title: "Leírás" },
-  { id: "registration", title: "Foglalási adatok" },
-  { id: "voucher", title: "Képek & jegyek" },
   { id: "listing", title: "tBook megjelenés" },
 ]
 
@@ -51,13 +44,10 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
     name: "",
     description: "",
     status: "draft",
-    defaultAttendeeFieldSchema: [],
     listOnTBookSite: false,
     listingTitle: "",
     listingUrl: "",
     listingImage: "",
-    defaultHeroImage: "",
-    voucherHeaderImage: "",
   })
 
   useEffect(() => {
@@ -68,13 +58,10 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
           name: res.group.name,
           description: res.group.description,
           status: res.group.status,
-          defaultAttendeeFieldSchema: res.group.defaultAttendeeFieldSchema ?? [],
           listOnTBookSite: res.group.listOnTBookSite ?? false,
           listingTitle: res.group.listingTitle ?? "",
           listingUrl: res.group.listingUrl ?? "",
           listingImage: res.group.listingImage ?? "",
-          defaultHeroImage: res.group.defaultHeroImage ?? "",
-          voucherHeaderImage: res.group.voucherHeaderImage ?? "",
         })
       })
       .catch((e) => toast.error(e instanceof Error ? e.message : "Hiba"))
@@ -93,15 +80,12 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
       description: draft.description,
       status: draft.status,
       defaultBookingOptions: [],
-      defaultAttendeeFieldSchema: draft.defaultAttendeeFieldSchema,
       defaultPriceBasis: "net" as const,
       defaultVatPercent: 27,
       listOnTBookSite: draft.listOnTBookSite,
       listingTitle: draft.listingTitle.trim(),
       listingUrl: draft.listingUrl.trim(),
       listingImage: draft.listingImage.trim(),
-      defaultHeroImage: draft.defaultHeroImage.trim(),
-      voucherHeaderImage: draft.voucherHeaderImage.trim(),
     }
     try {
       if (isEdit && groupId) {
@@ -187,48 +171,6 @@ export function GroupFormPage({ groupId }: { groupId?: string }) {
             />
           ) : null}
           {step === 2 ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Alapértelmezett foglalási mezők minden csoportbeli eseményhez. Az események
-                kiegészíthetik vagy teljesen felülírhatják ezt a listát.
-              </p>
-              <AttendeeFieldsEditor
-                fields={draft.defaultAttendeeFieldSchema}
-                onChange={(defaultAttendeeFieldSchema) =>
-                  setDraft((d) => ({ ...d, defaultAttendeeFieldSchema }))
-                }
-              />
-            </div>
-          ) : null}
-          {step === 3 ? (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Alapértelmezett borítókép minden csoportbeli eseményhez, amelynek nincs saját képe.
-                  Az eseményen feltöltött borítókép felülírja ezt.
-                </p>
-                <TBookSingleMediaField
-                  label="Alapértelmezett esemény borítókép"
-                  value={draft.defaultHeroImage}
-                  onChange={(defaultHeroImage) => setDraft((d) => ({ ...d, defaultHeroImage }))}
-                  aspect={16 / 9}
-                />
-              </div>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Ez a kép jelenik meg a belépőjegy PDF tetején minden csoportbeli eseménynél.
-                  Az egyes eseményeken feltöltött jegy fejléc felülírja ezt.
-                </p>
-                <TBookSingleMediaField
-                  label="Alapértelmezett jegy PDF fejléc"
-                  value={draft.voucherHeaderImage}
-                  onChange={(voucherHeaderImage) => setDraft((d) => ({ ...d, voucherHeaderImage }))}
-                  aspect={3 / 1}
-                />
-              </div>
-            </div>
-          ) : null}
-          {step === 4 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Ha bekapcsolod, az aktív eseményekkel rendelkező csoport megjelenhet a nyilvános

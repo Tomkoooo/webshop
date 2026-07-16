@@ -29,6 +29,7 @@ export type TBookPublicEvent = {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit?: "person" | "team"
+  playersPerTicket?: number
   teamMemberLimit?: number | null
   teamMemberFieldSchema?: TBookPublicAttendeeFieldDef[]
   currency?: string
@@ -56,6 +57,7 @@ export type TBookPublicHotel = {
 
 export type TBookPriceQuote = {
   guests: number
+  accommodationGuests?: number
   nights: number
   ticketSubtotalHuf: number
   accommodationBaseHuf: number
@@ -65,7 +67,10 @@ export type TBookPriceQuote = {
   lines: { key: string; label: string; amountHuf: number }[]
 }
 
-export type TBookSelections = Record<string, string | number | boolean | string[]>
+export type TBookSelections = Record<
+  string,
+  string | number | boolean | string[] | Record<string, number>
+>
 
 export type TBookBookingAttendeePayload = {
   fields: Record<string, string | number>
@@ -168,14 +173,16 @@ export function createBooking(
     guests: number
     customer: { name: string; email: string; phone: string; note?: string }
     attendees?: TBookBookingAttendeePayload[]
-    billing?: {
+    billing: {
+      billingType: "personal" | "company" | "sport"
       name: string
       zip: string
       city: string
       street: string
       countryCode: string
       taxNumber?: string
-    } | null
+    }
+    returnBaseUrl?: string
     hotelId?: string | null
     nights?: number | null
     selections?: TBookSelections | null

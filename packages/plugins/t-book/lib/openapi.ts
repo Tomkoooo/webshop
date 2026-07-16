@@ -29,13 +29,18 @@ const quote = {
 const selections = {
   type: "object",
   description:
-    "Kulcs-érték pár opciók a hotel konfigurációja szerint. Szállás: `room_type`, `package_deal`. Extrák: a hotel `extrasSection.options` kulcsai.",
+    "Kulcs-érték pár opciók a hotel konfigurációja szerint. Szállás: `room_type`, `package_deal` (egy csomag), vagy `package_units` (több csomag darabszámmal: `{ \"double\": 1, \"single\": 1 }`). Extrák: a hotel `extrasSection.options` kulcsai.",
   additionalProperties: {
     oneOf: [
       { type: "string" },
       { type: "number" },
       { type: "boolean" },
       { type: "array", items: { type: "string" } },
+      {
+        type: "object",
+        description: "Csomag darabszámok (`package_units`).",
+        additionalProperties: { type: "integer", minimum: 0 },
+      },
     ],
   },
 } as const
@@ -163,14 +168,16 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
     openapi: "3.1.0",
     info: {
       title: "tBook public API",
-      version: "1.1.0",
+      version: "1.2.0",
       description: [
         "Esemény + szállás foglalási API külső landing oldalaknak.",
         "Minden végpont a csoporthoz tartozó API kulcsot várja az `X-TBook-Api-Key` fejlécben (vagy `Authorization: Bearer <kulcs>`).",
         "",
         "**Foglalási mezők:** az esemény `attendeeFieldSchema` a csoport alapmezőiből és az esemény felülírásából áll össze (csoport `defaultAttendeeFieldSchema` + esemény `attendeeFieldSchemaMode`: `extend` | `replace`). A nyilvános API a már **feloldott** sémát adja vissza.",
         "",
-        "**Csomagajánlatok:** ha egy csomagnál `maxGuests` meg van adva, a szállás alapár = `priceHuf × ceil(guests / maxGuests)`.",
+        "**Csomagajánlatok:** ha egy csomagnál `maxGuests` meg van adva, a szállás alapár = `priceHuf × ceil(guests / maxGuests)`. Több csomag kombinálható a `selections.package_units` objektummal.",
+        "",
+        "**Visszatérés fizetés után:** küldd a `returnBaseUrl`-t (pl. a landing origin); a Stripe sikeres fizetés a `{returnBaseUrl}/foglalas/siker` oldalra irányít `return_to` paraméterrel.",
       ].join("\n"),
     },
     servers: [{ url: `${baseUrl}/api/plugins/t-book` }],
@@ -209,6 +216,33 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
         PackageDeal: packageDeal,
         HotelPricing: hotelPricing,
         OptionDef: optionDef,
+        CheckoutStatus: {
+          type: "object",
+          properties: {
+            ok: { type: "boolean" },
+            status: {
+              type: "string",
+              enum: [
+                "pending",
+                "checkout_started",
+                "paid",
+                "confirmed",
+                "cancelled",
+                "expired",
+              ],
+            },
+            invoiceStatus: {
+              type: "string",
+              enum: ["none", "issued", "failed", "reversed"],
+            },
+            invoiceReady: { type: "boolean" },
+            vouchersReady: { type: "boolean" },
+            returnBaseUrl: { type: ["string", "null"] },
+            eventName: { type: "string" },
+            totalHuf: { type: "number" },
+            guests: { type: "integer" },
+          },
+        },
         Event: {
           type: "object",
           properties: {
@@ -238,6 +272,13 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               type: "string",
               enum: ["person", "team"],
               description: "`guests` jelentése: fő vagy csapat.",
+            },
+            playersPerTicket: {
+              type: "integer",
+              minimum: 1,
+              maximum: 100,
+              description:
+                "Játékosok jegyenként/csapatonként. Szállás headcount = guests × playersPerTicket.",
             },
             teamMemberLimit: {
               type: ["integer", "null"],
@@ -386,7 +427,7 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["eventId", "guests", "customer"],
+                  required: ["eventId", "guests", "customer", "billing"],
                   properties: {
                     eventId: { type: "string" },
                     guests: { type: "integer", minimum: 1 },
@@ -409,16 +450,33 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                       items: { $ref: "#/components/schemas/AttendeePayload" },
                     },
                     billing: {
-                      type: ["object", "null"],
-                      description: "Számlázási cím a szamlazz.hu számlához.",
+                      type: "object",
+                      description:
+                        "Számlázási adatok a szamlazz.hu számlához. `billingType`: personal | company | sport.",
+                      required: ["name", "zip", "city", "street"],
                       properties: {
+                        billingType: {
+                          type: "string",
+                          enum: ["personal", "company", "sport"],
+                          default: "personal",
+                        },
                         name: { type: "string" },
                         zip: { type: "string" },
                         city: { type: "string" },
                         street: { type: "string" },
-                        countryCode: { type: "string" },
-                        taxNumber: { type: "string" },
+                        countryCode: { type: "string", default: "HU" },
+                        taxNumber: {
+                          type: "string",
+                          description:
+                            "Kötelező, ha `billingType` = company. Sport esetén opcionális.",
+                        },
                       },
+                    },
+                    returnBaseUrl: {
+                      type: "string",
+                      format: "uri",
+                      description:
+                        "A foglalást indító oldal origin-je (pl. https://worlddartsfestival.com). Stripe visszatérés és letöltések ehhez igazodnak.",
                     },
                     hotelId: { type: ["string", "null"] },
                     nights: { type: ["integer", "null"] },
@@ -454,7 +512,7 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
       },
       "/bookings/status": {
         get: {
-          summary: "Foglalás fizetési státusz lekérdezése",
+          summary: "Foglalás fizetési státusz lekérdezése (API kulcs)",
           parameters: [
             { name: "bookingId", in: "query", required: true, schema: { type: "string" } },
             { name: "session_id", in: "query", required: false, schema: { type: "string" } },
@@ -464,28 +522,28 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               description: "OK",
               content: {
                 "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      ok: { type: "boolean" },
-                      status: {
-                        type: "string",
-                        enum: [
-                          "pending",
-                          "checkout_started",
-                          "paid",
-                          "confirmed",
-                          "cancelled",
-                          "expired",
-                        ],
-                      },
-                      invoiceStatus: {
-                        type: "string",
-                        enum: ["none", "issued", "failed", "reversed"],
-                      },
-                      totalHuf: { type: "number" },
-                    },
-                  },
+                  schema: { $ref: "#/components/schemas/CheckoutStatus" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/checkout/status": {
+        get: {
+          summary: "Foglalás fizetési státusz (vendég, session alapú)",
+          description:
+            "Nyilvános végpont a fizetés utáni oldalhoz — `session_id` + `bookingId` alapján, API kulcs nélkül.",
+          parameters: [
+            { name: "bookingId", in: "query", required: true, schema: { type: "string" } },
+            { name: "session_id", in: "query", required: false, schema: { type: "string" } },
+          ],
+          responses: {
+            "200": {
+              description: "OK",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/CheckoutStatus" },
                 },
               },
             },

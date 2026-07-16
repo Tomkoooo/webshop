@@ -164,17 +164,22 @@ export function validateAttendees(
   teamOpts?: {
     teamMemberFieldSchema?: TBookAttendeeFieldDef[]
     teamMemberLimit?: number | null
+    /** Fixed player count per ticket (overrides flexible roster). */
+    playersPerTicket?: number | null
   }
 ): AttendeeValidationIssue[] {
   const normalized = normalizeAttendeeFieldSchema(schema)
   const memberSchema = normalizeAttendeeFieldSchema(teamOpts?.teamMemberFieldSchema)
   const memberLimit = teamOpts?.teamMemberLimit ?? null
+  const fixedRoster = teamOpts?.playersPerTicket != null && teamOpts.playersPerTicket > 1
+    ? teamOpts.playersPerTicket
+    : null
 
   if (normalized.length === 0 && memberSchema.length === 0) return []
 
   const issues: AttendeeValidationIssue[] = []
   const rows = attendees ?? []
-  const unitLabel = registrationUnit === "team" ? "csapat" : "résztvevő"
+  const unitLabel = registrationUnit === "team" ? "csapat" : "jegy"
 
   if (rows.length !== guests) {
     issues.push({
@@ -185,6 +190,10 @@ export function validateAttendees(
     return issues
   }
 
+  const needsMembers =
+    memberSchema.length > 0 &&
+    (fixedRoster != null || registrationUnit === "team")
+
   rows.forEach((attendee, index) => {
     for (const field of normalized) {
       const message = validateFieldValue(field, attendee.fields?.[field.key])
@@ -193,22 +202,33 @@ export function validateAttendees(
       }
     }
 
-    if (registrationUnit !== "team" || memberSchema.length === 0) return
+    if (!needsMembers) return
 
     const members = attendee.members ?? []
+    const requiredCount = fixedRoster ?? (members.length > 0 ? members.length : 1)
+
+    if (fixedRoster != null && members.length !== fixedRoster) {
+      issues.push({
+        index,
+        fieldKey: "",
+        message: `${index + 1}. ${unitLabel}: pontosan ${fixedRoster} játékos adata kötelező.`,
+      })
+      return
+    }
+
     if (members.length === 0) {
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. csapat: legalább egy csapattag adata kötelező.`,
+        message: `${index + 1}. ${unitLabel}: legalább egy játékos adata kötelező.`,
       })
       return
     }
-    if (memberLimit != null && members.length > memberLimit) {
+    if (memberLimit != null && fixedRoster == null && members.length > memberLimit) {
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. csapat: legfeljebb ${memberLimit} csapattag adható meg.`,
+        message: `${index + 1}. ${unitLabel}: legfeljebb ${memberLimit} játékos adható meg.`,
       })
     }
 
@@ -219,7 +239,7 @@ export function validateAttendees(
           issues.push({
             index,
             fieldKey: field.key,
-            message: `${index + 1}. csapat, ${memberIndex + 1}. tag: ${message}`,
+            message: `${index + 1}. ${unitLabel}, ${memberIndex + 1}. játékos: ${message}`,
           })
         }
       }

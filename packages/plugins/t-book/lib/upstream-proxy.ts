@@ -18,6 +18,10 @@ export function shouldProxyPublicTBookRoute(
   if (segment === "quote" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && path[1] === "status" && method === "GET") return true
+  if (segment === "checkout" && path[1] === "status" && method === "GET") return true
+  if (segment === "checkout" && path[1] === "invoice" && method === "GET") return true
+  if (segment === "checkout" && path[1] === "vouchers" && method === "GET") return true
+  if (segment === "checkout" && path[1] === "return" && method === "GET") return true
   return false
 }
 
