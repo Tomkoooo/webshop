@@ -10,7 +10,7 @@ import TBookBooking from "../models/TBookBooking"
 import { normalizeTBookCurrency, stripeCurrencyCode, toStripeUnitAmount } from "../lib/currency"
 import { assertOrgStripeReady, getOrgStripeClient } from "../lib/org-integrations"
 import { TBookBookingService } from "./booking-service"
-import type { CreateBookingInput } from "../lib/schemas"
+import type { CreateBookingInput, CreateMultiBookingInput } from "../lib/schemas"
 
 export const TBOOK_CHECKOUT_KIND = "t_book"
 
@@ -109,6 +109,106 @@ export class TBookCheckoutService {
     }
   }
 
+  /** Multi-event: N pending bookings, one Stripe session, shared checkoutBundleId. */
+  static async createMultiBookingWithCheckout(
+    input: CreateMultiBookingInput,
+    opts?: { groupId?: mongoose.Types.ObjectId; returnBaseUrl?: string }
+  ) {
+    const { bookings, checkoutBundleId } = await TBookBookingService.createPendingMultiBookings(
+      input,
+      { groupId: opts?.groupId }
+    )
+    if (bookings.length === 0) throw new Error("Nem sikerült létrehozni a foglalásokat.")
+
+    const primary = bookings[0]
+    const organizationId = primary.organizationId ? String(primary.organizationId) : null
+    await assertOrgStripeReady(organizationId)
+
+    const now = new Date()
+    const ttlMs = clampReservationTtlMs(null)
+    const expiresAt = reservationEndsAt(now, ttlMs)
+
+    const stripe = await getOrgStripeClient(organizationId)
+    const storefrontBase =
+      primary.checkoutReturnBaseUrl?.trim() ||
+      input.returnBaseUrl?.trim() ||
+      opts?.returnBaseUrl?.trim() ||
+      getAppBaseUrl()
+    const primaryId = primary._id.toString()
+    const currency = await resolveCheckoutCurrency(primary)
+    const returnTo = encodeURIComponent(storefrontBase)
+    const totalHuf = bookings.reduce((sum, b) => sum + b.totalHuf, 0)
+    const bookingIds = bookings.map((b) => b._id.toString())
+
+    const lineItems = bookings.map((booking) => {
+      const description = [
+        `${booking.guests} fő`,
+        booking.hotelName ? `${booking.hotelName}, ${booking.nights} éj` : "csak belépő",
+      ].join(" · ")
+      return {
+        quantity: 1,
+        price_data: {
+          currency: stripeCurrencyCode(currency),
+          unit_amount: toStripeUnitAmount(booking.totalHuf, currency),
+          product_data: {
+            name: booking.eventName,
+            description,
+          },
+        },
+      }
+    })
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: "payment",
+      success_url: `${storefrontBase}/foglalas/siker?bookingId=${primaryId}&session_id={CHECKOUT_SESSION_ID}&return_to=${returnTo}`,
+      cancel_url: `${storefrontBase}/foglalas/siker?bookingId=${primaryId}&cancelled=1&return_to=${returnTo}`,
+      client_reference_id: primaryId,
+      metadata: {
+        tBookBookingId: primaryId,
+        tBookBookingIds: bookingIds.join(","),
+        tBookCheckoutBundleId: checkoutBundleId,
+        checkoutKind: TBOOK_CHECKOUT_KIND,
+        tBookOrganizationId: organizationId ?? "",
+      },
+      payment_intent_data: {
+        metadata: {
+          tBookBookingId: primaryId,
+          tBookBookingIds: bookingIds.join(","),
+          tBookCheckoutBundleId: checkoutBundleId,
+          checkoutKind: TBOOK_CHECKOUT_KIND,
+          tBookOrganizationId: organizationId ?? "",
+        },
+      },
+      line_items: lineItems,
+      payment_method_types: ["card"],
+      locale: "hu",
+      expires_at: stripeCheckoutExpiresAtUnix(now, expiresAt),
+      customer_email: primary.customer.email,
+    })
+
+    for (const booking of bookings) {
+      booking.status = "checkout_started"
+      booking.stripeSessionId = checkoutSession.id
+      const paymentIntentId =
+        typeof checkoutSession.payment_intent === "string"
+          ? checkoutSession.payment_intent
+          : checkoutSession.payment_intent?.id
+      if (paymentIntentId) booking.stripePaymentIntentId = paymentIntentId
+      booking.expiresAt = expiresAt
+      await booking.save()
+    }
+
+    return {
+      bookingId: primaryId,
+      bookingIds,
+      checkoutBundleId,
+      totalHuf,
+      checkoutUrl: checkoutSession.url,
+      stripeSessionId: checkoutSession.id,
+      expiresAt: expiresAt.toISOString(),
+    }
+  }
+
   static async getCheckoutStatus(bookingId: string, stripeSessionId?: string | null) {
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       throw new Error("Érvénytelen foglalás.")
@@ -188,30 +288,66 @@ export class TBookCheckoutService {
   static async finalizeBookingFromStripeSession(checkoutSession: {
     id: string
     payment_status?: string | null
-    metadata?: { tBookBookingId?: string } | null
+    metadata?: {
+      tBookBookingId?: string
+      tBookBookingIds?: string
+      tBookCheckoutBundleId?: string
+    } | null
     client_reference_id?: string | null
   }) {
     if (checkoutSession.payment_status !== "paid") return null
 
-    const bookingId =
+    const primaryId =
       checkoutSession.metadata?.tBookBookingId || checkoutSession.client_reference_id
-    if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) return null
+    if (!primaryId || !mongoose.Types.ObjectId.isValid(primaryId)) return null
 
     await dbConnect()
-    // Atomic claim so webhook + success-redirect fallback can't double-finalize.
-    const booking = await TBookBooking.findOneAndUpdate(
-      {
-        _id: bookingId,
-        stripeSessionId: checkoutSession.id,
-        status: { $in: ["pending", "checkout_started"] },
-      },
-      { $set: { status: "paid", paidAt: new Date() } },
-      { new: true }
-    )
-    if (!booking) return null
 
+    const idsFromMeta = (checkoutSession.metadata?.tBookBookingIds ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+
+    const candidateIds =
+      idsFromMeta.length > 0
+        ? idsFromMeta
+        : (
+            await TBookBooking.find({
+              stripeSessionId: checkoutSession.id,
+              status: { $in: ["pending", "checkout_started"] },
+            })
+              .select("_id")
+              .lean()
+          ).map((row) => String(row._id))
+
+    const uniqueIds = [...new Set([primaryId, ...candidateIds])]
+    let primaryReturn: string | null = null
+
+    for (const bookingId of uniqueIds) {
+      const booking = await TBookBooking.findOneAndUpdate(
+        {
+          _id: bookingId,
+          stripeSessionId: checkoutSession.id,
+          status: { $in: ["pending", "checkout_started"] },
+        },
+        { $set: { status: "paid", paidAt: new Date() } },
+        { new: true }
+      )
+      if (!booking) continue
+      await TBookCheckoutService.afterBookingPaid(booking)
+      if (bookingId === primaryId) primaryReturn = primaryId
+    }
+
+    return primaryReturn ?? (uniqueIds[0] ?? null)
+  }
+
+  private static async afterBookingPaid(booking: {
+    _id: { toString(): string }
+    invoiceStatus?: string | null
+    save: () => Promise<unknown>
+  }) {
     const { sendBookingConfirmationEmail } = await import("../lib/send-booking-email")
-    await sendBookingConfirmationEmail(booking)
+    await sendBookingConfirmationEmail(booking as never)
 
     const { issueVouchersForBooking } = await import("./voucher-service")
     try {
@@ -220,17 +356,14 @@ export class TBookCheckoutService {
       console.error("[t-book] voucher issue failed", booking._id.toString(), error)
     }
 
-    // Mark pending before the async issue so the success page keeps polling for the PDF.
     if (booking.invoiceStatus === "none" || !booking.invoiceStatus) {
-      booking.invoiceStatus = "pending"
+      ;(booking as { invoiceStatus: string }).invoiceStatus = "pending"
       await booking.save()
     }
     const { issueBookingInvoice } = await import("./invoice-service")
     void issueBookingInvoice(booking._id.toString()).catch((error) => {
       console.error("[t-book] invoice issue failed", booking._id.toString(), error)
     })
-
-    return booking._id.toString()
   }
 
   static async expireBooking(bookingId: string) {

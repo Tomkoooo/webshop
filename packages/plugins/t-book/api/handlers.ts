@@ -273,6 +273,10 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const { groupId } = await requireApiKeyGroup(request)
       enforceRateLimit(request, "t-book:quote", 120)
       const body = await request.json()
+      if (Array.isArray(body?.entries)) {
+        const result = await TBookBookingService.quoteMulti(body, { groupId })
+        return json({ ok: true, ...result }, 200, request)
+      }
       const { quote } = await TBookBookingService.quote(body, { groupId })
       return json({ ok: true, quote }, 200, request)
     }
@@ -281,6 +285,12 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const { groupId } = await requireApiKeyGroup(request)
       enforceRateLimit(request, "t-book:bookings", 20)
       const body = await request.json()
+      if (Array.isArray(body?.entries)) {
+        const result = await TBookCheckoutService.createMultiBookingWithCheckout(body, {
+          groupId,
+        })
+        return json({ ok: true, ...result }, 200, request)
+      }
       const result = await TBookCheckoutService.createBookingWithCheckout(body, { groupId })
       return json({ ok: true, ...result }, 200, request)
     }

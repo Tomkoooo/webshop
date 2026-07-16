@@ -17,14 +17,14 @@ export default async function StorefrontFlowShell({
   const footerData = await resolveStorefrontFooterContact(template)
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-clip">
       <Navbar
         brandName={branding.brandName}
         logoSrc={branding.logoNav}
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
       />
-      <div className="flex-1 overflow-x-hidden">{children}</div>
+      <div className="flex-1 overflow-x-clip">{children}</div>
       <Footer
         brandName={branding.brandName}
         logoSrc={branding.logoFooter}

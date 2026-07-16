@@ -27,11 +27,11 @@ const formSchema = z.object({
 })
 
 export type ContactInquiryFormLabels = {
-  nameLabel?: string
-  emailLabel?: string
-  messageLabel?: string
+  nameLabel?: React.ReactNode
+  emailLabel?: React.ReactNode
+  messageLabel?: React.ReactNode
   sendButtonLabel?: string
-  recipientLabel?: string
+  recipientLabel?: React.ReactNode
 }
 
 type Props = ContactInquiryFormLabels & {

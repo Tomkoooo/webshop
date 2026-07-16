@@ -402,6 +402,35 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               />
             </div>
           </div>
+          {c.venue.mapEmbedUrl || edit.enabled ? (
+            <div className="mt-8 space-y-3">
+              {edit.enabled ? (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Google Maps beágyazás URL (iframe src)
+                  </p>
+                  <EditableDocText
+                    path="venue.mapEmbedUrl"
+                    value={c.venue.mapEmbedUrl}
+                    multiline
+                    className="block w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                  />
+                </div>
+              ) : null}
+              {c.venue.mapEmbedUrl ? (
+                <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-[21/9] min-h-[240px]">
+                  <iframe
+                    title={c.venue.name || "Térkép"}
+                    src={c.venue.mapEmbedUrl}
+                    className="h-full w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
     ),
@@ -506,7 +535,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     prizeMoney: (
-      <section className="py-16">
+      <section id="prize-money" className="scroll-mt-24 py-16">
         <div className="mx-auto max-w-5xl space-y-8 px-4">
           <div className="text-center">
             <SectionHeading className="mb-3">
@@ -642,10 +671,24 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
             <ContactInquiryForm
               contactEmails={contactEmails}
-              nameLabel={c.contact.nameLabel}
-              emailLabel={c.contact.emailLabel}
-              messageLabel={c.contact.messageLabel}
+              nameLabel={
+                <EditableDocText path="contact.nameLabel" value={c.contact.nameLabel} />
+              }
+              emailLabel={
+                <EditableDocText path="contact.emailLabel" value={c.contact.emailLabel} />
+              }
+              messageLabel={
+                <EditableDocText path="contact.messageLabel" value={c.contact.messageLabel} />
+              }
               sendButtonLabel={c.contact.sendButtonLabel}
+              cmsSendButton={
+                edit.enabled
+                  ? {
+                      enabled: true,
+                      onLabelCommit: (value) => edit.setPath("contact.sendButtonLabel", value),
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -659,7 +702,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
         entry.enabled ? (
           <Reveal
             key={entry.id}
-            id={WDF_SECTION_ANCHORS[entry.id]}
+            id={entry.id === "prizeMoney" ? undefined : WDF_SECTION_ANCHORS[entry.id]}
             data-wdf-section={entry.id}
             variant="up"
             delayMs={index * 40}

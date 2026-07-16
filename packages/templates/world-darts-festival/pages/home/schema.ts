@@ -79,6 +79,8 @@ export const homeSchema = z.object({
     accessBody: z.string(),
     mapLabel: z.string(),
     mapHref: z.string(),
+    /** Google Maps embed URL (`https://www.google.com/maps/embed?...`). */
+    mapEmbedUrl: z.string().default(""),
   }),
   schedule: z.object({
     heading: z.string(),

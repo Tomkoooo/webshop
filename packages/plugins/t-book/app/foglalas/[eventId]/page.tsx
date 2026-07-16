@@ -5,6 +5,7 @@ import { getStorefrontFooterHydrationProps } from "@wse/core/lib/storefront-foot
 import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-data"
 import { getTBookBookingContent } from "@wse/core/lib/tbook-page-content"
 import { TBookBookingWizard } from "@wse/plugin-t-book/storefront/TBookBookingWizard"
+import { TBookMultiBookingWizard } from "@wse/plugin-t-book/storefront/TBookMultiBookingWizard"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 import { fetchPublicEventDetailForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
@@ -13,10 +14,25 @@ import { cn } from "@wse/core/lib/utils"
 
 type Props = {
   params: Promise<{ eventId: string }>
+  searchParams: Promise<{ events?: string }>
 }
 
-export default async function FoglalasEventPage({ params }: Props) {
+function parseEventIds(primaryId: string, eventsParam?: string): string[] {
+  const fromQuery = (eventsParam ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean)
+  const ids = fromQuery.length > 0 ? fromQuery : [primaryId]
+  if (!ids.includes(primaryId)) ids.unshift(primaryId)
+  return [...new Set(ids)]
+}
+
+export default async function FoglalasEventPage({ params, searchParams }: Props) {
   const { eventId } = await params
+  const { events: eventsParam } = await searchParams
+  const eventIds = parseEventIds(eventId, eventsParam)
+  const multi = eventIds.length > 1
+
   const enabled = await PluginService.isEnabled("t-book")
   if (!enabled) notFound()
 
@@ -25,7 +41,9 @@ export default async function FoglalasEventPage({ params }: Props) {
   const bookingCopy = await getTBookBookingContent(chrome.template.manifest.id)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookServerApiBase()
-  const eventDetail = await fetchPublicEventDetailForStorefront(apiKey, eventId, apiBase)
+  const eventDetail = multi
+    ? undefined
+    : await fetchPublicEventDetailForStorefront(apiKey, eventId, apiBase)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
@@ -34,6 +52,30 @@ export default async function FoglalasEventPage({ params }: Props) {
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
   const templateId = chrome.template.manifest.id
   const isWdf = templateId === "world-darts-festival"
+
+  const copy = {
+    stepTicket: bookingCopy.stepTicket,
+    stepDetails: bookingCopy.stepDetails,
+    stepReview: bookingCopy.stepReview,
+    guestsLabel: bookingCopy.guestsLabel,
+    hotelLabel: bookingCopy.hotelLabel,
+    hotelNone: bookingCopy.hotelNone,
+    nightsLabel: bookingCopy.nightsLabel,
+    roomTypeLabel: bookingCopy.roomTypeLabel,
+    customerHeading: bookingCopy.customerHeading,
+    customerHint: bookingCopy.customerHint,
+    attendeesHeading: bookingCopy.attendeesHeading,
+    attendeesHint: bookingCopy.attendeesHint,
+    quoteCta: bookingCopy.quoteCta,
+    payCta: bookingCopy.payCta,
+    payLoading: bookingCopy.payLoading,
+    backLabel: bookingCopy.backLabel,
+    nextLabel: bookingCopy.nextLabel,
+    reviewHeading: bookingCopy.reviewHeading,
+    totalLabel: bookingCopy.totalLabel,
+    loadingEvent: bookingCopy.loadingEvent,
+    eventError: bookingCopy.eventError,
+  }
 
   return (
     <>
@@ -52,34 +94,16 @@ export default async function FoglalasEventPage({ params }: Props) {
             isWdf && "wdf-booking-panel rounded-2xl p-4 sm:p-6"
           )}
         >
-          <TBookBookingWizard
-            apiKey={apiKey}
-            eventId={eventId}
-            initialEventDetail={eventDetail}
-            copy={{
-              stepTicket: bookingCopy.stepTicket,
-              stepDetails: bookingCopy.stepDetails,
-              stepReview: bookingCopy.stepReview,
-              guestsLabel: bookingCopy.guestsLabel,
-              hotelLabel: bookingCopy.hotelLabel,
-              hotelNone: bookingCopy.hotelNone,
-              nightsLabel: bookingCopy.nightsLabel,
-              roomTypeLabel: bookingCopy.roomTypeLabel,
-              customerHeading: bookingCopy.customerHeading,
-              customerHint: bookingCopy.customerHint,
-              attendeesHeading: bookingCopy.attendeesHeading,
-              attendeesHint: bookingCopy.attendeesHint,
-              quoteCta: bookingCopy.quoteCta,
-              payCta: bookingCopy.payCta,
-              payLoading: bookingCopy.payLoading,
-              backLabel: bookingCopy.backLabel,
-              nextLabel: bookingCopy.nextLabel,
-              reviewHeading: bookingCopy.reviewHeading,
-              totalLabel: bookingCopy.totalLabel,
-              loadingEvent: bookingCopy.loadingEvent,
-              eventError: bookingCopy.eventError,
-            }}
-          />
+          {multi ? (
+            <TBookMultiBookingWizard apiKey={apiKey} eventIds={eventIds} copy={copy} />
+          ) : (
+            <TBookBookingWizard
+              apiKey={apiKey}
+              eventId={eventId}
+              initialEventDetail={eventDetail}
+              copy={copy}
+            />
+          )}
         </div>
       </main>
       <Footer

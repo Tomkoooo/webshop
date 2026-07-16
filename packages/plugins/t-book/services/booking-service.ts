@@ -12,8 +12,12 @@ import type { TBookPriceQuote, TBookSelections } from "../lib/pricing-types"
 import { mergeOptionSchemas } from "../lib/option-merge"
 import {
   createBookingSchema,
+  createMultiBookingSchema,
+  multiQuoteRequestSchema,
   quoteRequestSchema,
   type CreateBookingInput,
+  type CreateMultiBookingInput,
+  type MultiQuoteRequest,
   type QuoteRequest,
 } from "../lib/schemas"
 import {
@@ -274,6 +278,153 @@ export class TBookBookingService {
       currency,
       status: "pending",
     })
+  }
+
+  /**
+   * Quote multiple event entries. Combined lodging attaches hotel to the first
+   * entry that has accommodation guests; other entries are ticket-only.
+   */
+  static async quoteMulti(input: MultiQuoteRequest, opts?: { groupId?: mongoose.Types.ObjectId }) {
+    const parsed = multiQuoteRequestSchema.parse(input)
+    const entryQuotes: Array<{
+      eventId: string
+      eventName: string
+      quote: TBookPriceQuote
+    }> = []
+
+    for (let index = 0; index < parsed.entries.length; index++) {
+      const entry = parsed.entries[index]
+      const isPrimaryLodging = parsed.lodgingMode === "combined" && index === 0
+      const separateLodging = parsed.lodgingMode === "separate"
+
+      let hotelId: string | null | undefined = null
+      let nights: number | null | undefined = null
+      let selections = null
+      let accommodationGuests: number | null | undefined = 0
+
+      if (parsed.lodgingMode === "combined") {
+        if (isPrimaryLodging) {
+          hotelId = parsed.hotelId
+          nights = parsed.nights
+          selections = parsed.selections
+          accommodationGuests = parsed.accommodationGuests ?? entry.accommodationGuests
+        } else {
+          hotelId = null
+          nights = null
+          selections = null
+          accommodationGuests = 0
+        }
+      } else if (separateLodging) {
+        hotelId = entry.hotelId
+        nights = entry.nights
+        selections = entry.selections
+        accommodationGuests = entry.accommodationGuests
+      }
+
+      const { quote, event } = await TBookBookingService.quote(
+        {
+          eventId: entry.eventId,
+          guests: entry.guests,
+          accommodationGuests,
+          hotelId,
+          nights,
+          selections,
+        },
+        opts
+      )
+      entryQuotes.push({
+        eventId: entry.eventId,
+        eventName: event.name,
+        quote,
+      })
+    }
+
+    const totalHuf = entryQuotes.reduce((sum, row) => sum + row.quote.totalHuf, 0)
+    const lines = entryQuotes.flatMap((row) =>
+      row.quote.lines.map((line) => ({
+        ...line,
+        key: `${row.eventId}:${line.key}`,
+        label: `${row.eventName}: ${line.label}`,
+      }))
+    )
+
+    return {
+      lodgingMode: parsed.lodgingMode,
+      entries: entryQuotes,
+      quote: {
+        guests: entryQuotes.reduce((sum, row) => sum + row.quote.guests, 0),
+        nights: entryQuotes.reduce((max, row) => Math.max(max, row.quote.nights), 0),
+        ticketSubtotalHuf: entryQuotes.reduce((sum, row) => sum + row.quote.ticketSubtotalHuf, 0),
+        accommodationBaseHuf: entryQuotes.reduce(
+          (sum, row) => sum + row.quote.accommodationBaseHuf,
+          0
+        ),
+        accommodationOptionsHuf: entryQuotes.reduce(
+          (sum, row) => sum + row.quote.accommodationOptionsHuf,
+          0
+        ),
+        accommodationSubtotalHuf: entryQuotes.reduce(
+          (sum, row) => sum + row.quote.accommodationSubtotalHuf,
+          0
+        ),
+        totalHuf,
+        lines,
+      } satisfies TBookPriceQuote,
+    }
+  }
+
+  static async createPendingMultiBookings(
+    input: CreateMultiBookingInput,
+    opts?: { groupId?: mongoose.Types.ObjectId; checkoutBundleId?: string }
+  ) {
+    const parsed = createMultiBookingSchema.parse(input)
+    const bundleId = opts?.checkoutBundleId ?? new mongoose.Types.ObjectId().toString()
+    const bookings: ITBookBooking[] = []
+
+    for (let index = 0; index < parsed.entries.length; index++) {
+      const entry = parsed.entries[index]
+      const isPrimaryLodging = parsed.lodgingMode === "combined" && index === 0
+
+      let hotelId: string | null | undefined = null
+      let nights: number | null | undefined = null
+      let selections = null
+      let accommodationGuests: number | null | undefined = 0
+
+      if (parsed.lodgingMode === "combined") {
+        if (isPrimaryLodging) {
+          hotelId = parsed.hotelId
+          nights = parsed.nights
+          selections = parsed.selections
+          accommodationGuests = parsed.accommodationGuests ?? entry.accommodationGuests
+        }
+      } else {
+        hotelId = entry.hotelId
+        nights = entry.nights
+        selections = entry.selections
+        accommodationGuests = entry.accommodationGuests
+      }
+
+      const booking = await TBookBookingService.createPendingBooking(
+        {
+          eventId: entry.eventId,
+          guests: entry.guests,
+          accommodationGuests,
+          customer: parsed.customer,
+          billing: parsed.billing,
+          returnBaseUrl: parsed.returnBaseUrl,
+          hotelId,
+          nights,
+          selections,
+          attendees: entry.attendees,
+        },
+        opts
+      )
+      booking.checkoutBundleId = bundleId
+      await booking.save()
+      bookings.push(booking)
+    }
+
+    return { bookings, checkoutBundleId: bundleId }
   }
 
   // ---- Admin --------------------------------------------------------------

@@ -25,7 +25,7 @@ export default async function LandingPage() {
 
   return (
     <div
-      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden ${fontRoot} ${isWorldDartsFestival ? WDF_STOREFRONT_ROOT_CLASS : ""}`}
+      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-clip ${fontRoot} ${isWorldDartsFestival ? WDF_STOREFRONT_ROOT_CLASS : ""}`}
     >
       <Navbar
         brandName={branding.brandName}
@@ -37,7 +37,7 @@ export default async function LandingPage() {
         navCta={wdfNavCta}
       />
 
-      <main className="overflow-x-hidden">
+      <main className="overflow-x-clip">
         <HomeRender content={content} deps={dependencies} />
       </main>
 

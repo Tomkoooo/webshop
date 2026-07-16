@@ -177,7 +177,20 @@ export function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(event) => {
+          // Native file picker / portaled crop overlay must not dismiss the form
+          // (Radix can leave aria-hidden stuck and blank the admin shell).
+          event.preventDefault()
+        }}
+        onInteractOutside={(event) => {
+          event.preventDefault()
+        }}
+        onFocusOutside={(event) => {
+          event.preventDefault()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{event ? "Esemény szerkesztése" : "Új esemény"}</DialogTitle>
         </DialogHeader>

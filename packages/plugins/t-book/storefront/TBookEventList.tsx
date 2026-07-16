@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Calendar, MapPin, Ticket } from "lucide-react"
 import {
@@ -38,11 +39,28 @@ export function TBookEventList({
   currency?: string
   variant?: TBookListVariant
 }) {
+  const router = useRouter()
   const serverProvided = initialEvents !== undefined
   const [events, setEvents] = useState<TBookPublicEvent[]>(initialEvents ?? [])
   const [currency, setCurrency] = useState(currencyProp)
   const [loading, setLoading] = useState(!serverProvided)
   const [error, setError] = useState<string | null>(initialError)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const toggleSelected = (eventId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(eventId) ? prev.filter((id) => id !== eventId) : [...prev, eventId]
+    )
+  }
+
+  const continueWithSelection = () => {
+    if (selectedIds.length === 0) return
+    if (selectedIds.length === 1) {
+      router.push(`/foglalas/${selectedIds[0]}`)
+      return
+    }
+    router.push(`/foglalas/${selectedIds[0]}?events=${selectedIds.join(",")}`)
+  }
 
   useEffect(() => {
     if (serverProvided) return
@@ -102,7 +120,7 @@ export function TBookEventList({
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${selectedIds.length > 0 ? "pb-24" : ""}`}>
       <header className={variant === "wdf" ? "wdf-tbook-header max-w-2xl" : "max-w-2xl"}>
         <h1 className="text-3xl font-bold tracking-tight">{copy.pageTitle}</h1>
         <p className="mt-2 text-muted-foreground">{copy.pageIntro}</p>
@@ -112,13 +130,18 @@ export function TBookEventList({
         {events.map((event) => {
           const feeLabel =
             event.ticketFeeMode === "per_person" ? copy.perPerson : copy.perBooking
+          const isSelected = selectedIds.includes(event.id)
           return (
             <article
               key={event.id}
               className={
                 variant === "wdf"
-                  ? "wdf-event-card wdf-card-lift flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
-                  : "flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md"
+                  ? `wdf-event-card wdf-card-lift flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm ${
+                      isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
+                    }`
+                  : `flex flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-md ${
+                      isSelected ? "border-primary ring-2 ring-primary/20" : "border-border"
+                    }`
               }
             >
               {event.heroImage ? (
@@ -134,7 +157,16 @@ export function TBookEventList({
                 </div>
               )}
               <div className="flex flex-1 flex-col gap-3 p-5">
-                <h2 className="text-xl font-semibold">{event.name}</h2>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+                    checked={isSelected}
+                    onChange={() => toggleSelected(event.id)}
+                    aria-label={`${event.name} kiválasztása`}
+                  />
+                  <span className="text-xl font-semibold">{event.name}</span>
+                </label>
                 {event.description ? (
                   <p className="line-clamp-3 text-sm text-muted-foreground">{event.description}</p>
                 ) : null}
@@ -173,6 +205,23 @@ export function TBookEventList({
           )
         })}
       </div>
+
+      {selectedIds.length > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium">
+              {selectedIds.length} esemény kiválasztva
+            </p>
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              onClick={continueWithSelection}
+            >
+              Folytatás foglalással
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

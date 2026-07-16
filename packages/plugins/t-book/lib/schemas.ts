@@ -510,6 +510,27 @@ export const quoteRequestSchema = z.object({
   selections: selectionsSchema.nullable().optional(),
 })
 
+export const multiBookingEntrySchema = z.object({
+  eventId: z.string().min(1),
+  guests: z.number().int().min(1).max(50),
+  accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+  attendees: z.array(tBookBookingAttendeeSchema).optional().default([]),
+  /** Used when lodgingMode is `separate`. */
+  hotelId: z.string().nullable().optional(),
+  nights: z.number().int().min(1).max(60).nullable().optional(),
+  selections: selectionsSchema.nullable().optional(),
+})
+
+export const multiQuoteRequestSchema = z.object({
+  lodgingMode: z.enum(["combined", "separate"]).default("combined"),
+  entries: z.array(multiBookingEntrySchema.omit({ attendees: true })).min(1).max(20),
+  /** Shared lodging when lodgingMode is `combined`. */
+  hotelId: z.string().nullable().optional(),
+  nights: z.number().int().min(1).max(60).nullable().optional(),
+  selections: selectionsSchema.nullable().optional(),
+  accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+})
+
 export const createBookingSchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
@@ -528,6 +549,23 @@ export const createBookingSchema = z.object({
   attendees: z.array(tBookBookingAttendeeSchema).optional().default([]),
 })
 
+export const createMultiBookingSchema = z.object({
+  lodgingMode: z.enum(["combined", "separate"]).default("combined"),
+  entries: z.array(multiBookingEntrySchema).min(1).max(20),
+  customer: z.object({
+    name: z.string().min(1, "Név kötelező"),
+    email: z.string().email("Érvényes email szükséges"),
+    phone: z.string().min(6, "Telefonszám kötelező"),
+    note: z.string().max(2000).optional().default(""),
+  }),
+  billing: tBookBillingSchema,
+  returnBaseUrl: z.string().url().optional(),
+  hotelId: z.string().nullable().optional(),
+  nights: z.number().int().min(1).max(60).nullable().optional(),
+  selections: selectionsSchema.nullable().optional(),
+  accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+})
+
 export type EventGroupInput = z.infer<typeof eventGroupInputSchema>
 export type EventGroupUpdateInput = z.infer<typeof eventGroupUpdateSchema>
 export type EventInput = z.infer<typeof eventInputSchema>
@@ -536,3 +574,5 @@ export type HotelInput = z.infer<typeof hotelInputSchema>
 export type HotelUpdateInput = z.infer<typeof hotelInputUpdateSchema>
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>
 export type CreateBookingInput = z.infer<typeof createBookingSchema>
+export type MultiQuoteRequest = z.infer<typeof multiQuoteRequestSchema>
+export type CreateMultiBookingInput = z.infer<typeof createMultiBookingSchema>

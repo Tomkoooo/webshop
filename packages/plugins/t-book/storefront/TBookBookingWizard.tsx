@@ -17,6 +17,11 @@ import {
 } from "../lib/hotel-pricing"
 import { suggestPackageCombinations } from "../lib/package-optimization"
 import {
+  formatStayDateRange,
+  preferPackageMatchingNights,
+  recommendStayForEvents,
+} from "../lib/stay-recommendation"
+import {
   accommodationGuestCount,
   needsPlayerMemberForms,
   playerFieldSchema,
@@ -95,16 +100,28 @@ function emptyAttendeeRows(
   )
 }
 
-function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelections {
+function defaultSelectionsForHotel(
+  hotel: TBookPublicHotel | null,
+  recommendedNights?: number
+): TBookSelections {
   if (!hotel) return {}
   const selections: TBookSelections = {}
   const mode = resolveAccommodationMode(hotel.pricing)
   if (mode === "packages") {
-    const firstPkg = hotel.pricing.packages?.[0]
-    if (firstPkg) selections[PACKAGE_DEAL_SELECTION_KEY] = firstPkg.key
+    const packages = hotel.pricing.packages ?? []
+    const preferred =
+      recommendedNights != null
+        ? preferPackageMatchingNights(packages, recommendedNights)
+        : packages[0]
+    if (preferred) selections[PACKAGE_DEAL_SELECTION_KEY] = preferred.key
   } else {
     const firstRoom = hotel.pricing.roomTypes[0]
     if (firstRoom) selections[ROOM_TYPE_SELECTION_KEY] = firstRoom.key
+    if (mode === "both" && recommendedNights != null) {
+      const packages = hotel.pricing.packages ?? []
+      const preferred = preferPackageMatchingNights(packages, recommendedNights)
+      if (preferred) selections[PACKAGE_DEAL_SELECTION_KEY] = preferred.key
+    }
   }
   const options =
     hotel.pricing.extrasSection?.options ??
@@ -193,6 +210,15 @@ export function TBookBookingWizard({
   const [detailsTab, setDetailsTab] = useState<"guests" | "billing">("guests")
   const [liveQuoteLoading, setLiveQuoteLoading] = useState(false)
 
+  const stayRecommendation = useMemo(
+    () => (event ? recommendStayForEvents([event]) : null),
+    [event]
+  )
+  const recommendedNights = stayRecommendation?.nights ?? event?.nights ?? 1
+  const recommendedStayLabel = stayRecommendation
+    ? formatStayDateRange(stayRecommendation.startDate, stayRecommendation.endDate)
+    : null
+
   const selectedHotel = useMemo(
     () => hotels.find((h) => h.id === selectedHotelId) ?? null,
     [hotels, selectedHotelId]
@@ -263,6 +289,8 @@ export function TBookBookingWizard({
     if (!selectedHotel || accommodationMode !== "packages") return
     if (!packageDealKey) return
     const pkg = findPackageDeal(selectedHotel.pricing, packageDealKey)
+    // Only sync nights when the guest explicitly picked a package (key present).
+    // Do not override the event-recommended nights with an unrelated first package.
     if (pkg && pkg.nights !== nights) setNights(pkg.nights)
   }, [selectedHotel, accommodationMode, packageDealKey, nights])
 
@@ -342,9 +370,18 @@ export function TBookBookingWizard({
       setSelections({})
       return
     }
-    setSelections(defaultSelectionsForHotel(selectedHotel))
+    const next = defaultSelectionsForHotel(selectedHotel, recommendedNights)
+    setSelections(next)
+    const dealKey = String(next[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+    if (dealKey) {
+      const pkg = findPackageDeal(selectedHotel.pricing, dealKey)
+      if (pkg) setNights(pkg.nights)
+      else setNights(recommendedNights)
+    } else {
+      setNights(recommendedNights)
+    }
     setQuote(null)
-  }, [selectedHotelId, selectedHotel])
+  }, [selectedHotelId, selectedHotel, recommendedNights])
 
   const patchSelection = (key: string, value: string | number | boolean | string[]) => {
     setSelections((s) => ({ ...s, [key]: value }))
@@ -731,6 +768,12 @@ export function TBookBookingWizard({
                         setQuote(null)
                       }}
                     />
+                    {recommendedStayLabel ? (
+                      <p className="text-xs text-muted-foreground">
+                        Recommended for this event: {recommendedNights} night
+                        {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
+                      </p>
+                    ) : null}
                   </label>
                   <label className="block space-y-1.5">
                     <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
@@ -761,6 +804,8 @@ export function TBookBookingWizard({
                   accommodationGuests={accommodationGuests}
                   displayCurrency={displayCurrency}
                   suggestions={packageSuggestions}
+                  recommendedNights={recommendedNights}
+                  recommendedLabel={recommendedStayLabel}
                   onSelectPackage={selectPackageForGuests}
                   onApplyPlan={applyPackagePlan}
                   onClearPackage={() => {
@@ -770,6 +815,7 @@ export function TBookBookingWizard({
                       delete next[PACKAGE_UNITS_SELECTION_KEY]
                       return next
                     })
+                    setNights(recommendedNights)
                     setQuote(null)
                   }}
                 />

@@ -61,6 +61,8 @@ export interface ITBookBooking extends Document {
   status: TBookBookingStatus
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
+  /** Links sibling bookings created in one multi-event checkout. */
+  checkoutBundleId: string | null
   paidAt: Date | null
   invoiceStatus: TBookInvoiceStatus
   invoiceId: string | null
@@ -191,6 +193,7 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     },
     stripeSessionId: { type: String, default: null, index: true },
     stripePaymentIntentId: { type: String, default: null },
+    checkoutBundleId: { type: String, default: null, index: true },
     paidAt: { type: Date, default: null },
     invoiceStatus: {
       type: String,

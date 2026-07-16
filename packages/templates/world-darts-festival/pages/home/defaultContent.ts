@@ -71,6 +71,7 @@ export const homeDefaultContent: HomeContent = {
       "Conveniently situated near the city center, the hall is easily accessible by public transport, including buses, trams, and the metro.",
     mapLabel: "Show me on the map",
     mapHref: "https://maps.google.com",
+    mapEmbedUrl: "",
   },
   schedule: {
     heading: "Schedule",

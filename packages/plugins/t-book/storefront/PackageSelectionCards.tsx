@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { BedDouble, Calendar, Users } from "lucide-react"
 import type { TBookPublicPackageDeal } from "./tbook-public-api"
 import { formatHuf } from "./tbook-public-api"
@@ -15,6 +15,9 @@ type Props = {
   accommodationGuests: number
   displayCurrency: string
   suggestions: PackageCombinationSuggestion[]
+  /** Highlight the stay length that matches the event window. */
+  recommendedNights?: number | null
+  recommendedLabel?: string | null
   onSelectPackage: (key: string, nights: number) => void
   onApplyPlan: (units: Record<string, number>) => void
   onClearPackage: () => void
@@ -44,12 +47,17 @@ export function PackageSelectionCards({
   accommodationGuests,
   displayCurrency,
   suggestions,
+  recommendedNights = null,
+  recommendedLabel = null,
   onSelectPackage,
   onApplyPlan,
   onClearPackage,
 }: Props) {
   const groups = useMemo(() => groupPackagesByNights(packages), [packages])
   const [selectedNights, setSelectedNights] = useState<number | null>(() => {
+    if (recommendedNights != null && groups.some(([n]) => n === recommendedNights)) {
+      return recommendedNights
+    }
     if (packageDealKey) {
       const pkg = packages.find((p) => p.key === packageDealKey)
       return pkg?.nights ?? groups[0]?.[0] ?? null
@@ -61,6 +69,14 @@ export function PackageSelectionCards({
     }
     return groups[0]?.[0] ?? null
   })
+
+  // Keep the recommended nights tab selected when packages / recommendation change.
+  useEffect(() => {
+    if (recommendedNights == null) return
+    if (groups.some(([n]) => n === recommendedNights)) {
+      setSelectedNights(recommendedNights)
+    }
+  }, [recommendedNights, groups])
 
   const packagesForPeriod =
     selectedNights != null ? packages.filter((p) => p.nights === selectedNights) : packages
@@ -114,6 +130,18 @@ export function PackageSelectionCards({
         </div>
       ) : null}
 
+      {recommendedLabel || recommendedNights != null ? (
+        <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+          Recommended stay
+          {recommendedNights != null ? (
+            <>
+              : <strong>{recommendedNights} night{recommendedNights === 1 ? "" : "s"}</strong>
+            </>
+          ) : null}
+          {recommendedLabel ? <> ({recommendedLabel})</> : null}
+        </p>
+      ) : null}
+
       {groups.length > 1 ? (
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-2">
@@ -135,6 +163,7 @@ export function PackageSelectionCards({
                 onClick={() => setSelectedNights(nights)}
               >
                 {nights} night{nights === 1 ? "" : "s"}
+                {recommendedNights === nights ? " · recommended" : ""}
               </button>
             ))}
           </div>

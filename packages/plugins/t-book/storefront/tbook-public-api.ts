@@ -168,6 +168,43 @@ export function quoteBooking(
   )
 }
 
+export type TBookMultiQuoteEntry = {
+  eventId: string
+  guests: number
+  accommodationGuests?: number | null
+  hotelId?: string | null
+  nights?: number | null
+  selections?: TBookSelections | null
+}
+
+export function quoteMultiBooking(
+  apiKey: string,
+  body: {
+    lodgingMode: "combined" | "separate"
+    entries: TBookMultiQuoteEntry[]
+    hotelId?: string | null
+    nights?: number | null
+    selections?: TBookSelections | null
+    accommodationGuests?: number | null
+  },
+  apiBase?: string
+) {
+  return tbookFetch<{
+    ok: true
+    lodgingMode: "combined" | "separate"
+    entries: Array<{ eventId: string; eventName: string; quote: TBookPriceQuote }>
+    quote: TBookPriceQuote
+  }>(
+    apiKey,
+    "/quote",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    apiBase
+  )
+}
+
 export function createBooking(
   apiKey: string,
   body: {
@@ -197,6 +234,53 @@ export function createBooking(
     bookingId: string
     totalHuf: number
     quote: TBookPriceQuote
+    checkoutUrl: string
+    stripeSessionId: string
+    expiresAt: string
+  }>(
+    apiKey,
+    "/bookings",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    apiBase
+  )
+}
+
+export function createMultiBooking(
+  apiKey: string,
+  body: {
+    lodgingMode: "combined" | "separate"
+    entries: Array<
+      TBookMultiQuoteEntry & {
+        attendees?: TBookBookingAttendeePayload[]
+      }
+    >
+    customer: { name: string; email: string; phone: string; note?: string }
+    billing: {
+      billingType: "personal" | "company" | "sport"
+      name: string
+      zip: string
+      city: string
+      street: string
+      countryCode: string
+      taxNumber?: string
+    }
+    returnBaseUrl?: string
+    hotelId?: string | null
+    nights?: number | null
+    selections?: TBookSelections | null
+    accommodationGuests?: number | null
+  },
+  apiBase?: string
+) {
+  return tbookFetch<{
+    ok: true
+    bookingId: string
+    bookingIds: string[]
+    checkoutBundleId: string
+    totalHuf: number
     checkoutUrl: string
     stripeSessionId: string
     expiresAt: string

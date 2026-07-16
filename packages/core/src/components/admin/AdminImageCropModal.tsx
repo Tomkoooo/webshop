@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import Cropper from "react-easy-crop"
 import { Check, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react"
 import { Button } from "@wse/core/components/ui/button"
@@ -94,9 +95,15 @@ export function AdminImageCropModal({
 
   const cropperKey = `${selectedPresetId}-${cropperAspect}`
 
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/90 p-4 backdrop-blur-xl md:p-8 animate-in fade-in duration-300">
-      <div className="flex h-[80vh] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-card shadow-xl">
+  const overlay = (
+    <div
+      data-admin-image-crop
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background/90 p-4 backdrop-blur-xl md:p-8 animate-in fade-in duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="flex h-[80vh] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-card shadow-xl ring-1 ring-border/60">
         <div className="flex items-center justify-between border-b border-border/50 p-4">
           <div>
             <h3 className="text-lg font-semibold text-foreground">{title}</h3>
@@ -230,4 +237,7 @@ export function AdminImageCropModal({
       </div>
     </div>
   )
+
+  if (typeof document === "undefined") return overlay
+  return createPortal(overlay, document.body)
 }
