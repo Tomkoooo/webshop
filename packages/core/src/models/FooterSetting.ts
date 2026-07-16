@@ -14,6 +14,16 @@ export interface IFooterSetting extends Document {
   newsletterPlaceholder: string
   copyrightText: string
   socialLinks: Array<{ platform: SocialPlatform; enabled: boolean; url: string }>
+  contactEntries: Array<{ label: string; value: string; kind: "text" | "link" | "mailto" | "tel" }>
+  organizerSection: {
+    title: string
+    companyName: string
+    registeredAddress: string
+    mailingAddress: string
+    openingHours: string
+    taxNumber: string
+  }
+  paymentMethodsNote: string
 }
 
 const FooterSettingSchema = new Schema<IFooterSetting>(
@@ -46,6 +56,35 @@ const FooterSettingSchema = new Schema<IFooterSetting>(
       ],
       default: [],
     },
+    contactEntries: {
+      type: [
+        {
+          label: { type: String, default: "" },
+          value: { type: String, default: "" },
+          kind: { type: String, enum: ["text", "link", "mailto", "tel"], default: "text" },
+        },
+      ],
+      default: [],
+    },
+    organizerSection: {
+      type: {
+        title: { type: String, default: "" },
+        companyName: { type: String, default: "" },
+        registeredAddress: { type: String, default: "" },
+        mailingAddress: { type: String, default: "" },
+        openingHours: { type: String, default: "" },
+        taxNumber: { type: String, default: "" },
+      },
+      default: () => ({
+        title: "",
+        companyName: "",
+        registeredAddress: "",
+        mailingAddress: "",
+        openingHours: "",
+        taxNumber: "",
+      }),
+    },
+    paymentMethodsNote: { type: String, default: "" },
   },
   { timestamps: true }
 )

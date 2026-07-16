@@ -39,6 +39,7 @@ const schema = z.object({
       registeredAddress: z.string(),
       mailingAddress: z.string(),
       openingHours: z.string(),
+      taxNumber: z.string().optional(),
     })
     .optional(),
   paymentMethodsNote: z.string().optional(),

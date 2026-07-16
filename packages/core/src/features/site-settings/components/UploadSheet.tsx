@@ -9,7 +9,6 @@ import {
   defaultFlexiblePresetId,
 } from "@wse/core/components/admin/admin-image-crop"
 import { Button } from "@wse/core/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@wse/core/components/ui/dialog"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
 import { adminFieldLabel } from "@wse/core/lib/admin-ui"
@@ -164,79 +163,98 @@ export function UploadSheet({
             event.target.value = ""
           }}
         />
-        {fileMeta ? (
+        {fileMeta && !imageSource ? (
           <span className="text-xs text-muted-foreground">
             Kiválasztva: {fileMeta.width}×{fileMeta.height}px
           </span>
         ) : null}
       </div>
 
-      <Dialog open={Boolean(imageSource)} onOpenChange={(open) => !open && resetEditor()}>
-        <DialogContent className="flex max-h-[90vh] w-[min(100vw-2rem,56rem)] flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="border-b border-border/60 px-4 py-3 text-left">
-            <DialogTitle>Kép szerkesztése</DialogTitle>
-            <p className="text-xs text-muted-foreground">
-              {useFullImage
-                ? "A teljes kép feltöltődik kivágás nélkül."
-                : "Válaszd ki a kivágás alakját, majd igazítsd a képet."}
-            </p>
-          </DialogHeader>
-
-          {flexible ? (
-            <div className="space-y-3 border-b border-border/60 bg-muted/20 px-4 py-3">
-              <Label className={adminFieldLabel}>Kivágás alakja</Label>
-              <div className="flex flex-wrap gap-2">
-                {aspectPresets.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    type="button"
-                    size="sm"
-                    variant={selectedPresetId === preset.id ? "secondary" : "outline"}
-                    onClick={() => selectPreset(preset.id)}
-                  >
-                    {preset.label}
-                  </Button>
-                ))}
-              </div>
-              {useCustomAspect ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Label className={cn(adminFieldLabel, "shrink-0")}>Szélesség : magasság</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={customAspectW}
-                    onChange={(e) => setCustomAspectW(Math.max(1, Number(e.target.value) || 1))}
-                    className="h-8 w-16 text-center"
-                  />
-                  <span className="text-muted-foreground">:</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={customAspectH}
-                    onChange={(e) => setCustomAspectH(Math.max(1, Number(e.target.value) || 1))}
-                    className="h-8 w-16 text-center"
-                  />
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {useFullImage ? (
-            <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-              <p className="max-w-md text-sm text-muted-foreground">
-                A teljes kép feltöltődik — nincs kivágás. Ideális előre elkészített logókhoz és bannerekhez.
-              </p>
-              {fileMeta ? (
+      {/* In-shell overlay (not Radix Dialog) — avoids portal/aria-hidden blanking the admin form. */}
+      {imageSource ? (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/90 p-4 backdrop-blur-xl md:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`${fileInputId}-crop-title`}
+        >
+          <div className="flex h-[80vh] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-card shadow-xl ring-1 ring-border/60">
+            <div className="flex items-start justify-between gap-3 border-b border-border/50 px-4 py-3">
+              <div>
+                <h3 id={`${fileInputId}-crop-title`} className="text-lg font-semibold text-foreground">
+                  Kép szerkesztése
+                </h3>
                 <p className="text-xs text-muted-foreground">
-                  {fileMeta.width}×{fileMeta.height}px
+                  {useFullImage
+                    ? "A teljes kép feltöltődik kivágás nélkül."
+                    : "Válaszd ki a kivágás alakját, majd igazítsd a képet."}
                 </p>
-              ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={resetEditor}
+                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Bezárás"
+              >
+                <X className="size-5" />
+              </button>
             </div>
-          ) : (
-            <div className="relative min-h-[280px] flex-1 bg-neutral-950">
-              {imageSource ? (
+
+            {flexible ? (
+              <div className="space-y-3 border-b border-border/50 bg-muted/20 px-4 py-3">
+                <Label className={adminFieldLabel}>Kivágás alakja</Label>
+                <div className="flex flex-wrap gap-2">
+                  {aspectPresets.map((preset) => (
+                    <Button
+                      key={preset.id}
+                      type="button"
+                      size="sm"
+                      variant={selectedPresetId === preset.id ? "secondary" : "outline"}
+                      onClick={() => selectPreset(preset.id)}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+                {useCustomAspect ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className={cn(adminFieldLabel, "shrink-0")}>Szélesség : magasság</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={customAspectW}
+                      onChange={(e) => setCustomAspectW(Math.max(1, Number(e.target.value) || 1))}
+                      className="h-8 w-16 text-center"
+                    />
+                    <span className="text-muted-foreground">:</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={customAspectH}
+                      onChange={(e) => setCustomAspectH(Math.max(1, Number(e.target.value) || 1))}
+                      className="h-8 w-16 text-center"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {useFullImage ? (
+              <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+                <p className="max-w-md text-sm text-muted-foreground">
+                  A teljes kép feltöltődik — nincs kivágás. Ideális előre elkészített logókhoz és
+                  bannerekhez.
+                </p>
+                {fileMeta ? (
+                  <p className="text-xs text-muted-foreground">
+                    {fileMeta.width}×{fileMeta.height}px
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="relative min-h-[280px] flex-1 bg-neutral-950">
                 <Cropper
                   key={cropperKey}
                   image={imageSource}
@@ -249,87 +267,87 @@ export function UploadSheet({
                   onRotationChange={setRotation}
                   onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
                 />
-              ) : null}
-            </div>
-          )}
-
-          <div className="space-y-4 border-t border-border/60 bg-muted/20 p-4">
-            {!useFullImage ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Nagyítás</span>
-                    <span>{Math.round(zoom * 100)}%</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ZoomOut className="size-4 shrink-0 text-muted-foreground" />
-                    <input
-                      type="range"
-                      value={zoom}
-                      min={1}
-                      max={3}
-                      step={0.1}
-                      onChange={(e) => setZoom(Number(e.target.value))}
-                      className="h-1 flex-1 cursor-pointer accent-primary"
-                    />
-                    <ZoomIn className="size-4 shrink-0 text-muted-foreground" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Forgatás</span>
-                    <span>{rotation}°</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <RotateCcw className="size-4 shrink-0 text-muted-foreground" />
-                    <input
-                      type="range"
-                      value={rotation}
-                      min={0}
-                      max={360}
-                      step={1}
-                      onChange={(e) => setRotation(Number(e.target.value))}
-                      className="h-1 flex-1 cursor-pointer accent-primary"
-                    />
-                  </div>
-                </div>
               </div>
-            ) : null}
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={resetEditor}>
-                <X className="size-4" />
-                Mégse
-              </Button>
-              <Button
-                type="button"
-                disabled={loading}
-                onClick={async () => {
-                  if (useFullImage) {
-                    await uploadOriginal()
-                    return
-                  }
-                  if (!imageSource || !croppedAreaPixels) return
-                  setLoading(true)
-                  try {
-                    const croppedBlob = await getCroppedImg(imageSource, croppedAreaPixels, rotation)
-                    if (!croppedBlob) return
-                    await uploadBlob(croppedBlob, "edited-image.jpg")
-                    resetEditor()
-                  } catch (err) {
-                    console.error(err)
-                    window.alert(err instanceof Error ? err.message : "Feltöltés sikertelen")
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-              >
-                <Check className="size-4" />
-                Alkalmaz és feltölt
-              </Button>
+            )}
+
+            <div className="space-y-4 border-t border-border/50 bg-muted/20 p-4">
+              {!useFullImage ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Nagyítás</span>
+                      <span>{Math.round(zoom * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <ZoomOut className="size-4 shrink-0 text-muted-foreground" />
+                      <input
+                        type="range"
+                        value={zoom}
+                        min={1}
+                        max={3}
+                        step={0.1}
+                        onChange={(e) => setZoom(Number(e.target.value))}
+                        className="h-1 flex-1 cursor-pointer accent-primary"
+                      />
+                      <ZoomIn className="size-4 shrink-0 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Forgatás</span>
+                      <span>{rotation}°</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <RotateCcw className="size-4 shrink-0 text-muted-foreground" />
+                      <input
+                        type="range"
+                        value={rotation}
+                        min={0}
+                        max={360}
+                        step={1}
+                        onChange={(e) => setRotation(Number(e.target.value))}
+                        className="h-1 flex-1 cursor-pointer accent-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={resetEditor}>
+                  <X className="size-4" />
+                  Mégse
+                </Button>
+                <Button
+                  type="button"
+                  disabled={loading}
+                  onClick={async () => {
+                    if (useFullImage) {
+                      await uploadOriginal()
+                      return
+                    }
+                    if (!imageSource || !croppedAreaPixels) return
+                    setLoading(true)
+                    try {
+                      const croppedBlob = await getCroppedImg(imageSource, croppedAreaPixels, rotation)
+                      if (!croppedBlob) return
+                      await uploadBlob(croppedBlob, "edited-image.jpg")
+                      resetEditor()
+                    } catch (err) {
+                      console.error(err)
+                      window.alert(err instanceof Error ? err.message : "Feltöltés sikertelen")
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                >
+                  <Check className="size-4" />
+                  Alkalmaz és feltölt
+                </Button>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      ) : null}
     </div>
   )
 }

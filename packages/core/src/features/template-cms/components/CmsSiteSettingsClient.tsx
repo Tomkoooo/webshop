@@ -145,7 +145,9 @@ export function CmsSiteSettingsClient({
             {section === "footer" ? (
               <FooterEditor
                 initial={initialFooter}
-                showCampFields={templateId === "minecraft-camp"}
+                showCampFields={
+                  templateId === "minecraft-camp" || templateId === "world-darts-festival"
+                }
               />
             ) : null}
             {section === "contact" ? (

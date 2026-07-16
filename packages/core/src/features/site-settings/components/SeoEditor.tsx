@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
 import { UploadSheet } from "@wse/core/features/site-settings/components/UploadSheet"
@@ -64,11 +64,9 @@ function SeoImageField({
 }
 
 export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?: (settings: SeoSettings) => void }) {
+  // Local draft only — do not reset from `initial` on every parent re-render (upload/crop
+  // remounts would wipe the form). Server values are applied after a successful save.
   const [state, setState] = useState(initial)
-
-  useEffect(() => {
-    setState(initial)
-  }, [initial])
 
   const patch = <K extends keyof SeoSettings>(key: K, value: SeoSettings[K]) => {
     setState((prev) => ({ ...prev, [key]: value }))
@@ -84,24 +82,30 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5 md:col-span-2">
             <Label className={adminFieldLabel}>Oldal címe</Label>
-            <Input value={state.siteTitle} onChange={(e) => patch("siteTitle", e.target.value)} />
+            <Input
+              value={state.siteTitle ?? ""}
+              onChange={(e) => patch("siteTitle", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label className={adminFieldLabel}>Oldal leírása</Label>
             <Textarea
-              value={state.siteDescription}
+              value={state.siteDescription ?? ""}
               onChange={(e) => patch("siteDescription", e.target.value)}
               rows={3}
             />
           </div>
           <div className="space-y-1.5">
             <Label className={adminFieldLabel}>Alapértelmezett nyelv</Label>
-            <Input value={state.defaultLocale} onChange={(e) => patch("defaultLocale", e.target.value)} />
+            <Input
+              value={state.defaultLocale ?? ""}
+              onChange={(e) => patch("defaultLocale", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className={adminFieldLabel}>Kanonikus URL</Label>
             <Input
-              value={state.canonicalBaseUrl}
+              value={state.canonicalBaseUrl ?? ""}
               onChange={(e) => patch("canonicalBaseUrl", e.target.value)}
               placeholder="https://shop.example.com"
             />
@@ -128,7 +132,7 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
           <SeoImageField
             label="Open Graph kép"
             description="Ajánlott: 1200×630 px (1.91:1)."
-            value={state.ogImage}
+            value={state.ogImage ?? ""}
             onChange={(url) => patch("ogImage", url)}
             recommendedSize={{ width: 1200, height: 630 }}
             aspect={1200 / 630}
@@ -136,7 +140,7 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
           <SeoImageField
             label="Twitter / X kártya kép"
             description="Ajánlott: 1200×600 px vagy ugyanaz mint az OG."
-            value={state.twitterImage}
+            value={state.twitterImage ?? ""}
             onChange={(url) => patch("twitterImage", url)}
             recommendedSize={{ width: 1200, height: 600 }}
             aspect={2}
@@ -144,7 +148,7 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
           <div className="space-y-3">
             <Label className={adminFieldLabel}>Favicon</Label>
             <FallbackImage
-              src={mediaImageSrc(state.favicon)}
+              src={mediaImageSrc(state.favicon ?? "")}
               alt="favicon"
               width={40}
               height={40}
@@ -157,7 +161,10 @@ export function SeoEditor({ initial, onSaved }: { initial: SeoSettings; onSaved?
               recommendedSize={{ width: 512, height: 512 }}
               aspect={1}
             />
-            <Input value={state.favicon} onChange={(e) => patch("favicon", e.target.value)} />
+            <Input
+              value={state.favicon ?? ""}
+              onChange={(e) => patch("favicon", e.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
