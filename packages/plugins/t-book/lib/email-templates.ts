@@ -68,5 +68,37 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
         "bookingId",
       ],
     },
+    {
+      type: "t_book_invoice_sent",
+      pluginId: "t-book",
+      tags: ["t-book", "transactional", "invoice"],
+      subject: `${brandName} — számla ({{eventName}})`,
+      body: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+          <h1>Számla</h1>
+          <p>Kedves {{customerName}},</p>
+          <p>Mellékelten küldjük a(z) <strong>{{eventName}}</strong> foglalásod számláját.</p>
+          <div style="background:#f4f4f4;padding:15px;margin:20px 0;">
+            <p><strong>Esemény:</strong> {{eventName}}</p>
+            <p><strong>Fizetett összeg:</strong> {{total}}</p>
+            <p><strong>Foglalás azonosító:</strong> {{bookingId}}</p>
+            <p><strong>Számla azonosító:</strong> {{invoiceId}}</p>
+          </div>
+          <p style="font-size:12px;color:#666;">Ez egy automatikus üzenet. A belépőjegy(ek) külön e-mailben érkeznek.</p>
+        </div>
+      `,
+      description: "tBook plugin — számla PDF csatolmány sikeres Számlázz.hu kiállítás után.",
+      variables: [
+        "customerName",
+        "customerEmail",
+        "eventName",
+        "guests",
+        "total",
+        "totalHuf",
+        "currency",
+        "bookingId",
+        "invoiceId",
+      ],
+    },
   ]
 }

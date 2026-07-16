@@ -35,6 +35,14 @@ function checkoutQuery(bookingId: string, sessionId: string | null) {
   return qs
 }
 
+function isInvoiceTerminal(status: string | undefined, invoiceReady: boolean | undefined) {
+  if (invoiceReady || status === "issued") return true
+  if (status === "failed" || status === "reversed") return true
+  // "none" means invoicing is not configured for this org — do not wait forever.
+  if (status === "none") return true
+  return false
+}
+
 export function TBookSuccessClient({ copy }: { copy: Copy }) {
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
@@ -52,6 +60,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
 
     let attempts = 0
     let active = true
+    let sawPendingInvoice = false
 
     const poll = async () => {
       const qs = checkoutQuery(bookingId, sessionId)
@@ -71,16 +80,25 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
         const paid = data.status === "paid" || data.status === "confirmed"
         if (paid) {
           setStatus("paid")
+          if (data.invoiceStatus === "pending") sawPendingInvoice = true
+
+          // While invoice is still pending, keep polling (do not treat early "none" as done
+          // until we've given finalize a moment to flip status to pending/issued).
+          const invoiceStillWorking =
+            data.invoiceStatus === "pending" ||
+            ((!data.invoiceStatus || data.invoiceStatus === "none") &&
+              !sawPendingInvoice &&
+              attempts < 8)
+
           const invoiceDone =
-            data.invoiceReady ||
-            data.invoiceStatus === "failed" ||
-            data.invoiceStatus === "none"
+            !invoiceStillWorking && isInvoiceTerminal(data.invoiceStatus, data.invoiceReady)
+
           if (data.vouchersReady && invoiceDone) {
             setPollingAssets(false)
             return true
           }
           setPollingAssets(true)
-          if (attempts >= 25) {
+          if (attempts >= 40) {
             setPollingAssets(false)
             return true
           }
@@ -171,6 +189,8 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
   const body = copy.successBody.replace("{bookingId}", bookingId ?? "—")
   const backHref = returnTo?.trim() || checkout?.returnBaseUrl?.trim() || "/jegyek"
   const backLabel = backHref.includes("/jegyek") ? "Back to tickets" : copy.successCta
+  const showInvoiceDownload = Boolean(checkout?.invoiceReady)
+  const showVoucherDownload = Boolean(checkout?.vouchersReady)
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
@@ -182,12 +202,12 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
       <p className="mt-3 text-muted-foreground">{body}</p>
       <p className="mt-2 text-xs text-muted-foreground">
         A confirmation email is on its way
-        {checkout?.invoiceReady ? ", including your invoice" : ""}.
+        {showInvoiceDownload ? ". Your invoice PDF is also emailed separately" : ""}.
       </p>
 
-      {downloadLinks && (checkout?.vouchersReady || checkout?.invoiceReady) ? (
+      {downloadLinks && (showVoucherDownload || showInvoiceDownload) ? (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          {checkout.vouchersReady ? (
+          {showVoucherDownload ? (
             <a
               href={downloadLinks.vouchers}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
@@ -196,7 +216,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               Download tickets (PDF)
             </a>
           ) : null}
-          {checkout.invoiceReady ? (
+          {showInvoiceDownload ? (
             <a
               href={downloadLinks.invoice}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"

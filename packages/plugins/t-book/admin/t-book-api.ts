@@ -195,6 +195,7 @@ export const BOOKING_STATUS_LABELS: Record<string, string> = {
 
 export const INVOICE_STATUS_LABELS: Record<string, string> = {
   none: "Nincs",
+  pending: "Folyamatban",
   issued: "Kiállítva",
   failed: "Sikertelen",
   reversed: "Sztornózva",

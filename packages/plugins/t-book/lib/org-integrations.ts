@@ -126,7 +126,10 @@ export async function resolveOrgSmtp(
 export async function sendOrgTemplatedEmail(opts: {
   organizationId: string | null | undefined
   to: string
-  templateType: "t_book_booking_confirmation" | "t_book_voucher_delivery"
+  templateType:
+    | "t_book_booking_confirmation"
+    | "t_book_voucher_delivery"
+    | "t_book_invoice_sent"
   data: Record<string, unknown>
   attachments?: { filename: string; content: Buffer; contentType?: string }[]
 }): Promise<void> {

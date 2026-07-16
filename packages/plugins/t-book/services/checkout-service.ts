@@ -220,8 +220,15 @@ export class TBookCheckoutService {
       console.error("[t-book] voucher issue failed", booking._id.toString(), error)
     }
 
+    // Mark pending before the async issue so the success page keeps polling for the PDF.
+    if (booking.invoiceStatus === "none" || !booking.invoiceStatus) {
+      booking.invoiceStatus = "pending"
+      await booking.save()
+    }
     const { issueBookingInvoice } = await import("./invoice-service")
-    void issueBookingInvoice(booking._id.toString())
+    void issueBookingInvoice(booking._id.toString()).catch((error) => {
+      console.error("[t-book] invoice issue failed", booking._id.toString(), error)
+    })
 
     return booking._id.toString()
   }

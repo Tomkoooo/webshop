@@ -100,20 +100,45 @@ async function resolveBookingVatPercents(booking: ITBookBooking): Promise<{
   return { ticketVatPercent, accommodationVatPercent }
 }
 
+async function deliverInvoiceEmailIfNeeded(booking: ITBookBooking): Promise<void> {
+  if (booking.invoiceStatus !== "issued" || booking.invoiceEmailSentAt) return
+  const { sendBookingInvoiceEmail } = await import("../lib/send-invoice-email")
+  const sent = await sendBookingInvoiceEmail(booking)
+  if (sent) {
+    booking.invoiceEmailSentAt = new Date()
+    await booking.save()
+  }
+}
+
 /** Fire-and-forget after payment; failures are recorded for admin retry. */
 export async function issueBookingInvoice(bookingId: string, organizationId?: string): Promise<void> {
   await dbConnect()
   const booking = await TBookBooking.findById(bookingId)
   assertBookingOrg(booking, organizationId)
   if (!booking) return
-  if (booking.invoiceStatus === "issued") return
+
+  if (booking.invoiceStatus === "issued") {
+    await deliverInvoiceEmailIfNeeded(booking)
+    return
+  }
 
   const { resolveOrgSzamlazz } = await import("../lib/org-integrations")
   const orgSzamlazz = await resolveOrgSzamlazz(
     booking.organizationId ? String(booking.organizationId) : organizationId
   )
   const platformEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
-  if (!orgSzamlazz && !platformEnabled) return
+  if (!orgSzamlazz && !platformEnabled) {
+    // Finalize may have flipped status to pending — clear it so the success page stops waiting.
+    if (booking.invoiceStatus === "pending") {
+      booking.invoiceStatus = "none"
+      await booking.save()
+    }
+    return
+  }
+
+  booking.invoiceStatus = "pending"
+  booking.invoiceError = null
+  await booking.save()
 
   if (!booking.billing) {
     booking.invoiceStatus = "failed"
@@ -148,12 +173,14 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
     booking.invoiceId = result.invoiceId
     booking.invoicePdfFileName = result.pdfFileName ?? null
     booking.invoiceError = null
+    await booking.save()
+    await deliverInvoiceEmailIfNeeded(booking)
   } catch (error) {
     booking.invoiceStatus = "failed"
     booking.invoiceError = error instanceof Error ? error.message : String(error)
     console.error("[t-book] invoice issue failed", bookingId, error)
+    await booking.save()
   }
-  await booking.save()
 }
 
 export async function reverseBookingInvoice(bookingId: string, organizationId?: string): Promise<void> {

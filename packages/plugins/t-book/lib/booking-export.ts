@@ -12,6 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const INVOICE_LABELS: Record<string, string> = {
+  pending: "Folyamatban",
   none: "Nincs",
   issued: "Kiállítva",
   failed: "Sikertelen",

@@ -12,7 +12,7 @@ import { Reveal } from "@wse/core/components/motion/css-reveal"
 import { cn } from "@wse/core/lib/utils"
 import type { RenderProps, HomePageDeps } from "@wse/sdk/templates/types"
 import type { HomeContent } from "./schema"
-import type { WdfHomeSectionId } from "../../lib/wdf-home-sections"
+import { WDF_SECTION_ANCHORS, type WdfHomeSectionId } from "../../lib/wdf-home-sections"
 
 function SectionHeading({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -372,7 +372,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     venue: (
-      <section id="venue" className="scroll-mt-24 border-y border-border/60 bg-muted/20 py-16">
+      <section className="border-y border-border/60 bg-muted/20 py-16">
         <div className="mx-auto max-w-6xl px-4">
           <SectionHeading className="mb-8">
             <EditableDocText path="venue.heading" value={c.venue.heading} />
@@ -406,7 +406,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     schedule: (
-      <section id="schedule" className="scroll-mt-24 py-16">
+      <section className="py-16">
         <div className="mx-auto max-w-3xl space-y-6 px-4">
           <SectionHeading>
             <EditableDocText path="schedule.heading" value={c.schedule.heading} />
@@ -506,7 +506,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     prizeMoney: (
-      <section id="prize-money" className="scroll-mt-24 py-16">
+      <section className="py-16">
         <div className="mx-auto max-w-5xl space-y-8 px-4">
           <div className="text-center">
             <SectionHeading className="mb-3">
@@ -629,7 +629,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     contact: (
-      <section id="contact" className="scroll-mt-24 border-t border-border/60 bg-muted/20 py-16">
+      <section className="border-t border-border/60 bg-muted/20 py-16">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2">
           <div className="space-y-4">
             <SectionHeading>
@@ -657,7 +657,14 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
     <div className="bg-background text-foreground">
       {sectionLayout.map((entry, index) =>
         entry.enabled ? (
-          <Reveal key={entry.id} variant="up" delayMs={index * 40}>
+          <Reveal
+            key={entry.id}
+            id={WDF_SECTION_ANCHORS[entry.id]}
+            data-wdf-section={entry.id}
+            variant="up"
+            delayMs={index * 40}
+            className={WDF_SECTION_ANCHORS[entry.id] ? "scroll-mt-24" : undefined}
+          >
             {sections[entry.id]}
           </Reveal>
         ) : null

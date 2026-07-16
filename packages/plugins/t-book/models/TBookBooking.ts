@@ -10,7 +10,7 @@ export type TBookBookingStatus =
   | "cancelled"
   | "expired"
 
-export type TBookInvoiceStatus = "none" | "issued" | "failed" | "reversed"
+export type TBookInvoiceStatus = "none" | "pending" | "issued" | "failed" | "reversed"
 
 export type { TBookAttendeeFieldDef, TBookBookingAttendee } from "../lib/attendee-fields"
 
@@ -66,6 +66,8 @@ export interface ITBookBooking extends Document {
   invoiceId: string | null
   invoicePdfFileName: string | null
   invoiceError: string | null
+  /** When the invoice PDF email was successfully sent to the guest. */
+  invoiceEmailSentAt: Date | null
   /** Storefront origin for post-payment redirect (e.g. WDF site). */
   checkoutReturnBaseUrl: string | null
   expiresAt: Date | null
@@ -192,12 +194,13 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     paidAt: { type: Date, default: null },
     invoiceStatus: {
       type: String,
-      enum: ["none", "issued", "failed", "reversed"],
+      enum: ["none", "pending", "issued", "failed", "reversed"],
       default: "none",
     },
     invoiceId: { type: String, default: null },
     invoicePdfFileName: { type: String, default: null },
     invoiceError: { type: String, default: null },
+    invoiceEmailSentAt: { type: Date, default: null },
     checkoutReturnBaseUrl: { type: String, default: null },
     expiresAt: { type: Date, default: null },
   },

@@ -233,7 +233,7 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
             },
             invoiceStatus: {
               type: "string",
-              enum: ["none", "issued", "failed", "reversed"],
+              enum: ["none", "pending", "issued", "failed", "reversed"],
             },
             invoiceReady: { type: "boolean" },
             vouchersReady: { type: "boolean" },

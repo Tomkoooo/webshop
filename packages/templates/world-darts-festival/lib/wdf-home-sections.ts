@@ -26,6 +26,15 @@ export const WDF_SECTION_LABELS: Record<WdfHomeSectionId, string> = {
   contact: "Kapcsolat",
 }
 
+/** DOM anchor ids for in-page nav / footer deep links (`/#prize-money`). */
+export const WDF_SECTION_ANCHORS: Partial<Record<WdfHomeSectionId, string>> = {
+  venue: "venue",
+  schedule: "schedule",
+  fees: "fees",
+  prizeMoney: "prize-money",
+  contact: "contact",
+}
+
 export const wdfSectionLayoutEntrySchema = z.object({
   id: z.enum(WDF_HOME_SECTION_IDS),
   enabled: z.boolean(),
