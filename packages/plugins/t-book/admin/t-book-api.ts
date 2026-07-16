@@ -72,6 +72,20 @@ export type AdminEvent = {
       message?: string
     }>
   } | null
+  pricingRules: Array<{
+    id: string
+    enabled: boolean
+    label: string
+    when: "always" | "with_hotel" | "without_hotel" | "with_package"
+    action: "set_ticket_fee" | "adjust_ticket" | "adjust_accommodation" | "adjust_total"
+    amount: number
+    amountMode:
+      | "fixed"
+      | "per_person"
+      | "per_accommodation_guest"
+      | "percent_accommodation"
+      | "percent_ticket"
+  }>
   status: "draft" | "active" | "archived"
   sortOrder: number
 }

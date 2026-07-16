@@ -145,6 +145,7 @@ export class TBookBookingService {
       groupPriceBasis: group?.defaultPriceBasis ?? "gross",
       groupVatPercent: group?.defaultVatPercent ?? 27,
       selections,
+      pricingRules: event.pricingRules ?? null,
     })
 
     return {

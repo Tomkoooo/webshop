@@ -2,6 +2,7 @@ import "server-only"
 
 import nodemailer from "nodemailer"
 import handlebars from "handlebars"
+import mongoose from "mongoose"
 import Stripe from "stripe"
 import dbConnect from "@wse/core/lib/db"
 import EmailTemplate from "@wse/core/models/EmailTemplate"
@@ -62,29 +63,36 @@ export async function resolveStripeWebhookSecretForSignature(
       const event = stripe.webhooks.constructEvent(rawBody, signature, platformSecret)
       return { event, organizationId: null }
     } catch {
-      // try org secrets below
+      // Platform secret rejected — try per-org Stripe accounts below.
     }
   }
 
-  await dbConnect()
-  const orgs = await TBookOrganization.find({
-    "settings.stripe.enabled": true,
-    "settings.stripe.webhookSecretEnc": { $nin: [null, ""] },
-  })
-    .select("_id settings.stripe")
-    .lean<ITBookOrganization[]>()
+  try {
+    await dbConnect()
+    // Avoid hanging queries when mongoose is not actually connected (unit tests / misconfig).
+    if (mongoose.connection.readyState === 1) {
+      const orgs = await TBookOrganization.find({
+        "settings.stripe.enabled": true,
+        "settings.stripe.webhookSecretEnc": { $nin: [null, ""] },
+      })
+        .select("_id settings.stripe")
+        .lean<ITBookOrganization[]>()
 
-  for (const org of orgs) {
-    const secret = decryptOrgSecret(org.settings?.stripe?.webhookSecretEnc)
-    const key = decryptOrgSecret(org.settings?.stripe?.secretKeyEnc)
-    if (!secret || !key) continue
-    try {
-      const stripe = new Stripe(key, { apiVersion: STRIPE_API_VERSION })
-      const event = stripe.webhooks.constructEvent(rawBody, signature, secret)
-      return { event, organizationId: String(org._id) }
-    } catch {
-      // next org
+      for (const org of orgs) {
+        const secret = decryptOrgSecret(org.settings?.stripe?.webhookSecretEnc)
+        const key = decryptOrgSecret(org.settings?.stripe?.secretKeyEnc)
+        if (!secret || !key) continue
+        try {
+          const stripe = new Stripe(key, { apiVersion: STRIPE_API_VERSION })
+          const event = stripe.webhooks.constructEvent(rawBody, signature, secret)
+          return { event, organizationId: String(org._id) }
+        } catch {
+          // next org
+        }
+      }
     }
+  } catch {
+    // DB unavailable — fall through to signature failure.
   }
 
   throw new Error("Stripe webhook signature verification failed")

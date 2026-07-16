@@ -7,6 +7,7 @@ import {
   validateHotelSelections,
 } from "../lib/pricing"
 import type { TBookHotelPricing, TBookOptionDef, TBookSelections, TBookSelectionValue } from "../lib/pricing-types"
+import type { TBookPricingRule } from "../lib/pricing-rules"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
@@ -117,6 +118,7 @@ export function PricingPreview({
   hotelCurrency = "HUF",
   defaultNights,
   pricing,
+  pricingRules = null,
 }: {
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
@@ -126,6 +128,7 @@ export function PricingPreview({
   hotelCurrency?: string
   defaultNights: number
   pricing: TBookHotelPricing
+  pricingRules?: TBookPricingRule[] | null
 }) {
   const displayCurrency = hotelCurrency || ticketCurrency
   const normalized = useMemo(() => normalizeHotelPricing(pricing), [pricing])
@@ -179,6 +182,7 @@ export function PricingPreview({
       nights,
       accommodation,
       selections,
+      pricingRules,
     })
     return { quote, errors }
   }, [
@@ -191,6 +195,7 @@ export function PricingPreview({
     withAccommodation,
     pricing,
     selections,
+    pricingRules,
   ])
 
   return (

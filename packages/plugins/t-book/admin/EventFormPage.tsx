@@ -32,6 +32,12 @@ import {
   type TBookEligibilityMatchOp,
   type TBookEligibilityRulesConfig,
 } from "../lib/eligibility"
+import {
+  PRICING_RULE_ACTION_LABELS,
+  PRICING_RULE_AMOUNT_MODE_LABELS,
+  PRICING_RULE_WHEN_LABELS,
+  type TBookPricingRule,
+} from "../lib/pricing-rules"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
@@ -88,6 +94,7 @@ type EventDraft = {
   eligibilityBirthDateFieldKey: string
   eligibilityGenderFieldKey: string
   eligibilityFormRules: TBookEligibilityRulesConfig
+  pricingRules: TBookPricingRule[]
 }
 
 export function EventFormPage({
@@ -140,6 +147,7 @@ export function EventFormPage({
     eligibilityBirthDateFieldKey: "",
     eligibilityGenderFieldKey: "",
     eligibilityFormRules: { logic: "and", rules: [] },
+    pricingRules: [],
   })
 
   useEffect(() => {
@@ -204,6 +212,7 @@ export function EventFormPage({
                   })),
                 }
               : { logic: "and", rules: [] },
+            pricingRules: e.pricingRules ?? [],
           })
         })
       )
@@ -273,6 +282,7 @@ export function EventFormPage({
       eligibilityGenderFieldKey: draft.eligibilityGenderFieldKey.trim() || null,
       eligibilityFormRules:
         draft.eligibilityFormRules.rules.length > 0 ? draft.eligibilityFormRules : null,
+      pricingRules: draft.pricingRules,
       status: draft.status,
     }
     try {
@@ -460,6 +470,177 @@ export function EventFormPage({
                   számítása: jegyek × játékosok (pl. 1 párjegy × 2 = 2 fő szálláshoz).
                 </p>
               </TBookField>
+              <div className="border-t border-border pt-6 space-y-3">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Ár szabályok (esemény)</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pl. ingyenes belépő + szálláscsomag kedvezmény, vagy felár ha nem szervezői
+                      szállást választanak. A szabályok a foglalási árajánlatban jelennek meg.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={tBookGhostButtonClass}
+                    onClick={() =>
+                      patch({
+                        pricingRules: [
+                          ...draft.pricingRules,
+                          {
+                            id: `pr-${Date.now()}`,
+                            enabled: true,
+                            label: "Új szabály",
+                            when: "without_hotel",
+                            action: "adjust_total",
+                            amount: 100,
+                            amountMode: "per_person",
+                          },
+                        ],
+                      })
+                    }
+                  >
+                    Szabály hozzáadása
+                  </button>
+                </div>
+                {draft.pricingRules.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Nincs szabály — a jegyár és szállásár önmagában érvényes.
+                  </p>
+                ) : null}
+                {draft.pricingRules.map((rule, index) => (
+                  <div key={rule.id} className="grid gap-2 rounded-lg bg-muted/40 p-3 sm:grid-cols-2">
+                    <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={rule.enabled !== false}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index ? { ...r, enabled: e.target.checked } : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      />
+                      Aktív
+                    </label>
+                    <TBookField label="Megjelenő név (árajánlat sor)">
+                      <TBookInput
+                        value={rule.label}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index ? { ...r, label: e.target.value } : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      />
+                    </TBookField>
+                    <TBookField label="Mikor">
+                      <TBookSelect
+                        value={rule.when}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index
+                              ? { ...r, when: e.target.value as TBookPricingRule["when"] }
+                              : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      >
+                        {Object.entries(PRICING_RULE_WHEN_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </TBookSelect>
+                    </TBookField>
+                    <TBookField label="Művelet">
+                      <TBookSelect
+                        value={rule.action}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index
+                              ? { ...r, action: e.target.value as TBookPricingRule["action"] }
+                              : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      >
+                        {Object.entries(PRICING_RULE_ACTION_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </TBookSelect>
+                    </TBookField>
+                    <TBookField label="Összeg módja">
+                      <TBookSelect
+                        value={rule.amountMode}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index
+                              ? {
+                                  ...r,
+                                  amountMode: e.target.value as TBookPricingRule["amountMode"],
+                                }
+                              : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      >
+                        {Object.entries(PRICING_RULE_AMOUNT_MODE_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </TBookSelect>
+                    </TBookField>
+                    <TBookField
+                      label={
+                        rule.action === "set_ticket_fee"
+                          ? `Belépődíj (${draft.currency})`
+                          : `Összeg (+/− ${draft.currency})`
+                      }
+                    >
+                      <TBookInput
+                        type="number"
+                        step="any"
+                        value={rule.amount}
+                        onChange={(e) => {
+                          const pricingRules = draft.pricingRules.map((r, i) =>
+                            i === index ? { ...r, amount: Number(e.target.value) || 0 } : r
+                          )
+                          patch({ pricingRules })
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Kedvezményhez adj meg negatív számot (pl. −100). Felárhoz pozitívat.
+                      </p>
+                    </TBookField>
+                    <button
+                      type="button"
+                      className={`${tBookGhostButtonClass} sm:col-span-2`}
+                      onClick={() =>
+                        patch({
+                          pricingRules: draft.pricingRules.filter((_, i) => i !== index),
+                        })
+                      }
+                    >
+                      Szabály törlése
+                    </button>
+                  </div>
+                ))}
+                <div className="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">Példa a tipikus esetre:</p>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Belépődíj felülírása → 0 (Mindig) — ingyenes belépő</li>
+                    <li>
+                      Szállás módosítás → −100 / résztvevőnként (Ha szervezői szállást választ)
+                    </li>
+                    <li>
+                      Összeg módosítás → +100 / résztvevőnként (Ha nem választ szervezői szállást)
+                    </li>
+                  </ol>
+                </div>
+              </div>
               {draft.registrationUnit === "team" ? (
                 <TBookField label="Max. csapattag / csapat (üres = korlátlan, fix létszám felett)">
                   <TBookInput

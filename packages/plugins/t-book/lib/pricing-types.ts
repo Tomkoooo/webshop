@@ -169,4 +169,6 @@ export type TBookQuoteInput = {
   groupPriceBasis?: TBookPriceBasis
   groupVatPercent?: number
   selections?: TBookSelections | null
+  /** Event-level special pricing rules (discounts, surcharges, free entry override). */
+  pricingRules?: import("./pricing-rules").TBookPricingRule[] | null
 }

@@ -24,6 +24,10 @@ import {
   parsePackageUnits,
   resolveAccommodationMode,
 } from "./hotel-pricing"
+import {
+  applyPricingRuleAdjustments,
+  resolveTicketFeeOverride,
+} from "./pricing-rules"
 
 function roundHuf(amount: number): number {
   return Math.round(Number.isFinite(amount) ? amount : 0)
@@ -335,15 +339,29 @@ function optionAmountHuf(
  */
 export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
   const guests = Math.max(1, Math.floor(input.guests || 1))
-  const accommodationGuests = Math.max(
-    1,
-    Math.floor(input.accommodationGuests ?? input.guests ?? 1)
+  const hasHotel = Boolean(input.accommodation)
+  const selectionsPreview = input.selections ?? {}
+  const hasPackage = Boolean(
+    selectionsPreview[PACKAGE_DEAL_SELECTION_KEY] ||
+      parsePackageUnits(selectionsPreview as Record<string, unknown>)
   )
+  const accommodationGuests = hasHotel
+    ? Math.max(1, Math.floor(input.accommodationGuests ?? input.guests ?? 1))
+    : Math.max(0, Math.floor(input.accommodationGuests ?? 0))
   const nights = Math.max(0, Math.floor(input.nights ?? 0))
   const ticketFeeMode = input.ticketFeeMode ?? "per_person"
 
+  const ticketFeeOverride = resolveTicketFeeOverride(input.pricingRules, {
+    hasHotel,
+    hasPackage,
+    guests,
+    accommodationGuests: accommodationGuests || guests,
+  })
+  const effectiveTicketFee =
+    ticketFeeOverride != null ? ticketFeeOverride : Math.max(0, input.ticketFeeHuf)
+
   const ticketUnitGross = toGrossHuf(
-    Math.max(0, input.ticketFeeHuf),
+    effectiveTicketFee,
     basisOf(input.ticketPriceBasis, "gross"),
     vatOf(input.ticketVatPercent)
   )
@@ -499,16 +517,43 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     }
   }
 
-  const accommodationSubtotalHuf = accommodationBaseHuf + accommodationOptionsHuf
+  let accommodationSubtotalHuf = accommodationBaseHuf + accommodationOptionsHuf
+  let ticketSubtotalFinal = ticketSubtotalHuf
+
+  const ruleLines = applyPricingRuleAdjustments(input.pricingRules, {
+    hasHotel,
+    hasPackage,
+    guests,
+    accommodationGuests: accommodationGuests || guests,
+    ticketSubtotalHuf: ticketSubtotalFinal,
+    accommodationSubtotalHuf,
+  })
+
+  let adjustTotalHuf = 0
+  for (const ruleLine of ruleLines) {
+    if (ruleLine.action === "adjust_ticket") {
+      ticketSubtotalFinal = roundHuf(ticketSubtotalFinal + ruleLine.amountHuf)
+    } else if (ruleLine.action === "adjust_accommodation") {
+      accommodationSubtotalHuf = roundHuf(accommodationSubtotalHuf + ruleLine.amountHuf)
+    } else if (ruleLine.action === "adjust_total") {
+      adjustTotalHuf = roundHuf(adjustTotalHuf + ruleLine.amountHuf)
+    }
+    lines.push({
+      key: ruleLine.key,
+      label: ruleLine.label,
+      amountHuf: ruleLine.amountHuf,
+    })
+  }
+
   return {
     guests,
     accommodationGuests,
     nights: quotedNights,
-    ticketSubtotalHuf,
+    ticketSubtotalHuf: ticketSubtotalFinal,
     accommodationBaseHuf,
     accommodationOptionsHuf,
     accommodationSubtotalHuf,
-    totalHuf: ticketSubtotalHuf + accommodationSubtotalHuf,
+    totalHuf: roundHuf(ticketSubtotalFinal + accommodationSubtotalHuf + adjustTotalHuf),
     lines,
   }
 }

@@ -22,17 +22,31 @@ export async function POST(req: NextRequest) {
     }
 
     const rawBody = await req.text();
-    // Prefer platform webhook secret; fall back to per-org Stripe webhook secrets (tBook).
+    // Prefer tBook multi-tenant resolver (platform + per-org secrets). If the plugin
+    // package is unavailable on a shop-only site, fall back to platform Stripe only.
     let event: import("stripe").Stripe.Event;
+    let resolveOrgWebhook:
+      | ((
+          body: string,
+          sig: string
+        ) => Promise<{ event: import("stripe").Stripe.Event; organizationId: string | null }>)
+      | null = null;
     try {
-      const { resolveStripeWebhookSecretForSignature } = await import(
-        "@wse/plugin-t-book/lib/org-integrations"
-      );
-      ;({ event } = await resolveStripeWebhookSecretForSignature(rawBody, signature));
+      const mod = await import("@wse/plugin-t-book/lib/org-integrations");
+      resolveOrgWebhook = mod.resolveStripeWebhookSecretForSignature;
     } catch {
+      resolveOrgWebhook = null;
+    }
+
+    if (resolveOrgWebhook) {
+      ;({ event } = await resolveOrgWebhook(rawBody, signature));
+    } else {
       const { getStripeClient, getStripeWebhookSecret } = await import("@wse/core/services/stripe");
-      const stripe = getStripeClient();
-      event = stripe.webhooks.constructEvent(rawBody, signature, getStripeWebhookSecret());
+      event = getStripeClient().webhooks.constructEvent(
+        rawBody,
+        signature,
+        getStripeWebhookSecret()
+      );
     }
 
     await dbConnect();

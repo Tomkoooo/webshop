@@ -319,6 +319,27 @@ export const tBookEligibilityFormRulesSchema = z
   .nullable()
   .optional()
 
+export const tBookPricingRuleSchema = z.object({
+  id: z.string().min(1),
+  enabled: z.boolean().default(true),
+  label: z.string().min(1),
+  when: z.enum(["always", "with_hotel", "without_hotel", "with_package"]),
+  action: z.enum([
+    "set_ticket_fee",
+    "adjust_ticket",
+    "adjust_accommodation",
+    "adjust_total",
+  ]),
+  amount: z.number(),
+  amountMode: z.enum([
+    "fixed",
+    "per_person",
+    "per_accommodation_guest",
+    "percent_accommodation",
+    "percent_ticket",
+  ]),
+})
+
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
   name: z.string().min(1, "Név kötelező"),
@@ -352,6 +373,7 @@ export const eventInputSchema = z.object({
   eligibilityBirthDateFieldKey: z.string().nullable().optional(),
   eligibilityGenderFieldKey: z.string().nullable().optional(),
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
+  pricingRules: z.array(tBookPricingRuleSchema).default([]),
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -392,6 +414,7 @@ export const eventUpdateSchema = z.object({
   eligibilityBirthDateFieldKey: z.string().nullable().optional(),
   eligibilityGenderFieldKey: z.string().nullable().optional(),
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
+  pricingRules: z.array(tBookPricingRuleSchema).optional(),
   status: tBookStatusSchema.optional(),
   sortOrder: z.number().int().optional(),
 })

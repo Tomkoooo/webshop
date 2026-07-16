@@ -3,6 +3,7 @@ import type { TBookStatus } from "../lib/schemas"
 import type { TBookPriceBasis } from "../lib/vat"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
 import type { TBookEligibilityPreset, TBookEligibilityRulesConfig } from "../lib/eligibility"
+import type { TBookPricingRule } from "../lib/pricing-rules"
 
 export interface ITBookEvent extends Document {
   /** Denormalized org scope for admin queries. */
@@ -54,6 +55,8 @@ export interface ITBookEvent extends Document {
   eligibilityGenderFieldKey: string | null
   /** Form-field based eligibility (AND/OR + ops / regex). */
   eligibilityFormRules: TBookEligibilityRulesConfig | null
+  /** Event-level pricing special cases (free entry, hotel discount, off-site surcharge, …). */
+  pricingRules: TBookPricingRule[]
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -193,6 +196,41 @@ const TBookEventSchema = new Schema<ITBookEvent>(
         { _id: false }
       ),
       default: null,
+    },
+    pricingRules: {
+      type: [
+        new Schema(
+          {
+            id: { type: String, required: true },
+            enabled: { type: Boolean, default: true },
+            label: { type: String, default: "Ármódosítás" },
+            when: {
+              type: String,
+              enum: ["always", "with_hotel", "without_hotel", "with_package"],
+              required: true,
+            },
+            action: {
+              type: String,
+              enum: ["set_ticket_fee", "adjust_ticket", "adjust_accommodation", "adjust_total"],
+              required: true,
+            },
+            amount: { type: Number, default: 0 },
+            amountMode: {
+              type: String,
+              enum: [
+                "fixed",
+                "per_person",
+                "per_accommodation_guest",
+                "percent_accommodation",
+                "percent_ticket",
+              ],
+              default: "fixed",
+            },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
     },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },
