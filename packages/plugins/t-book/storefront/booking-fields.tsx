@@ -175,14 +175,14 @@ export function BookingStepIndicator({
   current: number
 }) {
   return (
-    <ol className="flex flex-wrap items-center gap-2 sm:gap-4" aria-label="Foglalási lépések">
+    <ol className="flex flex-wrap items-center gap-2 sm:gap-3" aria-label="Booking steps">
       {steps.map((label, index) => {
         const step = index + 1
         const active = step === current
         const done = step < current
         return (
           <li
-            key={label}
+            key={`${step}-${label}`}
             className={`flex items-center gap-2 text-sm ${
               active ? "font-semibold text-primary" : done ? "text-foreground" : "text-muted-foreground"
             }`}

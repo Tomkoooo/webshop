@@ -94,14 +94,26 @@ type LodgingState = {
   nights: number
   extraNightAfter: boolean
   selections: TBookSelections
+  /** null = user has not chosen tickets vs hotel yet */
+  wantsHotel: boolean | null
 }
 
 type LoadedEvent = {
   event: TBookPublicEvent
 }
 
+const WIZARD_STEPS = ["Entries", "Hotel", "Players", "Your details", "Review"] as const
+const TOTAL_STEPS = WIZARD_STEPS.length
+
 const INPUT =
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+
+const CHOICE_CARD = (selected: boolean) =>
+  `rounded-xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+    selected
+      ? "border-primary bg-primary/10 shadow-sm"
+      : "border-border bg-surface hover:border-primary/40 hover:bg-muted/30"
+  }`
 
 function emptyLodgingState(recommendedNights = 1): LodgingState {
   return {
@@ -111,7 +123,22 @@ function emptyLodgingState(recommendedNights = 1): LodgingState {
     nights: recommendedNights,
     extraNightAfter: false,
     selections: {},
+    wantsHotel: null,
   }
+}
+
+function patchLodging(prev: LodgingState, patch: Partial<LodgingState>): LodgingState {
+  let changed = false
+  for (const key of Object.keys(patch) as (keyof LodgingState)[]) {
+    const nextVal = patch[key]
+    if (nextVal === undefined) continue
+    if (key === "selections") {
+      if (JSON.stringify(nextVal) !== JSON.stringify(prev.selections)) changed = true
+    } else if (prev[key] !== nextVal) {
+      changed = true
+    }
+  }
+  return changed ? { ...prev, ...patch } : prev
 }
 
 function stayForEvents(
@@ -127,7 +154,8 @@ function lodgingWithExtraNight(
   extraNightAfter: boolean
 ): LodgingState {
   const stay = stayForEvents(clusterEvents, extraNightAfter)
-  return { ...lodging, extraNightAfter, nights: stay.nights }
+  if (lodging.extraNightAfter === extraNightAfter && lodging.nights === stay.nights) return lodging
+  return patchLodging(lodging, { extraNightAfter, nights: stay.nights })
 }
 
 function clusterMaxAccommodationGuests(
@@ -325,10 +353,9 @@ function HotelLodgingPanel({
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
 
   const patchSelection = (key: string, value: string | number | boolean | string[]) => {
-    onLodgingChange({
-      ...lodging,
-      selections: { ...lodging.selections, [key]: value },
-    })
+    onLodgingChange(
+      patchLodging(lodging, { selections: { ...lodging.selections, [key]: value } })
+    )
     onQuoteReset()
   }
 
@@ -339,11 +366,12 @@ function HotelLodgingPanel({
     const firstKey = Object.keys(units)[0]
     const pkg =
       firstKey && selectedHotel ? findPackageDeal(selectedHotel.pricing, firstKey) : null
-    onLodgingChange({
-      ...lodging,
-      selections: next,
-      nights: pkg?.nights ?? lodging.nights,
-    })
+    onLodgingChange(
+      patchLodging(lodging, {
+        selections: next,
+        nights: pkg?.nights ?? lodging.nights,
+      })
+    )
     onQuoteReset()
   }
 
@@ -354,11 +382,12 @@ function HotelLodgingPanel({
     const next: TBookSelections = { ...lodging.selections }
     delete next[PACKAGE_DEAL_SELECTION_KEY]
     next[PACKAGE_UNITS_SELECTION_KEY] = { [key]: units }
-    onLodgingChange({
-      ...lodging,
-      selections: next,
-      nights: packagesRequired ? pkgNights : lodging.nights,
-    })
+    onLodgingChange(
+      patchLodging(lodging, {
+        selections: next,
+        nights: packagesRequired ? pkgNights : lodging.nights,
+      })
+    )
     onQuoteReset()
   }
 
@@ -373,60 +402,110 @@ function HotelLodgingPanel({
         </div>
       ) : null}
 
-      {recommendedStayLabel ? (
-        <p className="text-sm text-muted-foreground">
-          Recommended stay: {recommendedStayLabel} ({recommendedNights} night
-          {recommendedNights === 1 ? "" : "s"})
-        </p>
-      ) : null}
-
-      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
-        <input
-          type="checkbox"
-          className="mt-0.5 size-4 rounded border-border"
-          checked={lodging.extraNightAfter}
-          onChange={(e) => {
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          className={CHOICE_CARD(lodging.wantsHotel === false)}
+          aria-pressed={lodging.wantsHotel === false}
+          onClick={() => {
             onLodgingChange(
-              lodgingWithExtraNight(lodging, stayEvents, e.target.checked)
+              patchLodging(lodging, {
+                wantsHotel: false,
+                accommodationNeed: "none",
+                selectedHotelId: null,
+                selections: {},
+              })
             )
             onQuoteReset()
           }}
-        />
-        <span className="text-sm">Stay one extra night after the event</span>
-      </label>
+        >
+          <span className="block text-sm font-semibold">No hotel — tickets only</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Entry fees only for this stay.
+          </span>
+        </button>
+        <button
+          type="button"
+          className={CHOICE_CARD(lodging.wantsHotel === true)}
+          aria-pressed={lodging.wantsHotel === true}
+          onClick={() => {
+            onLodgingChange(
+              patchLodging(lodging, {
+                wantsHotel: true,
+                accommodationNeed: lodging.accommodationNeed === "some" ? "some" : "all",
+              })
+            )
+            onQuoteReset()
+          }}
+        >
+          <span className="block text-sm font-semibold">Yes, I need a hotel</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Pick a hotel and room package below.
+          </span>
+        </button>
+      </div>
 
-      {hotels.length > 0 ? (
-        <AccommodationOptionCards
-          hotels={hotels}
-          selectedHotelId={lodging.selectedHotelId}
-          ticketOnlySelected={lodging.accommodationNeed === "none" || !lodging.selectedHotelId}
-          onSelectTicketOnly={() => {
-            onLodgingChange({
-              ...lodging,
-              accommodationNeed: "none",
-              selectedHotelId: null,
-              selections: {},
-            })
-            onQuoteReset()
-          }}
-          onSelectHotel={(hotelId) => {
-            const hotel = hotels.find((h) => h.id === hotelId) ?? null
-            const nextSelections = defaultSelectionsForHotel(hotel, recommendedNights)
-            const dealKey = String(nextSelections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
-            const pkg = dealKey && hotel ? findPackageDeal(hotel.pricing, dealKey) : null
-            onLodgingChange({
-              ...lodging,
-              accommodationNeed: lodging.accommodationNeed === "some" ? "some" : "all",
-              selectedHotelId: hotelId,
-              selections: nextSelections,
-              nights: pkg?.nights ?? recommendedNights,
-            })
-            onQuoteReset()
-          }}
-        />
+      {lodging.wantsHotel === true ? (
+        <>
+          {recommendedStayLabel ? (
+            <p className="text-sm text-muted-foreground">
+              Suggested stay: {recommendedStayLabel} ({recommendedNights} night
+              {recommendedNights === 1 ? "" : "s"})
+            </p>
+          ) : null}
+
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 rounded border-border"
+              checked={lodging.extraNightAfter}
+              onChange={(e) => {
+                onLodgingChange(lodgingWithExtraNight(lodging, stayEvents, e.target.checked))
+                onQuoteReset()
+              }}
+            />
+            <span className="text-sm">Stay one extra night after the event</span>
+          </label>
+
+          {hotels.length > 0 ? (
+            <AccommodationOptionCards
+              hotels={hotels}
+              selectedHotelId={lodging.selectedHotelId}
+              ticketOnlySelected={false}
+              hideEntryOnlyOption
+              onSelectTicketOnly={() => {
+                onLodgingChange(
+                  patchLodging(lodging, {
+                    wantsHotel: false,
+                    accommodationNeed: "none",
+                    selectedHotelId: null,
+                    selections: {},
+                  })
+                )
+                onQuoteReset()
+              }}
+              onSelectHotel={(hotelId) => {
+                const hotel = hotels.find((h) => h.id === hotelId) ?? null
+                const nextSelections = defaultSelectionsForHotel(hotel, recommendedNights)
+                const dealKey = String(nextSelections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+                const pkg = dealKey && hotel ? findPackageDeal(hotel.pricing, dealKey) : null
+                onLodgingChange(
+                  patchLodging(lodging, {
+                    wantsHotel: true,
+                    accommodationNeed: lodging.accommodationNeed === "some" ? "some" : "all",
+                    selectedHotelId: hotelId,
+                    selections: nextSelections,
+                    nights: pkg?.nights ?? recommendedNights,
+                  })
+                )
+                onQuoteReset()
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      {effectiveHotelId && selectedHotel ? (
+      {lodging.wantsHotel === true && effectiveHotelId && selectedHotel ? (
         <div className="space-y-4 border-t border-border pt-4">
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -438,6 +517,7 @@ function HotelLodgingPanel({
                 : ""}
               .
             </p>
+            <p className="text-sm font-medium">Who needs a room?</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -448,11 +528,11 @@ function HotelLodgingPanel({
                 }`}
                 aria-pressed={lodging.accommodationNeed === "all"}
                 onClick={() => {
-                  onLodgingChange({ ...lodging, accommodationNeed: "all" })
+                  onLodgingChange(patchLodging(lodging, { accommodationNeed: "all" }))
                   onQuoteReset()
                 }}
               >
-                Rooms for all entries ({maxAccommodationGuests})
+                Everyone ({maxAccommodationGuests})
               </button>
               <button
                 type="button"
@@ -463,24 +543,25 @@ function HotelLodgingPanel({
                 }`}
                 aria-pressed={lodging.accommodationNeed === "some"}
                 onClick={() => {
-                  onLodgingChange({
-                    ...lodging,
-                    accommodationNeed: "some",
-                    accommodationGuestOverride: Math.min(
-                      maxAccommodationGuests,
-                      Math.max(1, lodging.accommodationGuestOverride)
-                    ),
-                  })
+                  onLodgingChange(
+                    patchLodging(lodging, {
+                      accommodationNeed: "some",
+                      accommodationGuestOverride: Math.min(
+                        maxAccommodationGuests,
+                        Math.max(1, lodging.accommodationGuestOverride)
+                      ),
+                    })
+                  )
                   onQuoteReset()
                 }}
               >
-                Rooms for some entries
+                Some people only
               </button>
             </div>
             {lodging.accommodationNeed === "some" ? (
               <label className="block max-w-xs space-y-1.5">
                 <span className="text-sm font-medium">
-                  Guests needing accommodation (max {maxAccommodationGuests})
+                  How many need a room? (max {maxAccommodationGuests})
                 </span>
                 <input
                   type="number"
@@ -489,10 +570,8 @@ function HotelLodgingPanel({
                   className={INPUT}
                   value={lodging.accommodationGuestOverride}
                   onChange={(e) => {
-                    onLodgingChange({
-                      ...lodging,
-                      accommodationGuestOverride: Number(e.target.value) || 1,
-                    })
+                    const next = Number(e.target.value) || 1
+                    onLodgingChange(patchLodging(lodging, { accommodationGuestOverride: next }))
                     onQuoteReset()
                   }}
                 />
@@ -511,7 +590,9 @@ function HotelLodgingPanel({
                   className={INPUT}
                   value={lodging.nights}
                   onChange={(e) => {
-                    onLodgingChange({ ...lodging, nights: Number(e.target.value) })
+                    onLodgingChange(
+                      patchLodging(lodging, { nights: Number(e.target.value) })
+                    )
                     onQuoteReset()
                   }}
                 />
@@ -527,7 +608,7 @@ function HotelLodgingPanel({
                       [ROOM_TYPE_SELECTION_KEY]: e.target.value,
                     }
                     delete next[PACKAGE_DEAL_SELECTION_KEY]
-                    onLodgingChange({ ...lodging, selections: next })
+                    onLodgingChange(patchLodging(lodging, { selections: next }))
                     onQuoteReset()
                   }}
                 >
@@ -558,7 +639,9 @@ function HotelLodgingPanel({
                 const next: TBookSelections = { ...lodging.selections }
                 delete next[PACKAGE_DEAL_SELECTION_KEY]
                 delete next[PACKAGE_UNITS_SELECTION_KEY]
-                onLodgingChange({ ...lodging, selections: next, nights: recommendedNights })
+                onLodgingChange(
+                  patchLodging(lodging, { selections: next, nights: recommendedNights })
+                )
                 onQuoteReset()
               }}
             />
@@ -617,12 +700,11 @@ export function TBookMultiBookingWizard({
   eventIds: string[]
   copy: Copy
 }) {
-  const steps = ["Entries & hotel stays", "Players & billing", "Review & pay"]
+  const steps = [...WIZARD_STEPS]
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [liveQuoteLoading, setLiveQuoteLoading] = useState(false)
 
   const [loadedEvents, setLoadedEvents] = useState<LoadedEvent[]>([])
   const [hotels, setHotels] = useState<TBookPublicHotel[]>([])
@@ -640,11 +722,8 @@ export function TBookMultiBookingWizard({
   const [entryQuotes, setEntryQuotes] = useState<
     Array<{ eventId: string; eventName: string; quote: TBookPriceQuote }>
   >([])
-  const [detailsTab, setDetailsTab] = useState<"guests" | "billing">("guests")
 
   const events = loadedEvents.map((row) => row.event)
-  const eventIdKey = events.map((e) => e.id).join(",")
-
   const baseStayClusters = useMemo(
     () => (events.length > 0 ? suggestStayClusters(events) : []),
     [events]
@@ -827,14 +906,14 @@ export function TBookMultiBookingWizard({
 
   useEffect(() => {
     if (combinedLodging.accommodationNeed !== "some") return
-    setCombinedLodging((prev) => ({
-      ...prev,
-      accommodationGuestOverride: Math.min(
-        Math.max(1, prev.accommodationGuestOverride),
-        Math.max(1, totalMaxAccommodationGuests)
-      ),
-    }))
-  }, [combinedLodging.accommodationNeed, totalMaxAccommodationGuests])
+    const max = Math.max(1, totalMaxAccommodationGuests)
+    const clamped = Math.min(Math.max(1, combinedLodging.accommodationGuestOverride), max)
+    if (clamped !== combinedLodging.accommodationGuestOverride) {
+      setCombinedLodging((prev) =>
+        patchLodging(prev, { accommodationGuestOverride: clamped })
+      )
+    }
+  }, [combinedLodging.accommodationNeed, combinedLodging.accommodationGuestOverride, totalMaxAccommodationGuests])
 
   useEffect(() => {
     if (billing.billingType === "personal" && customer.name.trim() && !billing.name.trim()) {
@@ -911,106 +990,70 @@ export function TBookMultiBookingWizard({
     return { lodgingMode: "separate", entries }
   }
 
-  useEffect(() => {
-    if (events.length < 2 || !apiKey.trim() || step !== 1) return
-    let cancelled = false
-    const timer = window.setTimeout(() => {
-      setLiveQuoteLoading(true)
-      quoteMultiBooking(apiKey.trim(), buildQuotePayload())
-        .then((res) => {
-          if (!cancelled) {
-            setQuote(res.quote)
-            setEntryQuotes(res.entries)
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setQuote(null)
-            setEntryQuotes([])
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setLiveQuoteLoading(false)
-        })
-    }, 350)
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
+  function lodgingStateValid(lodging: LodgingState, maxAcc: number): boolean {
+    if (hotels.length === 0) return true
+    if (lodging.wantsHotel === null) return false
+    if (lodging.wantsHotel === false) return true
+    if (!lodging.selectedHotelId) return false
+    if (lodging.accommodationNeed === "some") {
+      return resolveAccommodationGuests(lodging, maxAcc) >= 1
     }
-  }, [
-    apiKey,
-    eventIdKey,
-    step,
-    lodgingMode,
-    guestsByEvent,
-    combinedLodging,
-    separateLodging,
-    clusterLodging,
-    baseStayClusters,
-    combinedAccommodationGuests,
-    combinedEffectiveHotelId,
-    loadedEvents.length,
-  ])
+    return true
+  }
 
   const resetQuote = () => {
     setQuote(null)
     setEntryQuotes([])
   }
 
-  const lodgingStepValid =
-    events.every((event) => (guestsByEvent[event.id] ?? 1) >= 1) &&
-    (hotels.length === 0 ||
-      (lodgingMode === "separate"
-        ? events.every((event) => {
-            const lodging = separateLodging[event.id] ?? emptyLodgingState()
-            if (lodging.accommodationNeed === "none") return true
-            if (!lodging.selectedHotelId) return false
-            if (lodging.accommodationNeed === "some") {
-              const maxAcc = accommodationGuestCount(guestsByEvent[event.id] ?? 1, event)
-              return resolveAccommodationGuests(lodging, maxAcc) >= 1
-            }
-            return true
-          })
-        : lodgingMode === "clusters"
-          ? baseStayClusters.every((cluster) => {
-              const lodging = clusterLodging[cluster.id] ?? emptyLodgingState()
-              if (lodging.accommodationNeed === "none") return true
-              if (!lodging.selectedHotelId) return false
-              if (lodging.accommodationNeed === "some") {
-                const maxAcc = clusterMaxAccommodationGuests(cluster, guestsByEvent)
-                return resolveAccommodationGuests(lodging, maxAcc) >= 1
-              }
-              return true
-            })
-          : combinedLodging.accommodationNeed === "none" ||
-            Boolean(combinedEffectiveHotelId))) &&
-    (lodgingMode !== "combined" ||
-      combinedLodging.accommodationNeed !== "some" ||
-      combinedAccommodationGuests >= 1)
+  const step1Valid = events.every((event) => (guestsByEvent[event.id] ?? 1) >= 1)
 
-  const detailsStepValid =
+  const step2Valid =
+    hotels.length === 0 ||
+    (lodgingMode === "separate"
+      ? events.every((event) => {
+          const lodging = separateLodging[event.id] ?? emptyLodgingState()
+          const maxAcc = accommodationGuestCount(guestsByEvent[event.id] ?? 1, event)
+          return lodgingStateValid(lodging, maxAcc)
+        })
+      : lodgingMode === "clusters"
+        ? baseStayClusters.every((cluster) => {
+            const lodging = clusterLodging[cluster.id] ?? emptyLodgingState()
+            const maxAcc = clusterMaxAccommodationGuests(cluster, guestsByEvent)
+            return lodgingStateValid(lodging, maxAcc)
+          })
+        : lodgingStateValid(combinedLodging, totalMaxAccommodationGuests))
+
+  const step3Valid = events.every((event) => {
+    const { lodging, selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
+    const rows = attendeesByEvent[event.id] ?? []
+    const needsForms =
+      mergeRegistrationFieldSchemas(
+        event.attendeeFieldSchema,
+        effectiveAccommodationNeed === "none"
+          ? undefined
+          : selectedHotel?.registrationFieldSchema
+      ).length > 0 || needsPlayerMemberForms(event)
+    if (!needsForms) return true
+    return attendeesValidForEvent(event, rows, selectedHotel, effectiveAccommodationNeed)
+  })
+
+  const step4Valid =
     customer.name.trim() &&
     customer.email.trim() &&
     customer.phone.trim() &&
-    isBillingFormValid(billing) &&
-    events.every((event) => {
-      const { lodging, selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
-      const rows = attendeesByEvent[event.id] ?? []
-      const needsForms =
-        mergeRegistrationFieldSchemas(
-          event.attendeeFieldSchema,
-          effectiveAccommodationNeed === "none"
-            ? undefined
-            : selectedHotel?.registrationFieldSchema
-        ).length > 0 || needsPlayerMemberForms(event)
-      if (!needsForms) return true
-      return attendeesValidForEvent(
-        event,
-        rows,
-        selectedHotel,
-        effectiveAccommodationNeed
-      )
-    })
+    isBillingFormValid(billing)
+
+  const canProceedCurrentStep =
+    step === 1
+      ? step1Valid
+      : step === 2
+        ? step2Valid
+        : step === 3
+          ? step3Valid
+          : step === 4
+            ? step4Valid
+            : Boolean(quote)
 
   const runQuote = async () => {
     setSubmitting(true)
@@ -1066,28 +1109,46 @@ export function TBookMultiBookingWizard({
   }
 
   const goNext = async () => {
+    if (step === 1) {
+      if (!step1Valid) {
+        setError("Please enter at least one entry for every event.")
+        return
+      }
+      setError(null)
+      setStep(2)
+      return
+    }
     if (step === 2) {
-      if (!detailsStepValid) {
-        setDetailsTab("guests")
+      if (!step2Valid) {
+        setError("Please complete your hotel choices, or choose tickets only for each stay.")
+        return
+      }
+      setError(null)
+      setStep(3)
+      return
+    }
+    if (step === 3) {
+      if (!step3Valid) {
         setError("Please complete participant details for every event.")
         return
       }
-      if (
-        !customer.name.trim() ||
-        !customer.email.trim() ||
-        !customer.phone.trim() ||
-        !isBillingFormValid(billing)
-      ) {
-        setDetailsTab("billing")
+      setError(null)
+      setStep(4)
+      return
+    }
+    if (step === 4) {
+      if (!step4Valid) {
         setError("Please complete contact and billing details.")
         return
       }
       setError(null)
+      setQuote(null)
+      setEntryQuotes([])
+      setStep(5)
       const ok = await runQuote()
-      if (ok) setStep(3)
+      if (!ok) setStep(4)
       return
     }
-    setStep((s) => Math.min(3, s + 1))
   }
 
   if (loading) {
@@ -1152,129 +1213,74 @@ export function TBookMultiBookingWizard({
 
       {step === 1 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold">Your events</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Set how many entries you need for each event.
-              </p>
-            </div>
-
-            {events.map((event) => {
-              const guestCount = guestsByEvent[event.id] ?? 1
-              const playersPerTicket = resolvePlayersPerTicket(event)
-              const registrationUnit = event.registrationUnit ?? "person"
-              const maxAcc = accommodationGuestCount(guestCount, event)
-
-              return (
-                <div key={event.id} className="space-y-4 rounded-xl border border-border p-4">
-                  <div>
-                    <h3 className="text-base font-semibold">{event.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatEventSchedule(
-                        event.startDate,
-                        event.endDate,
-                        event.startTime,
-                        event.endTime
-                      )}
-                    </p>
-                  </div>
-
-                  <label className="block space-y-1.5">
-                    <span className="text-sm font-medium">
-                      {registrationUnit === "team"
-                        ? "Number of teams"
-                        : playersPerTicket > 1
-                          ? `${copy.guestsLabel} (${playersPerTicket} players / entry)`
-                          : copy.guestsLabel}
-                    </span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
-                      className={INPUT}
-                      value={guestCount}
-                      onChange={(e) => {
-                        const next = Number(e.target.value) || 1
-                        setGuestsByEvent((prev) => ({ ...prev, [event.id]: next }))
-                        resetQuote()
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {playersPerTicket > 1
-                        ? `${guestCount} ${guestCount === 1 ? "entry" : "entries"} × ${playersPerTicket} players = ${maxAcc} players.`
-                        : "Entry fees are charged per entry."}
-                    </p>
-                  </label>
-                </div>
-              )
-            })}
+          <div>
+            <h2 className="text-lg font-semibold">How many entries?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Set how many tickets you need for each event. You can add hotels on the next step.
+            </p>
           </div>
 
-          {hotels.length > 0 ? (
-            <div className="space-y-4 border-t border-border pt-6">
-              <div>
-                <h2 className="text-lg font-semibold">Hotel stays</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Choose how accommodation is grouped across your events.
-                </p>
-              </div>
+          {events.map((event) => {
+            const guestCount = guestsByEvent[event.id] ?? 1
+            const playersPerTicket = resolvePlayersPerTicket(event)
+            const registrationUnit = event.registrationUnit ?? "person"
+            const maxAcc = accommodationGuestCount(guestCount, event)
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <button
-                  type="button"
-                  className={`rounded-xl border p-4 text-left transition-colors ${
-                    lodgingMode === "clusters"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                  aria-pressed={lodgingMode === "clusters"}
-                  onClick={() => {
-                    setLodgingMode("clusters")
-                    resetQuote()
-                  }}
-                >
-                  <p className="text-sm font-semibold">Smart stays (recommended)</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Nearby events share one hotel stay. Distant events get separate stays.
+            return (
+              <div key={event.id} className="space-y-4 rounded-xl border border-border p-4">
+                <div>
+                  <h3 className="text-base font-semibold">{event.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatEventSchedule(
+                      event.startDate,
+                      event.endDate,
+                      event.startTime,
+                      event.endTime
+                    )}
                   </p>
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-xl border p-4 text-left transition-colors ${
-                    lodgingMode === "combined"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                  aria-pressed={lodgingMode === "combined"}
-                  onClick={() => {
-                    setLodgingMode("combined")
-                    resetQuote()
-                  }}
-                >
-                  <p className="text-sm font-semibold">One hotel stay covering all events</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    A single check-in covers every event in this booking.
+                </div>
+
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium">
+                    {registrationUnit === "team"
+                      ? "Number of teams"
+                      : playersPerTicket > 1
+                        ? `${copy.guestsLabel} (${playersPerTicket} players / entry)`
+                        : copy.guestsLabel}
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    className={INPUT}
+                    value={guestCount}
+                    onChange={(e) => {
+                      const next = Number(e.target.value) || 1
+                      setGuestsByEvent((prev) => ({ ...prev, [event.id]: next }))
+                      resetQuote()
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {playersPerTicket > 1
+                      ? `${guestCount} ${guestCount === 1 ? "entry" : "entries"} × ${playersPerTicket} players = ${maxAcc} people total.`
+                      : `${guestCount} ${guestCount === 1 ? "person" : "people"} total.`}
                   </p>
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-xl border p-4 text-left transition-colors ${
-                    lodgingMode === "separate"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                  aria-pressed={lodgingMode === "separate"}
-                  onClick={() => {
-                    setLodgingMode("separate")
-                    resetQuote()
-                  }}
-                >
-                  <p className="text-sm font-semibold">Separate hotel stay per event</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Pick a hotel and room package for each event independently.
-                  </p>
-                </button>
+                </label>
+              </div>
+            )
+          })}
+        </section>
+      ) : null}
+
+      {step === 2 ? (
+        <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
+          {hotels.length > 0 ? (
+            <>
+              <div>
+                <h2 className="text-lg font-semibold">Do you need hotel rooms?</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We grouped nearby events into shared hotel stays.
+                </p>
               </div>
 
               {lodgingMode === "clusters" ? (
@@ -1293,7 +1299,10 @@ export function TBookMultiBookingWizard({
                           hotels={hotels}
                           lodging={lodging}
                           onLodgingChange={(next) => {
-                            setClusterLodging((prev) => ({ ...prev, [cluster.id]: next }))
+                            setClusterLodging((prev) => {
+                              if (prev[cluster.id] === next) return prev
+                              return { ...prev, [cluster.id]: next }
+                            })
                           }}
                           maxAccommodationGuests={maxAcc}
                           recommendedNights={stay.nights}
@@ -1316,7 +1325,7 @@ export function TBookMultiBookingWizard({
                   <HotelLodgingPanel
                     hotels={hotels}
                     lodging={combinedLodging}
-                    onLodgingChange={setCombinedLodging}
+                    onLodgingChange={(next) => setCombinedLodging((prev) => (prev === next ? prev : next))}
                     maxAccommodationGuests={totalMaxAccommodationGuests}
                     recommendedNights={combinedRecommendedNights}
                     recommendedStayLabel={combinedRecommendedStayLabel}
@@ -1346,7 +1355,10 @@ export function TBookMultiBookingWizard({
                           hotels={hotels}
                           lodging={lodging}
                           onLodgingChange={(next) => {
-                            setSeparateLodging((prev) => ({ ...prev, [event.id]: next }))
+                            setSeparateLodging((prev) => {
+                              if (prev[event.id] === next) return prev
+                              return { ...prev, [event.id]: next }
+                            })
                           }}
                           maxAccommodationGuests={maxAcc}
                           recommendedNights={stay.nights}
@@ -1362,383 +1374,356 @@ export function TBookMultiBookingWizard({
                   })}
                 </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {quote || liveQuoteLoading ? (
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium">{copy.totalLabel}</p>
-                {liveQuoteLoading ? (
-                  <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
-                ) : quote ? (
-                  <p className="text-lg font-semibold tabular-nums">
-                    {formatHuf(quote.totalHuf, displayCurrency)}
-                  </p>
-                ) : null}
-              </div>
-              {quote ? (
-                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {quote.lines.map((line) => (
-                    <li key={line.key} className="flex justify-between gap-2">
-                      <span>{line.label}</span>
-                      <span className="tabular-nums">
-                        {formatHuf(line.amountHuf, displayCurrency)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {step === 2 ? (
-        <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
-          <div
-            className="flex gap-1 rounded-xl border border-border bg-muted/30 p-1"
-            role="tablist"
-            aria-label="Details"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={detailsTab === "guests"}
-              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                detailsTab === "guests"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setDetailsTab("guests")}
-            >
-              {copy.attendeesHeading}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={detailsTab === "billing"}
-              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                detailsTab === "billing"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setDetailsTab("billing")}
-            >
-              Billing
-            </button>
-          </div>
-
-          {detailsTab === "guests" ? (
-            <div className="space-y-8">
-              {events.map((event) => {
-                const guestCount = guestsByEvent[event.id] ?? 1
-                const registrationUnit = event.registrationUnit ?? "person"
-                const playersPerTicket = resolvePlayersPerTicket(event)
-                const guestUnitLabel = registrationUnitLabel(registrationUnit, guestCount)
-                const { lodging, selectedHotel, effectiveAccommodationNeed } =
-                  lodgingForEvent(event.id)
-                const registrationFieldSchema = mergeRegistrationFieldSchemas(
-                  event.attendeeFieldSchema,
-                  effectiveAccommodationNeed === "none"
-                    ? undefined
-                    : selectedHotel?.registrationFieldSchema
-                )
-                const needsPlayerMembers = needsPlayerMemberForms(event)
-                const playerFields = playerFieldSchema(event)
-                const fixedRosterSize = playerRosterSize(event)
-                const teamMemberLimit = event.teamMemberLimit ?? null
-                const rows = attendeesByEvent[event.id] ?? []
-                const maxAcc = accommodationGuestCount(guestCount, event)
-
-                return (
-                  <div key={event.id} className="space-y-4">
-                    <div>
-                      <h2 className="text-lg font-semibold">{event.name}</h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {playersPerTicket > 1
-                          ? `${playersPerTicket} player forms required per entry (${guestCount} ${
-                              guestCount === 1 ? "entry" : "entries"
-                            } → ${maxAcc} guests). `
-                          : registrationUnit === "team"
-                            ? `Enter details for each team member (max ${playersPerTicket} per team). `
-                            : ""}
-                        {copy.attendeesHint}
-                      </p>
-                    </div>
-
-                    {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
-                      rows.map((attendee, index) => (
-                        <div key={index} className="space-y-3 rounded-xl border border-border p-4">
-                          <p className="text-sm font-semibold">
-                            {index + 1}. {guestUnitLabel}
-                          </p>
-                          {registrationFieldSchema.length > 0 ? (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              {registrationFieldSchema.map((field) => (
-                                <AttendeeFieldInput
-                                  key={field.key}
-                                  field={field}
-                                  value={attendee.fields[field.key]}
-                                  onChange={(value) =>
-                                    setAttendeesByEvent((prev) => ({
-                                      ...prev,
-                                      [event.id]: (prev[event.id] ?? []).map((row, i) =>
-                                        i === index
-                                          ? {
-                                              ...row,
-                                              fields: { ...row.fields, [field.key]: value },
-                                            }
-                                          : row
-                                      ),
-                                    }))
-                                  }
-                                  inputClassName={INPUT}
-                                />
-                              ))}
-                            </div>
-                          ) : null}
-                          {needsPlayerMembers ? (
-                            <div className="space-y-3 border-t border-border pt-3">
-                              <p className="text-sm font-medium">
-                                {registrationUnit === "team" ? "Team members" : "Players"}
-                              </p>
-                              {(attendee.members ?? []).map((member, memberIndex) => (
-                                <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
-                                  <p className="text-xs font-semibold text-muted-foreground">
-                                    Player {memberIndex + 1}
-                                  </p>
-                                  <div className="grid gap-3 sm:grid-cols-2">
-                                    {playerFields.map((field) => (
-                                      <AttendeeFieldInput
-                                        key={field.key}
-                                        field={field}
-                                        value={member.fields[field.key]}
-                                        onChange={(value) =>
-                                          setAttendeesByEvent((prev) => ({
-                                            ...prev,
-                                            [event.id]: (prev[event.id] ?? []).map((row, i) =>
-                                              i === index
-                                                ? {
-                                                    ...row,
-                                                    members: (row.members ?? []).map((m, mi) =>
-                                                      mi === memberIndex
-                                                        ? {
-                                                            fields: {
-                                                              ...m.fields,
-                                                              [field.key]: value,
-                                                            },
-                                                          }
-                                                        : m
-                                                    ),
-                                                  }
-                                                : row
-                                            ),
-                                          }))
-                                        }
-                                        inputClassName={INPUT}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                              {fixedRosterSize == null &&
-                              (teamMemberLimit == null ||
-                                (attendee.members ?? []).length < teamMemberLimit) ? (
-                                <button
-                                  type="button"
-                                  className="text-sm font-medium text-primary hover:underline"
-                                  onClick={() =>
-                                    setAttendeesByEvent((prev) => ({
-                                      ...prev,
-                                      [event.id]: (prev[event.id] ?? []).map((row, i) =>
-                                        i === index
-                                          ? {
-                                              ...row,
-                                              members: [...(row.members ?? []), { fields: {} }],
-                                            }
-                                          : row
-                                      ),
-                                    }))
-                                  }
-                                >
-                                  + Add player
-                                  {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
-                                </button>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                        No participant fields are required for this event.
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground"
-                  onClick={() => setDetailsTab("billing")}
-                >
-                  Continue to billing
-                  <ArrowRight className="size-4" aria-hidden />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
-                <p className="text-sm text-muted-foreground">{copy.customerHint}</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    className={INPUT}
-                    placeholder="Name *"
-                    value={customer.name}
-                    onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
-                    required
-                  />
-                  <input
-                    className={INPUT}
-                    type="email"
-                    placeholder="Email *"
-                    value={customer.email}
-                    onChange={(e) => setCustomer((c) => ({ ...c, email: e.target.value }))}
-                    required
-                  />
-                  <input
-                    className={`${INPUT} sm:col-span-2`}
-                    type="tel"
-                    placeholder="Phone *"
-                    value={customer.phone}
-                    onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
-                    required
-                  />
+              <details className="rounded-xl border border-border p-4">
+                <summary className="cursor-pointer text-sm font-medium">More stay options</summary>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    className={`rounded-xl border p-4 text-left transition-colors ${
+                      lodgingMode === "combined"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                    aria-pressed={lodgingMode === "combined"}
+                    onClick={() => {
+                      setLodgingMode("combined")
+                      resetQuote()
+                    }}
+                  >
+                    <p className="text-sm font-semibold">One hotel for all events</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      A single check-in covers every event.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-xl border p-4 text-left transition-colors ${
+                      lodgingMode === "separate"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                    aria-pressed={lodgingMode === "separate"}
+                    onClick={() => {
+                      setLodgingMode("separate")
+                      resetQuote()
+                    }}
+                  >
+                    <p className="text-sm font-semibold">Separate hotel per event</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Pick a hotel for each event on its own.
+                    </p>
+                  </button>
+                  {lodgingMode !== "clusters" ? (
+                    <button
+                      type="button"
+                      className="rounded-xl border border-border p-4 text-left text-sm text-primary hover:border-primary/40 sm:col-span-2"
+                      onClick={() => {
+                        setLodgingMode("clusters")
+                        resetQuote()
+                      }}
+                    >
+                      Back to smart stays (recommended)
+                    </button>
+                  ) : null}
                 </div>
-              </div>
-              <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
-            </div>
+              </details>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No hotel options are available. Continue to enter player details.
+            </p>
           )}
         </section>
       ) : null}
 
-      {step === 3 && quote ? (
+      {step === 3 ? (
+        <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
+          <div>
+            <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Enter player details for each event.
+            </p>
+          </div>
+
+          {events.map((event) => {
+            const guestCount = guestsByEvent[event.id] ?? 1
+            const registrationUnit = event.registrationUnit ?? "person"
+            const playersPerTicket = resolvePlayersPerTicket(event)
+            const guestUnitLabel = registrationUnitLabel(registrationUnit, guestCount)
+            const { selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
+            const registrationFieldSchema = mergeRegistrationFieldSchemas(
+              event.attendeeFieldSchema,
+              effectiveAccommodationNeed === "none"
+                ? undefined
+                : selectedHotel?.registrationFieldSchema
+            )
+            const needsPlayerMembers = needsPlayerMemberForms(event)
+            const playerFields = playerFieldSchema(event)
+            const fixedRosterSize = playerRosterSize(event)
+            const teamMemberLimit = event.teamMemberLimit ?? null
+            const rows = attendeesByEvent[event.id] ?? []
+            const maxAcc = accommodationGuestCount(guestCount, event)
+
+            return (
+              <div key={event.id} className="space-y-4 border-t border-border pt-6 first:border-t-0 first:pt-0">
+                <div>
+                  <h3 className="text-base font-semibold">{event.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {playersPerTicket > 1
+                      ? `${playersPerTicket} player forms per entry (${guestCount} ${
+                          guestCount === 1 ? "entry" : "entries"
+                        } = ${maxAcc} players). `
+                      : registrationUnit === "team"
+                        ? `Enter details for each team member (max ${playersPerTicket} per team). `
+                        : ""}
+                    {copy.attendeesHint}
+                  </p>
+                </div>
+
+                {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
+                  rows.map((attendee, index) => (
+                    <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                      <p className="text-sm font-semibold">
+                        {index + 1}. {guestUnitLabel}
+                      </p>
+                      {registrationFieldSchema.length > 0 ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {registrationFieldSchema.map((field) => (
+                            <AttendeeFieldInput
+                              key={field.key}
+                              field={field}
+                              value={attendee.fields[field.key]}
+                              onChange={(value) =>
+                                setAttendeesByEvent((prev) => ({
+                                  ...prev,
+                                  [event.id]: (prev[event.id] ?? []).map((row, i) =>
+                                    i === index
+                                      ? {
+                                          ...row,
+                                          fields: { ...row.fields, [field.key]: value },
+                                        }
+                                      : row
+                                  ),
+                                }))
+                              }
+                              inputClassName={INPUT}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                      {needsPlayerMembers ? (
+                        <div className="space-y-3 border-t border-border pt-3">
+                          <p className="text-sm font-medium">
+                            {registrationUnit === "team" ? "Team members" : "Players"}
+                          </p>
+                          {(attendee.members ?? []).map((member, memberIndex) => (
+                            <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
+                              <p className="text-xs font-semibold text-muted-foreground">
+                                Player {memberIndex + 1}
+                              </p>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {playerFields.map((field) => (
+                                  <AttendeeFieldInput
+                                    key={field.key}
+                                    field={field}
+                                    value={member.fields[field.key]}
+                                    onChange={(value) =>
+                                      setAttendeesByEvent((prev) => ({
+                                        ...prev,
+                                        [event.id]: (prev[event.id] ?? []).map((row, i) =>
+                                          i === index
+                                            ? {
+                                                ...row,
+                                                members: (row.members ?? []).map((m, mi) =>
+                                                  mi === memberIndex
+                                                    ? {
+                                                        fields: {
+                                                          ...m.fields,
+                                                          [field.key]: value,
+                                                        },
+                                                      }
+                                                    : m
+                                                ),
+                                              }
+                                            : row
+                                        ),
+                                      }))
+                                    }
+                                    inputClassName={INPUT}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          {fixedRosterSize == null &&
+                          (teamMemberLimit == null ||
+                            (attendee.members ?? []).length < teamMemberLimit) ? (
+                            <button
+                              type="button"
+                              className="text-sm font-medium text-primary hover:underline"
+                              onClick={() =>
+                                setAttendeesByEvent((prev) => ({
+                                  ...prev,
+                                  [event.id]: (prev[event.id] ?? []).map((row, i) =>
+                                    i === index
+                                      ? {
+                                          ...row,
+                                          members: [...(row.members ?? []), { fields: {} }],
+                                        }
+                                      : row
+                                  ),
+                                }))
+                              }
+                            >
+                              + Add player
+                              {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                    No player details are required for this event.
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </section>
+      ) : null}
+
+      {step === 4 ? (
+        <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
+            <p className="text-sm text-muted-foreground">{copy.customerHint}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                className={INPUT}
+                placeholder="Name *"
+                value={customer.name}
+                onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
+                required
+              />
+              <input
+                className={INPUT}
+                type="email"
+                placeholder="Email *"
+                value={customer.email}
+                onChange={(e) => setCustomer((c) => ({ ...c, email: e.target.value }))}
+                required
+              />
+              <input
+                className={`${INPUT} sm:col-span-2`}
+                type="tel"
+                placeholder="Phone *"
+                value={customer.phone}
+                onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
+                required
+              />
+              <textarea
+                className={`${INPUT} sm:col-span-2`}
+                placeholder="Note (optional)"
+                rows={2}
+                value={customer.note}
+                onChange={(e) => setCustomer((c) => ({ ...c, note: e.target.value }))}
+              />
+            </div>
+          </div>
+          <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
+        </section>
+      ) : null}
+
+      {step === 5 ? (
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold">{copy.reviewHeading}</h2>
-          <dl className="space-y-3 text-sm">
-            {events.map((event) => {
-              const guestCount = guestsByEvent[event.id] ?? 1
-              const registrationUnit = event.registrationUnit ?? "person"
-              const guestUnitLabel = registrationUnitLabel(registrationUnit, guestCount)
-              const entryQuote = entryQuotes.find((row) => row.eventId === event.id)
-              const { lodging, selectedHotel, isSharedStay } = lodgingForEvent(event.id)
-              const maxAcc = accommodationGuestCount(guestCount, event)
-              let accGuests = 0
-              if (lodgingMode === "combined") {
-                accGuests =
-                  event.id === events[0]?.id ? combinedAccommodationGuests : 0
-              } else if (lodgingMode === "separate") {
-                accGuests = resolveAccommodationGuests(lodging, maxAcc)
-              } else {
-                const cluster = findClusterForEvent(baseStayClusters, event.id)
-                if (cluster && isClusterPrimaryEvent(cluster, event.id)) {
-                  accGuests = resolveAccommodationGuests(
-                    lodging,
-                    clusterMaxAccommodationGuests(cluster, guestsByEvent)
-                  )
-                }
-              }
-
-              let accommodationLabel = "None"
-              if (isSharedStay) {
-                accommodationLabel =
-                  lodgingMode === "clusters"
-                    ? "Shared stay (smart grouping)"
-                    : "Shared stay (combined)"
-              } else if (selectedHotel && accGuests > 0) {
-                accommodationLabel = `${selectedHotel.name} · ${accGuests} guest${
-                  accGuests === 1 ? "" : "s"
-                }`
-              }
-
-              return (
-                <div key={event.id} className="rounded-lg border border-border p-3">
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-medium">{event.name}</dt>
-                    {entryQuote ? (
-                      <dd className="font-medium tabular-nums">
-                        {formatHuf(entryQuote.quote.totalHuf, displayCurrency)}
-                      </dd>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 flex justify-between gap-4 text-muted-foreground">
-                    <span>{registrationUnit === "team" ? "Teams" : "Entries"}</span>
-                    <span>
-                      {guestCount} {guestUnitLabel}
-                    </span>
-                  </div>
-                  <div className="flex justify-between gap-4 text-muted-foreground">
-                    <span>Accommodation</span>
-                    <span className="text-right">{accommodationLabel}</span>
-                  </div>
-                </div>
-              )
-            })}
-            <div className="flex justify-between gap-4 border-t border-border pt-3">
-              <dt className="text-muted-foreground">Contact</dt>
-              <dd className="font-medium text-right">{customer.name}</dd>
+          {submitting || !quote ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
+              <Loader2 className="size-8 animate-spin" aria-hidden />
+              <p className="text-sm">Calculating your total…</p>
             </div>
-            {lodgingMode === "combined" &&
-            combinedSelectedHotel &&
-            combinedAccommodationGuests > 0 ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Shared accommodation</dt>
-                <dd className="font-medium text-right">
-                  {combinedSelectedHotel.name} · {combinedAccommodationGuests} guest
-                  {combinedAccommodationGuests === 1 ? "" : "s"}
-                </dd>
-              </div>
-            ) : null}
-            {lodgingMode === "clusters"
-              ? baseStayClusters.map((cluster, index) => {
-                  const lodging = clusterLodging[cluster.id] ?? emptyLodgingState()
-                  const selectedHotel =
-                    lodging.accommodationNeed === "none" || !lodging.selectedHotelId
-                      ? null
-                      : hotels.find((h) => h.id === lodging.selectedHotelId) ?? null
-                  const accGuests = resolveAccommodationGuests(
-                    lodging,
-                    clusterMaxAccommodationGuests(cluster, guestsByEvent)
-                  )
-                  if (!selectedHotel || accGuests <= 0) return null
+          ) : (
+            <>
+              <dl className="space-y-3 text-sm">
+                {events.map((event) => {
+                  const guestCount = guestsByEvent[event.id] ?? 1
+                  const registrationUnit = event.registrationUnit ?? "person"
+                  const guestUnitLabel = registrationUnitLabel(registrationUnit, guestCount)
+                  const entryQuote = entryQuotes.find((row) => row.eventId === event.id)
+                  const { lodging, selectedHotel, isSharedStay } = lodgingForEvent(event.id)
+                  const maxAcc = accommodationGuestCount(guestCount, event)
+                  let accGuests = 0
+                  if (lodgingMode === "combined") {
+                    accGuests =
+                      event.id === events[0]?.id ? combinedAccommodationGuests : 0
+                  } else if (lodgingMode === "separate") {
+                    accGuests = resolveAccommodationGuests(lodging, maxAcc)
+                  } else {
+                    const cluster = findClusterForEvent(baseStayClusters, event.id)
+                    if (cluster && isClusterPrimaryEvent(cluster, event.id)) {
+                      accGuests = resolveAccommodationGuests(
+                        lodging,
+                        clusterMaxAccommodationGuests(cluster, guestsByEvent)
+                      )
+                    }
+                  }
+
+                  let hotelLabel = "Tickets only"
+                  if (isSharedStay) {
+                    hotelLabel =
+                      lodgingMode === "clusters"
+                        ? "Shared hotel stay"
+                        : "Shared hotel stay"
+                  } else if (selectedHotel && accGuests > 0) {
+                    hotelLabel = `${selectedHotel.name} · ${accGuests} guest${
+                      accGuests === 1 ? "" : "s"
+                    }`
+                  }
+
                   return (
-                    <div key={cluster.id} className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">Stay {index + 1}</dt>
-                      <dd className="font-medium text-right">
-                        {selectedHotel.name} · {accGuests} guest
-                        {accGuests === 1 ? "" : "s"}
-                      </dd>
+                    <div key={event.id} className="rounded-lg border border-border p-3">
+                      <div className="flex justify-between gap-4">
+                        <dt className="font-medium">{event.name}</dt>
+                        {entryQuote ? (
+                          <dd className="font-medium tabular-nums">
+                            {formatHuf(entryQuote.quote.totalHuf, displayCurrency)}
+                          </dd>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 flex justify-between gap-4 text-muted-foreground">
+                        <span>{registrationUnit === "team" ? "Teams" : "Entries"}</span>
+                        <span>
+                          {guestCount} {guestUnitLabel}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-4 text-muted-foreground">
+                        <span>Hotel</span>
+                        <span className="text-right">{hotelLabel}</span>
+                      </div>
                     </div>
                   )
-                })
-              : null}
-          </dl>
-          <ul className="space-y-1 border-t border-border pt-4 text-sm">
-            {quote.lines.map((line) => (
-              <li key={line.key} className="flex justify-between gap-4 text-muted-foreground">
-                <span>{line.label}</span>
-                <span>{formatHuf(line.amountHuf, displayCurrency)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xl font-bold text-primary">
-            {copy.totalLabel}: {formatHuf(quote.totalHuf, displayCurrency)}
-          </p>
+                })}
+                <div className="flex justify-between gap-4 border-t border-border pt-3">
+                  <dt className="text-muted-foreground">Contact</dt>
+                  <dd className="font-medium text-right">{customer.name}</dd>
+                </div>
+              </dl>
+              <ul className="space-y-1 border-t border-border pt-4 text-sm">
+                {quote.lines.map((line) => (
+                  <li key={line.key} className="flex justify-between gap-4 text-muted-foreground">
+                    <span>{line.label}</span>
+                    <span>{formatHuf(line.amountHuf, displayCurrency)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xl font-bold text-primary">
+                {copy.totalLabel}: {formatHuf(quote.totalHuf, displayCurrency)}
+              </p>
+            </>
+          )}
         </section>
       ) : null}
 
@@ -1747,7 +1732,14 @@ export function TBookMultiBookingWizard({
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => {
+              setError(null)
+              if (step === 5) {
+                setQuote(null)
+                setEntryQuotes([])
+              }
+              setStep((s) => s - 1)
+            }}
             disabled={submitting}
           >
             <ArrowLeft className="size-4" aria-hidden />
@@ -1757,17 +1749,19 @@ export function TBookMultiBookingWizard({
           <span />
         )}
 
-        {step < 3 ? (
+        {step < TOTAL_STEPS ? (
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            disabled={
-              submitting || (step === 1 && !lodgingStepValid) || (step === 2 && !detailsStepValid)
-            }
+            disabled={submitting || !canProceedCurrentStep}
             onClick={() => void goNext()}
           >
-            {step === 2 ? copy.quoteCta : copy.nextLabel}
-            <ArrowRight className="size-4" aria-hidden />
+            {step === 4 ? copy.quoteCta : copy.nextLabel}
+            {step === 4 && submitting ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <ArrowRight className="size-4" aria-hidden />
+            )}
           </button>
         ) : (
           <button

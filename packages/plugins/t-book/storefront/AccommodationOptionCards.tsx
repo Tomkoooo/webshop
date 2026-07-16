@@ -9,6 +9,8 @@ type Props = {
   ticketOnlySelected: boolean
   onSelectTicketOnly: () => void
   onSelectHotel: (hotelId: string) => void
+  /** When true, only hotel cards are shown (entry-only already chosen upstream). */
+  hideEntryOnlyOption?: boolean
 }
 
 function cardClass(selected: boolean) {
@@ -37,38 +39,45 @@ export function AccommodationOptionCards({
   ticketOnlySelected,
   onSelectTicketOnly,
   onSelectHotel,
+  hideEntryOnlyOption = false,
 }: Props) {
   if (hotels.length === 0) return null
 
   return (
     <fieldset className="space-y-3">
-      <legend className="text-sm font-medium">Accommodation</legend>
-      <p className="text-xs text-muted-foreground">
-        Choose entry only, or add a hotel stay. Entry only is selected by default.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          className={cardClass(ticketOnlySelected)}
-          aria-pressed={ticketOnlySelected}
-          onClick={onSelectTicketOnly}
-        >
-          <span className="flex items-start gap-3">
-            <span
-              className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg ${
-                ticketOnlySelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <Ticket className="size-4" aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold">Entry only</span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Entry fees only — no hotel booking.
+      <legend className="text-sm font-medium">
+        {hideEntryOnlyOption ? "Choose a hotel" : "Accommodation"}
+      </legend>
+      {!hideEntryOnlyOption ? (
+        <p className="text-xs text-muted-foreground">
+          Choose entry only, or add a hotel stay. Entry only is selected by default.
+        </p>
+      ) : null}
+      <div className={`grid gap-3 ${hideEntryOnlyOption ? "" : "sm:grid-cols-2"}`}>
+        {!hideEntryOnlyOption ? (
+          <button
+            type="button"
+            className={cardClass(ticketOnlySelected)}
+            aria-pressed={ticketOnlySelected}
+            onClick={onSelectTicketOnly}
+          >
+            <span className="flex items-start gap-3">
+              <span
+                className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg ${
+                  ticketOnlySelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Ticket className="size-4" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">Entry only</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Entry fees only — no hotel booking.
+                </span>
               </span>
             </span>
-          </span>
-        </button>
+          </button>
+        ) : null}
 
         {hotels.map((hotel) => {
           const selected = !ticketOnlySelected && selectedHotelId === hotel.id
