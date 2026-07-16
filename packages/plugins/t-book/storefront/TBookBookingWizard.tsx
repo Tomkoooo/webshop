@@ -23,6 +23,7 @@ import {
   playerRosterSize,
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
+import { AccommodationOptionCards } from "./AccommodationOptionCards"
 import { PackageSelectionCards } from "./PackageSelectionCards"
 import {
   BookingBillingForm,
@@ -143,7 +144,6 @@ function applyEventDetailToWizardState(
     setters.setError(detail.error ?? fallbackError)
     return
   }
-  const firstHotel = detail.hotels[0] ?? null
   const eventDetail = detail.event
   const rosterSize = eventDetail ? resolvePlayersPerTicket(eventDetail) : 1
   const withMembers = eventDetail ? needsPlayerMemberForms(eventDetail) : false
@@ -151,8 +151,9 @@ function applyEventDetailToWizardState(
   setters.setHotels(detail.hotels)
   setters.setNights(eventDetail?.nights ?? 1)
   setters.setAttendees(emptyAttendeeRows(1, rosterSize, withMembers))
-  setters.setSelectedHotelId(firstHotel?.id ?? null)
-  setters.setSelections(defaultSelectionsForHotel(firstHotel))
+  // Default: ticket only — guest opts into a hotel via cards
+  setters.setSelectedHotelId(null)
+  setters.setSelections({})
   setters.setError(null)
 }
 
@@ -179,16 +180,12 @@ export function TBookBookingWizard({
   const [hotels, setHotels] = useState<TBookPublicHotel[]>(initialEventDetail?.hotels ?? [])
 
   const [guests, setGuests] = useState(1)
-  /** How many entries need rooms: all / a subset / none. */
-  const [accommodationNeed, setAccommodationNeed] = useState<"all" | "some" | "none">("all")
+  /** How many entries need rooms when a hotel is selected: all or a subset. */
+  const [accommodationNeed, setAccommodationNeed] = useState<"all" | "some" | "none">("none")
   const [accommodationGuestOverride, setAccommodationGuestOverride] = useState(1)
   const [nights, setNights] = useState(initialEventDetail?.event?.nights ?? 1)
-  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(
-    initialEventDetail?.hotels[0]?.id ?? null
-  )
-  const [selections, setSelections] = useState<TBookSelections>(() =>
-    defaultSelectionsForHotel(initialEventDetail?.hotels[0] ?? null)
-  )
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null)
+  const [selections, setSelections] = useState<TBookSelections>({})
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "", note: "" })
   const [billing, setBilling] = useState<BillingFormState>(() => emptyBillingForm())
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
@@ -634,106 +631,91 @@ export function TBookBookingWizard({
           </label>
 
           {hotels.length > 0 ? (
-            <fieldset className="space-y-3">
-              <legend className="text-sm font-medium">Accommodation</legend>
-              <p className="text-xs text-muted-foreground">
-                Need rooms for all entries, only some of them, or none?
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {(
-                  [
-                    {
-                      value: "all" as const,
-                      label: "All entries",
-                      hint: `${maxAccommodationGuests} guest${maxAccommodationGuests === 1 ? "" : "s"}`,
-                    },
-                    {
-                      value: "some" as const,
-                      label: "Some entries",
-                      hint: "Choose how many",
-                    },
-                    {
-                      value: "none" as const,
-                      label: "No accommodation",
-                      hint: "Tickets only",
-                    },
-                  ] as const
-                ).map((opt) => {
-                  const selected = accommodationNeed === opt.value
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      className={`rounded-xl border px-3 py-3 text-left transition-colors ${
-                        selected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                          : "border-border bg-surface hover:border-primary/40"
-                      }`}
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setAccommodationNeed(opt.value)
-                        if (opt.value === "some") {
-                          setAccommodationGuestOverride(Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride)))
-                        }
-                        setQuote(null)
-                      }}
-                    >
-                      <span className="block text-sm font-medium">{opt.label}</span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">{opt.hint}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              {accommodationNeed === "some" ? (
-                <label className="block space-y-1.5">
-                  <span className="text-sm font-medium">
-                    Guests needing accommodation (max {maxAccommodationGuests})
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxAccommodationGuests}
-                    className={INPUT}
-                    value={accommodationGuestOverride}
-                    onChange={(e) => {
-                      setAccommodationGuestOverride(Number(e.target.value) || 1)
-                      setQuote(null)
-                    }}
-                  />
-                </label>
-              ) : null}
-            </fieldset>
-          ) : null}
-
-          {accommodationNeed !== "none" && hotels.length > 0 ? (
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium">{copy.hotelLabel}</span>
-              <select
-                className={INPUT}
-                value={selectedHotelId ?? ""}
-                onChange={(e) => setSelectedHotelId(e.target.value || null)}
-              >
-                <option value="">Select hotel…</option>
-                {hotels.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                    {h.distanceFromVenueKm != null ? ` (${h.distanceFromVenueKm} km)` : ""}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                Hotel packages are priced for {accommodationGuests} guest
-                {accommodationGuests === 1 ? "" : "s"}
-                {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
-                  ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
-                  : ""}
-                .
-              </p>
-            </label>
+            <AccommodationOptionCards
+              hotels={hotels}
+              selectedHotelId={selectedHotelId}
+              ticketOnlySelected={accommodationNeed === "none" || !selectedHotelId}
+              onSelectTicketOnly={() => {
+                setAccommodationNeed("none")
+                setSelectedHotelId(null)
+                setSelections({})
+                setQuote(null)
+              }}
+              onSelectHotel={(hotelId) => {
+                setAccommodationNeed((prev) => (prev === "some" ? "some" : "all"))
+                setSelectedHotelId(hotelId)
+                setQuote(null)
+              }}
+            />
           ) : null}
 
           {effectiveHotelId && selectedHotel ? (
             <div className="space-y-4 border-t border-border pt-4">
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Hotel packages are priced for{" "}
+                  <strong className="text-foreground">{accommodationGuests}</strong> guest
+                  {accommodationGuests === 1 ? "" : "s"}
+                  {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                    ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
+                    : ""}
+                  .
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      accommodationNeed === "all"
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                    aria-pressed={accommodationNeed === "all"}
+                    onClick={() => {
+                      setAccommodationNeed("all")
+                      setQuote(null)
+                    }}
+                  >
+                    Rooms for all entries ({maxAccommodationGuests})
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      accommodationNeed === "some"
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                    aria-pressed={accommodationNeed === "some"}
+                    onClick={() => {
+                      setAccommodationNeed("some")
+                      setAccommodationGuestOverride(
+                        Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride))
+                      )
+                      setQuote(null)
+                    }}
+                  >
+                    Rooms for some entries
+                  </button>
+                </div>
+                {accommodationNeed === "some" ? (
+                  <label className="block max-w-xs space-y-1.5">
+                    <span className="text-sm font-medium">
+                      Guests needing accommodation (max {maxAccommodationGuests})
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxAccommodationGuests}
+                      className={INPUT}
+                      value={accommodationGuestOverride}
+                      onChange={(e) => {
+                        setAccommodationGuestOverride(Number(e.target.value) || 1)
+                        setQuote(null)
+                      }}
+                    />
+                  </label>
+                ) : null}
+              </div>
+
               {showRooms ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block space-y-1.5">
