@@ -215,15 +215,16 @@ export function Navbar({
     )
 
   return (
-    <header
-      className={cn(
-        "z-50 border-b backdrop-blur-md",
-        cmsChromePreview ? "relative" : "sticky top-0",
-        isHome && !cmsChromePreview
-          ? "border-white/10 bg-black/40 text-foreground"
-          : "border-border/60 bg-background/95"
-      )}
-    >
+    <>
+      <header
+        className={cn(
+          "z-50 border-b backdrop-blur-md",
+          cmsChromePreview ? "relative" : "fixed top-0 left-0 right-0",
+          isHome && !cmsChromePreview
+            ? "border-white/10 bg-black/40 text-foreground"
+            : "border-border/60 bg-background/95"
+        )}
+      >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
           {logoSrc ? (
@@ -239,7 +240,7 @@ export function Navbar({
           )}
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Fő navigáció">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
           {items.map((item) =>
             item.type === "dropdown" ? (
               <NavDropdown
@@ -312,5 +313,7 @@ export function Navbar({
         </>
       ) : null}
     </header>
+      {!cmsChromePreview ? <div className="h-[57px]" aria-hidden /> : null}
+    </>
   )
 }

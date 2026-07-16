@@ -100,7 +100,6 @@ export function AdminImageCropModal({
       data-admin-image-crop
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background/90 p-4 backdrop-blur-xl md:p-8 animate-in fade-in duration-300"
       role="dialog"
-      aria-modal="true"
       aria-label={title}
     >
       <div className="flex h-[80vh] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-card shadow-xl ring-1 ring-border/60">

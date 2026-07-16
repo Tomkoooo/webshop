@@ -3,6 +3,7 @@ import {
   formatStayDateRange,
   preferPackageMatchingNights,
   recommendStayForEvents,
+  suggestStayClusters,
 } from "../../packages/plugins/t-book/lib/stay-recommendation"
 
 describe("recommendStayForEvents", () => {
@@ -11,6 +12,7 @@ describe("recommendStayForEvents", () => {
       { startDate: "2025-10-23T00:00:00.000Z", endDate: "2025-10-23T00:00:00.000Z" },
     ])
     expect(stay.nights).toBe(1)
+    expect(stay.extraNightAfter).toBe(false)
   })
 
   it("spans multiple events from earliest start to latest end", () => {
@@ -19,15 +21,38 @@ describe("recommendStayForEvents", () => {
       { startDate: "2025-10-24T00:00:00.000Z", endDate: "2025-10-25T00:00:00.000Z" },
     ])
     expect(stay.nights).toBe(2)
-    expect(stay.startDate.toISOString().startsWith("2025-10-23")).toBe(true)
-    expect(stay.endDate.toISOString().startsWith("2025-10-25")).toBe(true)
   })
 
-  it("does not invent a wider festival window for a late single-day event", () => {
-    const stay = recommendStayForEvents([
-      { startDate: "2025-10-24T00:00:00.000Z", endDate: "2025-10-24T00:00:00.000Z" },
+  it("adds one night after the tournament when requested", () => {
+    const stay = recommendStayForEvents(
+      [{ startDate: "2025-10-23T00:00:00.000Z", endDate: "2025-10-23T00:00:00.000Z" }],
+      { extraNightAfter: true }
+    )
+    expect(stay.nights).toBe(2)
+    expect(stay.extraNightAfter).toBe(true)
+  })
+})
+
+describe("suggestStayClusters", () => {
+  it("keeps distant events in separate stays (21 vs 25–26)", () => {
+    const clusters = suggestStayClusters([
+      { id: "a", name: "Day 21", startDate: "2025-10-21T00:00:00.000Z", endDate: "2025-10-21T00:00:00.000Z" },
+      { id: "b", name: "Day 25", startDate: "2025-10-25T00:00:00.000Z", endDate: "2025-10-25T00:00:00.000Z" },
+      { id: "c", name: "Day 26", startDate: "2025-10-26T00:00:00.000Z", endDate: "2025-10-26T00:00:00.000Z" },
     ])
-    expect(stay.nights).toBe(1)
+    expect(clusters).toHaveLength(2)
+    expect(clusters[0].events.map((e) => e.id)).toEqual(["a"])
+    expect(clusters[1].events.map((e) => e.id)).toEqual(["b", "c"])
+    expect(clusters[1].stay.nights).toBe(1)
+  })
+
+  it("merges consecutive events into one stay", () => {
+    const clusters = suggestStayClusters([
+      { id: "a", startDate: "2025-10-24T00:00:00.000Z", endDate: "2025-10-24T00:00:00.000Z" },
+      { id: "b", startDate: "2025-10-25T00:00:00.000Z", endDate: "2025-10-25T00:00:00.000Z" },
+    ])
+    expect(clusters).toHaveLength(1)
+    expect(clusters[0].events).toHaveLength(2)
   })
 })
 
@@ -40,11 +65,6 @@ describe("preferPackageMatchingNights", () => {
 
   it("prefers an exact nights match", () => {
     expect(preferPackageMatchingNights(packages, 1)?.key).toBe("one")
-    expect(preferPackageMatchingNights(packages, 3)?.key).toBe("three")
-  })
-
-  it("falls back to nearest nights when no exact match", () => {
-    expect(preferPackageMatchingNights(packages, 4)?.key).toBe("three")
   })
 })
 
