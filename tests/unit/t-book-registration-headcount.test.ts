@@ -41,16 +41,32 @@ describe("registration-headcount", () => {
 describe("validateEligibility", () => {
   const playerSchema = [
     { key: "birth_date", label: "Születési dátum", type: "date" as const, required: true },
-    { key: "gender", label: "Nem", type: "select" as const, required: true, choices: [
-      { value: "female", label: "Nő" },
-      { value: "male", label: "Férfi" },
-    ]},
+    {
+      key: "category",
+      label: "Kategória",
+      type: "select" as const,
+      required: true,
+      choices: [
+        { value: "junior", label: "Junior" },
+        { value: "open", label: "Open" },
+      ],
+    },
   ]
 
-  it("blocks over-18 for U18 event", () => {
+  it("blocks over max age for custom age rule", () => {
     const issues = validateEligibility(
-      { eligibilityPreset: "under18", startDate: "2026-08-01" },
-      [{ fields: {}, members: [{ fields: { birth_date: "2000-01-01", gender: "female" } }] }],
+      {
+        eligibilityPreset: "custom",
+        eligibilityMaxAge: 17,
+        eligibilityGenderFieldKey: "category",
+        startDate: "2026-08-01",
+      },
+      [
+        {
+          fields: {},
+          members: [{ fields: { birth_date: "2000-01-01", category: "junior" } }],
+        },
+      ],
       [],
       playerSchema,
       1
@@ -59,14 +75,80 @@ describe("validateEligibility", () => {
     expect(issues[0]?.message).toMatch(/legfeljebb 17/)
   })
 
-  it("allows eligible female for women event", () => {
+  it("allows matching custom allowed field values", () => {
     const issues = validateEligibility(
-      { eligibilityPreset: "women", startDate: "2026-08-01" },
-      [{ fields: {}, members: [{ fields: { birth_date: "1990-05-01", gender: "female" } }] }],
+      {
+        eligibilityPreset: "custom",
+        eligibilityMinAge: 18,
+        eligibilityAllowedGenders: ["junior", "open"],
+        eligibilityGenderFieldKey: "category",
+        startDate: "2026-08-01",
+      },
+      [
+        {
+          fields: {},
+          members: [{ fields: { birth_date: "1990-05-01", category: "open" } }],
+        },
+      ],
       [],
       playerSchema,
       1
     )
     expect(issues).toHaveLength(0)
+  })
+
+  it("enforces organizer form_rules without hardcoded sport presets", () => {
+    const issues = validateEligibility(
+      {
+        eligibilityPreset: "form_rules",
+        eligibilityFormRules: {
+          logic: "and",
+          rules: [
+            {
+              id: "r1",
+              fieldKey: "category",
+              op: "equals",
+              value: "junior",
+              message: "Csak junior kategória",
+            },
+            {
+              id: "r2",
+              fieldKey: "birth_date",
+              op: "max_age",
+              value: "17",
+            },
+          ],
+        },
+        startDate: "2026-08-01",
+      },
+      [
+        {
+          fields: {},
+          members: [{ fields: { birth_date: "2012-01-01", category: "open" } }],
+        },
+      ],
+      [],
+      playerSchema,
+      1
+    )
+    expect(issues.length).toBeGreaterThan(0)
+    expect(issues[0]?.message).toMatch(/junior/i)
+  })
+
+  it("still resolves legacy under18 preset for existing events", () => {
+    const issues = validateEligibility(
+      { eligibilityPreset: "under18", startDate: "2026-08-01" },
+      [
+        {
+          fields: {},
+          members: [{ fields: { birth_date: "2000-01-01", category: "open" } }],
+        },
+      ],
+      [],
+      playerSchema,
+      1
+    )
+    expect(issues.length).toBeGreaterThan(0)
+    expect(issues[0]?.message).toMatch(/legfeljebb 17/)
   })
 })

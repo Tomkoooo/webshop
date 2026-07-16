@@ -3,20 +3,41 @@ import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import { InvoicingSzamlazzService } from "@wse/core/services/invoicing-szamlazz"
 import type { IOrder } from "@wse/core/models/Order"
 import TBookBooking, { type ITBookBooking } from "../models/TBookBooking"
+import TBookEvent from "../models/TBookEvent"
+import TBookHotel from "../models/TBookHotel"
 import { normalizeTBookCurrency } from "../lib/currency"
 
-function parseVatPercent(): number {
+function parseVatPercentFallback(): number {
   const n = Number(process.env.TBOOK_INVOICE_VAT_PERCENT ?? 27)
   return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n) : 27
 }
 
+function vatForQuoteLine(
+  lineKey: string,
+  ticketVatPercent: number,
+  accommodationVatPercent: number
+): number {
+  if (
+    lineKey === "accommodation_base" ||
+    lineKey.startsWith("package") ||
+    lineKey.startsWith("package_unit:") ||
+    lineKey.startsWith("option:")
+  ) {
+    return accommodationVatPercent
+  }
+  // ticket, pricing_rule:*, adjust_total-style lines → ticket VAT
+  return ticketVatPercent
+}
+
 /**
  * Adapts a tBook booking to the `IOrder` shape consumed by the core
- * szamlazz.hu service, so invoice issuing/download/reversal reuse one
- * integration. Invoice lines mirror the price breakdown (ticket, base rate,
- * option add-ons); negative/zero lines are folded into the total.
+ * szamlazz.hu service. Line VAT comes from the event ticket VAT and hotel VAT
+ * (not a global org VAT setting).
  */
-export function bookingToInvoiceOrder(booking: ITBookBooking, vatPercent = parseVatPercent()): IOrder {
+export function bookingToInvoiceOrder(
+  booking: ITBookBooking,
+  vat: { ticketVatPercent: number; accommodationVatPercent: number }
+): IOrder {
   const billing = booking.billing ?? {
     name: booking.customer.name,
     zip: "",
@@ -32,7 +53,7 @@ export function bookingToInvoiceOrder(booking: ITBookBooking, vatPercent = parse
       name: line.label,
       quantity: 1,
       price: line.amountHuf,
-      vatPercent,
+      vatPercent: vatForQuoteLine(line.key, vat.ticketVatPercent, vat.accommodationVatPercent),
     }))
 
   return {
@@ -58,6 +79,25 @@ function assertBookingOrg(booking: ITBookBooking | null, organizationId?: string
   if (organizationId && booking.organizationId && String(booking.organizationId) !== organizationId) {
     throw new Error("A foglalás nem tartozik ehhez a szervezethez.")
   }
+}
+
+async function resolveBookingVatPercents(booking: ITBookBooking): Promise<{
+  ticketVatPercent: number
+  accommodationVatPercent: number
+}> {
+  const fallback = parseVatPercentFallback()
+  const event = await TBookEvent.findById(booking.eventId).select("ticketVatPercent").lean()
+  const ticketVatPercent =
+    typeof event?.ticketVatPercent === "number" ? event.ticketVatPercent : fallback
+
+  let accommodationVatPercent = ticketVatPercent
+  if (booking.hotelId) {
+    const hotel = await TBookHotel.findById(booking.hotelId).select("pricing.vatPercent").lean()
+    const hotelVat = hotel?.pricing?.vatPercent
+    if (typeof hotelVat === "number") accommodationVatPercent = hotelVat
+  }
+
+  return { ticketVatPercent, accommodationVatPercent }
 }
 
 /** Fire-and-forget after payment; failures are recorded for admin retry. */
@@ -91,21 +131,19 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
   }
 
   try {
-    const vatPercent = orgSzamlazz?.vatPercent ?? parseVatPercent()
-    const result = await InvoicingSzamlazzService.issueInvoice(
-      bookingToInvoiceOrder(booking, vatPercent),
-      {
-        currency: bookingCurrency,
-        credentials: orgSzamlazz
-          ? {
-              agentKey: orgSzamlazz.agentKey,
-              sellerName: orgSzamlazz.sellerName,
-              sellerBank: orgSzamlazz.sellerBank,
-              sellerBankAccount: orgSzamlazz.sellerBankAccount,
-            }
-          : undefined,
-      }
-    )
+    const vat = await resolveBookingVatPercents(booking)
+    const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking, vat), {
+      currency: bookingCurrency,
+      credentials: orgSzamlazz
+        ? {
+            agentKey: orgSzamlazz.agentKey,
+            sellerName: orgSzamlazz.sellerName,
+            // Card payments — bank transfer seller fields are unused.
+            sellerBank: "",
+            sellerBankAccount: "",
+          }
+        : undefined,
+    })
     booking.invoiceStatus = "issued"
     booking.invoiceId = result.invoiceId
     booking.invoicePdfFileName = result.pdfFileName ?? null
@@ -136,7 +174,7 @@ export async function downloadBookingInvoicePdf(
 ): Promise<Buffer | null> {
   await dbConnect()
   const booking = await TBookBooking.findById(bookingId).lean()
-  assertBookingOrg(booking, organizationId)
+  assertBookingOrg(booking as ITBookBooking | null, organizationId)
   if (!booking?.invoiceId) return null
   return InvoicingSzamlazzService.downloadInvoicePdf({
     invoiceId: booking.invoiceId,

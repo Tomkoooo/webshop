@@ -10,12 +10,6 @@ import { Checkbox } from "@wse/core/components/ui/checkbox"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { tbookOrgApi } from "./org-api"
 import { CurrencySelect } from "./CurrencySelect"
-import {
-  DEFAULT_VOUCHER_PDF_LAYOUT,
-  VOUCHER_PDF_BLOCK_LABELS,
-  type VoucherPdfBlock,
-  type VoucherPdfLayout,
-} from "../lib/voucher-pdf-layout"
 
 type Masked = { configured: boolean; hint: string }
 
@@ -41,20 +35,16 @@ type OrgSettingsPayload = {
     szamlazz: {
       enabled: boolean
       sellerName: string
-      sellerBank: string
-      sellerBankAccount: string
-      vatPercent: number
       agentKey: Masked
     }
     emailTemplates: {
       bookingConfirmation: { subject: string; body: string }
       voucherDelivery: { subject: string; body: string }
     }
-    voucherPdfLayout: VoucherPdfLayout
   }
 }
 
-type Tab = "general" | "stripe" | "smtp" | "szamlazz" | "emails" | "voucherPdf"
+type Tab = "general" | "stripe" | "smtp" | "szamlazz" | "emails"
 
 export function TBookOrgSettingsScreen() {
   const [loading, setLoading] = useState(true)
@@ -85,16 +75,11 @@ export function TBookOrgSettingsScreen() {
   const [szAgent, setSzAgent] = useState("")
   const [szAgentHint, setSzAgentHint] = useState("")
   const [szSeller, setSzSeller] = useState("")
-  const [szBank, setSzBank] = useState("")
-  const [szAccount, setSzAccount] = useState("")
-  const [szVat, setSzVat] = useState(27)
 
   const [bookingSubject, setBookingSubject] = useState("")
   const [bookingBody, setBookingBody] = useState("")
   const [voucherSubject, setVoucherSubject] = useState("")
   const [voucherBody, setVoucherBody] = useState("")
-
-  const [pdfLayout, setPdfLayout] = useState<VoucherPdfLayout>(DEFAULT_VOUCHER_PDF_LAYOUT)
 
   useEffect(() => {
     void tbookOrgApi
@@ -117,14 +102,10 @@ export function TBookOrgSettingsScreen() {
         setSzEnabled(s.szamlazz?.enabled ?? false)
         setSzAgentHint(s.szamlazz?.agentKey?.hint || "")
         setSzSeller(s.szamlazz?.sellerName || "")
-        setSzBank(s.szamlazz?.sellerBank || "")
-        setSzAccount(s.szamlazz?.sellerBankAccount || "")
-        setSzVat(s.szamlazz?.vatPercent ?? 27)
         setBookingSubject(s.emailTemplates?.bookingConfirmation?.subject || "")
         setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
         setVoucherSubject(s.emailTemplates?.voucherDelivery?.subject || "")
         setVoucherBody(s.emailTemplates?.voucherDelivery?.body || "")
-        setPdfLayout(s.voucherPdfLayout || DEFAULT_VOUCHER_PDF_LAYOUT)
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
@@ -155,16 +136,12 @@ export function TBookOrgSettingsScreen() {
         szamlazz: {
           enabled: szEnabled,
           sellerName: szSeller,
-          sellerBank: szBank,
-          sellerBankAccount: szAccount,
-          vatPercent: szVat,
           ...(szAgent.trim() ? { agentKey: szAgent.trim() } : {}),
         },
         emailTemplates: {
           bookingConfirmation: { subject: bookingSubject, body: bookingBody },
           voucherDelivery: { subject: voucherSubject, body: voucherBody },
         },
-        voucherPdfLayout: pdfLayout,
       })
       setStripeSecret("")
       setStripeWebhook("")
@@ -176,23 +153,6 @@ export function TBookOrgSettingsScreen() {
     } finally {
       setSaving(false)
     }
-  }
-
-  function moveBlock(index: number, dir: -1 | 1) {
-    setPdfLayout((prev) => {
-      const blocks = [...prev.blocks]
-      const next = index + dir
-      if (next < 0 || next >= blocks.length) return prev
-      ;[blocks[index], blocks[next]] = [blocks[next], blocks[index]]
-      return { ...prev, blocks }
-    })
-  }
-
-  function updateBlock(index: number, patch: Partial<VoucherPdfBlock>) {
-    setPdfLayout((prev) => {
-      const blocks = prev.blocks.map((b, i) => (i === index ? { ...b, ...patch } : b))
-      return { ...prev, blocks }
-    })
   }
 
   if (loading) {
@@ -209,13 +169,12 @@ export function TBookOrgSettingsScreen() {
     { id: "smtp", label: "SMTP / e-mail" },
     { id: "szamlazz", label: "Számlázz.hu" },
     { id: "emails", label: "E-mail sablonok" },
-    { id: "voucherPdf", label: "Jegy PDF" },
   ]
 
   return (
     <AdminPageScaffold
       title="Szervezet beállítások"
-      description="Pénznem, saját Stripe / SMTP / számlázás, e-mail sablonok és jegy PDF elrendezés."
+      description="Pénznem, saját Stripe / SMTP / számlázás és e-mail sablonok. A jegy PDF fejlécét eseményenként (vagy csoportnál) állítsd be."
       actions={
         <Button type="button" onClick={() => void save()} disabled={saving}>
           {saving ? "Mentés…" : "Mentés"}
@@ -346,22 +305,10 @@ export function TBookOrgSettingsScreen() {
             <Label>Kibocsátó név</Label>
             <Input value={szSeller} onChange={(e) => setSzSeller(e.target.value)} />
           </div>
-          <div className="grid gap-2">
-            <Label>Bank neve</Label>
-            <Input value={szBank} onChange={(e) => setSzBank(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>Bankszámlaszám</Label>
-            <Input value={szAccount} onChange={(e) => setSzAccount(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>ÁFA %</Label>
-            <Input
-              type="number"
-              value={szVat}
-              onChange={(e) => setSzVat(Number(e.target.value) || 27)}
-            />
-          </div>
+          <p className="text-muted-foreground text-sm">
+            A fizetés kártyás (Stripe), ezért banki átutalási adatok nem kellenek. Az ÁFA a jegy és a
+            szállás ÁFA-beállításából kerül a számlára (esemény / hotel), nem innen.
+          </p>
         </div>
       ) : null}
 
@@ -390,109 +337,6 @@ export function TBookOrgSettingsScreen() {
               rows={10}
               className="font-mono text-xs"
             />
-          </div>
-        </div>
-      ) : null}
-
-      {tab === "voucherPdf" ? (
-        <div className="grid max-w-2xl gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label>Margó (pt)</Label>
-              <Input
-                type="number"
-                value={pdfLayout.margin}
-                onChange={(e) =>
-                  setPdfLayout((p) => ({ ...p, margin: Number(e.target.value) || 48 }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Cím betűméret</Label>
-              <Input
-                type="number"
-                value={pdfLayout.titleFontSize}
-                onChange={(e) =>
-                  setPdfLayout((p) => ({ ...p, titleFontSize: Number(e.target.value) || 20 }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Szöveg betűméret</Label>
-              <Input
-                type="number"
-                value={pdfLayout.bodyFontSize}
-                onChange={(e) =>
-                  setPdfLayout((p) => ({ ...p, bodyFontSize: Number(e.target.value) || 11 }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Elsődleges szín</Label>
-              <Input
-                value={pdfLayout.primaryColor}
-                onChange={(e) => setPdfLayout((p) => ({ ...p, primaryColor: e.target.value }))}
-              />
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={pdfLayout.showPageNumbers}
-              onCheckedChange={(v) => setPdfLayout((p) => ({ ...p, showPageNumbers: v === true }))}
-            />
-            Oldalszám megjelenítése
-          </label>
-          <div className="grid gap-3">
-            <h3 className="text-lg font-semibold">Blokkok sorrendje</h3>
-            {pdfLayout.blocks.map((block, index) => (
-              <div key={block.id} className="bg-muted/40 grid gap-2 rounded-lg p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <Checkbox
-                      checked={block.enabled !== false}
-                      onCheckedChange={(v) => updateBlock(index, { enabled: v === true })}
-                    />
-                    {VOUCHER_PDF_BLOCK_LABELS[block.type] || block.type}
-                  </label>
-                  <div className="flex gap-1">
-                    <Button type="button" size="sm" variant="outline" onClick={() => moveBlock(index, -1)}>
-                      Fel
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => moveBlock(index, 1)}>
-                      Le
-                    </Button>
-                  </div>
-                </div>
-                {block.type === "customText" || block.type === "footer" ? (
-                  <Textarea
-                    value={block.text || ""}
-                    onChange={(e) => updateBlock(index, { text: e.target.value })}
-                    rows={2}
-                    placeholder="Egyedi szöveg…"
-                  />
-                ) : null}
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setPdfLayout((p) => ({
-                  ...p,
-                  blocks: [
-                    ...p.blocks,
-                    {
-                      id: `custom-${Date.now()}`,
-                      type: "customText",
-                      enabled: true,
-                      text: "",
-                    },
-                  ],
-                }))
-              }
-            >
-              Egyedi szövegblokk hozzáadása
-            </Button>
           </div>
         </div>
       ) : null}

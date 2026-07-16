@@ -2,7 +2,11 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose"
 import type { TBookStatus } from "../lib/schemas"
 import type { TBookPriceBasis } from "../lib/vat"
 import type { TBookAttendeeFieldDef } from "../lib/attendee-fields"
-import type { TBookEligibilityPreset, TBookEligibilityRulesConfig } from "../lib/eligibility"
+import type {
+  TBookEligibilityPreset,
+  TBookEligibilityRulesConfig,
+  TBookLegacyEligibilityPreset,
+} from "../lib/eligibility"
 import type { TBookPricingRule } from "../lib/pricing-rules"
 
 export interface ITBookEvent extends Document {
@@ -47,7 +51,8 @@ export interface ITBookEvent extends Document {
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   /** How event fields combine with group defaults (`extend` or `replace`). */
   attendeeFieldSchemaMode: "extend" | "replace"
-  eligibilityPreset: TBookEligibilityPreset
+  /** Modern presets plus legacy darts values still stored on older events. */
+  eligibilityPreset: TBookEligibilityPreset | TBookLegacyEligibilityPreset
   eligibilityMinAge: number | null
   eligibilityMaxAge: number | null
   eligibilityAllowedGenders: string[]

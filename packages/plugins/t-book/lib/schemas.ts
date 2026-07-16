@@ -283,13 +283,14 @@ export const tBookEventTimeSchema = z.preprocess(
     .optional()
 )
 
+/** Accept legacy darts presets so old events still validate; they expand to `custom` at runtime. */
 export const tBookEligibilityPresetSchema = z.enum([
   "none",
+  "custom",
+  "form_rules",
   "under18",
   "under18_female",
   "women",
-  "custom",
-  "form_rules",
 ])
 
 export const tBookEligibilityFormRuleSchema = z.object({

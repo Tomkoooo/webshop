@@ -29,6 +29,7 @@ import { AttendeeFieldsEditor } from "./AttendeeFieldsEditor"
 import {
   ELIGIBILITY_OP_LABELS,
   ELIGIBILITY_PRESET_LABELS,
+  expandLegacyEligibilityForEdit,
   type TBookEligibilityMatchOp,
   type TBookEligibilityRulesConfig,
 } from "../lib/eligibility"
@@ -194,10 +195,17 @@ export function EventFormPage({
             vouchersEnabled: e.vouchersEnabled !== false,
             attendeeFieldSchema: e.attendeeFieldSchema ?? [],
             attendeeFieldSchemaMode: e.attendeeFieldSchemaMode ?? "extend",
-            eligibilityPreset: e.eligibilityPreset ?? "none",
-            eligibilityMinAge: e.eligibilityMinAge != null ? String(e.eligibilityMinAge) : "",
-            eligibilityMaxAge: e.eligibilityMaxAge != null ? String(e.eligibilityMaxAge) : "",
-            eligibilityAllowedGenders: (e.eligibilityAllowedGenders ?? []).join(", "),
+            ...(() => {
+              const expanded = expandLegacyEligibilityForEdit(e)
+              return {
+                eligibilityPreset: expanded.eligibilityPreset,
+                eligibilityMinAge:
+                  expanded.eligibilityMinAge != null ? String(expanded.eligibilityMinAge) : "",
+                eligibilityMaxAge:
+                  expanded.eligibilityMaxAge != null ? String(expanded.eligibilityMaxAge) : "",
+                eligibilityAllowedGenders: (expanded.eligibilityAllowedGenders ?? []).join(", "),
+              }
+            })(),
             eligibilityBirthDateFieldKey: e.eligibilityBirthDateFieldKey ?? "",
             eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? "",
             eligibilityFormRules: e.eligibilityFormRules
@@ -705,7 +713,7 @@ export function EventFormPage({
               ) : null}
               <div className="border-t border-border pt-6 space-y-4">
                 <h3 className="text-sm font-semibold text-foreground">Belépési feltételek</h3>
-                <TBookField label="Előbeállítás">
+                <TBookField label="Szabály típusa">
                   <TBookSelect
                     value={draft.eligibilityPreset}
                     onChange={(e) =>
@@ -721,8 +729,8 @@ export function EventFormPage({
                     ))}
                   </TBookSelect>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Üres esemény űrlapnál a csoport „Résztvevői mezők” sémája érvényes (extend mód).
-                    Az űrlap szabályok a feloldott mezőkre futnak.
+                    Nincs sportág-specifikus előbeállítás — állítsd be a korhatárt, mezőértékeket,
+                    vagy tetszőleges űrlap-szabályokat az esemény mezőire.
                   </p>
                 </TBookField>
                 {draft.eligibilityPreset === "custom" ? (
@@ -745,19 +753,16 @@ export function EventFormPage({
                         onChange={(e) => patch({ eligibilityMaxAge: e.target.value })}
                       />
                     </TBookField>
-                    <TBookField label="Engedélyezett nem értékek (vesszővel)">
+                    <TBookField label="Engedélyezett mező értékek (vesszővel)">
                       <TBookInput
                         value={draft.eligibilityAllowedGenders}
                         onChange={(e) => patch({ eligibilityAllowedGenders: e.target.value })}
-                        placeholder="female, nő"
+                        placeholder="pl. a select choice value-k"
                       />
                     </TBookField>
                   </div>
                 ) : null}
-                {(draft.eligibilityPreset === "custom" ||
-                  draft.eligibilityPreset === "under18" ||
-                  draft.eligibilityPreset === "under18_female" ||
-                  draft.eligibilityPreset === "women") && (
+                {draft.eligibilityPreset === "custom" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <TBookField label="Születési dátum mező kulcs (opcionális)">
                       <TBookInput
@@ -766,15 +771,15 @@ export function EventFormPage({
                         placeholder="birth_date"
                       />
                     </TBookField>
-                    <TBookField label="Nem mező kulcs (opcionális)">
+                    <TBookField label="Érték-ellenőrzés mező kulcs (opcionális)">
                       <TBookInput
                         value={draft.eligibilityGenderFieldKey}
                         onChange={(e) => patch({ eligibilityGenderFieldKey: e.target.value })}
-                        placeholder="gender"
+                        placeholder="gender / category / …"
                       />
                     </TBookField>
                   </div>
-                )}
+                ) : null}
                 {(draft.eligibilityPreset === "form_rules" ||
                   draft.eligibilityPreset === "custom") && (
                   <div className="space-y-3">

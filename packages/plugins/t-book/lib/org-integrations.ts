@@ -10,7 +10,6 @@ import { STRIPE_API_VERSION, getStripeClient, getStripeWebhookSecret } from "@ws
 import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import TBookOrganization, { type ITBookOrganization } from "../models/TBookOrganization"
 import { decryptOrgSecret } from "./org-secrets"
-import { normalizeVoucherPdfLayout, type VoucherPdfLayout } from "./voucher-pdf-layout"
 
 function oid(id: string) {
   return id
@@ -202,16 +201,5 @@ export async function resolveOrgSzamlazz(organizationId: string | null | undefin
   return {
     agentKey,
     sellerName: s.sellerName || "",
-    sellerBank: s.sellerBank || "",
-    sellerBankAccount: s.sellerBankAccount || "",
-    vatPercent: typeof s.vatPercent === "number" ? s.vatPercent : 27,
   }
-}
-
-export async function resolveOrgVoucherPdfLayout(
-  organizationId: string | null | undefined
-): Promise<VoucherPdfLayout> {
-  if (!organizationId) return normalizeVoucherPdfLayout(null)
-  const org = await loadOrganization(organizationId)
-  return normalizeVoucherPdfLayout(org?.settings?.voucherPdfLayout)
 }

@@ -56,7 +56,7 @@ export type AdminEvent = {
   vouchersEnabled: boolean
   attendeeFieldSchema: TBookAttendeeFieldDef[]
   attendeeFieldSchemaMode: "extend" | "replace"
-  eligibilityPreset: "none" | "under18" | "under18_female" | "women" | "custom" | "form_rules"
+  eligibilityPreset: "none" | "custom" | "form_rules"
   eligibilityMinAge: number | null
   eligibilityMaxAge: number | null
   eligibilityAllowedGenders: string[]
@@ -207,10 +207,10 @@ export const VOUCHER_STATUS_LABELS: Record<string, string> = {
 }
 
 export const VOUCHER_SCAN_RESULT_LABELS: Record<string, string> = {
-  valid: "Érvényes",
-  duplicate: "Már beléptetve",
-  invalid: "Érvénytelen",
-  wrong_event: "Más esemény",
+  valid: "Elfogadva",
+  duplicate: "Már beléptetve — elutasítva",
+  invalid: "Érvénytelen — elutasítva",
+  wrong_event: "Más esemény — elutasítva",
 }
 
 export type AdminVoucher = {

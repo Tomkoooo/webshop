@@ -112,7 +112,6 @@ export async function handleTBookOrgApi(
         smtp: body.smtp,
         szamlazz: body.szamlazz,
         emailTemplates: body.emailTemplates,
-        voucherPdfLayout: body.voucherPdfLayout,
       })
       return json({ ok: true })
     }

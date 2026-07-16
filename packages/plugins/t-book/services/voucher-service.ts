@@ -143,11 +143,13 @@ export async function issueVouchersForBooking(bookingId: string): Promise<string
     pageCount: tokens.length,
   }))
 
-  const { resolveOrgVoucherPdfLayout } = await import("../lib/org-integrations")
-  const layout = await resolveOrgVoucherPdfLayout(
-    booking.organizationId ? String(booking.organizationId) : null
-  )
-  const pdfBytes = await buildVoucherPdf({ headerImage, pages: pdfPages, layout })
+  // Org-level PDF layout editor removed — default layout + per-event/group header image.
+  const { DEFAULT_VOUCHER_PDF_LAYOUT } = await import("../lib/voucher-pdf-layout")
+  const pdfBytes = await buildVoucherPdf({
+    headerImage,
+    pages: pdfPages,
+    layout: DEFAULT_VOUCHER_PDF_LAYOUT,
+  })
   const pdfFileName = await MediaService.processUpload(
     Buffer.from(pdfBytes),
     `voucher-${bookingId}.pdf`,

@@ -1,12 +1,10 @@
 import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "./attendee-fields"
 
-export type TBookEligibilityPreset =
-  | "none"
-  | "under18"
-  | "under18_female"
-  | "women"
-  | "custom"
-  | "form_rules"
+/** Organizer-facing presets. Darts-specific U18/women shortcuts were removed. */
+export type TBookEligibilityPreset = "none" | "custom" | "form_rules"
+
+/** Still present on some stored events; resolved into `custom` at runtime. */
+export type TBookLegacyEligibilityPreset = "under18" | "under18_female" | "women"
 
 export type TBookEligibilityMatchOp =
   | "equals"
@@ -46,7 +44,7 @@ export type TBookEligibilityRules = {
 }
 
 export type EligibilityEventLike = {
-  eligibilityPreset?: TBookEligibilityPreset
+  eligibilityPreset?: TBookEligibilityPreset | TBookLegacyEligibilityPreset | string
   eligibilityMinAge?: number | null
   eligibilityMaxAge?: number | null
   eligibilityAllowedGenders?: string[] | null
@@ -62,14 +60,8 @@ export type EligibilityIssue = {
   message: string
 }
 
-const GENDER_FEMALE = new Set(["female", "f", "no", "nő", "n", "woman", "women", "girl", "girls"])
-
 function normalizeGender(value: string): string {
   return value.trim().toLowerCase()
-}
-
-function isFemaleGender(value: string): boolean {
-  return GENDER_FEMALE.has(normalizeGender(value))
 }
 
 function parseBirthDate(raw: string | number | undefined): Date | null {
@@ -141,31 +133,80 @@ function normalizeFormRules(
   return { logic: raw.logic === "or" ? "or" : "and", rules }
 }
 
-export function resolveEligibilityRules(event: EligibilityEventLike): TBookEligibilityRules | null {
+type LegacyEligibilityExpandInput = {
+  eligibilityPreset?: string | null
+  eligibilityMinAge?: number | null
+  eligibilityMaxAge?: number | null
+  eligibilityAllowedGenders?: string[] | null
+}
+
+/**
+ * Expand legacy darts presets into organizer-editable custom age/value fields.
+ * Call when loading an event into the admin form so old data migrates on next save.
+ */
+export function expandLegacyEligibilityForEdit(event: LegacyEligibilityExpandInput): {
+  eligibilityPreset: TBookEligibilityPreset
+  eligibilityMinAge: number | null
+  eligibilityMaxAge: number | null
+  eligibilityAllowedGenders: string[] | null
+} {
   const preset = event.eligibilityPreset ?? "none"
+  const base = {
+    eligibilityMinAge: event.eligibilityMinAge ?? null,
+    eligibilityMaxAge: event.eligibilityMaxAge ?? null,
+    eligibilityAllowedGenders:
+      event.eligibilityAllowedGenders && event.eligibilityAllowedGenders.length > 0
+        ? event.eligibilityAllowedGenders
+        : null,
+  }
+
+  switch (preset) {
+    case "under18":
+      return {
+        eligibilityPreset: "custom",
+        eligibilityMinAge: null,
+        eligibilityMaxAge: 17,
+        eligibilityAllowedGenders: null,
+      }
+    case "under18_female":
+      return {
+        eligibilityPreset: "custom",
+        eligibilityMinAge: null,
+        eligibilityMaxAge: 17,
+        eligibilityAllowedGenders: ["female"],
+      }
+    case "women":
+      return {
+        eligibilityPreset: "custom",
+        eligibilityMinAge: 18,
+        eligibilityMaxAge: null,
+        eligibilityAllowedGenders: ["female"],
+      }
+    case "custom":
+    case "form_rules":
+      return { eligibilityPreset: preset, ...base }
+    default:
+      return { eligibilityPreset: "none", ...base }
+  }
+}
+
+export function resolveEligibilityRules(event: EligibilityEventLike): TBookEligibilityRules | null {
+  const expanded = expandLegacyEligibilityForEdit(event)
+  const preset = expanded.eligibilityPreset
   if (preset === "none") return null
 
   const formRules = normalizeFormRules(event.eligibilityFormRules)
 
   const custom = {
-    minAge: event.eligibilityMinAge ?? null,
-    maxAge: event.eligibilityMaxAge ?? null,
-    allowedGenders:
-      event.eligibilityAllowedGenders && event.eligibilityAllowedGenders.length > 0
-        ? event.eligibilityAllowedGenders
-        : null,
+    minAge: expanded.eligibilityMinAge,
+    maxAge: expanded.eligibilityMaxAge,
+    allowedGenders: expanded.eligibilityAllowedGenders,
     birthDateFieldKey: event.eligibilityBirthDateFieldKey?.trim() || null,
     genderFieldKey: event.eligibilityGenderFieldKey?.trim() || null,
     formRules,
   }
 
   switch (preset) {
-    case "under18":
-      return { ...custom, maxAge: 17, minAge: null, allowedGenders: null }
-    case "under18_female":
-      return { ...custom, maxAge: 17, minAge: null, allowedGenders: ["female"] }
-    case "women":
-      return { ...custom, minAge: 18, maxAge: null, allowedGenders: ["female"] }
     case "form_rules":
       if (!formRules) return null
       return {
@@ -344,25 +385,16 @@ export function validateEligibility(
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: nem megadása kötelező ehhez az eseményhez.`,
+          message: `${prefix}: a(z) ${genderKey} mező kitöltése kötelező ehhez az eseményhez.`,
         })
       } else {
-        const femaleOnly = rules.allowedGenders.every((g) => normalizeGender(g) === "female")
-        if (femaleOnly && !isFemaleGender(String(raw))) {
+        const allowed = new Set(rules.allowedGenders.map(normalizeGender))
+        if (!allowed.has(normalizeGender(String(raw)))) {
           issues.push({
             ticketIndex: row.ticketIndex,
             playerIndex: row.playerIndex,
-            message: `${prefix}: ez az esemény csak női résztvevők számára nyitott.`,
+            message: `${prefix}: a megadott érték (${raw}) nem engedélyezett ennél az eseménynél.`,
           })
-        } else if (!femaleOnly) {
-          const allowed = new Set(rules.allowedGenders.map(normalizeGender))
-          if (!allowed.has(normalizeGender(String(raw)))) {
-            issues.push({
-              ticketIndex: row.ticketIndex,
-              playerIndex: row.playerIndex,
-              message: `${prefix}: a megadott nem nem engedélyezett ennél az eseménynél.`,
-            })
-          }
         }
       }
     }
@@ -397,10 +429,7 @@ export function validateEligibility(
 
 export const ELIGIBILITY_PRESET_LABELS: Record<TBookEligibilityPreset, string> = {
   none: "Nincs korlátozás",
-  under18: "U18 (18 év alatti)",
-  under18_female: "U18 lányok",
-  women: "Női verseny (18+)",
-  custom: "Egyedi kor / nem",
+  custom: "Kor / mező érték (egyedi)",
   form_rules: "Űrlap mező szabályok",
 }
 
