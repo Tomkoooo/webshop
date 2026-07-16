@@ -556,9 +556,28 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           <SectionHeading className="mb-10">
             <EditableDocText path="sponsors.heading" value={c.sponsors.heading} />
           </SectionHeading>
-          <div className="flex flex-wrap items-center justify-center gap-8">
+          {edit.enabled ? (
+            <CmsListAddButton
+              label="Add sponsor logo"
+              className="mb-6"
+              onClick={() =>
+                edit.setPath("sponsors.logos", [
+                  ...c.sponsors.logos,
+                  { name: "Sponsor", image: "/placeholder.png" },
+                ])
+              }
+            />
+          ) : null}
+          <div className="flex flex-wrap items-center justify-center gap-6">
             {c.sponsors.logos.map((logo, index) => (
-              <div key={index} className="relative">
+              <div
+                key={index}
+                className={
+                  edit.enabled
+                    ? "relative flex min-w-[10rem] flex-col items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-4"
+                    : "relative"
+                }
+              >
                 {edit.enabled ? (
                   <CmsListItemToolbar
                     onRemove={() =>
@@ -569,17 +588,28 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                     }
                   />
                 ) : null}
+                {/*
+                  Do not use frameClassName/fill here — fill mode without a sized
+                  frame collapses the edit/upload controls on tiny logo rows.
+                */}
                 <CmsImage
                   path={`sponsors.logos.${index}.image`}
                   src={logo.image}
                   alt={logo.name}
-                  className="h-12 w-auto opacity-80 grayscale transition hover:opacity-100 hover:grayscale-0"
-                  frameClassName="inline-block"
-                  imageClassName="h-12 w-auto object-contain"
+                  className="w-full max-w-[160px]"
+                  imageClassName="mx-auto h-12 w-auto max-w-[160px] object-contain opacity-80 grayscale transition hover:opacity-100 hover:grayscale-0"
                   width={160}
                   height={48}
-                  usageLabel="Partner logo"
+                  usageLabel="Sponsor logo"
                 />
+                {edit.enabled ? (
+                  <p className="w-full text-xs text-muted-foreground">
+                    <EditableDocText
+                      path={`sponsors.logos.${index}.name`}
+                      value={logo.name}
+                    />
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
