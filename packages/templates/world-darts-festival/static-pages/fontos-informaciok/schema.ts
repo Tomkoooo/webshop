@@ -1,15 +1,15 @@
 import { z } from "zod"
 
 export const importantInfoSchema = z.object({
-  title: z.string().default("Fontos információk"),
+  title: z.string().default("Important information"),
   subtitle: z.string().default(""),
   body: z.string().default("<p></p>"),
   meta: z
     .object({
-      seoTitle: z.string().default("Fontos információk"),
+      seoTitle: z.string().default("Important information"),
       seoDescription: z.string().default(""),
     })
-    .default({ seoTitle: "Fontos információk", seoDescription: "" }),
+    .default({ seoTitle: "Important information", seoDescription: "" }),
 })
 
 export type ImportantInfoContent = z.infer<typeof importantInfoSchema>

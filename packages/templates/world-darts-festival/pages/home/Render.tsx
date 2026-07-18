@@ -82,7 +82,7 @@ function ScheduleDay({
           </ul>
           {edit.enabled ? (
             <CmsListAddButton
-              label="Programpont hozzáadása"
+              label="Add schedule item"
               onClick={() => edit.setPath(itemsPath, [...items, "New schedule item"])}
             />
           ) : null}
@@ -220,8 +220,8 @@ function PrizeMoneyTable({
       </div>
       {edit.enabled ? (
         <div className="flex flex-wrap gap-2 border-t border-border/60 px-4 py-3">
-          <CmsListAddButton label="Sor hozzáadása" onClick={addRow} />
-          <CmsListAddButton label="Oszlop hozzáadása" onClick={addColumn} />
+          <CmsListAddButton label="Add row" onClick={addRow} />
+          <CmsListAddButton label="Add column" onClick={addColumn} />
         </div>
       ) : null}
     </div>
@@ -250,7 +250,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           frameClassName="size-full"
           imageClassName="size-full object-cover"
           fill
-          usageLabel="Hero kép"
+          usageLabel="Hero image"
         />
         <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div
@@ -325,7 +325,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               imageClassName="size-full object-cover"
               width={800}
               height={450}
-              usageLabel="Fesztivál kép"
+              usageLabel="Festival image"
             />
           </Reveal>
         </div>
@@ -366,7 +366,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           ))}
           {edit.enabled ? (
             <CmsListAddButton
-              label="Info kártya hozzáadása"
+              label="Add info card"
               onClick={() =>
                 edit.setPath("infoCards", [
                   ...c.infoCards,
@@ -483,7 +483,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
             ))}
             {edit.enabled ? (
               <CmsListAddButton
-                label="Nap hozzáadása"
+                label="Add day"
                 onClick={() =>
                   edit.setPath("schedule.days", [
                     ...c.schedule.days,
@@ -537,7 +537,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           {edit.enabled ? (
             <div className="mt-4">
               <CmsListAddButton
-                label="Díj hozzáadása"
+                label="Add fee"
                 onClick={() =>
                   edit.setPath("fees.items", [
                     ...c.fees.items,
@@ -598,7 +598,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
           {edit.enabled ? (
             <div className="text-center">
               <CmsListAddButton
-                label="Verseny táblázat hozzáadása"
+                label="Add prize table"
                 onClick={() =>
                   edit.setPath("prizeMoney.tables", [
                     ...c.prizeMoney.tables,

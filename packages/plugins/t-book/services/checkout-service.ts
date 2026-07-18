@@ -49,8 +49,8 @@ export class TBookCheckoutService {
     const returnTo = encodeURIComponent(storefrontBase)
 
     const description = [
-      `${booking.guests} fő`,
-      booking.hotelName ? `${booking.hotelName}, ${booking.nights} éj` : "csak belépő",
+      `${booking.guests} guests`,
+      booking.hotelName ? `${booking.hotelName}, ${booking.nights} nights` : "entry only",
     ].join(" · ")
 
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -142,8 +142,8 @@ export class TBookCheckoutService {
 
     const lineItems = bookings.map((booking) => {
       const description = [
-        `${booking.guests} fő`,
-        booking.hotelName ? `${booking.hotelName}, ${booking.nights} éj` : "csak belépő",
+        `${booking.guests} guests`,
+        booking.hotelName ? `${booking.hotelName}, ${booking.nights} nights` : "entry only",
       ].join(" · ")
       return {
         quantity: 1,

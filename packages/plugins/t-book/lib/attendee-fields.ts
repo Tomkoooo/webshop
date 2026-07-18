@@ -109,27 +109,27 @@ function validateFieldValue(
   raw: unknown
 ): string | null {
   if (raw == null || raw === "") {
-    return field.required ? `Kötelező mező: ${field.label}` : null
+    return field.required ? `Required field: ${field.label}` : null
   }
 
   switch (field.type) {
     case "text":
-      if (typeof raw !== "string" || !raw.trim()) return `${field.label}: érvénytelen szöveg`
+      if (typeof raw !== "string" || !raw.trim()) return `${field.label}: invalid text`
       return null
     case "email": {
       if (typeof raw !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())) {
-        return `${field.label}: érvénytelen e-mail`
+        return `${field.label}: invalid email`
       }
       return null
     }
     case "phone":
       if (typeof raw !== "string" || raw.trim().length < 6) {
-        return `${field.label}: érvénytelen telefonszám`
+        return `${field.label}: invalid phone number`
       }
       return null
     case "number": {
       const num = typeof raw === "number" ? raw : Number(raw)
-      if (!Number.isFinite(num)) return `${field.label}: érvénytelen szám`
+      if (!Number.isFinite(num)) return `${field.label}: invalid number`
       if (field.min != null && num < field.min) {
         return `${field.label}: minimum ${field.min}`
       }
@@ -140,14 +140,14 @@ function validateFieldValue(
     }
     case "date":
       if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        return `${field.label}: érvénytelen dátum (YYYY-MM-DD)`
+        return `${field.label}: invalid date (YYYY-MM-DD)`
       }
       return null
     case "select": {
       const value = String(raw)
       const allowed = field.choices?.map((c) => c.value) ?? []
       if (!allowed.includes(value)) {
-        return `${field.label}: érvénytelen választás`
+        return `${field.label}: invalid choice`
       }
       return null
     }
@@ -179,13 +179,13 @@ export function validateAttendees(
 
   const issues: AttendeeValidationIssue[] = []
   const rows = attendees ?? []
-  const unitLabel = registrationUnit === "team" ? "csapat" : "jegy"
+  const unitLabel = registrationUnit === "team" ? "team" : "entry"
 
   if (rows.length !== guests) {
     issues.push({
       index: -1,
       fieldKey: "",
-      message: `Minden ${unitLabel} adata kötelező (${guests} db).`,
+      message: `Details are required for every ${unitLabel} (${guests} total).`,
     })
     return issues
   }
@@ -211,7 +211,7 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: pontosan ${fixedRoster} játékos adata kötelező.`,
+        message: `${index + 1}. ${unitLabel}: exactly ${fixedRoster} player details are required.`,
       })
       return
     }
@@ -220,7 +220,7 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: legalább egy játékos adata kötelező.`,
+        message: `${index + 1}. ${unitLabel}: at least one player is required.`,
       })
       return
     }
@@ -228,7 +228,7 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: legfeljebb ${memberLimit} játékos adható meg.`,
+        message: `${index + 1}. ${unitLabel}: at most ${memberLimit} players are allowed.`,
       })
     }
 
@@ -239,7 +239,7 @@ export function validateAttendees(
           issues.push({
             index,
             fieldKey: field.key,
-            message: `${index + 1}. ${unitLabel}, ${memberIndex + 1}. játékos: ${message}`,
+            message: `${index + 1}. ${unitLabel}, player ${memberIndex + 1}: ${message}`,
           })
         }
       }

@@ -18,8 +18,8 @@ const navItemSchema = z.discriminatedUnion("type", [
 
 export const defaultNavCta: ChromeNavCta = {
   enabled: true,
-  label: "Jegyek",
-  mobileLabel: "Jegyek & foglalás",
+  label: "Entries",
+  mobileLabel: "Entries & booking",
   href: "/jegyek",
   showIcon: true,
 }

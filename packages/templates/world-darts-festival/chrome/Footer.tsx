@@ -15,10 +15,10 @@ import type {
 import type { ChromeProps, SiteContactEntry } from "@wse/sdk/templates/types"
 
 const WDF_DEFAULT_QUICK_LINKS = [
-  { label: "Jegyek & foglalás", href: "/jegyek" },
-  { label: "Helyszín", href: "/#venue" },
-  { label: "Díjazás", href: "/#prize-money" },
-  { label: "Kapcsolat", href: "/#contact" },
+  { label: "Entries & booking", href: "/jegyek" },
+  { label: "Venue", href: "/#venue" },
+  { label: "Prize money", href: "/#prize-money" },
+  { label: "Contact", href: "/#contact" },
 ] as const
 
 const SHOP_DEFAULT_HREFS = new Set(["#home", "#about", "#shop", "#reviews", "#contact"])
@@ -155,8 +155,8 @@ export function Footer({
     })
   }
 
-  const contactTitle = footerSettings?.contactTitle?.trim() || "Kapcsolat"
-  const quickLinksTitle = footerSettings?.quickLinksTitle?.trim() || "Gyors linkek"
+  const contactTitle = footerSettings?.contactTitle?.trim() || "Contact"
+  const quickLinksTitle = footerSettings?.quickLinksTitle?.trim() || "Quick links"
 
   return (
     <footer className="border-t border-border bg-surface text-foreground">
@@ -179,7 +179,7 @@ export function Footer({
                 value={footerSettings?.tagline ?? ""}
                 onChange={(event) => patchSettings({ tagline: event.target.value })}
                 className={controlClass}
-                placeholder="Lábléc szlogen"
+                placeholder="Footer tagline"
               />
             ) : footerSettings?.tagline?.trim() ? (
               <p className="text-sm text-muted-foreground">{footerSettings.tagline}</p>
@@ -211,7 +211,7 @@ export function Footer({
                 value={footerSettings?.contactTitle ?? ""}
                 onChange={(event) => patchSettings({ contactTitle: event.target.value })}
                 className={controlClass}
-                placeholder="Kapcsolat cím"
+                placeholder="Contact title"
               />
             ) : (
               <p className="font-semibold">{contactTitle}</p>
@@ -328,7 +328,7 @@ export function Footer({
                 value={footerSettings?.quickLinksTitle ?? ""}
                 onChange={(event) => patchSettings({ quickLinksTitle: event.target.value })}
                 className={controlClass}
-                placeholder="Gyors linkek cím"
+                placeholder="Quick links title"
               />
             ) : (
               <p className="font-semibold">{quickLinksTitle}</p>
@@ -348,7 +348,7 @@ export function Footer({
                           })
                         }
                         className={controlClass}
-                        placeholder="Link szöveg"
+                        placeholder="Link text"
                       />
                       <input
                         value={item.href}
@@ -382,11 +382,11 @@ export function Footer({
                     className="cms-admin-control"
                     onClick={() =>
                       patchSettings({
-                        quickLinks: [...quickLinks, { label: "Új link", href: "/" }],
+                        quickLinks: [...quickLinks, { label: "New link", href: "/" }],
                       })
                     }
                   >
-                    Link hozzáadása
+                    Add link
                   </Button>
                 </li>
               ) : null}

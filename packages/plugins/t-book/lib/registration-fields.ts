@@ -61,8 +61,8 @@ export function resolveEventAttendeeFieldSchema(
 export type TBookRegistrationUnit = "person" | "team"
 
 export function registrationUnitLabel(unit: TBookRegistrationUnit, count = 1): string {
-  if (unit === "team") return count === 1 ? "csapat" : "csapat"
-  return count === 1 ? "fő" : "fő"
+  if (unit === "team") return count === 1 ? "team" : "teams"
+  return count === 1 ? "person" : "people"
 }
 
 export function ticketFeeModeLabel(
@@ -71,11 +71,11 @@ export function ticketFeeModeLabel(
 ): string {
   switch (mode) {
     case "per_booking":
-      return "foglalásonként"
+      return "per booking"
     case "per_team":
-      return "csapatonként"
+      return "per team"
     case "per_person":
     default:
-      return unit === "team" ? "csapatonként" : "fő / jegy"
+      return unit === "team" ? "per team" : "per person / entry"
   }
 }

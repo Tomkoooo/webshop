@@ -21,10 +21,10 @@ export function ImportantInfoEditorPanel({
     setSaving(true)
     try {
       await onSave(draft)
-      toast.success("Fontos információk mentve")
+      toast.success("Important information saved")
     } catch (error) {
       console.error(error)
-      toast.error("Mentés sikertelen")
+      toast.error("Save failed")
     } finally {
       setSaving(false)
     }
@@ -33,16 +33,16 @@ export function ImportantInfoEditorPanel({
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold">Oldal szövege</h3>
+        <h3 className="text-lg font-semibold">Page content</h3>
         <div className="space-y-2">
-          <Label>Cím</Label>
+          <Label>Title</Label>
           <Input
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
           />
         </div>
         <div className="space-y-2">
-          <Label>Alcím</Label>
+          <Label>Subtitle</Label>
           <textarea
             className="min-h-20 w-full rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
             value={draft.subtitle}
@@ -50,16 +50,16 @@ export function ImportantInfoEditorPanel({
           />
         </div>
         <div className="space-y-2">
-          <Label>Szabályok / tartalom</Label>
+          <Label>Rules / content</Label>
           <RichTextEditor
             value={draft.body || "<p></p>"}
             onChange={(html) => setDraft((d) => ({ ...d, body: html }))}
             editorClassName="min-h-[280px]"
           />
           <p className="text-xs text-muted-foreground">
-            A vizuális CMS-ben (
+            In the visual CMS (
             <strong>/admin/cms/fontos-informaciok</strong>
-            ) a cím, alcím és a rich text a felületen is szerkeszthető.
+            ) the title, subtitle, and rich text can also be edited on the page.
           </p>
         </div>
       </section>
@@ -68,7 +68,7 @@ export function ImportantInfoEditorPanel({
         <h3 className="text-lg font-semibold">SEO</h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>SEO cím</Label>
+            <Label>SEO title</Label>
             <Input
               value={draft.meta.seoTitle}
               onChange={(e) =>
@@ -77,7 +77,7 @@ export function ImportantInfoEditorPanel({
             />
           </div>
           <div className="space-y-2">
-            <Label>SEO leírás</Label>
+            <Label>SEO description</Label>
             <Input
               value={draft.meta.seoDescription}
               onChange={(e) =>
@@ -93,7 +93,7 @@ export function ImportantInfoEditorPanel({
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving || !onSave}>
-          {saving ? "Mentés..." : "Mentés"}
+          {saving ? "Saving…" : "Save"}
         </Button>
       </div>
     </div>

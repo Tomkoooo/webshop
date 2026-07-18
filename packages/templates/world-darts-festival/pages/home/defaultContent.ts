@@ -6,25 +6,25 @@ export const homeDefaultContent: HomeContent = {
     tbookApiKey: "",
     navCta: {
       enabled: true,
-      label: "Jegyek",
-      mobileLabel: "Jegyek & foglalás",
+      label: "Entries",
+      mobileLabel: "Entries & booking",
       href: "/jegyek",
       showIcon: true,
     },
     nav: [
-      { type: "link", label: "Főoldal", href: "/" },
+      { type: "link", label: "Home", href: "/" },
       {
         type: "dropdown",
-        label: "Események",
+        label: "Events",
         items: [
-          { label: "Összes esemény", href: "/jegyek" },
-          { label: "Foglalás", href: "/jegyek" },
+          { label: "All events", href: "/jegyek" },
+          { label: "Book now", href: "/jegyek" },
         ],
       },
-      { type: "link", label: "Helyszín", href: "/#venue" },
-      { type: "link", label: "Program", href: "/#schedule" },
-      { type: "link", label: "Díjazás", href: "/#prize-money" },
-      { type: "link", label: "Kapcsolat", href: "/#contact" },
+      { type: "link", label: "Venue", href: "/#venue" },
+      { type: "link", label: "Schedule", href: "/#schedule" },
+      { type: "link", label: "Prize money", href: "/#prize-money" },
+      { type: "link", label: "Contact", href: "/#contact" },
     ],
   },
   sectionLayout: DEFAULT_WDF_SECTION_LAYOUT.map((row) => ({ ...row })),
@@ -36,7 +36,7 @@ export const homeDefaultContent: HomeContent = {
     heroImage: "/generic-hero.svg",
     primaryCtaLabel: "Booking and entry",
     primaryCtaHref: "/jegyek",
-    secondaryCtaLabel: "Tickets",
+    secondaryCtaLabel: "Entries",
     secondaryCtaHref: "/jegyek",
   },
   festival: {
@@ -44,7 +44,7 @@ export const homeDefaultContent: HomeContent = {
     body:
       "Following a successful 2024, Hungary proudly welcomes back the World Darts Federation's most prestigious events in 2025 — the World Championship Qualifier and the World Masters. Introducing the World Darts Festival — a thrilling 9-day celebration of darts like never before!",
     image: "/generic-hero.svg",
-    ctaLabel: "Tickets",
+    ctaLabel: "Entries",
     ctaHref: "/jegyek",
   },
   infoCards: [
@@ -141,7 +141,7 @@ export const homeDefaultContent: HomeContent = {
   },
   contact: {
     heading: "Contact the organizer",
-    body: "Questions about registration, tickets, or the event? Send us a message and we'll get back to you as soon as possible.",
+    body: "Questions about registration, entries, or the event? Send us a message and we'll get back to you as soon as possible.",
     nameLabel: "Name",
     emailLabel: "Email",
     messageLabel: "Message",
@@ -149,6 +149,6 @@ export const homeDefaultContent: HomeContent = {
   },
   meta: {
     seoTitle: "World Darts Festival",
-    seoDescription: "Book tickets and register for the World Darts Festival in Budapest.",
+    seoDescription: "Book entries and register for the World Darts Festival in Budapest.",
   },
 }

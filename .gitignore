@@ -13,6 +13,9 @@ node_modules/
 # testing
 /coverage
 
+# Local DB dumps (t-book / ops)
+/backups/
+
 # next.js
 .next/
 /out/

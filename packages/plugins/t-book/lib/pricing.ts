@@ -162,7 +162,7 @@ export function validateHotelSelections(
     if (!packageDeal && !packageUnits) {
       errors.push({
         key: PACKAGE_DEAL_SELECTION_KEY,
-        message: "Kötelező csomagajánlat választás",
+        message: "Please select a package deal",
       })
     }
     if (packageUnits) {
@@ -172,7 +172,7 @@ export function validateHotelSelections(
         if (!pkg) {
           errors.push({
             key: PACKAGE_UNITS_SELECTION_KEY,
-            message: `Érvénytelen csomag: ${key}`,
+            message: `Invalid package: ${key}`,
           })
           continue
         }
@@ -183,7 +183,7 @@ export function validateHotelSelections(
       if (guests != null && capacity > 0 && capacity < guests) {
         errors.push({
           key: PACKAGE_UNITS_SELECTION_KEY,
-          message: `A választott csomagok összesen ${capacity} főt fednek le, de ${guests} fő szálláshely szükséges.`,
+          message: `Selected packages cover ${capacity} guests, but ${guests} need accommodation.`,
         })
       }
     }
@@ -192,13 +192,13 @@ export function validateHotelSelections(
     if (typeof roomKey !== "string" || !findRoomType(normalized, roomKey)) {
       errors.push({
         key: ROOM_TYPE_SELECTION_KEY,
-        message: "Kötelező szobatípus választás",
+        message: "Please select a room type",
       })
     }
     if (typeof packageKey === "string" && packageKey && !packageDeal) {
       errors.push({
         key: PACKAGE_DEAL_SELECTION_KEY,
-        message: "Érvénytelen csomagajánlat",
+        message: "Invalid package deal",
       })
     }
   }
@@ -225,7 +225,7 @@ export function validateSelections(
     if (key === PACKAGE_DEAL_SELECTION_KEY) continue
     if (key === PACKAGE_UNITS_SELECTION_KEY) continue
     if (!known.has(key)) {
-      errors.push({ key, message: `Ismeretlen opció: ${key}` })
+      errors.push({ key, message: `Unknown option: ${key}` })
     }
   }
 
@@ -235,7 +235,7 @@ export function validateSelections(
 
     if (value == null) {
       if (option.required) {
-        errors.push({ key: option.key, message: `Kötelező opció: ${option.label}` })
+        errors.push({ key: option.key, message: `Required option: ${option.label}` })
       }
       continue
     }
@@ -243,21 +243,21 @@ export function validateSelections(
     switch (option.type) {
       case "select": {
         if (typeof value !== "string" || !findChoice(option, value)) {
-          errors.push({ key: option.key, message: `Érvénytelen érték: ${option.label}` })
+          errors.push({ key: option.key, message: `Invalid value: ${option.label}` })
         }
         break
       }
       case "multiselect": {
         const values = Array.isArray(value) ? value : null
         if (!values || values.some((v) => !findChoice(option, String(v)))) {
-          errors.push({ key: option.key, message: `Érvénytelen érték: ${option.label}` })
+          errors.push({ key: option.key, message: `Invalid value: ${option.label}` })
         }
         break
       }
       case "number": {
         const n = Number(value)
         if (!Number.isFinite(n)) {
-          errors.push({ key: option.key, message: `Szám szükséges: ${option.label}` })
+          errors.push({ key: option.key, message: `Number required: ${option.label}` })
           break
         }
         if (option.min != null && n < option.min) {
@@ -270,7 +270,7 @@ export function validateSelections(
       }
       case "checkbox": {
         if (typeof value !== "boolean") {
-          errors.push({ key: option.key, message: `Érvénytelen érték: ${option.label}` })
+          errors.push({ key: option.key, message: `Invalid value: ${option.label}` })
         }
         break
       }
@@ -376,10 +376,10 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
 
   const ticketLineLabel =
     ticketFeeMode === "per_booking"
-      ? "Belépőjegy"
+      ? "Entry"
       : ticketFeeMode === "per_team"
-        ? `Belépőjegy × ${guests} csapat`
-        : `Belépőjegy × ${guests} fő`
+        ? `Entry × ${guests} teams`
+        : `Entry × ${guests} people`
 
   const lines: TBookPriceLine[] = [
     {
@@ -464,7 +464,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
         accommodationBaseHuf = roundHuf(roomGross * accommodationGuests * effectiveNights)
         lines.push({
           key: "accommodation_base",
-          label: `${roomType.label} (${accommodationGuests} fő, ${effectiveNights} éj)`,
+          label: `${roomType.label} (${accommodationGuests} guests, ${effectiveNights} nights)`,
           amountHuf: accommodationBaseHuf,
         })
       }

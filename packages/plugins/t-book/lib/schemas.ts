@@ -473,10 +473,10 @@ export type TBookBillingType = z.infer<typeof tBookBillingTypeSchema>
 export const tBookBillingSchema = z
   .object({
     billingType: tBookBillingTypeSchema.default("personal"),
-    name: z.string().min(1, "Számlázási név kötelező"),
-    zip: z.string().min(1, "Irányítószám kötelező"),
-    city: z.string().min(1, "Város kötelező"),
-    street: z.string().min(1, "Cím kötelező"),
+    name: z.string().min(1, "Billing name is required"),
+    zip: z.string().min(1, "Postal code is required"),
+    city: z.string().min(1, "City is required"),
+    street: z.string().min(1, "Address is required"),
     countryCode: z.string().default("HU"),
     taxNumber: z.string().optional().default(""),
   })
@@ -484,7 +484,7 @@ export const tBookBillingSchema = z
     if (data.billingType === "company" && !data.taxNumber?.trim()) {
       ctx.addIssue({
         code: "custom",
-        message: "Adószám kötelező cég esetén",
+        message: "Tax number is required for companies",
         path: ["taxNumber"],
       })
     }
@@ -537,9 +537,9 @@ export const createBookingSchema = z.object({
   guests: z.number().int().min(1).max(50),
   accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
   customer: z.object({
-    name: z.string().min(1, "Név kötelező"),
-    email: z.string().email("Érvényes email szükséges"),
-    phone: z.string().min(6, "Telefonszám kötelező"),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("A valid email is required"),
+    phone: z.string().min(6, "Phone number is required"),
     note: z.string().max(2000).optional().default(""),
   }),
   billing: tBookBillingSchema,
@@ -554,9 +554,9 @@ export const createMultiBookingSchema = z.object({
   lodgingMode: z.enum(["combined", "separate"]).default("combined"),
   entries: z.array(multiBookingEntrySchema).min(1).max(20),
   customer: z.object({
-    name: z.string().min(1, "Név kötelező"),
-    email: z.string().email("Érvényes email szükséges"),
-    phone: z.string().min(6, "Telefonszám kötelező"),
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("A valid email is required"),
+    phone: z.string().min(6, "Phone number is required"),
     note: z.string().max(2000).optional().default(""),
   }),
   billing: tBookBillingSchema,

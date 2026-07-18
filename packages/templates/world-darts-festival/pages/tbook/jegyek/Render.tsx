@@ -6,16 +6,16 @@ import type { TBookListContent } from "../schemas"
 
 const PREVIEW_EVENTS = [
   {
-    title: "WDF World Masters — Férfi",
-    date: "2025. okt. 29.",
-    venue: "Gerevich Aladár Nemzeti Sportcsarnok",
-    price: "€40 / fő",
+    title: "WDF World Masters — Men",
+    date: "29 Oct 2025",
+    venue: "Gerevich Aladár National Sports Hall",
+    price: "€40 / person",
   },
   {
-    title: "Hungarian Open — Női",
-    date: "2025. okt. 25.",
+    title: "Hungarian Open — Women",
+    date: "25 Oct 2025",
     venue: "Budapest",
-    price: "€35 / fő",
+    price: "€35 / person",
   },
 ]
 
@@ -63,7 +63,7 @@ export function TBookListRender({ content }: { content: TBookListContent }) {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Előnézet — az éles oldalon a tBook API tölti be az eseményeket.
+        Preview — on the live site the tBook API loads events.
       </p>
     </div>
   )

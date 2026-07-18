@@ -1,8 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ArrowLeft, BedDouble, Loader2 } from "lucide-react"
+import { StorefrontRichHtml } from "@wse/core/components/common/StorefrontRichHtml"
+import { mediaImageSrc, PLACEHOLDER_IMAGE } from "@wse/core/lib/images"
+import { resolveHotelStayPhase } from "../lib/booking-wizard-flow"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
@@ -29,6 +32,7 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
+import { BookingWizardNav } from "./BookingWizardNav"
 import { PackageSelectionCards } from "./PackageSelectionCards"
 import {
   BookingBillingForm,
@@ -219,6 +223,7 @@ export function TBookBookingWizard({
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
   const [extraNightAfter, setExtraNightAfter] = useState(false)
+  const roomSectionRef = useRef<HTMLDivElement>(null)
 
   const stayRecommendation = useMemo(
     () => (event ? recommendStayForEvents([event], { extraNightAfter }) : null),
@@ -294,6 +299,16 @@ export function TBookBookingWizard({
     return null
   }, [selections])
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
+  const hotelStayPhase = resolveHotelStayPhase({
+    hotelCount: hotels.length,
+    wantsHotel,
+    selectedHotelId,
+  })
+
+  useEffect(() => {
+    if (step !== 2 || hotelStayPhase !== "configure_rooms") return
+    roomSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [step, hotelStayPhase, selectedHotelId])
 
   useEffect(() => {
     if (!selectedHotel || accommodationMode !== "packages") return
@@ -530,9 +545,9 @@ export function TBookBookingWizard({
   const step3Valid = attendeesValid
 
   const step4Valid =
-    customer.name.trim() &&
-    customer.email.trim() &&
-    customer.phone.trim() &&
+    Boolean(customer.name.trim()) &&
+    Boolean(customer.email.trim()) &&
+    Boolean(customer.phone.trim()) &&
     isBillingFormValid(billing)
 
   const canProceedCurrentStep =
@@ -562,7 +577,7 @@ export function TBookBookingWizard({
         return
       }
       if (!step2Valid) {
-        setError("Please complete your hotel selection, or choose tickets only.")
+        setError("Please complete your hotel selection, or choose entry only.")
         return
       }
       setError(null)
@@ -649,7 +664,7 @@ export function TBookBookingWizard({
           <div>
             <h2 className="text-lg font-semibold">How many entries?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tell us how many tickets you need. You can add a hotel on the next step.
+              Tell us how many entries you need. You can add a hotel on the next step.
             </p>
           </div>
           <label className="block space-y-1.5">
@@ -682,258 +697,346 @@ export function TBookBookingWizard({
           {hotels.length > 0 ? (
             <>
               <div>
-                <h2 className="text-lg font-semibold">Do you need a hotel room?</h2>
+                <h2 className="text-lg font-semibold">Accommodation</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  You can book tickets only, or add a hotel stay for your group.
+                  Clear steps: choose stay type, pick a hotel, then choose your room.
                 </p>
+                <ol className="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Hotel booking substeps">
+                  {(
+                    [
+                      ["stay_choice", "1. Stay type"],
+                      ["pick_hotel", "2. Hotel"],
+                      ["configure_rooms", "3. Room"],
+                    ] as const
+                  ).map(([phase, label]) => {
+                    const active = hotelStayPhase === phase
+                    const done =
+                      (phase === "stay_choice" && wantsHotel !== null) ||
+                      (phase === "pick_hotel" && Boolean(selectedHotelId)) ||
+                      (phase === "configure_rooms" && hotelStayPhase === "configure_rooms")
+                    return (
+                      <li
+                        key={phase}
+                        className={`rounded-full border px-2.5 py-1 ${
+                          active
+                            ? "border-primary bg-primary/10 font-semibold text-primary"
+                            : done
+                              ? "border-border text-foreground"
+                              : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {label}
+                      </li>
+                    )
+                  })}
+                </ol>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  className={CHOICE_CARD(wantsHotel === false)}
-                  aria-pressed={wantsHotel === false}
-                  onClick={() => {
-                    setWantsHotel(false)
-                    setAccommodationNeed("none")
-                    setSelectedHotelId(null)
-                    setSelections({})
-                    setQuote(null)
-                  }}
-                >
-                  <span className="block text-sm font-semibold">No hotel — tickets only</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Entry fees only. No room booking.
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className={CHOICE_CARD(wantsHotel === true)}
-                  aria-pressed={wantsHotel === true}
-                  onClick={() => {
-                    setWantsHotel(true)
-                    setAccommodationNeed((prev) => (prev === "some" ? "some" : "all"))
-                  }}
-                >
-                  <span className="block text-sm font-semibold">Yes, I need a hotel</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Pick a hotel and room package below.
-                  </span>
-                </button>
-              </div>
-
-              {wantsHotel ? (
-                <>
-                  <AccommodationOptionCards
-                    hotels={hotels}
-                    selectedHotelId={selectedHotelId}
-                    ticketOnlySelected={false}
-                    hideEntryOnlyOption
-                    onSelectTicketOnly={() => {
+              <div>
+                <h3 className="text-sm font-semibold">Do you need a hotel?</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  You can book entries only, or add a hotel stay for your group.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    className={CHOICE_CARD(wantsHotel === false)}
+                    aria-pressed={wantsHotel === false}
+                    onClick={() => {
                       setWantsHotel(false)
                       setAccommodationNeed("none")
                       setSelectedHotelId(null)
                       setSelections({})
                       setQuote(null)
                     }}
-                    onSelectHotel={(hotelId) => {
+                  >
+                    <span className="block text-sm font-semibold">No hotel — entry only</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Entry fees only. No room booking.
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={CHOICE_CARD(wantsHotel === true)}
+                    aria-pressed={wantsHotel === true}
+                    onClick={() => {
+                      setWantsHotel(true)
                       setAccommodationNeed((prev) => (prev === "some" ? "some" : "all"))
-                      setSelectedHotelId(hotelId)
-                      setQuote(null)
                     }}
-                  />
+                  >
+                    <span className="block text-sm font-semibold">Yes, I need a hotel</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Next: pick a hotel, then choose a room.
+                    </span>
+                  </button>
+                </div>
+              </div>
 
-                  {effectiveHotelId && selectedHotel ? (
-                    <div className="space-y-4 border-t border-border pt-4">
-                      <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">
-                          Hotel packages are priced for{" "}
-                          <strong className="text-foreground">{accommodationGuests}</strong> guest
-                          {accommodationGuests === 1 ? "" : "s"}
-                          {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
-                            ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
-                            : ""}
-                          .
+              {wantsHotel === true && hotelStayPhase === "pick_hotel" ? (
+                <AccommodationOptionCards
+                  hotels={hotels}
+                  selectedHotelId={selectedHotelId}
+                  ticketOnlySelected={false}
+                  hideEntryOnlyOption
+                  onSelectTicketOnly={() => {
+                    setWantsHotel(false)
+                    setAccommodationNeed("none")
+                    setSelectedHotelId(null)
+                    setSelections({})
+                    setQuote(null)
+                  }}
+                  onSelectHotel={(hotelId) => {
+                    setAccommodationNeed((prev) => (prev === "some" ? "some" : "all"))
+                    setSelectedHotelId(hotelId)
+                    setQuote(null)
+                  }}
+                />
+              ) : null}
+
+              {wantsHotel === true && selectedHotel ? (
+                <div ref={roomSectionRef} className="space-y-4 scroll-mt-28">
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                          Selected hotel
                         </p>
-                        <p className="text-sm font-medium">Who needs a room?</p>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                              accommodationNeed === "all"
-                                ? "border-primary bg-primary/10 font-medium"
-                                : "border-border hover:border-primary/40"
-                            }`}
-                            aria-pressed={accommodationNeed === "all"}
-                            onClick={() => {
-                              setAccommodationNeed("all")
-                              setQuote(null)
-                            }}
-                          >
-                            Everyone ({maxAccommodationGuests})
-                          </button>
-                          <button
-                            type="button"
-                            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                              accommodationNeed === "some"
-                                ? "border-primary bg-primary/10 font-medium"
-                                : "border-border hover:border-primary/40"
-                            }`}
-                            aria-pressed={accommodationNeed === "some"}
-                            onClick={() => {
-                              setAccommodationNeed("some")
-                              setAccommodationGuestOverride(
-                                Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride))
-                              )
-                              setQuote(null)
-                            }}
-                          >
-                            Some people only
-                          </button>
-                        </div>
-                        {accommodationNeed === "some" ? (
-                          <label className="block max-w-xs space-y-1.5">
-                            <span className="text-sm font-medium">
-                              How many need a room? (max {maxAccommodationGuests})
-                            </span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={maxAccommodationGuests}
-                              className={INPUT}
-                              value={accommodationGuestOverride}
-                              onChange={(e) => {
-                                setAccommodationGuestOverride(Number(e.target.value) || 1)
-                                setQuote(null)
-                              }}
-                            />
-                          </label>
+                        <p className="mt-1 text-base font-semibold">{selectedHotel.name}</p>
+                        {selectedHotel.address?.trim() ? (
+                          <p className="mt-1 text-xs text-muted-foreground">{selectedHotel.address}</p>
                         ) : null}
                       </div>
-
-                      {recommendedStayLabel ? (
-                        <p className="text-sm text-muted-foreground">
-                          Suggested stay: {recommendedNights} night
-                          {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
-                        </p>
-                      ) : null}
-
-                      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 size-4 rounded border-border"
-                          checked={extraNightAfter}
-                          onChange={(e) => {
-                            setExtraNightAfter(e.target.checked)
-                            setQuote(null)
-                          }}
-                        />
-                        <span className="text-sm">Stay one extra night after the event</span>
-                      </label>
-
-                      {showRooms ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <label className="block space-y-1.5">
-                            <span className="text-sm font-medium">{copy.nightsLabel}</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={60}
-                              className={INPUT}
-                              value={nights}
-                              onChange={(e) => {
-                                setNights(Number(e.target.value))
-                                setQuote(null)
-                              }}
-                            />
-                          </label>
-                          <label className="block space-y-1.5">
-                            <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
-                            <select
-                              className={INPUT}
-                              value={roomTypeKey}
-                              onChange={(e) => {
-                                patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
-                                patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
-                              }}
-                            >
-                              {selectedHotel.pricing.roomTypes.map((room) => (
-                                <option key={room.key} value={room.key}>
-                                  {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / person / night
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                      ) : null}
-
-                      {showPackages && availablePackages.length > 0 ? (
-                        <PackageSelectionCards
-                          packages={availablePackages}
-                          packagesRequired={packagesRequired}
-                          packageDealKey={packageDealKey}
-                          activePackageUnits={activePackageUnits}
-                          accommodationGuests={accommodationGuests}
-                          displayCurrency={displayCurrency}
-                          suggestions={packageSuggestions}
-                          recommendedNights={recommendedNights}
-                          recommendedLabel={recommendedStayLabel}
-                          onSelectPackage={selectPackageForGuests}
-                          onApplyPlan={applyPackagePlan}
-                          onClearPackage={() => {
-                            setSelections((s) => {
-                              const next: TBookSelections = { ...s }
-                              delete next[PACKAGE_DEAL_SELECTION_KEY]
-                              delete next[PACKAGE_UNITS_SELECTION_KEY]
-                              return next
-                            })
-                            setNights(recommendedNights)
-                            setQuote(null)
-                          }}
-                        />
-                      ) : null}
-
-                      {extrasSection ? (
-                        <div className="space-y-3 rounded-xl border border-border p-4">
-                          <div>
-                            <p className="text-sm font-semibold">{extrasSection.label}</p>
-                            {extrasSection.description ? (
-                              <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
-                            ) : null}
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {extrasSection.options.map((option) => (
-                              <BookingOptionField
-                                key={option.key}
-                                option={option}
-                                value={selectionOptionValue(selections, option.key)}
-                                visible={optionVisible(option, selections)}
-                                onChange={(v) => patchSelection(option.key, v)}
-                                inputClassName={INPUT}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : selectedHotel.pricing.addonGroups?.map((group) => (
-                        <div key={group.key} className="space-y-3 rounded-xl border border-border p-4">
-                          <p className="text-sm font-semibold">{group.label}</p>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {group.options.map((option) => (
-                              <BookingOptionField
-                                key={option.key}
-                                option={option}
-                                value={selectionOptionValue(selections, option.key)}
-                                visible={optionVisible(option, selections)}
-                                onChange={(v) => patchSelection(option.key, v)}
-                                inputClassName={INPUT}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+                        onClick={() => {
+                          setSelectedHotelId(null)
+                          setSelections({})
+                          setQuote(null)
+                        }}
+                      >
+                        Change hotel
+                      </button>
                     </div>
-                  ) : null}
-                </>
+                    {selectedHotel.gallery?.[0] ? (
+                      <div className="mt-3 overflow-hidden rounded-lg bg-muted">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={mediaImageSrc(selectedHotel.gallery[0]) || PLACEHOLDER_IMAGE}
+                          alt=""
+                          className="aspect-[21/9] w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = PLACEHOLDER_IMAGE
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mt-3 flex aspect-[21/9] items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <BedDouble className="size-8" aria-hidden />
+                      </div>
+                    )}
+                    {selectedHotel.description?.trim() ? (
+                      <div className="mt-3 text-sm text-muted-foreground">
+                        <StorefrontRichHtml html={selectedHotel.description} className="text-sm" />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-4 border-t border-border pt-4">
+                    <div>
+                      <h3 className="text-base font-semibold">Choose your room</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Set who needs a room, then pick nights, room type, or a package.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Hotel packages are priced for{" "}
+                        <strong className="text-foreground">{accommodationGuests}</strong> guest
+                        {accommodationGuests === 1 ? "" : "s"}
+                        {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                          ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
+                          : ""}
+                        .
+                      </p>
+                      <p className="text-sm font-medium">Who needs a room?</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                            accommodationNeed === "all"
+                              ? "border-primary bg-primary/10 font-medium"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                          aria-pressed={accommodationNeed === "all"}
+                          onClick={() => {
+                            setAccommodationNeed("all")
+                            setQuote(null)
+                          }}
+                        >
+                          Everyone ({maxAccommodationGuests})
+                        </button>
+                        <button
+                          type="button"
+                          className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                            accommodationNeed === "some"
+                              ? "border-primary bg-primary/10 font-medium"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                          aria-pressed={accommodationNeed === "some"}
+                          onClick={() => {
+                            setAccommodationNeed("some")
+                            setAccommodationGuestOverride(
+                              Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride))
+                            )
+                            setQuote(null)
+                          }}
+                        >
+                          Some people only
+                        </button>
+                      </div>
+                      {accommodationNeed === "some" ? (
+                        <label className="block max-w-xs space-y-1.5">
+                          <span className="text-sm font-medium">
+                            How many need a room? (max {maxAccommodationGuests})
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={maxAccommodationGuests}
+                            className={INPUT}
+                            value={accommodationGuestOverride}
+                            onChange={(e) => {
+                              setAccommodationGuestOverride(Number(e.target.value) || 1)
+                              setQuote(null)
+                            }}
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+
+                    {recommendedStayLabel ? (
+                      <p className="text-sm text-muted-foreground">
+                        Suggested stay: {recommendedNights} night
+                        {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
+                      </p>
+                    ) : null}
+
+                    <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-4 rounded border-border"
+                        checked={extraNightAfter}
+                        onChange={(e) => {
+                          setExtraNightAfter(e.target.checked)
+                          setQuote(null)
+                        }}
+                      />
+                      <span className="text-sm">Stay one extra night after the event</span>
+                    </label>
+
+                    {showRooms ? (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block space-y-1.5">
+                          <span className="text-sm font-medium">{copy.nightsLabel}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={60}
+                            className={INPUT}
+                            value={nights}
+                            onChange={(e) => {
+                              setNights(Number(e.target.value))
+                              setQuote(null)
+                            }}
+                          />
+                        </label>
+                        <label className="block space-y-1.5">
+                          <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
+                          <select
+                            className={INPUT}
+                            value={roomTypeKey}
+                            onChange={(e) => {
+                              patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
+                              patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
+                            }}
+                          >
+                            {selectedHotel.pricing.roomTypes.map((room) => (
+                              <option key={room.key} value={room.key}>
+                                {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / person / night
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {showPackages && availablePackages.length > 0 ? (
+                      <PackageSelectionCards
+                        packages={availablePackages}
+                        packagesRequired={packagesRequired}
+                        packageDealKey={packageDealKey}
+                        activePackageUnits={activePackageUnits}
+                        accommodationGuests={accommodationGuests}
+                        displayCurrency={displayCurrency}
+                        suggestions={packageSuggestions}
+                        recommendedNights={recommendedNights}
+                        recommendedLabel={recommendedStayLabel}
+                        onSelectPackage={selectPackageForGuests}
+                        onApplyPlan={applyPackagePlan}
+                        onClearPackage={() => {
+                          setSelections((s) => {
+                            const next: TBookSelections = { ...s }
+                            delete next[PACKAGE_DEAL_SELECTION_KEY]
+                            delete next[PACKAGE_UNITS_SELECTION_KEY]
+                            return next
+                          })
+                          setNights(recommendedNights)
+                          setQuote(null)
+                        }}
+                      />
+                    ) : null}
+
+                    {extrasSection ? (
+                      <div className="space-y-3 rounded-xl border border-border p-4">
+                        <div>
+                          <p className="text-sm font-semibold">{extrasSection.label}</p>
+                          {extrasSection.description ? (
+                            <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
+                          ) : null}
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {extrasSection.options.map((option) => (
+                            <BookingOptionField
+                              key={option.key}
+                              option={option}
+                              value={selectionOptionValue(selections, option.key)}
+                              visible={optionVisible(option, selections)}
+                              onChange={(v) => patchSelection(option.key, v)}
+                              inputClassName={INPUT}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : selectedHotel.pricing.addonGroups?.map((group) => (
+                      <div key={group.key} className="space-y-3 rounded-xl border border-border p-4">
+                        <p className="text-sm font-semibold">{group.label}</p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {group.options.map((option) => (
+                            <BookingOptionField
+                              key={option.key}
+                              option={option}
+                              value={selectionOptionValue(selections, option.key)}
+                              visible={optionVisible(option, selections)}
+                              onChange={(v) => patchSelection(option.key, v)}
+                              inputClassName={INPUT}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : null}
             </>
           ) : (
@@ -1154,7 +1257,7 @@ export function TBookBookingWizard({
                       ? `${selectedHotel.name} · ${accommodationGuests} guest${
                           accommodationGuests === 1 ? "" : "s"
                         }`
-                      : "Tickets only"}
+                      : "Entry only"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -1182,57 +1285,25 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {step > 1 ? (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted"
-            onClick={() => {
-              setError(null)
-              if (step === 5) setQuote(null)
-              setStep((s) => s - 1)
-            }}
-            disabled={submitting}
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            {copy.backLabel}
-          </button>
-        ) : (
-          <span />
-        )}
-
-        {step < TOTAL_STEPS ? (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            disabled={submitting || !canProceedCurrentStep}
-            onClick={() => void goNext()}
-          >
-            {step === 4 ? copy.quoteCta : copy.nextLabel}
-            {step === 4 && submitting ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <ArrowRight className="size-4" aria-hidden />
-            )}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            disabled={submitting || !quote}
-            onClick={() => void runBooking()}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {copy.payLoading}
-              </>
-            ) : (
-              copy.payCta
-            )}
-          </button>
-        )}
-      </div>
+      <BookingWizardNav
+        step={step}
+        totalSteps={TOTAL_STEPS}
+        canProceed={step === TOTAL_STEPS ? Boolean(quote) : canProceedCurrentStep}
+        submitting={submitting}
+        backLabel={copy.backLabel}
+        nextLabel={copy.nextLabel}
+        quoteCta={copy.quoteCta}
+        payCta={copy.payCta}
+        payLoading={copy.payLoading}
+        reviewStep={4}
+        onBack={() => {
+          setError(null)
+          if (step === 5) setQuote(null)
+          setStep((s) => s - 1)
+        }}
+        onNext={() => void goNext()}
+        onPay={() => void runBooking()}
+      />
     </div>
   )
 }

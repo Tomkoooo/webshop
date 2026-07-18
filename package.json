@@ -37,7 +37,15 @@
     "test:concurrency:stripe": "vitest run --config vitest.concurrency.config.ts tests/concurrency/stripe-checkout-race.test.ts",
     "test:predeploy": "npm run test:integration && npm run test:concurrency",
     "test:numbered": "vitest run tests/integration/numbered-variant-inventory.integration.test.ts tests/integration/cart-variant-persistence.integration.test.ts && vitest run --config vitest.concurrency.config.ts tests/concurrency/numbered-variant-race.test.ts",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "tbook:backup-db": "node scripts/t-book/backup-database.mjs",
+    "tbook:ensure-api-key": "node scripts/t-book/ensure-test-api-key.mjs",
+    "tbook:dev:wdf": "node scripts/t-book/dev-with-env.mjs world-darts-festival 3101",
+    "tbook:dev:reference": "node scripts/t-book/dev-with-env.mjs reference 3100",
+    "test:tbook:unit": "vitest run tests/unit/t-book-booking-wizard-flow.test.ts tests/unit/t-book-booking-ui-matrix.test.ts tests/unit/t-book-booking-quote-matrix.test.ts tests/unit/t-book-live-matrix-builder.test.ts",
+    "test:tbook:live": "TBOOK_LIVE_SUBMIT=1 vitest run tests/integration/t-book-booking-api.live.test.ts",
+    "test:tbook:service": "TBOOK_ALLOW_LIVE_DB=1 vitest run tests/integration/t-book-booking-service.live.test.ts",
+    "test:tbook": "npm run tbook:ensure-api-key && npm run test:tbook:unit && npm run test:tbook:service && TBOOK_LIVE_BASE_URL=http://localhost:3101 npm run test:tbook:live"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",

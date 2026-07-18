@@ -2,21 +2,21 @@ import type { FooterSettings } from "@wse/sdk/templates/types"
 
 /** Festival footer baseline — independent from shop / KockaKemp defaults. */
 export const wdfFooterDefaults: FooterSettings = {
-  tagline: "A nemzetközi darts fesztivál Budapesten — jegyek, program, díjazás.",
-  quickLinksTitle: "Gyors linkek",
+  tagline: "The international darts festival in Budapest — entries, schedule, and prize money.",
+  quickLinksTitle: "Quick links",
   quickLinks: [
-    { label: "Jegyek & foglalás", href: "/jegyek" },
-    { label: "Helyszín", href: "/#venue" },
-    { label: "Program", href: "/#schedule" },
-    { label: "Díjazás", href: "/#prize-money" },
-    { label: "Kapcsolat", href: "/#contact" },
+    { label: "Entries & booking", href: "/jegyek" },
+    { label: "Venue", href: "/#venue" },
+    { label: "Schedule", href: "/#schedule" },
+    { label: "Prize money", href: "/#prize-money" },
+    { label: "Contact", href: "/#contact" },
   ],
   categoriesTitle: "",
   browseProductsLabel: "",
-  contactTitle: "Kapcsolat",
+  contactTitle: "Contact",
   newsletterLabel: "",
   newsletterPlaceholder: "",
-  copyrightText: "© {year} {brand}. Minden jog fenntartva.",
+  copyrightText: "© {year} {brand}. All rights reserved.",
   socialLinks: [
     { platform: "facebook", enabled: false, url: "" },
     { platform: "instagram", enabled: false, url: "" },

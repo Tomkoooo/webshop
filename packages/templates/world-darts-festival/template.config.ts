@@ -55,13 +55,13 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     version: "1.0.0",
     author: "Webshop Engine",
     description:
-      "Festival landing (World Masters style) with tBook ticket booking, CMS navigation, and organizer contact form.",
+      "Festival landing (World Masters style) with tBook entry booking, CMS navigation, and organizer contact form.",
     screenshots: ["/template-previews/world-darts-festival.svg"],
     capabilities: {
       hasBlog: false,
       staticPages: ["fontos-informaciok"],
       staticPageLabels: {
-        "fontos-informaciok": "Fontos információk",
+        "fontos-informaciok": "Important information",
       },
       restyles: ["home"],
     },

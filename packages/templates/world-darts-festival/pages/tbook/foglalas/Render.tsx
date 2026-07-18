@@ -34,13 +34,13 @@ export function TBookBookingRender({ content }: { content: TBookBookingContent }
       </div>
 
       <div className="space-y-4 rounded-2xl border border-border/60 bg-surface p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-foreground">Foglalás előnézet</h1>
+        <h1 className="text-xl font-semibold text-foreground">Booking preview</h1>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 rounded-xl bg-muted/40 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               <EditableDocText path="guestsLabel" value={c.guestsLabel} />
             </p>
-            <p className="text-sm text-foreground">2 fő</p>
+            <p className="text-sm text-foreground">2 people</p>
           </div>
           <div className="space-y-1.5 rounded-xl bg-muted/40 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -52,7 +52,7 @@ export function TBookBookingRender({ content }: { content: TBookBookingContent }
           </div>
         </div>
         <div className="rounded-xl border border-dashed border-border/60 bg-background/50 p-4 text-sm text-muted-foreground">
-          Űrlap előnézet — az éles oldalon a tBook API vezérli a foglalási folyamatot.
+          Form preview — on the live site the tBook API drives the booking flow.
         </div>
         <div className="flex justify-between gap-3 pt-2">
           <span className="inline-flex min-h-10 items-center rounded-lg border border-border/60 px-4 text-sm text-muted-foreground">

@@ -30,7 +30,7 @@ async function tbookServerFetch(
     return {
       ok: false,
       status: 401,
-      data: { error: "A tBook API kulcs nincs beállítva. Add meg a CMS-ben a főoldal integrációs beállításainál, majd tedd közzé." },
+      data: { error: "The tBook API key is not configured. Set it in the CMS home integration settings, then publish." },
     }
   }
 
@@ -87,7 +87,7 @@ export async function fetchPublicEventDetailForStorefront(
         event: null,
         hotels: [],
         groupBookingOptions: [],
-        error: String(data.error ?? "Esemény nem található"),
+        error: String(data.error ?? "Event not found"),
       }
     }
     return {

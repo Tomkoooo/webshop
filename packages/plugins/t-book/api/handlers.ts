@@ -143,20 +143,24 @@ function errorMessage(err: unknown, fallback: string) {
 async function requireApiKeyGroup(request: Request): Promise<{ groupId: mongoose.Types.ObjectId }> {
   const key = extractApiKeyFromRequest(request)
   if (!key) {
-    throw Object.assign(new Error("Hiányzó API kulcs."), { statusCode: 401 })
+    throw Object.assign(new Error("Missing API key."), { statusCode: 401 })
   }
   const group = await TBookEventService.findGroupByApiKeyHash(hashApiKey(key))
   if (!group) {
-    throw Object.assign(new Error("Érvénytelen vagy visszavont API kulcs."), { statusCode: 401 })
+    throw Object.assign(new Error("Invalid or revoked API key."), { statusCode: 401 })
   }
   return { groupId: group._id as mongoose.Types.ObjectId }
 }
 
 function enforceRateLimit(request: Request, scope: string, limit: number) {
-  const result = checkRateLimit(clientKeyFromRequest(request, scope), limit, 60_000)
+  const envOverride = Number(process.env.TBOOK_RATE_LIMIT_OVERRIDE)
+  const effective =
+    Number.isFinite(envOverride) && envOverride > 0 ? Math.floor(envOverride) : limit
+  const result = checkRateLimit(clientKeyFromRequest(request, scope), effective, 60_000)
   if (!result.allowed) {
-    throw Object.assign(new Error("Túl sok kérés — próbáld újra kicsit később."), {
+    throw Object.assign(new Error("Too many requests — try again shortly."), {
       statusCode: 429,
+      retryAfterSec: result.retryAfterSec,
     })
   }
 }
@@ -210,7 +214,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
         return json({ ok: true, ...result }, 200, request)
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode ?? 400
-        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+        return json({ error: errorMessage(err, "Error") }, statusCode, request)
       }
     }
 
@@ -220,7 +224,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const sessionId = url.searchParams.get("session_id")
       try {
         const pdf = await TBookCheckoutService.downloadInvoiceForGuestCheckout(bookingId, sessionId)
-        if (!pdf) return json({ error: "Számla PDF nem érhető el" }, 404, request)
+        if (!pdf) return json({ error: "Invoice PDF is not available" }, 404, request)
         return new NextResponse(new Uint8Array(pdf), {
           status: 200,
           headers: {
@@ -230,7 +234,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
         })
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode ?? 400
-        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+        return json({ error: errorMessage(err, "Error") }, statusCode, request)
       }
     }
 
@@ -240,7 +244,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const sessionId = url.searchParams.get("session_id")
       try {
         const pdf = await TBookCheckoutService.downloadVouchersForGuestCheckout(bookingId, sessionId)
-        if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404, request)
+        if (!pdf) return json({ error: "Entry PDF is not available" }, 404, request)
         return new NextResponse(new Uint8Array(pdf), {
           status: 200,
           headers: {
@@ -250,7 +254,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
         })
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode ?? 400
-        return json({ error: errorMessage(err, "Hiba") }, statusCode, request)
+        return json({ error: errorMessage(err, "Error") }, statusCode, request)
       }
     }
 
@@ -265,7 +269,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     if (segment === "events" && path[1] && method === "GET" && path.length === 2) {
       const { groupId } = await requireApiKeyGroup(request)
       const detail = await TBookEventService.getPublicEventDetail(groupId, path[1])
-      if (!detail) return json({ error: "Esemény nem található" }, 404, request)
+      if (!detail) return json({ error: "Event not found" }, 404, request)
       return json({ ok: true, ...detail }, 200, request)
     }
 
@@ -321,7 +325,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     return json({ error: "Not found", path }, 404, request)
   } catch (err) {
     const statusCode = (err as { statusCode?: number }).statusCode
-    if (statusCode) return json({ error: errorMessage(err, "Hiba történt") }, statusCode, request)
+    if (statusCode) return json({ error: errorMessage(err, "Something went wrong") }, statusCode, request)
     console.error("[t-book]", err)
     if (err instanceof Error && err.message === "Unauthorized") {
       return json({ error: "Unauthorized" }, 401, request)
@@ -329,7 +333,7 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
     if (err instanceof OrgAuthError) {
       return json({ error: err.message }, err.statusCode, request)
     }
-    return json({ error: errorMessage(err, "Hiba történt") }, 400, request)
+    return json({ error: errorMessage(err, "Something went wrong") }, 400, request)
   }
 }
 
@@ -482,7 +486,7 @@ async function handleTBookAdminApi(
     const authResult = await resolveTBookAdminAuth("event:read")
     const orgId = orgIdFromAuth(authResult)
     const event = await TBookEventService.getEvent(path[1], orgId)
-    if (!event) return json({ error: "Esemény nem található" }, 404)
+    if (!event) return json({ error: "Event not found" }, 404)
     return json({
       ok: true,
       event: serializeEvent(event),
@@ -718,7 +722,7 @@ async function handleTBookAdminApi(
     const orgId = orgIdFromAuth(authResult)
     const { downloadBookingInvoicePdf } = await import("../services/invoice-service")
     const pdf = await downloadBookingInvoicePdf(path[1], orgId)
-    if (!pdf) return json({ error: "Számla PDF nem érhető el" }, 404)
+    if (!pdf) return json({ error: "Invoice PDF is not available" }, 404)
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {
@@ -794,7 +798,7 @@ async function handleTBookAdminApi(
     const orgId = orgIdFromAuth(authResult)
     const { getVoucherPdfById } = await import("../services/voucher-service")
     const pdf = await getVoucherPdfById(path[1], orgId)
-    if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404)
+    if (!pdf) return json({ error: "Entry PDF is not available" }, 404)
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {
@@ -809,7 +813,7 @@ async function handleTBookAdminApi(
     const orgId = orgIdFromAuth(authResult)
     const { getVoucherPdfForBooking } = await import("../services/voucher-service")
     const pdf = await getVoucherPdfForBooking(path[2], orgId)
-    if (!pdf) return json({ error: "Jegy PDF nem érhető el" }, 404)
+    if (!pdf) return json({ error: "Entry PDF is not available" }, 404)
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {

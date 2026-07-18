@@ -21,7 +21,7 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
             <p><strong>Amount paid:</strong> {{total}}</p>
           </div>
           <p>Booking ID: {{bookingId}}</p>
-          <p style="font-size:12px;color:#666;">This is an automated message. Your invoice will be sent in a separate email. Entry ticket PDF(s) will arrive in another email.</p>
+          <p style="font-size:12px;color:#666;">This is an automated message. Your invoice will be sent in a separate email. Entry PDF(s) will arrive in another email.</p>
         </div>
       `,
       description:
@@ -43,12 +43,12 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
       type: "t_book_voucher_delivery",
       pluginId: "t-book",
       tags: ["t-book", "transactional", "voucher"],
-      subject: `${brandName} — entry ticket ({{eventName}})`,
+      subject: `${brandName} — entry ({{eventName}})`,
       body: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1>Your entry ticket(s)</h1>
+          <h1>Your entries</h1>
           <p>Dear {{customerName}},</p>
-          <p>Please find attached your entry ticket(s) for <strong>{{eventName}}</strong> ({{voucherCount}}).</p>
+          <p>Please find attached your entry PDF(s) for <strong>{{eventName}}</strong> ({{voucherCount}}).</p>
           <div style="background:#f4f4f4;padding:15px;margin:20px 0;">
             <p><strong>Event:</strong> {{eventName}}</p>
             <p><strong>Guests:</strong> {{guests}}</p>
@@ -58,7 +58,7 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
           <p style="font-size:12px;color:#666;">This is an automated message. Please do not reply to this email.</p>
         </div>
       `,
-      description: "tBook plugin — entry ticket PDF attachment after successful payment.",
+      description: "tBook plugin — entry PDF attachment after successful payment.",
       variables: [
         "customerName",
         "customerEmail",

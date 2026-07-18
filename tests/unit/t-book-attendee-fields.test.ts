@@ -22,7 +22,7 @@ describe("attendee fields", () => {
         },
       },
     ])
-    expect(issues.some((issue) => issue.message.includes("e-mail"))).toBe(true)
+    expect(issues.some((issue) => issue.message.includes("email"))).toBe(true)
   })
 
   it("normalizes attendee payload values", () => {

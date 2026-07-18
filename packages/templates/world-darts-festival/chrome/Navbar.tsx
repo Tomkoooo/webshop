@@ -11,9 +11,9 @@ import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
 
 const FALLBACK_NAV: ChromeNavItem[] = [
-  { type: "link", label: "Főoldal", href: "/" },
-  { type: "link", label: "Jegyek", href: "/jegyek" },
-  { type: "link", label: "Kapcsolat", href: "/#contact" },
+  { type: "link", label: "Home", href: "/" },
+  { type: "link", label: "Entries", href: "/jegyek" },
+  { type: "link", label: "Contact", href: "/#contact" },
 ]
 
 function NavDropdown({
@@ -264,7 +264,7 @@ export function Navbar({
             "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border p-2 lg:hidden",
             isHome && !cmsChromePreview ? "border-white/25 bg-black/20 text-foreground" : "border-border"
           )}
-          aria-label={mobileOpen ? "Menü bezárása" : "Menü megnyitása"}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           aria-controls={mobilePanelId}
           onClick={() => setMobileOpen((v) => !v)}
@@ -277,13 +277,13 @@ export function Navbar({
         <>
           <button
             type="button"
-            aria-label="Menü bezárása"
+            aria-label="Close menu"
             className="fixed inset-0 top-[57px] z-40 bg-black/50 lg:hidden"
             onClick={closeMobile}
           />
           <nav
             id={mobilePanelId}
-            aria-label="Mobil navigáció"
+            aria-label="Mobile navigation"
             className="relative z-50 max-h-[calc(100dvh-57px)] overflow-y-auto border-t border-border/60 bg-background px-4 py-4 text-foreground lg:hidden"
           >
             <div className="flex flex-col gap-2">

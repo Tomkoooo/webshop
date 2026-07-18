@@ -107,7 +107,7 @@ async function tbookFetch<T>(
 ): Promise<T> {
   const key = normalizeTBookApiKey(apiKey)
   if (!key) {
-    throw new Error("A tBook API kulcs üres vagy érvénytelen.")
+    throw new Error("The tBook API key is empty or invalid.")
   }
 
   const base = apiBase?.replace(/\/$/, "") ?? TBOOK_SAME_ORIGIN_API_BASE

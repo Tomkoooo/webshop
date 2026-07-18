@@ -188,7 +188,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
 
   const body = copy.successBody.replace("{bookingId}", bookingId ?? "—")
   const backHref = returnTo?.trim() || checkout?.returnBaseUrl?.trim() || "/jegyek"
-  const backLabel = backHref.includes("/jegyek") ? "Back to tickets" : copy.successCta
+  const backLabel = backHref.includes("/jegyek") ? "Back to entries" : copy.successCta
   const showInvoiceDownload = Boolean(checkout?.invoiceReady)
   const showVoucherDownload = Boolean(checkout?.vouchersReady)
 
@@ -213,7 +213,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
             >
               <Download className="size-4" aria-hidden />
-              Download tickets (PDF)
+              Download entries (PDF)
             </a>
           ) : null}
           {showInvoiceDownload ? (
@@ -229,7 +229,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
       ) : pollingAssets ? (
         <p className="mt-4 inline-flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3.5 animate-spin" aria-hidden />
-          Preparing tickets and invoice…
+          Preparing entries and invoice…
         </p>
       ) : (
         <p className="mt-4 text-xs text-muted-foreground">

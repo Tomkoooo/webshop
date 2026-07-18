@@ -16,14 +16,14 @@ export type WdfHomeSectionId = (typeof WDF_HOME_SECTION_IDS)[number]
 
 export const WDF_SECTION_LABELS: Record<WdfHomeSectionId, string> = {
   hero: "Hero",
-  festival: "Fesztivál bevezető",
-  infoCards: "Info kártyák",
-  venue: "Helyszín",
-  schedule: "Program",
-  fees: "Nevezési díjak",
-  prizeMoney: "Díjazás",
-  sponsors: "Partnerek",
-  contact: "Kapcsolat",
+  festival: "Festival intro",
+  infoCards: "Info cards",
+  venue: "Venue",
+  schedule: "Schedule",
+  fees: "Entry fees",
+  prizeMoney: "Prize money",
+  sponsors: "Partners",
+  contact: "Contact",
 }
 
 /** DOM anchor ids for in-page nav / footer deep links (`/#prize-money`). */

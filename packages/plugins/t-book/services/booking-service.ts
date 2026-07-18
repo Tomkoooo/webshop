@@ -42,7 +42,7 @@ import { normalizeHotelPricing } from "../lib/hotel-pricing"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error("Érvénytelen azonosító.")
+    throw new Error("Invalid identifier.")
   }
   return new mongoose.Types.ObjectId(id)
 }
@@ -77,7 +77,7 @@ export class TBookBookingService {
     const eventQuery: Record<string, unknown> = { _id: oid(parsed.eventId), status: "active" }
     if (opts?.groupId) eventQuery.groupId = opts.groupId
     const event = await TBookEvent.findOne(eventQuery).lean()
-    if (!event) throw new Error("Esemény nem található vagy nem aktív.")
+    if (!event) throw new Error("Event not found or inactive.")
 
     const group = event.groupId
       ? await TBookEventGroup.findById(event.groupId).lean()
@@ -96,7 +96,7 @@ export class TBookBookingService {
       parsed.accommodationGuests == null ? maxHotelGuests : parsed.accommodationGuests
     if (hotelGuests > maxHotelGuests) {
       throw new Error(
-        `Szállás létszám legfeljebb ${maxHotelGuests} fő lehet (${parsed.guests} belépő).`
+        `Accommodation guests cannot exceed ${maxHotelGuests} (${parsed.guests} entries).`
       )
     }
 
@@ -113,7 +113,7 @@ export class TBookBookingService {
         hotelQuery.eventId = event._id
       }
       const hotel = await TBookHotel.findOne(hotelQuery).lean()
-      if (!hotel) throw new Error("Szállás nem található ehhez az eseményhez.")
+      if (!hotel) throw new Error("Hotel not found for this event.")
 
       const errors = validateHotelSelections(hotel.pricing, selections, hotelGuests)
       if (errors.length > 0) {
@@ -207,7 +207,7 @@ export class TBookBookingService {
       ])
       const usedGuests = taken[0]?.guests ?? 0
       if (usedGuests + parsed.guests > event.capacity) {
-        throw new Error("Nincs elég szabad hely erre az eseményre.")
+        throw new Error("Not enough capacity left for this event.")
       }
     }
 
@@ -506,9 +506,9 @@ export class TBookBookingService {
   ): Promise<void> {
     await dbConnect()
     const booking = await TBookBooking.findById(oid(id))
-    if (!booking) throw new Error("Foglalás nem található.")
+    if (!booking) throw new Error("Booking not found.")
     if (organizationId && booking.organizationId && String(booking.organizationId) !== organizationId) {
-      throw new Error("A foglalás nem tartozik ehhez a szervezethez.")
+      throw new Error("Booking does not belong to this organization.")
     }
     const allowed = VALID_STATUS_TRANSITIONS[booking.status] ?? []
     if (!allowed.includes(nextStatus)) {

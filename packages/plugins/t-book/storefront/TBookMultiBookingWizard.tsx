@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
@@ -31,6 +31,7 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
+import { BookingWizardNav } from "./BookingWizardNav"
 import { PackageSelectionCards } from "./PackageSelectionCards"
 import {
   BookingBillingForm,
@@ -419,7 +420,7 @@ function HotelLodgingPanel({
             onQuoteReset()
           }}
         >
-          <span className="block text-sm font-semibold">No hotel — tickets only</span>
+          <span className="block text-sm font-semibold">No hotel — entry only</span>
           <span className="mt-1 block text-xs text-muted-foreground">
             Entry fees only for this stay.
           </span>
@@ -1039,9 +1040,9 @@ export function TBookMultiBookingWizard({
   })
 
   const step4Valid =
-    customer.name.trim() &&
-    customer.email.trim() &&
-    customer.phone.trim() &&
+    Boolean(customer.name.trim()) &&
+    Boolean(customer.email.trim()) &&
+    Boolean(customer.phone.trim()) &&
     isBillingFormValid(billing)
 
   const canProceedCurrentStep =
@@ -1120,7 +1121,7 @@ export function TBookMultiBookingWizard({
     }
     if (step === 2) {
       if (!step2Valid) {
-        setError("Please complete your hotel choices, or choose tickets only for each stay.")
+        setError("Please complete your hotel choices, or choose entry only for each stay.")
         return
       }
       setError(null)
@@ -1216,7 +1217,7 @@ export function TBookMultiBookingWizard({
           <div>
             <h2 className="text-lg font-semibold">How many entries?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Set how many tickets you need for each event. You can add hotels on the next step.
+              Set how many entries you need for each event. You can add hotels on the next step.
             </p>
           </div>
 
@@ -1671,7 +1672,7 @@ export function TBookMultiBookingWizard({
                     }
                   }
 
-                  let hotelLabel = "Tickets only"
+                  let hotelLabel = "Entry only"
                   if (isSharedStay) {
                     hotelLabel =
                       lodgingMode === "clusters"
@@ -1727,60 +1728,28 @@ export function TBookMultiBookingWizard({
         </section>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {step > 1 ? (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted"
-            onClick={() => {
-              setError(null)
-              if (step === 5) {
-                setQuote(null)
-                setEntryQuotes([])
-              }
-              setStep((s) => s - 1)
-            }}
-            disabled={submitting}
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            {copy.backLabel}
-          </button>
-        ) : (
-          <span />
-        )}
-
-        {step < TOTAL_STEPS ? (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            disabled={submitting || !canProceedCurrentStep}
-            onClick={() => void goNext()}
-          >
-            {step === 4 ? copy.quoteCta : copy.nextLabel}
-            {step === 4 && submitting ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <ArrowRight className="size-4" aria-hidden />
-            )}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            disabled={submitting || !quote}
-            onClick={() => void runBooking()}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {copy.payLoading}
-              </>
-            ) : (
-              copy.payCta
-            )}
-          </button>
-        )}
-      </div>
+      <BookingWizardNav
+        step={step}
+        totalSteps={TOTAL_STEPS}
+        canProceed={step === TOTAL_STEPS ? Boolean(quote) : canProceedCurrentStep}
+        submitting={submitting}
+        backLabel={copy.backLabel}
+        nextLabel={copy.nextLabel}
+        quoteCta={copy.quoteCta}
+        payCta={copy.payCta}
+        payLoading={copy.payLoading}
+        reviewStep={4}
+        onBack={() => {
+          setError(null)
+          if (step === 5) {
+            setQuote(null)
+            setEntryQuotes([])
+          }
+          setStep((s) => s - 1)
+        }}
+        onNext={() => void goNext()}
+        onPay={() => void runBooking()}
+      />
     </div>
   )
 }

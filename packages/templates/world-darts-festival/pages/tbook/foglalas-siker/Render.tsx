@@ -21,7 +21,7 @@ export function TBookSuccessRender({ content }: { content: TBookSuccessContent }
         <EditableDocText path="successCta" value={c.successCta} />
       </span>
       <p className="mt-8 text-xs text-muted-foreground">
-        Előnézet — sikeres foglalás állapot. Hibaállapot szövegei a jobb oldali panelen szerkeszthetők.
+        Preview — successful booking state. Error-state copy can be edited in the side panel.
       </p>
     </div>
   )

@@ -70,7 +70,7 @@ export function resolveBookingCurrency(
   const hotel = normalizeTBookCurrency(hotelCurrency)
   if (event !== hotel) {
     throw new Error(
-      `A jegy (${event}) és a szállás (${hotel}) pénzneme nem egyezik. Állítsd ugyanarra mindkettőn.`
+      `Entry currency (${event}) and hotel currency (${hotel}) do not match. Set both to the same currency.`
     )
   }
   return event

@@ -328,7 +328,7 @@ async function drawVoucherPage(
   if (enabled("footer") || layout.showPageNumbers) {
     const shortToken = input.token.slice(0, 8).toUpperCase()
     const footerLines = [
-      `Jegykód: ${shortToken}`,
+      `Entry code: ${shortToken}`,
       `Foglalás: ${input.bookingId.slice(-8).toUpperCase()}`,
     ]
     if (layout.showPageNumbers) {
