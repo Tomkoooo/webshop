@@ -70,8 +70,9 @@ export const homeDefaultContent: HomeContent = {
     accessBody:
       "Conveniently situated near the city center, the hall is easily accessible by public transport, including buses, trams, and the metro.",
     mapLabel: "Show me on the map",
-    mapHref: "https://maps.google.com",
+    mapHref: "https://maps.google.com/?q=Gerevich+Aladár+National+Sports+Hall+Budapest",
     mapEmbedUrl: "",
+    image: "/generic-hero.svg",
   },
   schedule: {
     heading: "Schedule",
@@ -141,10 +142,10 @@ export const homeDefaultContent: HomeContent = {
   contact: {
     heading: "Contact the organizer",
     body: "Questions about registration, tickets, or the event? Send us a message and we'll get back to you as soon as possible.",
-    nameLabel: "Név",
+    nameLabel: "Name",
     emailLabel: "Email",
-    messageLabel: "Üzenet",
-    sendButtonLabel: "Üzenet küldése",
+    messageLabel: "Message",
+    sendButtonLabel: "Send message",
   },
   meta: {
     seoTitle: "World Darts Festival",

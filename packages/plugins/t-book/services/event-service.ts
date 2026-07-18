@@ -525,17 +525,46 @@ export class TBookEventService {
         ),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
-      hotels: activeHotels.map((h) => ({
-        id: String(h._id),
-        name: h.name,
-        description: h.description,
-        address: h.address,
-        distanceFromVenueKm: h.distanceFromVenueKm ?? null,
-        gallery: h.gallery,
-        currency: normalizeTBookCurrency(h.currency),
-        registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
-        pricing: normalizeHotelPricing(h.pricing),
-      })),
+      hotels: await Promise.all(
+        activeHotels.map(async (h) => {
+          const pricing = normalizeHotelPricing(h.pricing)
+          const packages = pricing.packages ?? []
+          const limited = packages.some(
+            (pkg) => pkg.inventoryUnits != null && pkg.inventoryUnits >= 0
+          )
+          if (!limited) {
+            return {
+              id: String(h._id),
+              name: h.name,
+              description: h.description,
+              address: h.address,
+              distanceFromVenueKm: h.distanceFromVenueKm ?? null,
+              gallery: h.gallery,
+              currency: normalizeTBookCurrency(h.currency),
+              registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
+              pricing,
+            }
+          }
+          const { countSoldPackageUnitsForHotel, withPackageRemainingUnits } = await import(
+            "../lib/package-inventory"
+          )
+          const sold = await countSoldPackageUnitsForHotel(h._id, packages)
+          return {
+            id: String(h._id),
+            name: h.name,
+            description: h.description,
+            address: h.address,
+            distanceFromVenueKm: h.distanceFromVenueKm ?? null,
+            gallery: h.gallery,
+            currency: normalizeTBookCurrency(h.currency),
+            registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
+            pricing: {
+              ...pricing,
+              packages: withPackageRemainingUnits(packages, sold),
+            },
+          }
+        })
+      ),
     }
   }
 

@@ -32,6 +32,9 @@ export type ContactInquiryFormLabels = {
   messageLabel?: React.ReactNode
   sendButtonLabel?: string
   recipientLabel?: React.ReactNode
+  namePlaceholder?: string
+  emailPlaceholder?: string
+  messagePlaceholder?: string
 }
 
 type Props = ContactInquiryFormLabels & {
@@ -68,7 +71,10 @@ export function ContactInquiryForm({
   emailLabel = "Email Address",
   messageLabel = "Message",
   sendButtonLabel = "SEND MESSAGE",
-  recipientLabel = "Címzett",
+  recipientLabel = "Recipient",
+  namePlaceholder = "John Smith",
+  emailPlaceholder = "name@example.com",
+  messagePlaceholder = "Write your message here…",
   cmsSendButton,
 }: Props) {
   const showRecipientPicker = contactEmails.length > 1
@@ -157,7 +163,7 @@ export function ContactInquiryForm({
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Lorem Ipsum"
+                  placeholder={namePlaceholder}
                   {...field}
                   className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40 text-foreground placeholder:text-muted-foreground"
                 />
@@ -176,7 +182,7 @@ export function ContactInquiryForm({
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="name@example.com"
+                  placeholder={emailPlaceholder}
                   {...field}
                   className="h-14 bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40 text-foreground placeholder:text-muted-foreground"
                 />
@@ -195,7 +201,7 @@ export function ContactInquiryForm({
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Lorem ipsum dolor sit amet..."
+                  placeholder={messagePlaceholder}
                   {...field}
                   className="min-h-[160px] bg-surface border-border rounded-none focus-visible:ring-primary-foreground/40"
                 />

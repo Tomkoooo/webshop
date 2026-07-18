@@ -81,11 +81,13 @@ export function PackageSelectionCards({
   const packagesForPeriod =
     selectedNights != null ? packages.filter((p) => p.nights === selectedNights) : packages
 
-  const cardClass = (selected: boolean) =>
+  const cardClass = (selected: boolean, disabled = false) =>
     `rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-      selected
-        ? "border-primary bg-primary/10 shadow-sm"
-        : "border-border bg-surface hover:border-primary/40 hover:bg-muted/30"
+      disabled
+        ? "cursor-not-allowed border-border/60 bg-muted/20 opacity-60"
+        : selected
+          ? "border-primary bg-primary/10 shadow-sm"
+          : "border-border bg-surface hover:border-primary/40 hover:bg-muted/30"
     }`
 
   return (
@@ -188,6 +190,9 @@ export function PackageSelectionCards({
           ) : null}
           {packagesForPeriod.map((pkg) => {
             const unitsNeeded = packageUnitsForGuests(pkg, accommodationGuests)
+            const remaining =
+              typeof pkg.remainingUnits === "number" ? pkg.remainingUnits : null
+            const soldOut = remaining != null && remaining < unitsNeeded
             const selected =
               (packageDealKey === pkg.key && !activePackageUnits) ||
               (activePackageUnits != null &&
@@ -198,7 +203,8 @@ export function PackageSelectionCards({
               <button
                 key={pkg.key}
                 type="button"
-                className={cardClass(selected)}
+                className={cardClass(selected, soldOut)}
+                disabled={soldOut}
                 onClick={() => onSelectPackage(pkg.key, pkg.nights)}
               >
                 <p className="text-sm font-semibold">{pkg.label}</p>
@@ -215,6 +221,17 @@ export function PackageSelectionCards({
                   {unitsNeeded}× room{unitsNeeded === 1 ? "" : "s"} ={" "}
                   {formatHuf(lineTotal, displayCurrency)}
                 </p>
+                {remaining != null ? (
+                  <p
+                    className={`mt-1 text-xs ${
+                      soldOut ? "font-medium text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {soldOut
+                      ? "Sold out"
+                      : `${remaining} room${remaining === 1 ? "" : "s"} left`}
+                  </p>
+                ) : null}
               </button>
             )
           })}

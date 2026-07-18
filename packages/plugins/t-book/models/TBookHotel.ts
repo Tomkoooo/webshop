@@ -78,6 +78,7 @@ const PackageDealSchema = new Schema(
     nights: { type: Number, required: true, min: 1 },
     priceHuf: { type: Number, required: true, min: 0 },
     maxGuests: { type: Number, default: null, min: 1, max: 50 },
+    inventoryUnits: { type: Number, default: null, min: 0, max: 10000 },
     roomTypeKey: { type: String, default: null },
     sortOrder: { type: Number, default: 0 },
   },

@@ -130,13 +130,34 @@ export function PackageDealsEditor({
                   ✕
                 </Button>
               </div>
-              <p className="col-span-12 text-xs text-muted-foreground -mt-1">
+              <div className="col-span-3">
+                <TBookField label="Szobák (allotment)">
+                  <TBookInput
+                    type="number"
+                    min={0}
+                    max={10000}
+                    placeholder="Üres = korlátlan"
+                    title="Ennyi szoba/csomag egység foglalható összesen (a szállodától kapott keret)."
+                    value={pkg.inventoryUnits ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim()
+                      update(index, {
+                        inventoryUnits: raw === "" ? null : Math.max(0, Number(raw) || 0),
+                      })
+                    }}
+                  />
+                </TBookField>
+              </div>
+              <p className="col-span-9 text-xs text-muted-foreground pb-1">
                 {pkg.nights} éj · {formatMoney(pkg.priceHuf, currency)} ({priceBasisLabel})
                 {pkg.maxGuests != null && pkg.maxGuests > 0
                   ? ` · ${pkg.maxGuests === 1 ? "egyágyas" : pkg.maxGuests === 2 ? "kétágyas" : `${pkg.maxGuests} fő/csomag`}`
                   : packagesOnly
                     ? " · egyágyas (alapértelmezett)"
                     : ""}
+                {pkg.inventoryUnits != null
+                  ? ` · max ${pkg.inventoryUnits} szoba`
+                  : " · korlátlan szobaszám"}
               </p>
             </div>
           ))}
@@ -155,6 +176,7 @@ export function PackageDealsEditor({
               nights: 3,
               priceHuf: 0,
               maxGuests: packagesOnly ? 1 : null,
+              inventoryUnits: null,
               roomTypeKey: null,
               sortOrder: packages.length,
             },

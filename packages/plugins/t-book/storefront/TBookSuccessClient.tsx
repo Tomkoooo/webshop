@@ -235,7 +235,9 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
         <p className="mt-4 text-xs text-muted-foreground">
           {checkout?.invoiceStatus === "failed"
             ? "Invoice generation failed — please contact support."
-            : "If downloads do not appear, check your email as well."}
+            : checkout?.invoiceStatus === "none"
+              ? "No invoice was issued for this booking (invoicing is not enabled for this organizer)."
+              : "If downloads do not appear, check your email as well."}
         </p>
       )}
 

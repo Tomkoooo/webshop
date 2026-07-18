@@ -81,6 +81,8 @@ export const homeSchema = z.object({
     mapHref: z.string(),
     /** Google Maps embed URL (`https://www.google.com/maps/embed?...`). */
     mapEmbedUrl: z.string().default(""),
+    /** Venue photo (shown instead of the access text card). */
+    image: z.string().default(""),
   }),
   schedule: z.object({
     heading: z.string(),

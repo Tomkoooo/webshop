@@ -152,9 +152,16 @@ export async function sendOrgTemplatedEmail(opts: {
 
   if (!subject || !body) {
     const template = await EmailTemplate.findOne({ type: opts.templateType }).lean()
-    if (!template) throw new Error(`Email template not found: ${opts.templateType}`)
-    subject = template.subject
-    body = template.body
+    if (template?.subject?.trim() && template?.body?.trim()) {
+      subject = template.subject
+      body = template.body
+    } else {
+      const { buildTBookEmailTemplateSeeds } = await import("./email-templates")
+      const seed = buildTBookEmailTemplateSeeds("tBook").find((t) => t.type === opts.templateType)
+      if (!seed) throw new Error(`Email template not found: ${opts.templateType}`)
+      subject = seed.subject
+      body = seed.body
+    }
   }
 
   const compiledSubject = handlebars.compile(subject)(opts.data)

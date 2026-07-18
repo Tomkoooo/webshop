@@ -7,25 +7,25 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
       type: "t_book_booking_confirmation",
       pluginId: "t-book",
       tags: ["t-book", "transactional", "booking"],
-      subject: `${brandName} — foglalás visszaigazolása ({{eventName}})`,
+      subject: `${brandName} — booking confirmation ({{eventName}})`,
       body: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1>Köszönjük a foglalást!</h1>
-          <p>Kedves {{customerName}},</p>
-          <p>Megkaptuk a fizetést a következő foglaláshoz:</p>
+          <h1>Thank you for your booking!</h1>
+          <p>Dear {{customerName}},</p>
+          <p>We have received payment for the following booking:</p>
           <div style="background:#f4f4f4;padding:15px;margin:20px 0;">
-            <p><strong>Esemény:</strong> {{eventName}}</p>
-            <p><strong>Létszám:</strong> {{guests}} fő</p>
-            <p><strong>Szállás:</strong> {{hotelName}}</p>
-            <p><strong>Éjszakák:</strong> {{nights}}</p>
-            <p><strong>Fizetett összeg:</strong> {{total}}</p>
+            <p><strong>Event:</strong> {{eventName}}</p>
+            <p><strong>Guests:</strong> {{guests}}</p>
+            <p><strong>Hotel:</strong> {{hotelName}}</p>
+            <p><strong>Nights:</strong> {{nights}}</p>
+            <p><strong>Amount paid:</strong> {{total}}</p>
           </div>
-          <p>Foglalás azonosító: {{bookingId}}</p>
-          <p style="font-size:12px;color:#666;">Ez egy automatikus üzenet. A számlát külön e-mailben küldjük. A belépőjegy(ek) PDF csatolmányban érkeznek külön e-mailben.</p>
+          <p>Booking ID: {{bookingId}}</p>
+          <p style="font-size:12px;color:#666;">This is an automated message. Your invoice will be sent in a separate email. Entry ticket PDF(s) will arrive in another email.</p>
         </div>
       `,
       description:
-        "tBook plugin — vásárló e-mail sikeres Stripe fizetés után. Nem a webshop order_confirmation sablon.",
+        "tBook plugin — customer email after successful Stripe payment. Not the webshop order_confirmation template.",
       variables: [
         "customerName",
         "customerEmail",
@@ -43,22 +43,22 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
       type: "t_book_voucher_delivery",
       pluginId: "t-book",
       tags: ["t-book", "transactional", "voucher"],
-      subject: `${brandName} — belépőjegy ({{eventName}})`,
+      subject: `${brandName} — entry ticket ({{eventName}})`,
       body: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1>Belépőjegy(ek)</h1>
-          <p>Kedves {{customerName}},</p>
-          <p>Mellékelten küldjük a(z) <strong>{{eventName}}</strong> esemény belépőjegyét ({{voucherCount}} db).</p>
+          <h1>Your entry ticket(s)</h1>
+          <p>Dear {{customerName}},</p>
+          <p>Please find attached your entry ticket(s) for <strong>{{eventName}}</strong> ({{voucherCount}}).</p>
           <div style="background:#f4f4f4;padding:15px;margin:20px 0;">
-            <p><strong>Esemény:</strong> {{eventName}}</p>
-            <p><strong>Létszám:</strong> {{guests}} fő</p>
-            <p><strong>Foglalás azonosító:</strong> {{bookingId}}</p>
+            <p><strong>Event:</strong> {{eventName}}</p>
+            <p><strong>Guests:</strong> {{guests}}</p>
+            <p><strong>Booking ID:</strong> {{bookingId}}</p>
           </div>
-          <p>Az esemény napján mutassa be a PDF-ben található QR-kódot a beléptetésnél. Minden résztvevőnek saját QR-kódja van.</p>
-          <p style="font-size:12px;color:#666;">Ez egy automatikus üzenet. Kérjük, ne válaszoljon erre az e-mailre.</p>
+          <p>Please present the QR code in the PDF at check-in on the event day. Each participant has their own QR code.</p>
+          <p style="font-size:12px;color:#666;">This is an automated message. Please do not reply to this email.</p>
         </div>
       `,
-      description: "tBook plugin — belépőjegy PDF csatolmány sikeres fizetés után.",
+      description: "tBook plugin — entry ticket PDF attachment after successful payment.",
       variables: [
         "customerName",
         "customerEmail",
@@ -72,22 +72,22 @@ export function buildTBookEmailTemplateSeeds(brandName: string): EmailTemplateSe
       type: "t_book_invoice_sent",
       pluginId: "t-book",
       tags: ["t-book", "transactional", "invoice"],
-      subject: `${brandName} — számla ({{eventName}})`,
+      subject: `${brandName} — invoice ({{eventName}})`,
       body: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1>Számla</h1>
-          <p>Kedves {{customerName}},</p>
-          <p>Mellékelten küldjük a(z) <strong>{{eventName}}</strong> foglalásod számláját.</p>
+          <h1>Invoice</h1>
+          <p>Dear {{customerName}},</p>
+          <p>Please find attached the invoice for your <strong>{{eventName}}</strong> booking.</p>
           <div style="background:#f4f4f4;padding:15px;margin:20px 0;">
-            <p><strong>Esemény:</strong> {{eventName}}</p>
-            <p><strong>Fizetett összeg:</strong> {{total}}</p>
-            <p><strong>Foglalás azonosító:</strong> {{bookingId}}</p>
-            <p><strong>Számla azonosító:</strong> {{invoiceId}}</p>
+            <p><strong>Event:</strong> {{eventName}}</p>
+            <p><strong>Amount paid:</strong> {{total}}</p>
+            <p><strong>Booking ID:</strong> {{bookingId}}</p>
+            <p><strong>Invoice ID:</strong> {{invoiceId}}</p>
           </div>
-          <p style="font-size:12px;color:#666;">Ez egy automatikus üzenet. A belépőjegy(ek) külön e-mailben érkeznek.</p>
+          <p style="font-size:12px;color:#666;">This is an automated message. Entry ticket(s) are sent in a separate email.</p>
         </div>
       `,
-      description: "tBook plugin — számla PDF csatolmány sikeres Számlázz.hu kiállítás után.",
+      description: "tBook plugin — invoice PDF attachment after successful Számlázz.hu issue.",
       variables: [
         "customerName",
         "customerEmail",

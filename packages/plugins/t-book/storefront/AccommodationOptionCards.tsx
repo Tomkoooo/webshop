@@ -1,6 +1,7 @@
 "use client"
 
 import { BedDouble, MapPin, Ticket } from "lucide-react"
+import { mediaImageSrc } from "@wse/core/lib/images"
 import type { TBookPublicHotel } from "./tbook-public-api"
 
 type Props = {
@@ -82,6 +83,8 @@ export function AccommodationOptionCards({
         {hotels.map((hotel) => {
           const selected = !ticketOnlySelected && selectedHotelId === hotel.id
           const description = hotel.description?.trim()
+          const gallery = (hotel.gallery ?? []).filter(Boolean).slice(0, 4)
+          const cover = gallery[0]
           return (
             <button
               key={hotel.id}
@@ -90,6 +93,16 @@ export function AccommodationOptionCards({
               aria-pressed={selected}
               onClick={() => onSelectHotel(hotel.id)}
             >
+              {cover ? (
+                <span className="mb-3 block overflow-hidden rounded-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mediaImageSrc(cover)}
+                    alt=""
+                    className="aspect-[16/9] w-full object-cover"
+                  />
+                </span>
+              ) : null}
               <span className="flex items-start gap-3">
                 <span
                   className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg ${
@@ -114,6 +127,19 @@ export function AccommodationOptionCards({
                   ) : null}
                 </span>
               </span>
+              {gallery.length > 1 ? (
+                <span className="mt-3 grid grid-cols-3 gap-1.5" aria-hidden>
+                  {gallery.slice(1).map((src) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={src}
+                      src={mediaImageSrc(src)}
+                      alt=""
+                      className="aspect-[4/3] w-full rounded-md object-cover"
+                    />
+                  ))}
+                </span>
+              ) : null}
             </button>
           )
         })}

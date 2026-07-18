@@ -15,6 +15,18 @@
   z-index: 2;
 }
 
+/* Soft gold wash on mid-page sections so the page stays lit as you scroll. */
+.wdf-storefront .wdf-section-glow::before {
+  content: "";
+  position: absolute;
+  inset: -10% 15% auto 15%;
+  height: min(55%, 280px);
+  background: radial-gradient(ellipse at center, var(--wdf-gold-glow), transparent 72%);
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 0;
+}
+
 .wdf-storefront .wdf-section-divider {
   height: 1px;
   background: linear-gradient(
@@ -92,6 +104,30 @@
   border: 1px solid color-mix(in oklab, var(--theme-border) 75%, var(--theme-primary));
   background: color-mix(in oklab, var(--theme-surface) 90%, transparent);
   backdrop-filter: blur(12px);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+.wdf-tbook-page .wdf-booking-panel legend,
+.wdf-tbook-page .wdf-booking-panel label,
+.wdf-tbook-page .wdf-booking-panel .text-sm {
+  font-size: 1rem;
+}
+
+.wdf-tbook-page .wdf-booking-panel .text-xs {
+  font-size: 0.875rem;
+}
+
+.wdf-tbook-page .wdf-booking-panel input,
+.wdf-tbook-page .wdf-booking-panel select,
+.wdf-tbook-page .wdf-booking-panel textarea,
+.wdf-tbook-page .wdf-booking-panel button {
+  font-size: inherit;
+}
+
+.wdf-tbook-page article.wdf-event-card h2,
+.wdf-tbook-page article.wdf-event-card h3 {
+  font-size: 1.25rem;
 }
 
 .wdf-tbook-page .wdf-step-active {

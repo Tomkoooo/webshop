@@ -129,10 +129,19 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
   const platformEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
   if (!orgSzamlazz && !platformEnabled) {
     // Finalize may have flipped status to pending — clear it so the success page stops waiting.
-    if (booking.invoiceStatus === "pending") {
+    // Common on test purchases when Számlázz.hu is not enabled for the org (and platform flag is off).
+    if (booking.invoiceStatus === "pending" || booking.invoiceStatus === "none" || !booking.invoiceStatus) {
       booking.invoiceStatus = "none"
+      booking.invoiceError =
+        "Invoicing is not configured — enable Számlázz.hu in tBook org settings (or the platform szamlazzInvoicing flag)."
       await booking.save()
     }
+    console.warn(
+      "[t-book] invoice skipped (Számlázz not configured)",
+      bookingId,
+      "orgId=",
+      booking.organizationId ? String(booking.organizationId) : null
+    )
     return
   }
 

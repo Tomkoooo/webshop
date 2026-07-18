@@ -144,7 +144,7 @@ function PrizeMoneyTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-background">
       <div className="border-b border-border bg-muted/30 px-5 py-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-semibold text-primary">
           <EditableDocText path={`${basePath}.title`} value={title} />
         </h3>
         {subtitle || edit.enabled ? (
@@ -152,7 +152,7 @@ function PrizeMoneyTable({
             <EditableDocText
               path={`${basePath}.subtitle`}
               value={subtitle}
-              placeholder="Másodlagos szöveg a táblázat alatt"
+              placeholder="Secondary text under the table"
             />
           </p>
         ) : null}
@@ -162,14 +162,20 @@ function PrizeMoneyTable({
           <thead>
             <tr className="border-b border-border bg-surface">
               {headers.map((header, colIndex) => (
-                <th key={colIndex} className="px-4 py-3 text-left font-semibold">
+                <th
+                  key={colIndex}
+                  className={cn(
+                    "px-4 py-3 text-left font-semibold",
+                    colIndex === 0 && "text-primary"
+                  )}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <EditableDocText path={`${headersPath}.${colIndex}`} value={header} />
                     {edit.enabled && headers.length > 1 ? (
                       <button
                         type="button"
                         className="cms-admin-control shrink-0 rounded px-1 text-xs text-destructive hover:bg-destructive/10"
-                        aria-label="Oszlop törlése"
+                        aria-label="Remove column"
                         onClick={() => removeColumn(colIndex)}
                       >
                         ×
@@ -185,7 +191,13 @@ function PrizeMoneyTable({
             {rows.map((row, rowIndex) => (
               <tr key={rowIndex} className="border-b border-border/60 last:border-0">
                 {row.map((cell, colIndex) => (
-                  <td key={colIndex} className="px-4 py-3 text-muted-foreground">
+                  <td
+                    key={colIndex}
+                    className={cn(
+                      "px-4 py-3",
+                      colIndex === 0 ? "font-medium text-primary" : "text-muted-foreground"
+                    )}
+                  >
                     <EditableDocText path={`${rowsPath}.${rowIndex}.${colIndex}`} value={cell} />
                   </td>
                 ))}
@@ -194,7 +206,7 @@ function PrizeMoneyTable({
                     <button
                       type="button"
                       className="cms-admin-control rounded px-1 text-xs text-destructive hover:bg-destructive/10"
-                      aria-label="Sor törlése"
+                      aria-label="Remove row"
                       onClick={() => removeRow(rowIndex)}
                     >
                       ×
@@ -320,8 +332,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     infoCards: (
-      <section className="py-16">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 md:grid-cols-2">
+      <section className="relative overflow-hidden py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto grid max-w-6xl gap-6 px-4 md:grid-cols-2">
           {c.infoCards.map((card, index) => (
             <article
               key={index}
@@ -372,34 +384,47 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     venue: (
-      <section className="border-y border-border/60 bg-muted/20 py-16">
-        <div className="mx-auto max-w-6xl px-4">
+      <section className="relative overflow-hidden border-y border-border/60 bg-muted/20 py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto max-w-6xl px-4">
           <SectionHeading className="mb-8">
             <EditableDocText path="venue.heading" value={c.venue.heading} />
           </SectionHeading>
           <div className="grid gap-8 lg:grid-cols-2">
-            <div className="space-y-4">
+            <div className="flex min-h-full flex-col space-y-4">
               <h3 className="text-xl font-semibold">
                 <EditableDocText path="venue.name" value={c.venue.name} />
               </h3>
               <p className="text-muted-foreground">
                 <EditableDocText path="venue.body" value={c.venue.body} multiline />
               </p>
+              <div className="mt-auto pt-6">
+                <EditableDocLink
+                  labelPath="venue.mapLabel"
+                  hrefPath="venue.mapHref"
+                  label={c.venue.mapLabel}
+                  href={c.venue.mapHref}
+                  className="inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
+                />
+              </div>
             </div>
-            <div className="space-y-4 rounded-2xl border border-border bg-surface p-6">
-              <h3 className="font-semibold">
-                <EditableDocText path="venue.accessHeading" value={c.venue.accessHeading} />
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                <EditableDocText path="venue.accessBody" value={c.venue.accessBody} multiline />
-              </p>
-              <EditableDocLink
-                labelPath="venue.mapLabel"
-                hrefPath="venue.mapHref"
-                label={c.venue.mapLabel}
-                href={c.venue.mapHref}
-                className="inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline"
-              />
+            <div className="space-y-3">
+              {(c.venue.image || edit.enabled) && (
+                <CmsImage
+                  path="venue.image"
+                  src={c.venue.image}
+                  alt={c.venue.name || "Venue"}
+                  className="overflow-hidden rounded-2xl border border-border"
+                  imageClassName="aspect-[4/3] w-full object-cover"
+                  width={960}
+                  height={720}
+                  usageLabel="Venue photo"
+                />
+              )}
+              {edit.enabled ? (
+                <p className="text-xs text-muted-foreground">
+                  Venue photo replaces the old “Easy access” card. Upload a Gerevich hall image here.
+                </p>
+              ) : null}
             </div>
           </div>
           {c.venue.mapEmbedUrl || edit.enabled ? (
@@ -407,7 +432,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               {edit.enabled ? (
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">
-                    Google Maps beágyazás URL (iframe src)
+                    Google Maps embed URL (iframe src)
                   </p>
                   <EditableDocText
                     path="venue.mapEmbedUrl"
@@ -420,7 +445,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               {c.venue.mapEmbedUrl ? (
                 <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-[21/9] min-h-[240px]">
                   <iframe
-                    title={c.venue.name || "Térkép"}
+                    title={c.venue.name || "Map"}
                     src={c.venue.mapEmbedUrl}
                     className="h-full w-full border-0"
                     loading="lazy"
@@ -435,8 +460,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     schedule: (
-      <section className="py-16">
-        <div className="mx-auto max-w-3xl space-y-6 px-4">
+      <section className="relative overflow-hidden py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto max-w-3xl space-y-6 px-4">
           <SectionHeading>
             <EditableDocText path="schedule.heading" value={c.schedule.heading} />
           </SectionHeading>
@@ -472,8 +497,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     fees: (
-      <section className="border-y border-border/60 bg-surface py-16">
-        <div className="mx-auto max-w-3xl px-4">
+      <section className="relative overflow-hidden border-y border-border/60 bg-surface py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto max-w-3xl px-4">
           <SectionHeading className="mb-8 text-center">
             <EditableDocText path="fees.heading" value={c.fees.heading} />
           </SectionHeading>
@@ -535,8 +560,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     prizeMoney: (
-      <section id="prize-money" className="scroll-mt-24 py-16">
-        <div className="mx-auto max-w-5xl space-y-8 px-4">
+      <section id="prize-money" className="relative scroll-mt-24 overflow-hidden py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto max-w-5xl space-y-8 px-4">
           <div className="text-center">
             <SectionHeading className="mb-3">
               <EditableDocText path="prizeMoney.heading" value={c.prizeMoney.heading} />
@@ -592,8 +617,8 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
       </section>
     ),
     sponsors: (
-      <section className="py-16">
-        <div className="mx-auto max-w-6xl px-4 text-center">
+      <section className="relative overflow-hidden py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto max-w-6xl px-4 text-center">
           <SectionHeading className="mb-10">
             <EditableDocText path="sponsors.heading" value={c.sponsors.heading} />
           </SectionHeading>
@@ -609,57 +634,59 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               }
             />
           ) : null}
-          <div className="flex flex-wrap items-center justify-center gap-6">
-            {c.sponsors.logos.map((logo, index) => (
-              <div
-                key={index}
-                className={
-                  edit.enabled
-                    ? "relative flex min-w-[10rem] flex-col items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-4"
-                    : "relative"
-                }
-              >
-                {edit.enabled ? (
-                  <CmsListItemToolbar
-                    onRemove={() =>
-                      edit.setPath(
-                        "sponsors.logos",
-                        c.sponsors.logos.filter((_, i) => i !== index)
-                      )
-                    }
-                  />
-                ) : null}
-                {/*
-                  Do not use frameClassName/fill here — fill mode without a sized
-                  frame collapses the edit/upload controls on tiny logo rows.
-                */}
-                <CmsImage
-                  path={`sponsors.logos.${index}.image`}
-                  src={logo.image}
-                  alt={logo.name}
-                  className="w-full max-w-[160px]"
-                  imageClassName="mx-auto h-12 w-auto max-w-[160px] object-contain opacity-80 transition hover:opacity-100"
-                  width={160}
-                  height={48}
-                  usageLabel="Sponsor logo"
-                />
-                {edit.enabled ? (
-                  <p className="w-full text-xs text-muted-foreground">
-                    <EditableDocText
-                      path={`sponsors.logos.${index}.name`}
-                      value={logo.name}
+          <div className="mx-auto max-w-5xl rounded-2xl bg-black px-6 py-8 sm:px-10">
+            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-10">
+              {c.sponsors.logos.map((logo, index) => (
+                <div
+                  key={index}
+                  className={
+                    edit.enabled
+                      ? "relative flex min-w-[10rem] flex-col items-center gap-2 p-2"
+                      : "relative"
+                  }
+                >
+                  {edit.enabled ? (
+                    <CmsListItemToolbar
+                      onRemove={() =>
+                        edit.setPath(
+                          "sponsors.logos",
+                          c.sponsors.logos.filter((_, i) => i !== index)
+                        )
+                      }
                     />
-                  </p>
-                ) : null}
-              </div>
-            ))}
+                  ) : null}
+                  {/*
+                    Do not use frameClassName/fill here — fill mode without a sized
+                    frame collapses the edit/upload controls on tiny logo rows.
+                  */}
+                  <CmsImage
+                    path={`sponsors.logos.${index}.image`}
+                    src={logo.image}
+                    alt={logo.name}
+                    className="w-full max-w-[160px]"
+                    imageClassName="mx-auto h-12 w-auto max-w-[160px] object-contain opacity-90 transition hover:opacity-100"
+                    width={160}
+                    height={48}
+                    usageLabel="Sponsor logo"
+                  />
+                  {edit.enabled ? (
+                    <p className="w-full text-xs text-muted-foreground">
+                      <EditableDocText
+                        path={`sponsors.logos.${index}.name`}
+                        value={logo.name}
+                      />
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
     ),
     contact: (
-      <section className="border-t border-border/60 bg-muted/20 py-16">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2">
+      <section className="relative overflow-hidden border-t border-border/60 bg-muted/20 py-16 wdf-section-glow">
+        <div className="relative z-[1] mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-2">
           <div className="space-y-4">
             <SectionHeading>
               <EditableDocText path="contact.heading" value={c.contact.heading} />
@@ -680,7 +707,10 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               messageLabel={
                 <EditableDocText path="contact.messageLabel" value={c.contact.messageLabel} />
               }
-              sendButtonLabel={c.contact.sendButtonLabel}
+              sendButtonLabel={c.contact.sendButtonLabel || "Send message"}
+              namePlaceholder="John Smith"
+              emailPlaceholder="name@example.com"
+              messagePlaceholder="Hi — I have a question about registration…"
               cmsSendButton={
                 edit.enabled
                   ? {

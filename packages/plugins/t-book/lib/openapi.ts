@@ -116,6 +116,12 @@ const packageDeal = {
       description:
         "Max guests per package unit. Server charges priceHuf × ceil(guests / maxGuests). When null/missing, maxGuests defaults to 1 (e.g. 4 guests → 4× single).",
     },
+    inventoryUnits: {
+      type: ["integer", "null"],
+      minimum: 0,
+      description:
+        "Hotel allotment for this package (total bookable room units). Null = unlimited. Remaining stock is enforced at booking time.",
+    },
     roomTypeKey: {
       type: ["string", "null"],
       description: "Ha megadva, csak ehhez a szobatípushoz köthető (both / room_nights mód).",

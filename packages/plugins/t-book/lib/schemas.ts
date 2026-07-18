@@ -105,6 +105,7 @@ export const tBookPackageDealSchema = z.object({
   nights: z.number().int().min(1).max(60),
   priceHuf: z.number().min(0),
   maxGuests: z.number().int().min(1).max(50).nullable().optional(),
+  inventoryUnits: z.number().int().min(0).max(10_000).nullable().optional(),
   roomTypeKey: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
 })

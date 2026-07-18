@@ -84,9 +84,16 @@ export type TBookPackageDeal = {
   priceHuf: number
   /** When set, package price applies per unit; guests need ceil(guests / maxGuests) units. */
   maxGuests?: number | null
+  /**
+   * Total room/package units allotted for this deal (hotel inventory).
+   * Null/undefined = unlimited. Sold units are counted across active bookings.
+   */
+  inventoryUnits?: number | null
   /** When set, package applies only to this room type. */
   roomTypeKey?: string | null
   sortOrder?: number
+  /** Computed for public API — remaining allotment (null = unlimited). */
+  remainingUnits?: number | null
 }
 
 /** Single extras block shown to guests (title + description + option fields). */

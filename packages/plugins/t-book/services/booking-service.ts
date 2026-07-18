@@ -37,6 +37,8 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { validateEligibility } from "../lib/eligibility"
+import { assertPackageInventoryAvailable } from "../lib/package-inventory"
+import { normalizeHotelPricing } from "../lib/hotel-pricing"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -206,6 +208,19 @@ export class TBookBookingService {
       const usedGuests = taken[0]?.guests ?? 0
       if (usedGuests + parsed.guests > event.capacity) {
         throw new Error("Nincs elég szabad hely erre az eseményre.")
+      }
+    }
+
+    if (parsed.hotelId && (quote.accommodationGuests ?? 0) > 0) {
+      const hotel = await TBookHotel.findById(oid(parsed.hotelId)).select("pricing").lean()
+      if (hotel?.pricing) {
+        const pricing = normalizeHotelPricing(hotel.pricing)
+        await assertPackageInventoryAvailable({
+          hotelId: parsed.hotelId,
+          packages: pricing.packages ?? [],
+          selections: selections as TBookSelections,
+          accommodationGuests: quote.accommodationGuests ?? parsed.guests,
+        })
       }
     }
 
