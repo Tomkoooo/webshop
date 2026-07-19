@@ -44,6 +44,7 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
+import { BookingLegalConsent } from "./BookingLegalConsent"
 import { BookingWizardNav } from "./BookingWizardNav"
 import { PackageSelectionCards } from "./PackageSelectionCards"
 import {
@@ -798,6 +799,7 @@ export function TBookMultiBookingWizard({
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "", note: "" })
   const [billing, setBilling] = useState<BillingFormState>(() => emptyBillingForm())
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
   const [entryQuotes, setEntryQuotes] = useState<
     Array<{ eventId: string; eventName: string; quote: TBookPriceQuote }>
   >([])
@@ -1226,6 +1228,10 @@ export function TBookMultiBookingWizard({
   }
 
   const runBooking = async () => {
+    if (!acceptedLegal) {
+      setError("Please accept the Terms and Conditions and Privacy Policy to continue.")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
@@ -1849,6 +1855,14 @@ export function TBookMultiBookingWizard({
               <p className="text-xl font-bold text-primary">
                 {copy.totalLabel}: {formatHuf(quote.totalHuf, displayCurrency)}
               </p>
+              <BookingLegalConsent
+                id="multi-booking-legal-consent"
+                accepted={acceptedLegal}
+                onAcceptedChange={(next) => {
+                  setAcceptedLegal(next)
+                  setError(null)
+                }}
+              />
             </>
           )}
         </section>
@@ -1858,7 +1872,9 @@ export function TBookMultiBookingWizard({
         step={step}
         totalSteps={totalSteps}
         canProceed={
-          currentStepDef?.kind === "review" ? Boolean(quote) : canProceedCurrentStep
+          currentStepDef?.kind === "review"
+            ? Boolean(quote) && acceptedLegal
+            : canProceedCurrentStep
         }
         submitting={submitting}
         backLabel={copy.backLabel}

@@ -41,6 +41,7 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
+import { BookingLegalConsent } from "./BookingLegalConsent"
 import { BookingWizardNav } from "./BookingWizardNav"
 import { PackageSelectionCards } from "./PackageSelectionCards"
 import {
@@ -249,6 +250,7 @@ export function TBookBookingWizard({
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
 
   const stayRecommendation = useMemo(
     () => (event ? recommendStayForEvents([event]) : null),
@@ -494,6 +496,10 @@ export function TBookBookingWizard({
 
   const runBooking = async () => {
     if (!event) return
+    if (!acceptedLegal) {
+      setError("Please accept the Terms and Conditions and Privacy Policy to continue.")
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
@@ -1303,6 +1309,13 @@ export function TBookBookingWizard({
               <p className="text-xl font-bold text-primary">
                 {copy.totalLabel}: {formatHuf(quote.totalHuf, displayCurrency)}
               </p>
+              <BookingLegalConsent
+                accepted={acceptedLegal}
+                onAcceptedChange={(next) => {
+                  setAcceptedLegal(next)
+                  setError(null)
+                }}
+              />
             </>
           )}
         </section>
@@ -1312,7 +1325,9 @@ export function TBookBookingWizard({
         step={step}
         totalSteps={SINGLE_WIZARD_TOTAL_STEPS}
         canProceed={
-          step === SINGLE_WIZARD_TOTAL_STEPS ? Boolean(quote) : canProceedCurrentStep
+          step === SINGLE_WIZARD_TOTAL_STEPS
+            ? Boolean(quote) && acceptedLegal
+            : canProceedCurrentStep
         }
         submitting={submitting}
         backLabel={copy.backLabel}
