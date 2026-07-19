@@ -19,13 +19,21 @@ function ChoicesEditor({
   return (
     <div className="space-y-2">
       {choices.map((choice, index) => (
-        <div key={index} className="flex gap-2">
+        <div key={index} className="flex flex-wrap gap-2">
           <TBookInput
-            className="flex-1"
-            placeholder="Megnevezés (pl. Magyarország)"
+            className="min-w-[10rem] flex-1"
+            placeholder="Megjelenő név (pl. Nő)"
             value={choice.label}
             onChange={(e) =>
               onChange(choices.map((c, i) => (i === index ? { ...c, label: e.target.value } : c)))
+            }
+          />
+          <TBookInput
+            className="w-36"
+            placeholder="Érték (pl. female)"
+            value={choice.value}
+            onChange={(e) =>
+              onChange(choices.map((c, i) => (i === index ? { ...c, value: e.target.value } : c)))
             }
           />
           <Button
@@ -38,6 +46,11 @@ function ChoicesEditor({
           </Button>
         </div>
       ))}
+      <p className="text-xs text-muted-foreground">
+        A <strong className="text-foreground">érték</strong> kerül a foglalásba és az
+        eligibilitás-szabályokba (pl. <code className="text-[11px]">female</code>). A megjelenő név
+        csak a vendégnek látszik.
+      </p>
       <Button
         type="button"
         variant="outline"

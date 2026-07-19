@@ -6,8 +6,7 @@ import {
 } from "@wse/plugin-t-book/lib/booking-wizard-flow"
 
 /**
- * UI matrix: every meaningful hotel-step combination and whether Continue unlocks.
- * Mirrors the progressive stay → hotel → room disclosure in TBookBookingWizard.
+ * UI matrix: hotel step = stay choice + hotel pick; rooms step validates headcount.
  */
 type UiCase = {
   id: string
@@ -18,6 +17,7 @@ type UiCase = {
   accommodationGuests: number
   expectedPhase: HotelStayPhase
   canContinueStep2: boolean
+  canContinueStep3: boolean
 }
 
 const UI_MATRIX: UiCase[] = [
@@ -30,6 +30,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 0,
     expectedPhase: "stay_choice",
     canContinueStep2: true,
+    canContinueStep3: true,
   },
   {
     id: "undecided",
@@ -40,6 +41,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 0,
     expectedPhase: "stay_choice",
     canContinueStep2: false,
+    canContinueStep3: true,
   },
   {
     id: "entry-only",
@@ -50,6 +52,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 0,
     expectedPhase: "stay_choice",
     canContinueStep2: true,
+    canContinueStep3: true,
   },
   {
     id: "wants-hotel-not-picked",
@@ -60,6 +63,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 2,
     expectedPhase: "pick_hotel",
     canContinueStep2: false,
+    canContinueStep3: false,
   },
   {
     id: "hotel-picked-everyone",
@@ -70,6 +74,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 2,
     expectedPhase: "configure_rooms",
     canContinueStep2: true,
+    canContinueStep3: true,
   },
   {
     id: "hotel-picked-some-ok",
@@ -80,6 +85,7 @@ const UI_MATRIX: UiCase[] = [
     accommodationGuests: 1,
     expectedPhase: "configure_rooms",
     canContinueStep2: true,
+    canContinueStep3: true,
   },
   {
     id: "hotel-picked-some-zero",
@@ -89,13 +95,14 @@ const UI_MATRIX: UiCase[] = [
     accommodationNeed: "some",
     accommodationGuests: 0,
     expectedPhase: "configure_rooms",
-    canContinueStep2: false,
+    canContinueStep2: true,
+    canContinueStep3: false,
   },
 ]
 
 describe("t-book booking UI matrix", () => {
   it.each(UI_MATRIX)(
-    "$id → phase $expectedPhase, continue=$canContinueStep2",
+    "$id → phase $expectedPhase, s2=$canContinueStep2, s3=$canContinueStep3",
     (row) => {
       expect(
         resolveHotelStayPhase({
@@ -105,20 +112,20 @@ describe("t-book booking UI matrix", () => {
         })
       ).toBe(row.expectedPhase)
 
-      expect(
-        canProceedBookingStep({
-          step: 2,
-          guests: 2,
-          hotelCount: row.hotelCount,
-          wantsHotel: row.wantsHotel,
-          selectedHotelId: row.selectedHotelId,
-          accommodationNeed: row.accommodationNeed,
-          accommodationGuests: row.accommodationGuests,
-          attendeesValid: true,
-          customerValid: true,
-          hasQuote: false,
-        })
-      ).toBe(row.canContinueStep2)
+      const shared = {
+        guests: 2,
+        hotelCount: row.hotelCount,
+        wantsHotel: row.wantsHotel,
+        selectedHotelId: row.selectedHotelId,
+        accommodationNeed: row.accommodationNeed,
+        accommodationGuests: row.accommodationGuests,
+        attendeesValid: true,
+        customerValid: true,
+        hasQuote: false,
+      }
+
+      expect(canProceedBookingStep({ ...shared, step: 2 })).toBe(row.canContinueStep2)
+      expect(canProceedBookingStep({ ...shared, step: 3 })).toBe(row.canContinueStep3)
     }
   )
 })

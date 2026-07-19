@@ -6,6 +6,7 @@ import type { TBookPublicPackageDeal } from "./tbook-public-api"
 import { formatHuf } from "./tbook-public-api"
 import { packageUnitsForGuests } from "../lib/hotel-pricing"
 import type { PackageCombinationSuggestion } from "../lib/package-optimization"
+import { nearestAvailableNights } from "../lib/stay-recommendation"
 
 type Props = {
   packages: TBookPublicPackageDeal[]
@@ -70,13 +71,16 @@ export function PackageSelectionCards({
     return groups[0]?.[0] ?? null
   })
 
-  // Keep the recommended nights tab selected when packages / recommendation change.
+  // Keep the recommended (or nearest) nights tab selected when packages / recommendation change.
   useEffect(() => {
     if (recommendedNights == null) return
-    if (groups.some(([n]) => n === recommendedNights)) {
-      setSelectedNights(recommendedNights)
-    }
+    const nightOptions = groups.map(([n]) => n)
+    const nearest = nearestAvailableNights(nightOptions, recommendedNights)
+    if (nearest != null) setSelectedNights(nearest)
   }, [recommendedNights, groups])
+
+  const exactRecommendedAvailable =
+    recommendedNights != null && groups.some(([n]) => n === recommendedNights)
 
   const packagesForPeriod =
     selectedNights != null ? packages.filter((p) => p.nights === selectedNights) : packages
@@ -141,6 +145,12 @@ export function PackageSelectionCards({
             </>
           ) : null}
           {recommendedLabel ? <> ({recommendedLabel})</> : null}
+          {!exactRecommendedAvailable && recommendedNights != null && selectedNights != null ? (
+            <span className="mt-1 block text-xs text-muted-foreground">
+              No exact {recommendedNights}-night package is available — showing the closest option (
+              {selectedNights} night{selectedNights === 1 ? "" : "s"}).
+            </span>
+          ) : null}
         </p>
       ) : null}
 

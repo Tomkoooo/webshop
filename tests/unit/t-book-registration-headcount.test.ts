@@ -72,7 +72,35 @@ describe("validateEligibility", () => {
       1
     )
     expect(issues.length).toBeGreaterThan(0)
-    expect(issues[0]?.message).toMatch(/legfeljebb 17/)
+    expect(issues[0]?.message).toMatch(/maximum age is 17/i)
+  })
+
+  it("accepts female aliases against allowed female when choice value is slug", () => {
+    const genderSchema = [
+      {
+        key: "nem",
+        label: "Nem",
+        type: "select" as const,
+        required: true,
+        choices: [
+          { value: "no", label: "Nő" },
+          { value: "ferfi", label: "Férfi" },
+        ],
+      },
+    ]
+    const issues = validateEligibility(
+      {
+        eligibilityPreset: "custom",
+        eligibilityAllowedGenders: ["female"],
+        eligibilityGenderFieldKey: "nem",
+        startDate: "2026-08-01",
+      },
+      [{ fields: { nem: "no" } }],
+      genderSchema,
+      [],
+      null
+    )
+    expect(issues).toHaveLength(0)
   })
 
   it("allows matching custom allowed field values", () => {
@@ -149,6 +177,6 @@ describe("validateEligibility", () => {
       1
     )
     expect(issues.length).toBeGreaterThan(0)
-    expect(issues[0]?.message).toMatch(/legfeljebb 17/)
+    expect(issues[0]?.message).toMatch(/maximum age is 17/i)
   })
 })

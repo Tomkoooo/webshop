@@ -109,11 +109,13 @@ export function AttendeeFieldInput({
   field,
   value,
   onChange,
+  error,
   inputClassName = "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm",
 }: {
   field: TBookPublicAttendeeFieldDef
   value: string | number | undefined
   onChange: (value: string | number) => void
+  error?: string | null
   inputClassName?: string
 }) {
   const id = `attendee-${field.key}`
@@ -123,6 +125,12 @@ export function AttendeeFieldInput({
       {field.required ? " *" : ""}
     </span>
   )
+  const errorId = error ? `${id}-error` : undefined
+  const errorEl = error ? (
+    <span id={errorId} className="block text-xs text-destructive" role="alert">
+      {error}
+    </span>
+  ) : null
 
   if (field.type === "select") {
     return (
@@ -133,6 +141,8 @@ export function AttendeeFieldInput({
           className={inputClassName}
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorId}
         >
           {!field.required ? <option value="">—</option> : null}
           {field.choices?.map((c) => (
@@ -141,6 +151,7 @@ export function AttendeeFieldInput({
             </option>
           ))}
         </select>
+        {errorEl}
       </label>
     )
   }
@@ -162,7 +173,10 @@ export function AttendeeFieldInput({
         onChange={(e) =>
           onChange(field.type === "number" ? Number(e.target.value) : e.target.value)
         }
+        aria-invalid={error ? true : undefined}
+        aria-describedby={errorId}
       />
+      {errorEl}
     </label>
   )
 }

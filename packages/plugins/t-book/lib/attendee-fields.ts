@@ -58,6 +58,27 @@ function uniqueKey(base: string, used: Set<string>, fallback: string): string {
   return key
 }
 
+/** Prefer stable English keys for common gender labels so eligibility rules match. */
+const GENDER_LABEL_VALUES: Record<string, string> = {
+  female: "female",
+  woman: "female",
+  women: "female",
+  "nő": "female",
+  noi: "female",
+  male: "male",
+  man: "male",
+  men: "male",
+  "férfi": "male",
+  ferfi: "male",
+}
+
+function preferredChoiceValue(label: string, currentValue: string | undefined): string | undefined {
+  if (currentValue && /^[a-z0-9_]+$/.test(currentValue) && currentValue.length > 0) {
+    return currentValue
+  }
+  return GENDER_LABEL_VALUES[label.trim().toLowerCase()]
+}
+
 function resolveKey(
   label: string,
   currentKey: string | undefined,
@@ -76,10 +97,18 @@ export function assignAttendeeFieldKeys(fields: TBookAttendeeFieldDef[]): TBookA
   const used = new Set<string>()
   return fields.map((field, index) => {
     const choiceValues = new Set<string>()
-    const choices = field.choices?.map((choice, choiceIndex) => ({
-      ...choice,
-      value: resolveKey(choice.label, choice.value, choiceValues, `option_${choiceIndex + 1}`),
-    }))
+    const choices = field.choices?.map((choice, choiceIndex) => {
+      const preferred = preferredChoiceValue(choice.label, choice.value)
+      return {
+        ...choice,
+        value: resolveKey(
+          preferred ?? choice.label,
+          preferred ?? choice.value,
+          choiceValues,
+          `option_${choiceIndex + 1}`
+        ),
+      }
+    })
     return {
       ...field,
       key: resolveKey(field.label, field.key, used, `field_${index + 1}`),

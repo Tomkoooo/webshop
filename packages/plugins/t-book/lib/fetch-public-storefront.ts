@@ -1,6 +1,10 @@
 import { normalizeTBookApiKey, TBOOK_API_KEY_HEADER } from "./api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "./currency"
-import { resolveTBookServerApiBase } from "./tbook-api-base"
+import {
+  mediaOriginFromApiBase,
+  rewriteTBookPublicMediaPayload,
+} from "./public-media-url"
+import { resolveTBookServerApiBase, isExternalTBookUpstream } from "./tbook-api-base"
 import type {
   TBookPublicEvent,
   TBookPublicHotel,
@@ -42,7 +46,11 @@ async function tbookServerFetch(
     },
     cache: "no-store",
   })
-  const data = (await res.json()) as Record<string, unknown>
+  let data = (await res.json()) as Record<string, unknown>
+  const mediaOrigin = isExternalTBookUpstream(base) ? mediaOriginFromApiBase(base) : null
+  if (mediaOrigin) {
+    data = rewriteTBookPublicMediaPayload(data, mediaOrigin) as Record<string, unknown>
+  }
   return { ok: res.ok, status: res.status, data }
 }
 

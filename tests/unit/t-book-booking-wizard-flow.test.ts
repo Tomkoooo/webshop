@@ -3,6 +3,9 @@ import {
   canProceedBookingStep,
   isStep1Valid,
   isStep2Valid,
+  isStep3RoomsValid,
+  nextWizardStep,
+  prevWizardStep,
   resolveHotelStayPhase,
 } from "@wse/plugin-t-book/lib/booking-wizard-flow"
 
@@ -27,6 +30,18 @@ describe("resolveHotelStayPhase", () => {
         selectedHotelId: "h1",
       })
     ).toBe("configure_rooms")
+  })
+})
+
+describe("wizard step skip helpers", () => {
+  it("skips rooms when entry-only", () => {
+    expect(nextWizardStep(2, false, 2)).toBe(4)
+    expect(prevWizardStep(4, false, 2)).toBe(2)
+  })
+
+  it("enters rooms when hotel selected", () => {
+    expect(nextWizardStep(2, true, 2)).toBe(3)
+    expect(prevWizardStep(4, true, 2)).toBe(3)
   })
 })
 
@@ -62,7 +77,7 @@ describe("booking step validation matrix", () => {
     },
     {
       id: "s2-hotel-no-selection",
-      patch: { step: 2, wantsHotel: true, selectedHotelId: null, accommodationNeed: "all" },
+      patch: { step: 2, wantsHotel: true, selectedHotelId: null },
       expected: false,
     },
     {
@@ -71,15 +86,13 @@ describe("booking step validation matrix", () => {
         step: 2,
         wantsHotel: true,
         selectedHotelId: "h1",
-        accommodationNeed: "all",
-        accommodationGuests: 1,
       },
       expected: true,
     },
     {
-      id: "s2-some-zero",
+      id: "s3-rooms-some-zero",
       patch: {
-        step: 2,
+        step: 3,
         wantsHotel: true,
         selectedHotelId: "h1",
         accommodationNeed: "some",
@@ -87,28 +100,39 @@ describe("booking step validation matrix", () => {
       },
       expected: false,
     },
-    { id: "s3-attendees-bad", patch: { step: 3, attendeesValid: false }, expected: false },
-    { id: "s3-attendees-ok", patch: { step: 3, attendeesValid: true }, expected: true },
-    { id: "s4-customer-bad", patch: { step: 4, customerValid: false }, expected: false },
-    { id: "s4-customer-ok", patch: { step: 4, customerValid: true }, expected: true },
-    { id: "s5-no-quote", patch: { step: 5, hasQuote: false }, expected: false },
-    { id: "s5-quote", patch: { step: 5, hasQuote: true }, expected: true },
+    {
+      id: "s3-rooms-ok",
+      patch: {
+        step: 3,
+        wantsHotel: true,
+        selectedHotelId: "h1",
+        accommodationNeed: "all",
+        accommodationGuests: 1,
+      },
+      expected: true,
+    },
+    { id: "s4-attendees-bad", patch: { step: 4, attendeesValid: false }, expected: false },
+    { id: "s4-attendees-ok", patch: { step: 4, attendeesValid: true }, expected: true },
+    { id: "s5-customer-bad", patch: { step: 5, customerValid: false }, expected: false },
+    { id: "s5-customer-ok", patch: { step: 5, customerValid: true }, expected: true },
+    { id: "s6-no-quote", patch: { step: 6, hasQuote: false }, expected: false },
+    { id: "s6-quote", patch: { step: 6, hasQuote: true }, expected: true },
   ]
 
   it.each(cases)("$id → $expected", ({ patch, expected }) => {
     expect(canProceedBookingStep({ ...base, ...patch })).toBe(expected)
   })
 
-  it("isStep1Valid / isStep2Valid helpers match matrix edges", () => {
-    expect(isStep1Valid(0)).toBe(false)
-    expect(isStep1Valid(2)).toBe(true)
+  it("validates step helpers", () => {
+    expect(isStep1Valid(1)).toBe(true)
+    expect(isStep2Valid({ hotelCount: 0, wantsHotel: null, selectedHotelId: null })).toBe(true)
     expect(
-      isStep2Valid({
-        hotelCount: 0,
-        wantsHotel: null,
-        selectedHotelId: null,
-        accommodationNeed: "none",
-        accommodationGuests: 0,
+      isStep3RoomsValid({
+        hotelCount: 2,
+        wantsHotel: true,
+        selectedHotelId: "h1",
+        accommodationNeed: "all",
+        accommodationGuests: 1,
       })
     ).toBe(true)
   })

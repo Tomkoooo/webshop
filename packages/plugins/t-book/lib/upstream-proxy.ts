@@ -1,4 +1,5 @@
 import { extractApiKeyFromRequest, TBOOK_API_KEY_HEADER } from "./api-key"
+import { mediaOriginFromApiBase, rewriteTBookPublicMediaPayload } from "./public-media-url"
 import { resolveTBookServerApiBase, isExternalTBookUpstream } from "./tbook-api-base"
 
 /** Remote tBook host for thin storefront sites (e.g. WDF → tbook.sironic.hu). */
@@ -51,8 +52,6 @@ export async function proxyTBookPublicRequest(
   }
 
   const upstreamRes = await fetch(target, init)
-  // arrayBuffer preserves PDF/binary (invoice, vouchers) as well as JSON text
-  const body = await upstreamRes.arrayBuffer()
   const responseHeaders = new Headers()
   const upstreamContentType = upstreamRes.headers.get("content-type")
   if (upstreamContentType) responseHeaders.set("Content-Type", upstreamContentType)
@@ -62,6 +61,24 @@ export async function proxyTBookPublicRequest(
   if (cors) {
     for (const [key, value] of Object.entries(cors)) {
       if (typeof value === "string") responseHeaders.set(key, value)
+    }
+  }
+
+  // arrayBuffer preserves PDF/binary (invoice, vouchers) as well as JSON text
+  const body = await upstreamRes.arrayBuffer()
+  const mediaOrigin = mediaOriginFromApiBase(upstreamBase)
+  const isJson = (upstreamContentType || "").includes("application/json")
+  if (isJson && mediaOrigin) {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(body)) as unknown
+      const json = rewriteTBookPublicMediaPayload(parsed, mediaOrigin)
+      return new Response(JSON.stringify(json), {
+        status: upstreamRes.status,
+        statusText: upstreamRes.statusText,
+        headers: responseHeaders,
+      })
+    } catch {
+      // Keep original body if rewrite fails.
     }
   }
 

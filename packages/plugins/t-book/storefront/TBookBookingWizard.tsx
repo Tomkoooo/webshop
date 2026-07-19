@@ -1,11 +1,20 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ArrowLeft, BedDouble, Loader2 } from "lucide-react"
 import { StorefrontRichHtml } from "@wse/core/components/common/StorefrontRichHtml"
 import { mediaImageSrc, PLACEHOLDER_IMAGE } from "@wse/core/lib/images"
-import { resolveHotelStayPhase } from "../lib/booking-wizard-flow"
+import { validateAttendees, type AttendeeValidationIssue } from "../lib/attendee-fields"
+import {
+  SINGLE_WIZARD_REVIEW_STEP,
+  SINGLE_WIZARD_STEPS,
+  SINGLE_WIZARD_TOTAL_STEPS,
+  canProceedBookingStep,
+  nextWizardStep,
+  prevWizardStep,
+} from "../lib/booking-wizard-flow"
+import { validateEligibility, type EligibilityIssue } from "../lib/eligibility"
 import {
   ROOM_TYPE_SELECTION_KEY,
   PACKAGE_DEAL_SELECTION_KEY,
@@ -85,9 +94,6 @@ type Copy = {
   loadingEvent: string
   eventError: string
 }
-
-const WIZARD_STEPS = ["Entries", "Hotel", "Players", "Your details", "Review"] as const
-const TOTAL_STEPS = WIZARD_STEPS.length
 
 const INPUT =
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -188,6 +194,27 @@ function applyEventDetailToWizardState(
   setters.setError(null)
 }
 
+function attendeeFieldError(
+  issues: AttendeeValidationIssue[],
+  index: number,
+  fieldKey: string,
+  memberIndex?: number
+): string | null {
+  const match = issues.find((issue) => {
+    if (issue.index !== index || issue.fieldKey !== fieldKey) return false
+    if (memberIndex == null) return !/, player \d+:/.test(issue.message)
+    return issue.message.includes(`, player ${memberIndex + 1}:`)
+  })
+  return match?.message ?? null
+}
+
+function eligibilityIssuesForEntry(
+  issues: EligibilityIssue[],
+  ticketIndex: number
+): EligibilityIssue[] {
+  return issues.filter((issue) => issue.ticketIndex === ticketIndex)
+}
+
 export function TBookBookingWizard({
   apiKey,
   eventId,
@@ -201,7 +228,7 @@ export function TBookBookingWizard({
   initialEventDetail?: TBookPublicEventDetailResult
 }) {
   const serverProvided = initialEventDetail !== undefined
-  const steps = [...WIZARD_STEPS]
+  const steps = [...SINGLE_WIZARD_STEPS]
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(!serverProvided)
   const [submitting, setSubmitting] = useState(false)
@@ -223,7 +250,6 @@ export function TBookBookingWizard({
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
   const [extraNightAfter, setExtraNightAfter] = useState(false)
-  const roomSectionRef = useRef<HTMLDivElement>(null)
 
   const stayRecommendation = useMemo(
     () => (event ? recommendStayForEvents([event], { extraNightAfter }) : null),
@@ -299,16 +325,10 @@ export function TBookBookingWizard({
     return null
   }, [selections])
   const extrasSection = selectedHotel?.pricing.extrasSection ?? null
-  const hotelStayPhase = resolveHotelStayPhase({
-    hotelCount: hotels.length,
-    wantsHotel,
-    selectedHotelId,
-  })
-
-  useEffect(() => {
-    if (step !== 2 || hotelStayPhase !== "configure_rooms") return
-    roomSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [step, hotelStayPhase, selectedHotelId])
+  const hasPackageSelection =
+    Boolean(packageDealKey) ||
+    Boolean(activePackageUnits && Object.keys(activePackageUnits).length > 0)
+  const hasRoomSelection = Boolean(roomTypeKey)
 
   useEffect(() => {
     if (!selectedHotel || accommodationMode !== "packages") return
@@ -409,11 +429,24 @@ export function TBookBookingWizard({
     setQuote(null)
   }, [selectedHotelId, selectedHotel])
 
+  /** When recommended nights change (e.g. extra night), sync nights + preferred package. */
   useEffect(() => {
     if (!event) return
     setNights(recommendedNights)
     setQuote(null)
-  }, [extraNightAfter, recommendedNights, event])
+    if (!selectedHotel) return
+    const mode = resolveAccommodationMode(selectedHotel.pricing)
+    if (mode !== "packages" && mode !== "both") return
+    const packages = selectedHotel.pricing.packages ?? []
+    const preferred = preferPackageMatchingNights(packages, recommendedNights)
+    if (!preferred) return
+    setSelections((s) => {
+      const next: TBookSelections = { ...s }
+      next[PACKAGE_DEAL_SELECTION_KEY] = preferred.key
+      delete next[PACKAGE_UNITS_SELECTION_KEY]
+      return next
+    })
+  }, [extraNightAfter, recommendedNights, event, selectedHotel])
 
   const patchSelection = (key: string, value: string | number | boolean | string[]) => {
     setSelections((s) => ({ ...s, [key]: value }))
@@ -508,67 +541,81 @@ export function TBookBookingWizard({
     }
   }
 
-  const attendeesValid =
-    registrationFieldSchema.length === 0 && !needsPlayerMembers
-      ? true
-      : attendees.every((row) => {
-          const teamFieldsOk =
-            registrationFieldSchema.length === 0 ||
-            registrationFieldSchema.every((field) => {
-              if (!field.required) return true
-              const val = row.fields[field.key]
-              return val != null && String(val).trim() !== ""
-            })
-          if (!teamFieldsOk) return false
-          if (!needsPlayerMembers) return true
-          const members = row.members ?? []
-          const requiredMembers = fixedRosterSize ?? 1
-          if (members.length !== requiredMembers) return false
-          return members.every((member) =>
-            playerFields.every((field) => {
-              if (!field.required) return true
-              const val = member.fields[field.key]
-              return val != null && String(val).trim() !== ""
-            })
+  const eligibilityFixedRoster = playersPerTicket > 1 ? playersPerTicket : null
+
+  const attendeeFieldIssues = useMemo(
+    () =>
+      validateAttendees(registrationFieldSchema, guests, attendees, registrationUnit, {
+        teamMemberFieldSchema: playerFields,
+        teamMemberLimit,
+        playersPerTicket: eligibilityFixedRoster,
+      }),
+    [
+      registrationFieldSchema,
+      guests,
+      attendees,
+      registrationUnit,
+      playerFields,
+      teamMemberLimit,
+      eligibilityFixedRoster,
+    ]
+  )
+
+  const eligibilityIssues = useMemo(
+    () =>
+      event
+        ? validateEligibility(
+            event,
+            attendees,
+            registrationFieldSchema,
+            playerFields,
+            eligibilityFixedRoster
           )
-        })
+        : [],
+    [event, attendees, registrationFieldSchema, playerFields, eligibilityFixedRoster]
+  )
 
-  const step1Valid = guests >= 1
+  const attendeesValid = attendeeFieldIssues.length === 0 && eligibilityIssues.length === 0
 
-  const step2Valid =
-    hotels.length === 0 ||
-    wantsHotel === false ||
-    (wantsHotel === true &&
-      Boolean(selectedHotelId) &&
-      (accommodationNeed !== "some" || accommodationGuests >= 1))
-
-  const step3Valid = attendeesValid
-
-  const step4Valid =
+  const customerValid =
     Boolean(customer.name.trim()) &&
     Boolean(customer.email.trim()) &&
     Boolean(customer.phone.trim()) &&
     isBillingFormValid(billing)
 
-  const canProceedCurrentStep =
-    step === 1
-      ? step1Valid
-      : step === 2
-        ? step2Valid && (hotels.length === 0 || wantsHotel !== null)
-        : step === 3
-          ? step3Valid
-          : step === 4
-            ? step4Valid
-            : Boolean(quote)
+  const canProceedCurrentStep = canProceedBookingStep({
+    step,
+    guests,
+    hotelCount: hotels.length,
+    wantsHotel,
+    selectedHotelId,
+    accommodationNeed,
+    accommodationGuests,
+    attendeesValid,
+    customerValid,
+    hasQuote: Boolean(quote),
+    packagesRequired,
+    hasPackageSelection,
+    roomsRequired: showRooms,
+    hasRoomSelection,
+  })
+
+  const patchAttendeeFields = (
+    index: number,
+    updater: (row: TBookBookingAttendeePayload) => TBookBookingAttendeePayload
+  ) => {
+    setAttendees((rows) => rows.map((row, i) => (i === index ? updater(row) : row)))
+    setError(null)
+  }
 
   const goNext = async () => {
     if (step === 1) {
-      if (!step1Valid) {
+      if (guests < 1) {
         setError("Please enter at least one entry.")
         return
       }
       setError(null)
-      setStep(2)
+      setStep(nextWizardStep(1, wantsHotel, hotels.length))
       return
     }
     if (step === 2) {
@@ -576,33 +623,58 @@ export function TBookBookingWizard({
         setError("Please choose whether you need a hotel room.")
         return
       }
-      if (!step2Valid) {
+      if (wantsHotel === true && !selectedHotelId) {
         setError("Please complete your hotel selection, or choose entry only.")
         return
       }
       setError(null)
-      setStep(3)
+      setStep(nextWizardStep(2, wantsHotel, hotels.length))
       return
     }
     if (step === 3) {
-      if (!step3Valid) {
-        setError("Please complete participant details for every entry.")
+      if (accommodationNeed === "none" || !selectedHotelId) {
+        setError("Please choose who needs a room.")
+        return
+      }
+      if (accommodationNeed === "some" && accommodationGuests < 1) {
+        setError("Please choose how many people need a room.")
+        return
+      }
+      if (packagesRequired && !hasPackageSelection) {
+        setError("Please select a package.")
+        return
+      }
+      if (showRooms && !hasRoomSelection) {
+        setError("Please select a room type.")
         return
       }
       setError(null)
-      setStep(4)
+      setStep(nextWizardStep(3, wantsHotel, hotels.length))
       return
     }
     if (step === 4) {
-      if (!step4Valid) {
+      if (attendeeFieldIssues.length > 0) {
+        setError("Please complete participant details for every entry.")
+        return
+      }
+      if (eligibilityIssues.length > 0) {
+        setError(eligibilityIssues.map((issue) => issue.message).join(" "))
+        return
+      }
+      setError(null)
+      setStep(nextWizardStep(4, wantsHotel, hotels.length))
+      return
+    }
+    if (step === 5) {
+      if (!customerValid) {
         setError("Please complete contact and billing details.")
         return
       }
       setError(null)
       setQuote(null)
-      setStep(5)
+      setStep(6)
       const ok = await runQuote()
-      if (!ok) setStep(4)
+      if (!ok) setStep(5)
       return
     }
   }
@@ -699,37 +771,8 @@ export function TBookBookingWizard({
               <div>
                 <h2 className="text-lg font-semibold">Accommodation</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Clear steps: choose stay type, pick a hotel, then choose your room.
+                  Choose whether you need a hotel, then pick one. Room details come next.
                 </p>
-                <ol className="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Hotel booking substeps">
-                  {(
-                    [
-                      ["stay_choice", "1. Stay type"],
-                      ["pick_hotel", "2. Hotel"],
-                      ["configure_rooms", "3. Room"],
-                    ] as const
-                  ).map(([phase, label]) => {
-                    const active = hotelStayPhase === phase
-                    const done =
-                      (phase === "stay_choice" && wantsHotel !== null) ||
-                      (phase === "pick_hotel" && Boolean(selectedHotelId)) ||
-                      (phase === "configure_rooms" && hotelStayPhase === "configure_rooms")
-                    return (
-                      <li
-                        key={phase}
-                        className={`rounded-full border px-2.5 py-1 ${
-                          active
-                            ? "border-primary bg-primary/10 font-semibold text-primary"
-                            : done
-                              ? "border-border text-foreground"
-                              : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {label}
-                      </li>
-                    )
-                  })}
-                </ol>
               </div>
 
               <div>
@@ -772,7 +815,7 @@ export function TBookBookingWizard({
                 </div>
               </div>
 
-              {wantsHotel === true && hotelStayPhase === "pick_hotel" ? (
+              {wantsHotel === true && !selectedHotel ? (
                 <AccommodationOptionCards
                   hotels={hotels}
                   selectedHotelId={selectedHotelId}
@@ -794,248 +837,51 @@ export function TBookBookingWizard({
               ) : null}
 
               {wantsHotel === true && selectedHotel ? (
-                <div ref={roomSectionRef} className="space-y-4 scroll-mt-28">
-                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium uppercase tracking-wide text-primary">
-                          Selected hotel
-                        </p>
-                        <p className="mt-1 text-base font-semibold">{selectedHotel.name}</p>
-                        {selectedHotel.address?.trim() ? (
-                          <p className="mt-1 text-xs text-muted-foreground">{selectedHotel.address}</p>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        className="shrink-0 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
-                        onClick={() => {
-                          setSelectedHotelId(null)
-                          setSelections({})
-                          setQuote(null)
-                        }}
-                      >
-                        Change hotel
-                      </button>
-                    </div>
-                    {selectedHotel.gallery?.[0] ? (
-                      <div className="mt-3 overflow-hidden rounded-lg bg-muted">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={mediaImageSrc(selectedHotel.gallery[0]) || PLACEHOLDER_IMAGE}
-                          alt=""
-                          className="aspect-[21/9] w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = PLACEHOLDER_IMAGE
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="mt-3 flex aspect-[21/9] items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                        <BedDouble className="size-8" aria-hidden />
-                      </div>
-                    )}
-                    {selectedHotel.description?.trim() ? (
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        <StorefrontRichHtml html={selectedHotel.description} className="text-sm" />
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="space-y-4 border-t border-border pt-4">
-                    <div>
-                      <h3 className="text-base font-semibold">Choose your room</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Set who needs a room, then pick nights, room type, or a package.
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                        Selected hotel
                       </p>
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Hotel packages are priced for{" "}
-                        <strong className="text-foreground">{accommodationGuests}</strong> guest
-                        {accommodationGuests === 1 ? "" : "s"}
-                        {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
-                          ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
-                          : ""}
-                        .
-                      </p>
-                      <p className="text-sm font-medium">Who needs a room?</p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                            accommodationNeed === "all"
-                              ? "border-primary bg-primary/10 font-medium"
-                              : "border-border hover:border-primary/40"
-                          }`}
-                          aria-pressed={accommodationNeed === "all"}
-                          onClick={() => {
-                            setAccommodationNeed("all")
-                            setQuote(null)
-                          }}
-                        >
-                          Everyone ({maxAccommodationGuests})
-                        </button>
-                        <button
-                          type="button"
-                          className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                            accommodationNeed === "some"
-                              ? "border-primary bg-primary/10 font-medium"
-                              : "border-border hover:border-primary/40"
-                          }`}
-                          aria-pressed={accommodationNeed === "some"}
-                          onClick={() => {
-                            setAccommodationNeed("some")
-                            setAccommodationGuestOverride(
-                              Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride))
-                            )
-                            setQuote(null)
-                          }}
-                        >
-                          Some people only
-                        </button>
-                      </div>
-                      {accommodationNeed === "some" ? (
-                        <label className="block max-w-xs space-y-1.5">
-                          <span className="text-sm font-medium">
-                            How many need a room? (max {maxAccommodationGuests})
-                          </span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={maxAccommodationGuests}
-                            className={INPUT}
-                            value={accommodationGuestOverride}
-                            onChange={(e) => {
-                              setAccommodationGuestOverride(Number(e.target.value) || 1)
-                              setQuote(null)
-                            }}
-                          />
-                        </label>
+                      <p className="mt-1 text-base font-semibold">{selectedHotel.name}</p>
+                      {selectedHotel.address?.trim() ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{selectedHotel.address}</p>
                       ) : null}
                     </div>
-
-                    {recommendedStayLabel ? (
-                      <p className="text-sm text-muted-foreground">
-                        Suggested stay: {recommendedNights} night
-                        {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
-                      </p>
-                    ) : null}
-
-                    <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 size-4 rounded border-border"
-                        checked={extraNightAfter}
-                        onChange={(e) => {
-                          setExtraNightAfter(e.target.checked)
-                          setQuote(null)
-                        }}
-                      />
-                      <span className="text-sm">Stay one extra night after the event</span>
-                    </label>
-
-                    {showRooms ? (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <label className="block space-y-1.5">
-                          <span className="text-sm font-medium">{copy.nightsLabel}</span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={60}
-                            className={INPUT}
-                            value={nights}
-                            onChange={(e) => {
-                              setNights(Number(e.target.value))
-                              setQuote(null)
-                            }}
-                          />
-                        </label>
-                        <label className="block space-y-1.5">
-                          <span className="text-sm font-medium">{copy.roomTypeLabel}</span>
-                          <select
-                            className={INPUT}
-                            value={roomTypeKey}
-                            onChange={(e) => {
-                              patchSelection(ROOM_TYPE_SELECTION_KEY, e.target.value)
-                              patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
-                            }}
-                          >
-                            {selectedHotel.pricing.roomTypes.map((room) => (
-                              <option key={room.key} value={room.key}>
-                                {room.label} — {formatHuf(room.baseRateHuf, displayCurrency)} / person / night
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                    ) : null}
-
-                    {showPackages && availablePackages.length > 0 ? (
-                      <PackageSelectionCards
-                        packages={availablePackages}
-                        packagesRequired={packagesRequired}
-                        packageDealKey={packageDealKey}
-                        activePackageUnits={activePackageUnits}
-                        accommodationGuests={accommodationGuests}
-                        displayCurrency={displayCurrency}
-                        suggestions={packageSuggestions}
-                        recommendedNights={recommendedNights}
-                        recommendedLabel={recommendedStayLabel}
-                        onSelectPackage={selectPackageForGuests}
-                        onApplyPlan={applyPackagePlan}
-                        onClearPackage={() => {
-                          setSelections((s) => {
-                            const next: TBookSelections = { ...s }
-                            delete next[PACKAGE_DEAL_SELECTION_KEY]
-                            delete next[PACKAGE_UNITS_SELECTION_KEY]
-                            return next
-                          })
-                          setNights(recommendedNights)
-                          setQuote(null)
-                        }}
-                      />
-                    ) : null}
-
-                    {extrasSection ? (
-                      <div className="space-y-3 rounded-xl border border-border p-4">
-                        <div>
-                          <p className="text-sm font-semibold">{extrasSection.label}</p>
-                          {extrasSection.description ? (
-                            <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
-                          ) : null}
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {extrasSection.options.map((option) => (
-                            <BookingOptionField
-                              key={option.key}
-                              option={option}
-                              value={selectionOptionValue(selections, option.key)}
-                              visible={optionVisible(option, selections)}
-                              onChange={(v) => patchSelection(option.key, v)}
-                              inputClassName={INPUT}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ) : selectedHotel.pricing.addonGroups?.map((group) => (
-                      <div key={group.key} className="space-y-3 rounded-xl border border-border p-4">
-                        <p className="text-sm font-semibold">{group.label}</p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {group.options.map((option) => (
-                            <BookingOptionField
-                              key={option.key}
-                              option={option}
-                              value={selectionOptionValue(selections, option.key)}
-                              visible={optionVisible(option, selections)}
-                              onChange={(v) => patchSelection(option.key, v)}
-                              inputClassName={INPUT}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+                      onClick={() => {
+                        setSelectedHotelId(null)
+                        setSelections({})
+                        setQuote(null)
+                      }}
+                    >
+                      Change hotel
+                    </button>
                   </div>
+                  {selectedHotel.gallery?.[0] ? (
+                    <div className="mt-3 overflow-hidden rounded-lg bg-muted">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={mediaImageSrc(selectedHotel.gallery[0]) || PLACEHOLDER_IMAGE}
+                        alt=""
+                        className="aspect-[21/9] w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = PLACEHOLDER_IMAGE
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex aspect-[21/9] items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <BedDouble className="size-8" aria-hidden />
+                    </div>
+                  )}
+                  {selectedHotel.description?.trim() ? (
+                    <div className="mt-3 text-sm text-muted-foreground">
+                      <StorefrontRichHtml html={selectedHotel.description} className="text-sm" />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </>
@@ -1047,7 +893,216 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      {step === 3 ? (
+      {step === 3 && selectedHotel ? (
+        <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
+          <div>
+            <h2 className="text-lg font-semibold">Choose your room</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              At {selectedHotel.name}: set who needs a room, then pick nights, room type, or a
+              package.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Hotel packages are priced for{" "}
+              <strong className="text-foreground">{accommodationGuests}</strong> guest
+              {accommodationGuests === 1 ? "" : "s"}
+              {accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                ? ` (${maxAccommodationGuests - accommodationGuests} entries without room)`
+                : ""}
+              .
+            </p>
+            <p className="text-sm font-medium">Who needs a room?</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                  accommodationNeed === "all"
+                    ? "border-primary bg-primary/10 font-medium"
+                    : "border-border hover:border-primary/40"
+                }`}
+                aria-pressed={accommodationNeed === "all"}
+                onClick={() => {
+                  setAccommodationNeed("all")
+                  setQuote(null)
+                }}
+              >
+                Everyone ({maxAccommodationGuests})
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                  accommodationNeed === "some"
+                    ? "border-primary bg-primary/10 font-medium"
+                    : "border-border hover:border-primary/40"
+                }`}
+                aria-pressed={accommodationNeed === "some"}
+                onClick={() => {
+                  setAccommodationNeed("some")
+                  setAccommodationGuestOverride(
+                    Math.min(maxAccommodationGuests, Math.max(1, accommodationGuestOverride))
+                  )
+                  setQuote(null)
+                }}
+              >
+                Some people only
+              </button>
+            </div>
+            {accommodationNeed === "some" ? (
+              <label className="block max-w-xs space-y-1.5">
+                <span className="text-sm font-medium">
+                  How many need a room? (max {maxAccommodationGuests})
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={maxAccommodationGuests}
+                  className={INPUT}
+                  value={accommodationGuestOverride}
+                  onChange={(e) => {
+                    setAccommodationGuestOverride(Number(e.target.value) || 1)
+                    setQuote(null)
+                  }}
+                />
+              </label>
+            ) : null}
+          </div>
+
+          {recommendedStayLabel ? (
+            <p className="text-sm text-muted-foreground">
+              Suggested stay: {recommendedNights} night
+              {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
+            </p>
+          ) : null}
+
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 rounded border-border"
+              checked={extraNightAfter}
+              onChange={(e) => {
+                setExtraNightAfter(e.target.checked)
+                setQuote(null)
+              }}
+            />
+            <span className="text-sm">Stay one extra night after the event</span>
+          </label>
+
+          {showRooms ? (
+            <div className="space-y-3">
+              <label className="block max-w-xs space-y-1.5">
+                <span className="text-sm font-medium">{copy.nightsLabel}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  className={INPUT}
+                  value={nights}
+                  onChange={(e) => {
+                    setNights(Number(e.target.value))
+                    setQuote(null)
+                  }}
+                />
+              </label>
+              <div>
+                <p className="text-sm font-medium">{copy.roomTypeLabel}</p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {selectedHotel.pricing.roomTypes.map((room) => {
+                    const selected = roomTypeKey === room.key
+                    return (
+                      <button
+                        key={room.key}
+                        type="button"
+                        className={CHOICE_CARD(selected)}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          patchSelection(ROOM_TYPE_SELECTION_KEY, room.key)
+                          patchSelection(PACKAGE_DEAL_SELECTION_KEY, "")
+                        }}
+                      >
+                        <span className="block text-sm font-semibold">{room.label}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {formatHuf(room.baseRateHuf, displayCurrency)} / person / night
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {showPackages && availablePackages.length > 0 ? (
+            <PackageSelectionCards
+              packages={availablePackages}
+              packagesRequired={packagesRequired}
+              packageDealKey={packageDealKey}
+              activePackageUnits={activePackageUnits}
+              accommodationGuests={accommodationGuests}
+              displayCurrency={displayCurrency}
+              suggestions={packageSuggestions}
+              recommendedNights={recommendedNights}
+              recommendedLabel={recommendedStayLabel}
+              onSelectPackage={selectPackageForGuests}
+              onApplyPlan={applyPackagePlan}
+              onClearPackage={() => {
+                setSelections((s) => {
+                  const next: TBookSelections = { ...s }
+                  delete next[PACKAGE_DEAL_SELECTION_KEY]
+                  delete next[PACKAGE_UNITS_SELECTION_KEY]
+                  return next
+                })
+                setNights(recommendedNights)
+                setQuote(null)
+              }}
+            />
+          ) : null}
+
+          {extrasSection ? (
+            <div className="space-y-3 rounded-xl border border-border p-4">
+              <div>
+                <p className="text-sm font-semibold">{extrasSection.label}</p>
+                {extrasSection.description ? (
+                  <p className="text-xs text-muted-foreground mt-0.5">{extrasSection.description}</p>
+                ) : null}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {extrasSection.options.map((option) => (
+                  <BookingOptionField
+                    key={option.key}
+                    option={option}
+                    value={selectionOptionValue(selections, option.key)}
+                    visible={optionVisible(option, selections)}
+                    onChange={(v) => patchSelection(option.key, v)}
+                    inputClassName={INPUT}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            selectedHotel.pricing.addonGroups?.map((group) => (
+              <div key={group.key} className="space-y-3 rounded-xl border border-border p-4">
+                <p className="text-sm font-semibold">{group.label}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {group.options.map((option) => (
+                    <BookingOptionField
+                      key={option.key}
+                      option={option}
+                      value={selectionOptionValue(selections, option.key)}
+                      visible={optionVisible(option, selections)}
+                      onChange={(v) => patchSelection(option.key, v)}
+                      inputClassName={INPUT}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </section>
+      ) : null}
+
+      {step === 4 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
             <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
@@ -1064,119 +1119,120 @@ export function TBookBookingWizard({
           </div>
 
           {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
-            attendees.map((attendee, index) => (
-              <div key={index} className="space-y-3 rounded-xl border border-border p-4">
-                <p className="text-sm font-semibold">
-                  {index + 1}. {guestUnitLabel}
-                </p>
-                {registrationFieldSchema.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {registrationFieldSchema.map((field) => (
-                      <AttendeeFieldInput
-                        key={field.key}
-                        field={field}
-                        value={attendee.fields[field.key]}
-                        onChange={(value) =>
-                          setAttendees((rows) =>
-                            rows.map((row, i) =>
-                              i === index
-                                ? { ...row, fields: { ...row.fields, [field.key]: value } }
-                                : row
-                            )
-                          )
-                        }
-                        inputClassName={INPUT}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-                {needsPlayerMembers ? (
-                  <div className="space-y-3 border-t border-border pt-3">
-                    <p className="text-sm font-medium">
-                      {registrationUnit === "team" ? "Team members" : "Players"}
-                    </p>
-                    {(attendee.members ?? []).map((member, memberIndex) => (
-                      <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
-                        <p className="text-xs font-semibold text-muted-foreground">
-                          Player {memberIndex + 1}
-                        </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {playerFields.map((field) => (
-                            <AttendeeFieldInput
-                              key={field.key}
-                              field={field}
-                              value={member.fields[field.key]}
-                              onChange={(value) =>
-                                setAttendees((rows) =>
-                                  rows.map((row, i) =>
-                                    i === index
-                                      ? {
-                                          ...row,
-                                          members: (row.members ?? []).map((m, mi) =>
-                                            mi === memberIndex
-                                              ? { fields: { ...m.fields, [field.key]: value } }
-                                              : m
-                                          ),
-                                        }
-                                      : row
-                                  )
-                                )
-                              }
-                              inputClassName={INPUT}
-                            />
-                          ))}
-                        </div>
-                        {fixedRosterSize == null && (attendee.members ?? []).length > 1 ? (
-                          <button
-                            type="button"
-                            className="text-xs text-destructive hover:underline"
-                            onClick={() =>
-                              setAttendees((rows) =>
-                                rows.map((row, i) =>
-                                  i === index
-                                    ? {
-                                        ...row,
-                                        members: (row.members ?? []).filter(
-                                          (_, mi) => mi !== memberIndex
-                                        ),
-                                      }
-                                    : row
-                                )
-                              )
-                            }
-                          >
-                            Remove player
-                          </button>
-                        ) : null}
-                      </div>
-                    ))}
-                    {fixedRosterSize == null &&
-                    (teamMemberLimit == null ||
-                      (attendee.members ?? []).length < teamMemberLimit) ? (
-                      <button
-                        type="button"
-                        className="text-sm font-medium text-primary hover:underline"
-                        onClick={() =>
-                          setAttendees((rows) =>
-                            rows.map((row, i) =>
-                              i === index
-                                ? {
+            attendees.map((attendee, index) => {
+              const entryEligibility = eligibilityIssuesForEntry(eligibilityIssues, index)
+              return (
+                <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                  <p className="text-sm font-semibold">
+                    {index + 1}. {guestUnitLabel}
+                  </p>
+                  {registrationFieldSchema.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {registrationFieldSchema.map((field) => (
+                        <AttendeeFieldInput
+                          key={field.key}
+                          field={field}
+                          value={attendee.fields[field.key]}
+                          error={attendeeFieldError(attendeeFieldIssues, index, field.key)}
+                          onChange={(value) =>
+                            patchAttendeeFields(index, (row) => ({
+                              ...row,
+                              fields: { ...row.fields, [field.key]: value },
+                            }))
+                          }
+                          inputClassName={INPUT}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {needsPlayerMembers ? (
+                    <div className="space-y-3 border-t border-border pt-3">
+                      <p className="text-sm font-medium">
+                        {registrationUnit === "team" ? "Team members" : "Players"}
+                      </p>
+                      {(attendee.members ?? []).map((member, memberIndex) => (
+                        <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
+                          <p className="text-xs font-semibold text-muted-foreground">
+                            Player {memberIndex + 1}
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {playerFields.map((field) => (
+                              <AttendeeFieldInput
+                                key={field.key}
+                                field={field}
+                                value={member.fields[field.key]}
+                                error={attendeeFieldError(
+                                  attendeeFieldIssues,
+                                  index,
+                                  field.key,
+                                  memberIndex
+                                )}
+                                onChange={(value) =>
+                                  patchAttendeeFields(index, (row) => ({
                                     ...row,
-                                    members: [...(row.members ?? []), { fields: {} }],
-                                  }
-                                : row
-                            )
-                          )
-                        }
-                      >
-                        + Add player
-                        {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            ))
+                                    members: (row.members ?? []).map((m, mi) =>
+                                      mi === memberIndex
+                                        ? { fields: { ...m.fields, [field.key]: value } }
+                                        : m
+                                    ),
+                                  }))
+                                }
+                                inputClassName={INPUT}
+                              />
+                            ))}
+                          </div>
+                          {fixedRosterSize == null && (attendee.members ?? []).length > 1 ? (
+                            <button
+                              type="button"
+                              className="text-xs text-destructive hover:underline"
+                              onClick={() => {
+                                patchAttendeeFields(index, (row) => ({
+                                  ...row,
+                                  members: (row.members ?? []).filter(
+                                    (_, mi) => mi !== memberIndex
+                                  ),
+                                }))
+                              }}
+                            >
+                              Remove player
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                      {fixedRosterSize == null &&
+                      (teamMemberLimit == null ||
+                        (attendee.members ?? []).length < teamMemberLimit) ? (
+                        <button
+                          type="button"
+                          className="text-sm font-medium text-primary hover:underline"
+                          onClick={() => {
+                            patchAttendeeFields(index, (row) => ({
+                              ...row,
+                              members: [...(row.members ?? []), { fields: {} }],
+                            }))
+                          }}
+                        >
+                          + Add player
+                          {teamMemberLimit != null ? ` (max ${teamMemberLimit})` : ""}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {entryEligibility.length > 0 ? (
+                    <div
+                      className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                      role="alert"
+                    >
+                      {entryEligibility.map((issue) => (
+                        <p key={`${issue.ticketIndex}-${issue.playerIndex}-${issue.message}`}>
+                          {issue.message}
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })
           ) : (
             <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
               No player details are required for this event.
@@ -1185,7 +1241,7 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      {step === 4 ? (
+      {step === 5 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
@@ -1227,7 +1283,7 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      {step === 5 ? (
+      {step === 6 ? (
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold">{copy.reviewHeading}</h2>
           {submitting || !quote ? (
@@ -1287,19 +1343,21 @@ export function TBookBookingWizard({
 
       <BookingWizardNav
         step={step}
-        totalSteps={TOTAL_STEPS}
-        canProceed={step === TOTAL_STEPS ? Boolean(quote) : canProceedCurrentStep}
+        totalSteps={SINGLE_WIZARD_TOTAL_STEPS}
+        canProceed={
+          step === SINGLE_WIZARD_TOTAL_STEPS ? Boolean(quote) : canProceedCurrentStep
+        }
         submitting={submitting}
         backLabel={copy.backLabel}
         nextLabel={copy.nextLabel}
         quoteCta={copy.quoteCta}
         payCta={copy.payCta}
         payLoading={copy.payLoading}
-        reviewStep={4}
+        reviewStep={SINGLE_WIZARD_REVIEW_STEP}
         onBack={() => {
           setError(null)
-          if (step === 5) setQuote(null)
-          setStep((s) => s - 1)
+          if (step === SINGLE_WIZARD_TOTAL_STEPS) setQuote(null)
+          setStep(prevWizardStep(step, wantsHotel, hotels.length))
         }}
         onNext={() => void goNext()}
         onPay={() => void runBooking()}

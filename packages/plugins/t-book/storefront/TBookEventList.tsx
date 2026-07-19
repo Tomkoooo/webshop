@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Calendar, Check, MapPin, Ticket } from "lucide-react"
+import { mediaImageSrc } from "@wse/core/lib/images"
 import {
   formatHuf,
   listEvents,
@@ -154,7 +155,7 @@ export function TBookEventList({
               {event.heroImage ? (
                 <div
                   className="h-40 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${event.heroImage})` }}
+                  style={{ backgroundImage: `url(${mediaImageSrc(event.heroImage)})` }}
                   role="img"
                   aria-label={event.name}
                 />

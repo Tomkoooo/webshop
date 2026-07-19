@@ -132,6 +132,25 @@ export function preferPackageMatchingNights<T extends Pick<TBookPackageDeal, "ni
   return best
 }
 
+/** Nearest available stay-length tab when an exact nights package does not exist. */
+export function nearestAvailableNights(
+  availableNights: number[],
+  recommendedNights: number
+): number | null {
+  if (availableNights.length === 0) return null
+  if (availableNights.includes(recommendedNights)) return recommendedNights
+  let best = availableNights[0]
+  let bestDelta = Math.abs(best - recommendedNights)
+  for (const nights of availableNights.slice(1)) {
+    const delta = Math.abs(nights - recommendedNights)
+    if (delta < bestDelta) {
+      best = nights
+      bestDelta = delta
+    }
+  }
+  return best
+}
+
 /** Format a short date range for stay recommendation copy. */
 export function formatStayDateRange(start: Date, end: Date, locale = "en-GB"): string {
   const sameDay =

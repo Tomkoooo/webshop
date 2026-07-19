@@ -60,8 +60,60 @@ export type EligibilityIssue = {
   message: string
 }
 
+/** Map common display labels / slugs to stable gender keys used in eligibility rules. */
+const GENDER_ALIASES: Record<string, string> = {
+  female: "female",
+  woman: "female",
+  women: "female",
+  f: "female",
+  no: "female",
+  noi: "female",
+  "nő": "female",
+  "női": "female",
+  male: "male",
+  man: "male",
+  men: "male",
+  m: "male",
+  ferfi: "male",
+  "férfi": "male",
+  "férfiak": "male",
+}
+
+export function canonicalizeGenderValue(value: string): string {
+  const normalized = value.trim().toLowerCase()
+  return GENDER_ALIASES[normalized] ?? normalized
+}
+
 function normalizeGender(value: string): string {
-  return value.trim().toLowerCase()
+  return canonicalizeGenderValue(value)
+}
+
+function fieldValueMatchesAllowed(
+  raw: string,
+  allowed: string[],
+  fieldDef: TBookAttendeeFieldDef | undefined
+): boolean {
+  const submitted = normalizeGender(raw)
+  const allowedSet = new Set(allowed.map(normalizeGender))
+  if (allowedSet.has(submitted)) return true
+
+  // Organizers often paste display labels into allowed-values; guests submit choice values.
+  if (fieldDef?.choices?.length) {
+    const byValue = fieldDef.choices.find((c) => normalizeGender(c.value) === submitted)
+    if (byValue && allowedSet.has(normalizeGender(byValue.label))) return true
+    const byLabel = fieldDef.choices.find((c) => normalizeGender(c.label) === submitted)
+    if (byLabel && allowedSet.has(normalizeGender(byLabel.value))) return true
+    for (const choice of fieldDef.choices) {
+      if (
+        (normalizeGender(choice.value) === submitted || normalizeGender(choice.label) === submitted) &&
+        (allowedSet.has(normalizeGender(choice.value)) ||
+          allowedSet.has(normalizeGender(choice.label)))
+      ) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 function parseBirthDate(raw: string | number | undefined): Date | null {
@@ -250,10 +302,23 @@ function evaluateFormRule(
   const def = fieldDefs.find((f) => f.key === rule.fieldKey)
   const expected = rule.value
 
+  const genderLike =
+    def?.type === "select" &&
+    (rule.fieldKey.toLowerCase().includes("gender") ||
+      rule.fieldKey.toLowerCase().includes("nem") ||
+      (def.label || "").toLowerCase().includes("nem") ||
+      (def.label || "").toLowerCase().includes("gender"))
+
   switch (rule.op) {
     case "equals":
+      if (genderLike) {
+        return canonicalizeGenderValue(asString) === canonicalizeGenderValue(expected)
+      }
       return asString.toLowerCase() === expected.trim().toLowerCase()
     case "not_equals":
+      if (genderLike) {
+        return canonicalizeGenderValue(asString) !== canonicalizeGenderValue(expected)
+      }
       return asString.toLowerCase() !== expected.trim().toLowerCase()
     case "contains":
       return asString.toLowerCase().includes(expected.trim().toLowerCase())
@@ -287,8 +352,18 @@ function evaluateFormRule(
       return rule.op === "min_age" ? age >= bound : age <= bound
     }
     case "in":
+      if (genderLike) {
+        return listValues(expected)
+          .map(canonicalizeGenderValue)
+          .includes(canonicalizeGenderValue(asString))
+      }
       return listValues(expected).includes(asString.toLowerCase())
     case "not_in":
+      if (genderLike) {
+        return !listValues(expected)
+          .map(canonicalizeGenderValue)
+          .includes(canonicalizeGenderValue(asString))
+      }
       return !listValues(expected).includes(asString.toLowerCase())
     default:
       return true
@@ -349,8 +424,8 @@ export function validateEligibility(
   for (const row of rows) {
     const prefix =
       row.playerIndex != null
-        ? `${row.ticketIndex + 1}. jegy, ${row.playerIndex + 1}. játékos`
-        : `${row.ticketIndex + 1}. jegy`
+        ? `Entry ${row.ticketIndex + 1}, player ${row.playerIndex + 1}`
+        : `Entry ${row.ticketIndex + 1}`
 
     if (birthKey && (rules.minAge != null || rules.maxAge != null)) {
       const birth = parseBirthDate(row.fields[birthKey])
@@ -358,7 +433,7 @@ export function validateEligibility(
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: születési dátum szükséges az eligibilitás ellenőrzéséhez.`,
+          message: `${prefix}: a date of birth is required to check entry rules.`,
         })
       } else {
         const age = ageOnDate(birth, referenceDate)
@@ -366,14 +441,14 @@ export function validateEligibility(
           issues.push({
             ticketIndex: row.ticketIndex,
             playerIndex: row.playerIndex,
-            message: `${prefix}: minimum ${rules.minAge} éves kor szükséges (életkor: ${age}).`,
+            message: `${prefix}: minimum age is ${rules.minAge} (age: ${age}).`,
           })
         }
         if (rules.maxAge != null && age > rules.maxAge) {
           issues.push({
             ticketIndex: row.ticketIndex,
             playerIndex: row.playerIndex,
-            message: `${prefix}: legfeljebb ${rules.maxAge} éves lehet (életkor: ${age}).`,
+            message: `${prefix}: maximum age is ${rules.maxAge} (age: ${age}).`,
           })
         }
       }
@@ -381,21 +456,19 @@ export function validateEligibility(
 
     if (genderKey && rules.allowedGenders?.length) {
       const raw = row.fields[genderKey]
+      const genderDef = allSchemas.find((f) => f.key === genderKey)
       if (raw == null || String(raw).trim() === "") {
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: a(z) ${genderKey} mező kitöltése kötelező ehhez az eseményhez.`,
+          message: `${prefix}: ${genderDef?.label ?? genderKey} is required for this event.`,
         })
-      } else {
-        const allowed = new Set(rules.allowedGenders.map(normalizeGender))
-        if (!allowed.has(normalizeGender(String(raw)))) {
-          issues.push({
-            ticketIndex: row.ticketIndex,
-            playerIndex: row.playerIndex,
-            message: `${prefix}: a megadott érték (${raw}) nem engedélyezett ennél az eseménynél.`,
-          })
-        }
+      } else if (!fieldValueMatchesAllowed(String(raw), rules.allowedGenders, genderDef)) {
+        issues.push({
+          ticketIndex: row.ticketIndex,
+          playerIndex: row.playerIndex,
+          message: `${prefix}: the selected value (${raw}) is not allowed for this event.`,
+        })
       }
     }
 
@@ -414,11 +487,11 @@ export function validateEligibility(
         const detail =
           failed[0]?.rule.message ||
           failed.map((f) => `${f.rule.fieldKey} ${f.rule.op} ${f.rule.value}`).join("; ") ||
-          "űrlap feltételek"
+          "form conditions"
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: nem felel meg a belépési feltételeknek (${detail}).`,
+          message: `${prefix}: does not meet the entry requirements (${detail}).`,
         })
       }
     }
@@ -429,21 +502,21 @@ export function validateEligibility(
 
 export const ELIGIBILITY_PRESET_LABELS: Record<TBookEligibilityPreset, string> = {
   none: "Nincs korlátozás",
-  custom: "Kor / mező érték (egyedi)",
-  form_rules: "Űrlap mező szabályok",
+  custom: "Kor / mező érték (egyedi, régi)",
+  form_rules: "Űrlapmező szabályok (ajánlott)",
 }
 
 export const ELIGIBILITY_OP_LABELS: Record<TBookEligibilityMatchOp, string> = {
-  equals: "Egyenlő",
-  not_equals: "Nem egyenlő",
+  equals: "Legyen (egyenlő)",
+  not_equals: "Ne legyen (elutasít ha ez)",
   contains: "Tartalmazza",
   regex: "Regex",
   min: "Minimum érték",
   max: "Maximum érték",
-  min_age: "Minimum életkor (dátum mező)",
-  max_age: "Maximum életkor (dátum mező)",
-  in: "Egyik érték (vesszővel)",
-  not_in: "Nem ezek közül",
+  min_age: "Minimum életkor",
+  max_age: "Maximum életkor",
+  in: "Egyik ezek közül",
+  not_in: "Egyik se ezek közül",
 }
 
 export function normalizeEligibilityFormRules(
