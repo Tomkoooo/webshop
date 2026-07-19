@@ -11,7 +11,7 @@ import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { tbookOrgApi } from "./org-api"
 import { CurrencySelect } from "./CurrencySelect"
 
-type Masked = { configured: boolean; hint: string }
+type Masked = { configured: boolean; hint: string; needsResave?: boolean }
 
 type OrgSettingsPayload = {
   id: string
@@ -74,6 +74,7 @@ export function TBookOrgSettingsScreen() {
   const [szEnabled, setSzEnabled] = useState(false)
   const [szAgent, setSzAgent] = useState("")
   const [szAgentHint, setSzAgentHint] = useState("")
+  const [szAgentNeedsResave, setSzAgentNeedsResave] = useState(false)
   const [szSeller, setSzSeller] = useState("")
 
   const [bookingSubject, setBookingSubject] = useState("")
@@ -101,6 +102,7 @@ export function TBookOrgSettingsScreen() {
         setSmtpFromName(s.smtp?.fromName || "")
         setSzEnabled(s.szamlazz?.enabled ?? false)
         setSzAgentHint(s.szamlazz?.agentKey?.hint || "")
+        setSzAgentNeedsResave(Boolean(s.szamlazz?.agentKey?.needsResave))
         setSzSeller(s.szamlazz?.sellerName || "")
         setBookingSubject(s.emailTemplates?.bookingConfirmation?.subject || "")
         setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
@@ -147,6 +149,7 @@ export function TBookOrgSettingsScreen() {
       setStripeWebhook("")
       setSmtpPass("")
       setSzAgent("")
+      setSzAgentNeedsResave(false)
       setOk("Mentve.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hiba")
@@ -293,13 +296,35 @@ export function TBookOrgSettingsScreen() {
             Számlázz.hu számlázás engedélyezve
           </label>
           <div className="grid gap-2">
-            <Label>Agent kulcs {szAgentHint ? `(beállítva: ${szAgentHint})` : ""}</Label>
+            <Label>
+              Agent kulcs{" "}
+              {szAgentHint
+                ? `(beállítva: ${szAgentHint})`
+                : szAgentNeedsResave
+                  ? "(titkosított kulcs olvashatatlan — írd be újra)"
+                  : ""}
+            </Label>
             <Input
               type="password"
               value={szAgent}
               onChange={(e) => setSzAgent(e.target.value)}
               autoComplete="new-password"
+              placeholder={szAgentNeedsResave ? "Agent kulcs újra megadása kötelező" : undefined}
             />
+            {szAgentNeedsResave ? (
+              <p className="text-sm text-destructive">
+                A kulcs a adatbázisban megvan, de a szerver nem tudja visszafejteni (más{" "}
+                <code className="text-xs">AUTH_SECRET</code> /{" "}
+                <code className="text-xs">TBOOK_ORG_SECRETS_KEY</code>). Illeszd be újra az agent
+                kulcsot és mentsd.
+              </p>
+            ) : null}
+            {szEnabled && !szAgentHint && !szAgentNeedsResave && !szAgent.trim() ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                A számlázás be van kapcsolva, de nincs agent kulcs. Illeszd be a Számlázz.hu agent
+                kulcsot, különben a számla kiállítás sikertelen lesz.
+              </p>
+            ) : null}
           </div>
           <div className="grid gap-2">
             <Label>Kibocsátó név</Label>

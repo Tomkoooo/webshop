@@ -21,6 +21,7 @@ import {
 } from "../lib/schemas"
 import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
 import { resolveEventHeroImage } from "../lib/event-hero"
+import { publicEligibilityFromEvent } from "../lib/public-eligibility"
 import { resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
@@ -484,6 +485,7 @@ export class TBookEventService {
         e.attendeeFieldSchema,
         e.attendeeFieldSchemaMode ?? "extend"
       ),
+      ...publicEligibilityFromEvent(e),
     }))
   }
 
@@ -523,6 +525,7 @@ export class TBookEventService {
           event.attendeeFieldSchema,
           event.attendeeFieldSchemaMode ?? "extend"
         ),
+        ...publicEligibilityFromEvent(event),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
       hotels: await Promise.all(

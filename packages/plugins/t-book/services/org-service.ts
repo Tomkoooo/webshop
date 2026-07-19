@@ -249,13 +249,16 @@ export class TBookOrgService {
     await dbConnect()
     const org = await TBookOrganization.findById(oid(organizationId)).lean()
     if (!org) return null
-    const { maskSecret } = await import("../lib/org-secrets")
+    const { maskSecret, orgSecretLooksEncrypted, decryptOrgSecret } = await import("../lib/org-secrets")
     const { buildTBookEmailTemplateSeeds } = await import("../lib/email-templates")
 
     const stripe = org.settings?.stripe
     const smtp = org.settings?.smtp
     const szamlazz = org.settings?.szamlazz
     const defaults = buildTBookEmailTemplateSeeds(org.name)
+    const szKeyStored = String(szamlazz?.agentKeyEnc ?? "").trim()
+    const szKeyPlain = decryptOrgSecret(szKeyStored)
+    const szKeyMasked = maskSecret(szKeyStored)
 
     return {
       id: String(org._id),
@@ -281,7 +284,11 @@ export class TBookOrgService {
         szamlazz: {
           enabled: Boolean(szamlazz?.enabled),
           sellerName: szamlazz?.sellerName || "",
-          agentKey: maskSecret(szamlazz?.agentKeyEnc),
+          agentKey: {
+            ...szKeyMasked,
+            /** Ciphertext in DB but current AUTH_SECRET / TBOOK_ORG_SECRETS_KEY cannot read it. */
+            needsResave: Boolean(szKeyStored && !szKeyPlain && orgSecretLooksEncrypted(szKeyStored)),
+          },
         },
         emailTemplates: {
           bookingConfirmation: org.settings?.emailTemplates?.bookingConfirmation || {

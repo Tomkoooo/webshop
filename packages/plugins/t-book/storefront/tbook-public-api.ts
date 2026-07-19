@@ -5,6 +5,8 @@ import type { TBookHotelPricing, TBookOptionDef } from "../lib/pricing-types"
 
 export { resolveTBookServerApiBase, TBOOK_SAME_ORIGIN_API_BASE } from "../lib/tbook-api-base"
 
+import type { TBookEligibilityRulesConfig } from "../lib/eligibility"
+
 export type TBookPublicAttendeeFieldDef = {
   key: string
   label: string
@@ -35,6 +37,14 @@ export type TBookPublicEvent = {
   currency?: string
   heroImage: string
   attendeeFieldSchema: TBookPublicAttendeeFieldDef[]
+  /** Entry rules — used for inline storefront validation before payment. */
+  eligibilityPreset?: string
+  eligibilityMinAge?: number | null
+  eligibilityMaxAge?: number | null
+  eligibilityAllowedGenders?: string[] | null
+  eligibilityBirthDateFieldKey?: string | null
+  eligibilityGenderFieldKey?: string | null
+  eligibilityFormRules?: TBookEligibilityRulesConfig | null
 }
 
 export type TBookPublicOptionDef = TBookOptionDef

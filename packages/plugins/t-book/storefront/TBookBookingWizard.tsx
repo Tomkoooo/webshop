@@ -249,11 +249,10 @@ export function TBookBookingWizard({
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
-  const [extraNightAfter, setExtraNightAfter] = useState(false)
 
   const stayRecommendation = useMemo(
-    () => (event ? recommendStayForEvents([event], { extraNightAfter }) : null),
-    [event, extraNightAfter]
+    () => (event ? recommendStayForEvents([event]) : null),
+    [event]
   )
   const recommendedNights = stayRecommendation?.nights ?? event?.nights ?? 1
   const recommendedStayLabel = stayRecommendation
@@ -428,25 +427,6 @@ export function TBookBookingWizard({
     }
     setQuote(null)
   }, [selectedHotelId, selectedHotel])
-
-  /** When recommended nights change (e.g. extra night), sync nights + preferred package. */
-  useEffect(() => {
-    if (!event) return
-    setNights(recommendedNights)
-    setQuote(null)
-    if (!selectedHotel) return
-    const mode = resolveAccommodationMode(selectedHotel.pricing)
-    if (mode !== "packages" && mode !== "both") return
-    const packages = selectedHotel.pricing.packages ?? []
-    const preferred = preferPackageMatchingNights(packages, recommendedNights)
-    if (!preferred) return
-    setSelections((s) => {
-      const next: TBookSelections = { ...s }
-      next[PACKAGE_DEAL_SELECTION_KEY] = preferred.key
-      delete next[PACKAGE_UNITS_SELECTION_KEY]
-      return next
-    })
-  }, [extraNightAfter, recommendedNights, event, selectedHotel])
 
   const patchSelection = (key: string, value: string | number | boolean | string[]) => {
     setSelections((s) => ({ ...s, [key]: value }))
@@ -975,19 +955,6 @@ export function TBookBookingWizard({
               {recommendedNights === 1 ? "" : "s"} ({recommendedStayLabel})
             </p>
           ) : null}
-
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-4 rounded border-border"
-              checked={extraNightAfter}
-              onChange={(e) => {
-                setExtraNightAfter(e.target.checked)
-                setQuote(null)
-              }}
-            />
-            <span className="text-sm">Stay one extra night after the event</span>
-          </label>
 
           {showRooms ? (
             <div className="space-y-3">

@@ -105,7 +105,6 @@ type LodgingState = {
   accommodationGuestOverride: number
   selectedHotelId: string | null
   nights: number
-  extraNightAfter: boolean
   selections: TBookSelections
   /** null = user has not chosen tickets vs hotel yet */
   wantsHotel: boolean | null
@@ -131,7 +130,6 @@ function emptyLodgingState(recommendedNights = 1): LodgingState {
     accommodationGuestOverride: 1,
     selectedHotelId: null,
     nights: recommendedNights,
-    extraNightAfter: false,
     selections: {},
     wantsHotel: null,
   }
@@ -151,36 +149,8 @@ function patchLodging(prev: LodgingState, patch: Partial<LodgingState>): Lodging
   return changed ? { ...prev, ...patch } : prev
 }
 
-function stayForEvents(events: TBookPublicEvent[], extraNightAfter: boolean) {
-  return recommendStayForEvents(events, { extraNightAfter })
-}
-
-/** Extra night: update nights + re-apply package matching; caller clears quote. */
-function lodgingWithExtraNight(
-  lodging: LodgingState,
-  stayEvents: TBookPublicEvent[],
-  extraNightAfter: boolean,
-  selectedHotel: TBookPublicHotel | null
-): LodgingState {
-  const stay = stayForEvents(stayEvents, extraNightAfter)
-  const patch: Partial<LodgingState> = {
-    extraNightAfter,
-    nights: stay.nights,
-  }
-  if (selectedHotel) {
-    const mode = resolveAccommodationMode(selectedHotel.pricing)
-    if (mode === "packages" || mode === "both") {
-      const packages = selectedHotel.pricing.packages ?? []
-      const preferred = preferPackageMatchingNights(packages, stay.nights)
-      if (preferred) {
-        const next: TBookSelections = { ...lodging.selections }
-        next[PACKAGE_DEAL_SELECTION_KEY] = preferred.key
-        delete next[PACKAGE_UNITS_SELECTION_KEY]
-        patch.selections = next
-      }
-    }
-  }
-  return patchLodging(lodging, patch)
+function stayForEvents(events: TBookPublicEvent[]) {
+  return recommendStayForEvents(events)
 }
 
 function emptyAttendeeRows(
@@ -635,21 +605,6 @@ function HotelLodgingPanel({
             </p>
           ) : null}
 
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border px-3 py-2.5">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-4 rounded border-border"
-              checked={lodging.extraNightAfter}
-              onChange={(e) => {
-                onLodgingChange(
-                  lodgingWithExtraNight(lodging, stayEvents, e.target.checked, selectedHotel)
-                )
-                onQuoteReset()
-              }}
-            />
-            <span className="text-sm">Stay one extra night after the event</span>
-          </label>
-
           {showRooms ? (
             <div className="space-y-3">
               <label className="block max-w-xs space-y-1.5">
@@ -889,12 +844,9 @@ export function TBookMultiBookingWizard({
   const combinedStayRecommendation = useMemo(
     () =>
       loadedEvents.length > 0
-        ? stayForEvents(
-            loadedEvents.map((row) => row.event),
-            combinedLodging.extraNightAfter
-          )
+        ? stayForEvents(loadedEvents.map((row) => row.event))
         : null,
-    [loadedEvents, combinedLodging.extraNightAfter]
+    [loadedEvents]
   )
   const combinedRecommendedNights =
     combinedStayRecommendation?.nights ?? events[0]?.nights ?? 1
@@ -987,7 +939,7 @@ export function TBookMultiBookingWizard({
           const rosterSize = resolvePlayersPerTicket(res.event)
           const withMembers = needsPlayerMemberForms(res.event)
           nextAttendees[res.event.id] = emptyAttendeeRows(1, rosterSize, withMembers)
-          const stay = stayForEvents([res.event], false)
+          const stay = stayForEvents([res.event])
           nextSeparateLodging[res.event.id] = emptyLodgingState(stay.nights)
           if (nextHotels.length === 0 && res.hotels.length > 0) {
             nextHotels = res.hotels
@@ -1001,7 +953,7 @@ export function TBookMultiBookingWizard({
         }
 
         const loadedEventList = nextEvents.map((row) => row.event)
-        const combinedStay = stayForEvents(loadedEventList, false)
+        const combinedStay = stayForEvents(loadedEventList)
 
         setLoadedEvents(nextEvents)
         setHotels(nextHotels)
@@ -1589,7 +1541,7 @@ export function TBookMultiBookingWizard({
                   const event = events.find((e) => e.id === currentStepDef.eventId)
                   if (!event) return null
                   const lodging = separateLodging[event.id] ?? emptyLodgingState()
-                  const stay = stayForEvents([event], lodging.extraNightAfter)
+                  const stay = stayForEvents([event])
                   const stayLabel = formatStayDateRange(stay.startDate, stay.endDate)
                   const maxAcc = accommodationGuestCount(guestsByEvent[event.id] ?? 1, event)
                   return renderLodgingPanel(

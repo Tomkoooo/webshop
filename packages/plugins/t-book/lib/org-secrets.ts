@@ -41,9 +41,18 @@ export function decryptOrgSecret(stored: string | null | undefined): string {
       decipher.update(Buffer.from(dataB64, "base64url")),
       decipher.final(),
     ]).toString("utf8")
-  } catch {
+  } catch (err) {
+    console.warn(
+      "[t-book] failed to decrypt org secret — re-save the value in org settings (encryption key mismatch?).",
+      err instanceof Error ? err.message : err
+    )
     return ""
   }
+}
+
+/** Ciphertext is stored but cannot be read with the current TBOOK_ORG_SECRETS_KEY / AUTH_SECRET. */
+export function orgSecretLooksEncrypted(stored: string | null | undefined): boolean {
+  return String(stored ?? "").trim().startsWith(PREFIX)
 }
 
 /** Mask for admin UI — never return full secrets to the client. */

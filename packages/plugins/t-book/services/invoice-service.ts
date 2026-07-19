@@ -127,22 +127,49 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
     booking.organizationId ? String(booking.organizationId) : organizationId
   )
   const platformEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
-  if (!orgSzamlazz && !platformEnabled) {
-    // Finalize may have flipped status to pending — clear it so the success page stops waiting.
-    // Common on test purchases when Számlázz.hu is not enabled for the org (and platform flag is off).
-    if (booking.invoiceStatus === "pending" || booking.invoiceStatus === "none" || !booking.invoiceStatus) {
-      booking.invoiceStatus = "none"
-      booking.invoiceError =
-        "Invoicing is not configured — enable Számlázz.hu in tBook org settings (or the platform szamlazzInvoicing flag)."
+  const platformAgentKey = process.env.SZAMLAZZ_AGENT_KEY?.trim() || ""
+  const platformUser = process.env.SZAMLAZZ_USER?.trim() || ""
+  const platformPassword = process.env.SZAMLAZZ_PASSWORD?.trim() || ""
+  const platformHasCredentials = Boolean(
+    platformAgentKey || (platformUser && platformPassword)
+  )
+
+  if (orgSzamlazz.status !== "ready") {
+    // Org explicitly enabled but key unusable — fail loudly (do not silently use empty platform env).
+    if (
+      orgSzamlazz.reason === "missing_key" ||
+      orgSzamlazz.reason === "decrypt_failed"
+    ) {
+      booking.invoiceStatus = "failed"
+      booking.invoiceError = orgSzamlazz.message
       await booking.save()
+      console.error("[t-book] invoice failed:", orgSzamlazz.reason, bookingId)
+      return
     }
-    console.warn(
-      "[t-book] invoice skipped (Számlázz not configured)",
-      bookingId,
-      "orgId=",
-      booking.organizationId ? String(booking.organizationId) : null
-    )
-    return
+
+    if (!platformEnabled || !platformHasCredentials) {
+      if (
+        booking.invoiceStatus === "pending" ||
+        booking.invoiceStatus === "none" ||
+        !booking.invoiceStatus
+      ) {
+        booking.invoiceStatus = "none"
+        booking.invoiceError =
+          orgSzamlazz.reason === "disabled"
+            ? "Invoicing is not configured — enable Számlázz.hu in tBook org settings and save an agent key."
+            : orgSzamlazz.message
+        await booking.save()
+      }
+      console.warn(
+        "[t-book] invoice skipped (Számlázz not configured)",
+        bookingId,
+        "orgId=",
+        booking.organizationId ? String(booking.organizationId) : null,
+        "reason=",
+        orgSzamlazz.reason
+      )
+      return
+    }
   }
 
   booking.invoiceStatus = "pending"
@@ -168,15 +195,16 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
     const vat = await resolveBookingVatPercents(booking)
     const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking, vat), {
       currency: bookingCurrency,
-      credentials: orgSzamlazz
-        ? {
-            agentKey: orgSzamlazz.agentKey,
-            sellerName: orgSzamlazz.sellerName,
-            // Card payments — bank transfer seller fields are unused.
-            sellerBank: "",
-            sellerBankAccount: "",
-          }
-        : undefined,
+      credentials:
+        orgSzamlazz.status === "ready"
+          ? {
+              agentKey: orgSzamlazz.agentKey,
+              sellerName: orgSzamlazz.sellerName,
+              // Card payments — bank transfer seller fields are unused.
+              sellerBank: "",
+              sellerBankAccount: "",
+            }
+          : undefined,
     })
     booking.invoiceStatus = "issued"
     booking.invoiceId = result.invoiceId

@@ -9,7 +9,7 @@ import EmailTemplate from "@wse/core/models/EmailTemplate"
 import { STRIPE_API_VERSION, getStripeClient, getStripeWebhookSecret } from "@wse/core/services/stripe"
 import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import TBookOrganization, { type ITBookOrganization } from "../models/TBookOrganization"
-import { decryptOrgSecret } from "./org-secrets"
+import { decryptOrgSecret, orgSecretLooksEncrypted } from "./org-secrets"
 
 function oid(id: string) {
   return id
@@ -201,14 +201,61 @@ export async function sendOrgTemplatedEmail(opts: {
   })
 }
 
-export async function resolveOrgSzamlazz(organizationId: string | null | undefined) {
-  if (!organizationId) return null
+export type OrgSzamlazzResolution =
+  | { status: "ready"; agentKey: string; sellerName: string }
+  | {
+      status: "unavailable"
+      reason: "no_org" | "disabled" | "missing_key" | "decrypt_failed"
+      message: string
+    }
+
+export async function resolveOrgSzamlazz(
+  organizationId: string | null | undefined
+): Promise<OrgSzamlazzResolution> {
+  if (!organizationId) {
+    return {
+      status: "unavailable",
+      reason: "no_org",
+      message: "Booking has no organization — cannot load Számlázz.hu settings.",
+    }
+  }
   const org = await loadOrganization(organizationId)
-  const s = org?.settings?.szamlazz
-  if (!s?.enabled) return null
-  const agentKey = decryptOrgSecret(s.agentKeyEnc)
-  if (!agentKey) return null
+  if (!org) {
+    return {
+      status: "unavailable",
+      reason: "no_org",
+      message: "Organization not found for Számlázz.hu settings.",
+    }
+  }
+  const s = org.settings?.szamlazz
+  if (!s?.enabled) {
+    return {
+      status: "unavailable",
+      reason: "disabled",
+      message: "Számlázz.hu is not enabled for this organization.",
+    }
+  }
+  const stored = String(s.agentKeyEnc ?? "").trim()
+  if (!stored) {
+    return {
+      status: "unavailable",
+      reason: "missing_key",
+      message:
+        "Számlázz.hu is enabled but the agent key is empty. Paste the agent key in Organization → Számlázz.hu and save.",
+    }
+  }
+  const agentKey = decryptOrgSecret(stored)
+  if (!agentKey) {
+    return {
+      status: "unavailable",
+      reason: orgSecretLooksEncrypted(stored) ? "decrypt_failed" : "missing_key",
+      message: orgSecretLooksEncrypted(stored)
+        ? "Számlázz.hu agent key is stored but cannot be decrypted (encryption key mismatch). Re-enter the agent key in Organization → Számlázz.hu and save."
+        : "Számlázz.hu agent key is missing. Re-enter it in Organization → Számlázz.hu and save.",
+    }
+  }
   return {
+    status: "ready",
     agentKey,
     sellerName: s.sellerName || "",
   }
