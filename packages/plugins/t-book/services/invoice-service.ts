@@ -1,5 +1,4 @@
 import dbConnect from "@wse/core/lib/db"
-import { FeatureFlagService } from "@wse/core/services/feature-flags"
 import { InvoicingSzamlazzService } from "@wse/core/services/invoicing-szamlazz"
 import type { IOrder } from "@wse/core/models/Order"
 import TBookBooking, { type ITBookBooking } from "../models/TBookBooking"
@@ -100,6 +99,23 @@ async function resolveBookingVatPercents(booking: ITBookBooking): Promise<{
   return { ticketVatPercent, accommodationVatPercent }
 }
 
+/** Org-level Számlázz credentials only — no platform env for multi-tenant bookings. */
+async function requireOrgSzamlazzCredentials(
+  organizationId: string | null | undefined
+): Promise<{ agentKey: string; sellerName: string; sellerBank: string; sellerBankAccount: string }> {
+  const { resolveOrgSzamlazz } = await import("../lib/org-integrations")
+  const orgSzamlazz = await resolveOrgSzamlazz(organizationId)
+  if (orgSzamlazz.status !== "ready") {
+    throw new Error(orgSzamlazz.message)
+  }
+  return {
+    agentKey: orgSzamlazz.agentKey,
+    sellerName: orgSzamlazz.sellerName,
+    sellerBank: "",
+    sellerBankAccount: "",
+  }
+}
+
 async function deliverInvoiceEmailIfNeeded(booking: ITBookBooking): Promise<void> {
   if (booking.invoiceStatus !== "issued" || booking.invoiceEmailSentAt) return
   const { sendBookingInvoiceEmail } = await import("../lib/send-invoice-email")
@@ -122,54 +138,20 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
     return
   }
 
+  const orgId = booking.organizationId ? String(booking.organizationId) : organizationId
   const { resolveOrgSzamlazz } = await import("../lib/org-integrations")
-  const orgSzamlazz = await resolveOrgSzamlazz(
-    booking.organizationId ? String(booking.organizationId) : organizationId
-  )
-  const platformEnabled = await FeatureFlagService.isEnabled("szamlazzInvoicing", false)
-  const platformAgentKey = process.env.SZAMLAZZ_AGENT_KEY?.trim() || ""
-  const platformUser = process.env.SZAMLAZZ_USER?.trim() || ""
-  const platformPassword = process.env.SZAMLAZZ_PASSWORD?.trim() || ""
-  const platformHasCredentials = Boolean(
-    platformAgentKey || (platformUser && platformPassword)
-  )
+  const orgSzamlazz = await resolveOrgSzamlazz(orgId)
 
   if (orgSzamlazz.status !== "ready") {
-    // Org explicitly enabled but key unusable — fail loudly (do not silently use empty platform env).
-    if (
-      orgSzamlazz.reason === "missing_key" ||
-      orgSzamlazz.reason === "decrypt_failed"
-    ) {
-      booking.invoiceStatus = "failed"
-      booking.invoiceError = orgSzamlazz.message
-      await booking.save()
-      console.error("[t-book] invoice failed:", orgSzamlazz.reason, bookingId)
-      return
-    }
-
-    if (!platformEnabled || !platformHasCredentials) {
-      if (
-        booking.invoiceStatus === "pending" ||
-        booking.invoiceStatus === "none" ||
-        !booking.invoiceStatus
-      ) {
-        booking.invoiceStatus = "none"
-        booking.invoiceError =
-          orgSzamlazz.reason === "disabled"
-            ? "Invoicing is not configured — enable Számlázz.hu in tBook org settings and save an agent key."
-            : orgSzamlazz.message
-        await booking.save()
-      }
-      console.warn(
-        "[t-book] invoice skipped (Számlázz not configured)",
-        bookingId,
-        "orgId=",
-        booking.organizationId ? String(booking.organizationId) : null,
-        "reason=",
-        orgSzamlazz.reason
-      )
-      return
-    }
+    booking.invoiceStatus =
+      orgSzamlazz.reason === "disabled" || orgSzamlazz.reason === "no_org" ? "none" : "failed"
+    booking.invoiceError =
+      orgSzamlazz.reason === "disabled"
+        ? "Invoicing is not configured — enable Számlázz.hu in Organization settings and save an agent key."
+        : orgSzamlazz.message
+    await booking.save()
+    console.error("[t-book] invoice skipped/failed:", orgSzamlazz.reason, bookingId)
+    return
   }
 
   booking.invoiceStatus = "pending"
@@ -193,26 +175,11 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
 
   try {
     const vat = await resolveBookingVatPercents(booking)
-    const credentials =
-      orgSzamlazz.status === "ready"
-        ? {
-            agentKey: orgSzamlazz.agentKey,
-            sellerName: orgSzamlazz.sellerName,
-            sellerBank: "",
-            sellerBankAccount: "",
-          }
-        : platformAgentKey
-          ? { agentKey: platformAgentKey }
-          : platformUser && platformPassword
-            ? undefined // Client will use SZAMLAZZ_USER / SZAMLAZZ_PASSWORD from env
-            : null
-
-    if (credentials === null) {
-      booking.invoiceStatus = "failed"
-      booking.invoiceError =
-        "Számlázz credentials are missing. Enable Számlázz.hu on the organization and save an agent key (Organization → Számlázz.hu)."
-      await booking.save()
-      return
+    const credentials = {
+      agentKey: orgSzamlazz.agentKey,
+      sellerName: orgSzamlazz.sellerName,
+      sellerBank: "",
+      sellerBankAccount: "",
     }
 
     const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking, vat), {
@@ -240,7 +207,10 @@ export async function reverseBookingInvoice(bookingId: string, organizationId?: 
   if (!booking?.invoiceId || booking.invoiceStatus !== "issued") {
     throw new Error("Nincs kiállított számla ehhez a foglaláshoz.")
   }
-  await InvoicingSzamlazzService.reverseInvoice(booking.invoiceId)
+  const credentials = await requireOrgSzamlazzCredentials(
+    booking.organizationId ? String(booking.organizationId) : organizationId
+  )
+  await InvoicingSzamlazzService.reverseInvoice(booking.invoiceId, credentials)
   booking.invoiceStatus = "reversed"
   await booking.save()
 }
@@ -253,9 +223,23 @@ export async function downloadBookingInvoicePdf(
   const booking = await TBookBooking.findById(bookingId).lean()
   assertBookingOrg(booking as ITBookBooking | null, organizationId)
   if (!booking?.invoiceId) return null
+
+  const orgId =
+    booking.organizationId != null
+      ? String(booking.organizationId)
+      : organizationId
+  // Stored PDF can be returned without Számlázz; provider fetch needs org agent key.
+  let credentials: Awaited<ReturnType<typeof requireOrgSzamlazzCredentials>> | undefined
+  try {
+    credentials = await requireOrgSzamlazzCredentials(orgId)
+  } catch (error) {
+    if (!booking.invoicePdfFileName) throw error
+  }
+
   return InvoicingSzamlazzService.downloadInvoicePdf({
     invoiceId: booking.invoiceId,
     legacyOrderNumber: String(booking._id),
     fallbackFileName: booking.invoicePdfFileName ?? undefined,
+    credentials,
   })
 }

@@ -124,16 +124,18 @@ export class InvoicingSzamlazzService {
     requestInvoiceDownload: boolean = true,
     override?: SzamlazzCredentialOverride
   ) {
-    const authToken = override?.agentKey?.trim() || process.env.SZAMLAZZ_AGENT_KEY;
-    const user = process.env.SZAMLAZZ_USER;
-    const password = process.env.SZAMLAZZ_PASSWORD;
+    const authToken = override?.agentKey?.trim() || process.env.SZAMLAZZ_AGENT_KEY?.trim() || "";
+    const user = process.env.SZAMLAZZ_USER?.trim() || "";
+    const password = process.env.SZAMLAZZ_PASSWORD?.trim() || "";
 
     if (!authToken && (!user || !password)) {
-      throw new Error("Számlázz credentials are missing. Set SZAMLAZZ_AGENT_KEY or SZAMLAZZ_USER/SZAMLAZZ_PASSWORD.");
+      throw new Error(
+        "Számlázz credentials are missing. Pass an organization agent key (multi-tenant) or set SZAMLAZZ_AGENT_KEY / SZAMLAZZ_USER+SZAMLAZZ_PASSWORD for platform invoicing."
+      );
     }
 
     return new Client({
-      authToken,
+      authToken: authToken || undefined,
       user: authToken ? undefined : user,
       password: authToken ? undefined : password,
       eInvoice: true,
@@ -245,13 +247,16 @@ export class InvoicingSzamlazzService {
     return null;
   }
 
-  static async reverseInvoice(invoiceId: string): Promise<{ invoiceId: string }> {
+  static async reverseInvoice(
+    invoiceId: string,
+    credentials?: SzamlazzCredentialOverride
+  ): Promise<{ invoiceId: string }> {
     const trimmed = invoiceId.trim();
     if (!trimmed) {
       throw new Error("Számla sztornózás sikertelen: hiányzó számlaszám.");
     }
 
-    const client = this.getClient(false);
+    const client = this.getClient(false, credentials);
     const response = await client.reverseInvoice({
       invoiceId: trimmed,
       eInvoice: true,
@@ -270,8 +275,16 @@ export class InvoicingSzamlazzService {
     /** Full MongoDB id for invoices issued before short order numbers. */
     legacyOrderNumber?: string;
     fallbackFileName?: string;
+    /** Per-tenant / org agent key — required when platform SZAMLAZZ_* env is unset. */
+    credentials?: SzamlazzCredentialOverride;
   }) {
-    const client = this.getClient(false);
+    // Prefer already-persisted PDF so email/retry works without re-authing to Számlázz.
+    if (params.fallbackFileName) {
+      const fromDb = await loadInvoicePdf(params.fallbackFileName);
+      if (fromDb) return fromDb;
+    }
+
+    const client = this.getClient(false, params.credentials);
     const orderNumbers = [
       params.orderNumber,
       params.legacyOrderNumber &&
@@ -286,11 +299,6 @@ export class InvoicingSzamlazzService {
         orderNumber,
       });
       if (pdf) return pdf;
-    }
-
-    if (params.fallbackFileName) {
-      const fromDb = await loadInvoicePdf(params.fallbackFileName);
-      if (fromDb) return fromDb;
     }
 
     return null;
