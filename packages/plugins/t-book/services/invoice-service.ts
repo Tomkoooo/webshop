@@ -193,18 +193,31 @@ export async function issueBookingInvoice(bookingId: string, organizationId?: st
 
   try {
     const vat = await resolveBookingVatPercents(booking)
+    const credentials =
+      orgSzamlazz.status === "ready"
+        ? {
+            agentKey: orgSzamlazz.agentKey,
+            sellerName: orgSzamlazz.sellerName,
+            sellerBank: "",
+            sellerBankAccount: "",
+          }
+        : platformAgentKey
+          ? { agentKey: platformAgentKey }
+          : platformUser && platformPassword
+            ? undefined // Client will use SZAMLAZZ_USER / SZAMLAZZ_PASSWORD from env
+            : null
+
+    if (credentials === null) {
+      booking.invoiceStatus = "failed"
+      booking.invoiceError =
+        "Számlázz credentials are missing. Enable Számlázz.hu on the organization and save an agent key (Organization → Számlázz.hu)."
+      await booking.save()
+      return
+    }
+
     const result = await InvoicingSzamlazzService.issueInvoice(bookingToInvoiceOrder(booking, vat), {
       currency: bookingCurrency,
-      credentials:
-        orgSzamlazz.status === "ready"
-          ? {
-              agentKey: orgSzamlazz.agentKey,
-              sellerName: orgSzamlazz.sellerName,
-              // Card payments — bank transfer seller fields are unused.
-              sellerBank: "",
-              sellerBankAccount: "",
-            }
-          : undefined,
+      credentials,
     })
     booking.invoiceStatus = "issued"
     booking.invoiceId = result.invoiceId

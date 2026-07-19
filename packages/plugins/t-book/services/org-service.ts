@@ -174,6 +174,7 @@ export class TBookOrgService {
       emailTemplates?: {
         bookingConfirmation?: { subject: string; body: string } | null
         voucherDelivery?: { subject: string; body: string } | null
+        invoiceSent?: { subject: string; body: string } | null
       }
     }
   ): Promise<void> {
@@ -240,6 +241,9 @@ export class TBookOrgService {
       if (patch.emailTemplates.voucherDelivery !== undefined) {
         update["settings.emailTemplates.voucherDelivery"] = patch.emailTemplates.voucherDelivery
       }
+      if (patch.emailTemplates.invoiceSent !== undefined) {
+        update["settings.emailTemplates.invoiceSent"] = patch.emailTemplates.invoiceSent
+      }
     }
 
     await TBookOrganization.updateOne({ _id: oid(organizationId) }, { $set: update })
@@ -298,6 +302,10 @@ export class TBookOrgService {
           voucherDelivery: org.settings?.emailTemplates?.voucherDelivery || {
             subject: defaults[1]?.subject || "",
             body: defaults[1]?.body || "",
+          },
+          invoiceSent: org.settings?.emailTemplates?.invoiceSent || {
+            subject: defaults[2]?.subject || "",
+            body: defaults[2]?.body || "",
           },
         },
       },

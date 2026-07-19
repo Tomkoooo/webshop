@@ -140,10 +140,15 @@ export async function sendOrgTemplatedEmail(opts: {
 
   if (opts.organizationId) {
     const org = await loadOrganization(opts.organizationId)
+    const templates = org?.settings?.emailTemplates
     const override =
       opts.templateType === "t_book_booking_confirmation"
-        ? org?.settings?.emailTemplates?.bookingConfirmation
-        : org?.settings?.emailTemplates?.voucherDelivery
+        ? templates?.bookingConfirmation
+        : opts.templateType === "t_book_voucher_delivery"
+          ? templates?.voucherDelivery
+          : opts.templateType === "t_book_invoice_sent"
+            ? templates?.invoiceSent
+            : null
     if (override?.subject?.trim() && override?.body?.trim()) {
       subject = override.subject
       body = override.body

@@ -5,11 +5,11 @@ import { AdminPageScaffold } from "@wse/core/components/admin/AdminPageScaffold"
 import { Button } from "@wse/core/components/ui/button"
 import { Input } from "@wse/core/components/ui/input"
 import { Label } from "@wse/core/components/ui/label"
-import { Textarea } from "@wse/core/components/ui/textarea"
 import { Checkbox } from "@wse/core/components/ui/checkbox"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { tbookOrgApi } from "./org-api"
 import { CurrencySelect } from "./CurrencySelect"
+import { TBookRichTextField } from "./TBookRichTextField"
 
 type Masked = { configured: boolean; hint: string; needsResave?: boolean }
 
@@ -40,6 +40,7 @@ type OrgSettingsPayload = {
     emailTemplates: {
       bookingConfirmation: { subject: string; body: string }
       voucherDelivery: { subject: string; body: string }
+      invoiceSent?: { subject: string; body: string }
     }
   }
 }
@@ -81,6 +82,8 @@ export function TBookOrgSettingsScreen() {
   const [bookingBody, setBookingBody] = useState("")
   const [voucherSubject, setVoucherSubject] = useState("")
   const [voucherBody, setVoucherBody] = useState("")
+  const [invoiceSubject, setInvoiceSubject] = useState("")
+  const [invoiceBody, setInvoiceBody] = useState("")
 
   useEffect(() => {
     void tbookOrgApi
@@ -108,6 +111,8 @@ export function TBookOrgSettingsScreen() {
         setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
         setVoucherSubject(s.emailTemplates?.voucherDelivery?.subject || "")
         setVoucherBody(s.emailTemplates?.voucherDelivery?.body || "")
+        setInvoiceSubject(s.emailTemplates?.invoiceSent?.subject || "")
+        setInvoiceBody(s.emailTemplates?.invoiceSent?.body || "")
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
@@ -143,6 +148,7 @@ export function TBookOrgSettingsScreen() {
         emailTemplates: {
           bookingConfirmation: { subject: bookingSubject, body: bookingBody },
           voucherDelivery: { subject: voucherSubject, body: voucherBody },
+          invoiceSent: { subject: invoiceSubject, body: invoiceBody },
         },
       })
       setStripeSecret("")
@@ -338,29 +344,64 @@ export function TBookOrgSettingsScreen() {
       ) : null}
 
       {tab === "emails" ? (
-        <div className="grid max-w-3xl gap-6">
+        <div className="grid max-w-3xl gap-8">
           <p className="text-muted-foreground text-sm">
-            Handlebars változók: {"{{customerName}}"}, {"{{eventName}}"}, {"{{total}}"}, {"{{currency}}"},{" "}
-            {"{{bookingId}}"}, {"{{guests}}"}, {"{{voucherCount}}"}.
+            Handlebars változók: {"{{customerName}}"}, {"{{eventName}}"}, {"{{total}}"},{" "}
+            {"{{currency}}"}, {"{{bookingId}}"}, {"{{guests}}"}, {"{{voucherCount}}"},{" "}
+            {"{{invoiceId}}"}.
           </p>
           <div className="grid gap-3">
             <h3 className="text-lg font-semibold">Foglalás visszaigazolás</h3>
-            <Input value={bookingSubject} onChange={(e) => setBookingSubject(e.target.value)} placeholder="Tárgy" />
-            <Textarea
+            <div className="grid gap-2">
+              <Label>Tárgy</Label>
+              <Input
+                value={bookingSubject}
+                onChange={(e) => setBookingSubject(e.target.value)}
+                placeholder="Tárgy"
+              />
+            </div>
+            <TBookRichTextField
+              label="Törzs"
               value={bookingBody}
-              onChange={(e) => setBookingBody(e.target.value)}
-              rows={10}
-              className="font-mono text-xs"
+              onChange={setBookingBody}
+              minHeight="min-h-[200px]"
             />
           </div>
           <div className="grid gap-3">
-            <h3 className="text-lg font-semibold">Jegy kézbesítés</h3>
-            <Input value={voucherSubject} onChange={(e) => setVoucherSubject(e.target.value)} placeholder="Tárgy" />
-            <Textarea
+            <h3 className="text-lg font-semibold">Jegy / belépő kézbesítés</h3>
+            <div className="grid gap-2">
+              <Label>Tárgy</Label>
+              <Input
+                value={voucherSubject}
+                onChange={(e) => setVoucherSubject(e.target.value)}
+                placeholder="Tárgy"
+              />
+            </div>
+            <TBookRichTextField
+              label="Törzs"
               value={voucherBody}
-              onChange={(e) => setVoucherBody(e.target.value)}
-              rows={10}
-              className="font-mono text-xs"
+              onChange={setVoucherBody}
+              minHeight="min-h-[200px]"
+            />
+          </div>
+          <div className="grid gap-3">
+            <h3 className="text-lg font-semibold">Számla e-mail</h3>
+            <p className="text-muted-foreground text-sm">
+              Ezt kapja a vendég, amikor a Számlázz.hu számla PDF elkészül (külön a belépőjegytől).
+            </p>
+            <div className="grid gap-2">
+              <Label>Tárgy</Label>
+              <Input
+                value={invoiceSubject}
+                onChange={(e) => setInvoiceSubject(e.target.value)}
+                placeholder="Tárgy"
+              />
+            </div>
+            <TBookRichTextField
+              label="Törzs"
+              value={invoiceBody}
+              onChange={setInvoiceBody}
+              minHeight="min-h-[200px]"
             />
           </div>
         </div>

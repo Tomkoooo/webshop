@@ -38,6 +38,8 @@ export type TBookOrgEmailTemplateOverride = {
 export type TBookOrgEmailTemplates = {
   bookingConfirmation?: TBookOrgEmailTemplateOverride | null
   voucherDelivery?: TBookOrgEmailTemplateOverride | null
+  /** Guest email when the Számlázz.hu invoice PDF is sent. */
+  invoiceSent?: TBookOrgEmailTemplateOverride | null
 }
 
 export interface ITBookOrganizationSettings {
@@ -114,6 +116,7 @@ const TBookOrganizationSchema = new Schema<ITBookOrganization>(
       emailTemplates: {
         bookingConfirmation: { type: EmailTemplateOverrideSchema, default: undefined },
         voucherDelivery: { type: EmailTemplateOverrideSchema, default: undefined },
+        invoiceSent: { type: EmailTemplateOverrideSchema, default: undefined },
       },
       voucherPdfLayout: { type: Schema.Types.Mixed, default: undefined },
     },
