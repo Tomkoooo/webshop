@@ -862,7 +862,9 @@ export function EventFormPage({
                   ? "Az esemény saját borítóképe érvényes."
                   : groupDefaultHeroImage.trim()
                     ? "Ha üres, a csoport alapértelmezett esemény borítóképe jelenik meg."
-                    : "Ha üres és a csoportnál sincs beállítva, nem jelenik meg borítókép."}
+                    : "Ha üres és a csoportnál sincs beállítva, nem jelenik meg borítókép."}{" "}
+                SVG feltöltéskor a fájl vektorként marad (nem JPEG-re vágjuk) — a már
+                pixelezett borítót cseréld le újra SVG-vel.
               </p>
               <div className="rounded-lg bg-muted/30 p-4 space-y-4">
                 <p className="text-sm font-medium text-foreground">Belépőjegy (QR PDF)</p>

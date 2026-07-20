@@ -33,21 +33,48 @@ export function MultiImageUpload({
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    const newQueue: string[] = []
-    
+    const svgFiles: File[] = []
+    const rasterQueue: string[] = []
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
+      const name = file.name.toLowerCase()
+      const isSvg = file.type === "image/svg+xml" || name.endsWith(".svg")
+      if (isSvg) {
+        svgFiles.push(file)
+        continue
+      }
       const reader = new FileReader()
       const promise = new Promise<string>((resolve) => {
         reader.onload = () => resolve(reader.result as string)
       })
       reader.readAsDataURL(file)
-      newQueue.push(await promise)
+      rasterQueue.push(await promise)
     }
 
-    setCropQueue(prev => [...prev, ...newQueue])
-    setIsCropping(true)
-    e.target.value = "" // Reset input
+    // Upload SVGs as-is (cropper would rasterize them to JPEG).
+    if (svgFiles.length > 0) {
+      setUploading(true)
+      try {
+        for (const file of svgFiles) {
+          const formData = new FormData()
+          formData.append("file", file, file.name)
+          const res = await fetch("/api/media", { method: "POST", body: formData })
+          const data = await res.json()
+          if (data.filename) setImages((prev) => [...prev, data.filename])
+        }
+      } catch (error) {
+        console.error("Upload failed:", error)
+      } finally {
+        setUploading(false)
+      }
+    }
+
+    if (rasterQueue.length > 0) {
+      setCropQueue((prev) => [...prev, ...rasterQueue])
+      setIsCropping(true)
+    }
+    e.target.value = ""
   }
 
   const handleCropComplete = async (croppedBlob: Blob) => {
@@ -179,7 +206,7 @@ export function MultiImageUpload({
             {uploading ? <LoadingSpinner size="xs" /> : <Upload className="w-5 h-5 text-muted-foreground" />}
           </div>
           <span className="text-sm text-muted-foreground">Képek hozzáadása</span>
-          <input type="file" className="hidden" onChange={handleUpload} accept="image/*" multiple />
+          <input type="file" className="hidden" onChange={handleUpload} accept="image/*,.svg" multiple />
         </label>
       </div>
       

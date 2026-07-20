@@ -153,12 +153,21 @@ export function TBookEventList({
               }
             >
               {event.heroImage ? (
-                <div
-                  className="h-40 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${mediaImageSrc(event.heroImage)})` }}
-                  role="img"
-                  aria-label={event.name}
-                />
+                <div className="relative h-40 overflow-hidden bg-muted">
+                  {/* Prefer <img> over CSS background so SVG covers stay vector-sharp. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mediaImageSrc(event.heroImage)}
+                    alt=""
+                    className={
+                      /\.svg($|\?)/i.test(event.heroImage) ||
+                      event.heroImage.includes("image/svg")
+                        ? "absolute inset-0 size-full object-contain p-3"
+                        : "absolute inset-0 size-full object-cover"
+                    }
+                  />
+                  <span className="sr-only">{event.name}</span>
+                </div>
               ) : (
                 <div className="flex h-40 items-center justify-center bg-muted">
                   <Ticket className="size-10 text-muted-foreground" aria-hidden />
