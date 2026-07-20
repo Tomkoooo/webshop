@@ -107,6 +107,7 @@ function serializeHotel(h: ITBookHotel) {
     gallery: h.gallery,
     currency: h.currency ?? "HUF",
     bookingCapacity: h.bookingCapacity ?? null,
+    roomInventory: h.roomInventory ?? null,
     registrationFieldSchema: h.registrationFieldSchema ?? [],
     pricing: h.pricing,
     status: h.status,

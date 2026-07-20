@@ -106,6 +106,7 @@ export type AdminHotel = {
   gallery: string[]
   currency: string
   bookingCapacity: number | null
+  roomInventory: number | null
   registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
   status: "draft" | "active" | "archived"

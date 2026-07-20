@@ -64,6 +64,7 @@ type HotelDraft = {
   gallery: string[]
   currency: string
   bookingCapacity: string
+  roomInventory: string
   status: "draft" | "active" | "archived"
   pricing: TBookHotelPricing
 }
@@ -90,6 +91,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
       gallery: [],
       currency: "HUF",
       bookingCapacity: "",
+      roomInventory: "",
       status: "draft",
       pricing: emptyPricing(),
     }
@@ -105,6 +107,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
     gallery: hotel.gallery,
     currency: normalizeTBookCurrency(hotel.currency),
     bookingCapacity: hotel.bookingCapacity != null ? String(hotel.bookingCapacity) : "",
+    roomInventory: hotel.roomInventory != null ? String(hotel.roomInventory) : "",
     status: hotel.status,
     pricing: normalizeHotelPricing(hotel.pricing),
   }
@@ -163,6 +166,9 @@ function HotelEditor({
           : null,
         bookingCapacity: draft.bookingCapacity.trim()
           ? Math.max(0, Number(draft.bookingCapacity) || 0)
+          : null,
+        roomInventory: draft.roomInventory.trim()
+          ? Math.max(0, Number(draft.roomInventory) || 0)
           : null,
         eventId: event.id,
       }
@@ -271,6 +277,20 @@ function HotelEditor({
                   <p className="text-xs text-muted-foreground">
                     Összes szálláshely-foglaló vendég felső határa ehhez a szálláshoz (nem
                     szobatípusonként / csomagonként). Üres = korlátlan.
+                  </p>
+                </TBookField>
+                <TBookField label="Max. szobaszám (közös készlet)">
+                  <TBookInput
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={draft.roomInventory}
+                    onChange={(e) => patch({ roomInventory: e.target.value })}
+                    placeholder="pl. 20"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Közös szobaallokáció minden csomagra (pl. 20 szoba single + double
+                    együtt). Üres = korlátlan. Csomagonkénti készlet továbbra is szűkíthet.
                   </p>
                 </TBookField>
                 <TBookRichTextField

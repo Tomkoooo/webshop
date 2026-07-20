@@ -324,6 +324,16 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               description:
                 "Remaining hotel-level guest capacity. Null = unlimited. Sold-out hotels are omitted.",
             },
+            roomInventory: {
+              type: ["integer", "null"],
+              description:
+                "Shared room/package-unit pool across all packages (e.g. 20 rooms for single+double). Null = unlimited.",
+            },
+            remainingRoomInventory: {
+              type: ["integer", "null"],
+              description:
+                "Remaining shared room units. Null = unlimited. Sold-out hotels are omitted.",
+            },
             registrationFieldSchema: {
               type: "array",
               items: { $ref: "#/components/schemas/AttendeeField" },

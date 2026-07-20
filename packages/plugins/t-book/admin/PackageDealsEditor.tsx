@@ -137,7 +137,7 @@ export function PackageDealsEditor({
                     min={0}
                     max={10000}
                     placeholder="Üres = korlátlan"
-                    title="Ennyi szoba/csomag egység foglalható összesen (a szállodától kapott keret)."
+                    title="Ennyi szoba/csomag egység foglalható ebből a csomagból. A szállás közös szobakészlete (ha be van állítva) felülírhatja."
                     value={pkg.inventoryUnits ?? ""}
                     onChange={(e) => {
                       const raw = e.target.value.trim()

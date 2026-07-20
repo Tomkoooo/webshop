@@ -29,6 +29,10 @@ export function packageUnitsFromSelections(
   return { [dealKey]: packageUnitsForGuests(deal, accommodationGuests) }
 }
 
+export function totalPackageUnits(units: Record<string, number>): number {
+  return Object.values(units).reduce((sum, qty) => sum + Math.max(0, qty), 0)
+}
+
 /**
  * Sold units for a hotel, using package `maxGuests` when only `package_deal` is set.
  * Inventory is hotel-wide (allotment from the property), not per event.
@@ -66,6 +70,48 @@ export async function countSoldPackageUnitsForHotel(
   return sold
 }
 
+/** Total sold package/room units across all package types for this hotel. */
+export async function countSoldRoomUnitsForHotel(
+  hotelId: Types.ObjectId | string,
+  packages: TBookPackageDeal[]
+): Promise<number> {
+  const sold = await countSoldPackageUnitsForHotel(hotelId, packages)
+  return totalPackageUnits(sold)
+}
+
+export function remainingHotelRoomInventory(
+  roomInventory: number | null | undefined,
+  soldUnits: number
+): number | null {
+  if (roomInventory == null || roomInventory < 0) return null
+  return Math.max(0, roomInventory - soldUnits)
+}
+
+/** Throws if requested package units exceed the shared hotel room pool. */
+export async function assertHotelRoomInventoryAvailable(opts: {
+  hotelId: Types.ObjectId | string
+  roomInventory: number | null | undefined
+  packages: TBookPackageDeal[]
+  selections: TBookSelections | Record<string, unknown>
+  accommodationGuests: number
+}): Promise<void> {
+  if (opts.roomInventory == null || opts.roomInventory < 0) return
+  const requested = totalPackageUnits(
+    packageUnitsFromSelections(opts.selections, opts.packages, opts.accommodationGuests)
+  )
+  if (requested <= 0) return
+  const sold = await countSoldRoomUnitsForHotel(opts.hotelId, opts.packages)
+  const remaining = remainingHotelRoomInventory(opts.roomInventory, sold)
+  if (remaining == null) return
+  if (requested > remaining) {
+    throw new Error(
+      remaining === 0
+        ? "This hotel has no rooms left."
+        : `Only ${remaining} room(s) left at this hotel (you need ${requested}).`
+    )
+  }
+}
+
 /** Throws if requested units exceed remaining allotment. */
 export async function assertPackageInventoryAvailable(opts: {
   hotelId: Types.ObjectId | string
@@ -100,18 +146,32 @@ export async function assertPackageInventoryAvailable(opts: {
   }
 }
 
-/** Attach remainingUnits onto packages for public hotel payloads. */
+/**
+ * Attach remainingUnits onto packages for public hotel payloads.
+ * When `sharedRemaining` is set, each package is capped by the shared hotel room pool.
+ */
 export function withPackageRemainingUnits(
   packages: TBookPackageDeal[],
-  soldByKey: Record<string, number>
+  soldByKey: Record<string, number>,
+  sharedRemaining?: number | null
 ): Array<TBookPackageDeal & { remainingUnits?: number | null }> {
   return packages.map((pkg) => {
-    if (pkg.inventoryUnits == null || pkg.inventoryUnits < 0) {
-      return { ...pkg, remainingUnits: null }
+    const packageRemaining =
+      pkg.inventoryUnits == null || pkg.inventoryUnits < 0
+        ? null
+        : Math.max(0, pkg.inventoryUnits - (soldByKey[pkg.key] ?? 0))
+
+    if (sharedRemaining == null) {
+      return { ...pkg, remainingUnits: packageRemaining }
     }
+
+    if (packageRemaining == null) {
+      return { ...pkg, remainingUnits: sharedRemaining }
+    }
+
     return {
       ...pkg,
-      remainingUnits: Math.max(0, pkg.inventoryUnits - (soldByKey[pkg.key] ?? 0)),
+      remainingUnits: Math.min(packageRemaining, sharedRemaining),
     }
   })
 }
@@ -178,19 +238,22 @@ export async function assertHotelBookingCapacityAvailable(opts: {
 
 export function isHotelPubliclyAvailable(opts: {
   remainingCapacity: number | null
+  remainingRoomInventory?: number | null
   accommodationMode: "room_nights" | "packages" | "both"
   availablePackages: unknown[]
   /** True when the hotel had at least one package with inventory tracking. */
   hadLimitedPackages: boolean
+  /** True when the hotel has a shared room inventory pool. */
+  hadRoomInventory?: boolean
 }): boolean {
   if (opts.remainingCapacity != null && opts.remainingCapacity <= 0) return false
+  if (opts.remainingRoomInventory != null && opts.remainingRoomInventory <= 0) return false
   if (
     opts.accommodationMode === "packages" &&
-    opts.hadLimitedPackages &&
+    (opts.hadLimitedPackages || opts.hadRoomInventory) &&
     opts.availablePackages.length === 0
   ) {
     return false
   }
   return true
 }
-

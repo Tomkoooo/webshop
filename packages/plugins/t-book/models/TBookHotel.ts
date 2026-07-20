@@ -23,6 +23,12 @@ export interface ITBookHotel extends Document {
    * Null = unlimited (package/room inventory may still apply).
    */
   bookingCapacity: number | null
+  /**
+   * Shared room/package-unit pool for this hotel (across all package types).
+   * E.g. 20 rooms that can be booked as single or double packages.
+   * Null = unlimited (per-package inventoryUnits may still apply).
+   */
+  roomInventory: number | null
   /** Extra registration fields collected when this hotel is selected. */
   registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
@@ -161,6 +167,7 @@ const TBookHotelSchema = new Schema<ITBookHotel>(
     gallery: { type: [String], default: [] },
     currency: { type: String, default: "HUF" },
     bookingCapacity: { type: Number, default: null, min: 0 },
+    roomInventory: { type: Number, default: null, min: 0 },
     registrationFieldSchema: { type: [RegistrationFieldDefSchema], default: [] },
     pricing: {
       priceBasis: { type: String, enum: ["net", "gross"], default: "net" },

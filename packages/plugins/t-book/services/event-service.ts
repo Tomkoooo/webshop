@@ -541,6 +541,10 @@ export class TBookEventService {
               typeof h.bookingCapacity === "number" && h.bookingCapacity >= 0
                 ? h.bookingCapacity
                 : null
+            const roomInventory =
+              typeof h.roomInventory === "number" && h.roomInventory >= 0
+                ? h.roomInventory
+                : null
 
             const {
               countSoldPackageUnitsForHotel,
@@ -548,6 +552,8 @@ export class TBookEventService {
               filterAvailablePackages,
               countSoldAccommodationGuestsForHotel,
               remainingHotelBookingCapacity,
+              remainingHotelRoomInventory,
+              totalPackageUnits,
               isHotelPubliclyAvailable,
             } = await import("../lib/package-inventory")
 
@@ -559,21 +565,28 @@ export class TBookEventService {
             const limitedPackages = packages.some(
               (pkg) => pkg.inventoryUnits != null && pkg.inventoryUnits >= 0
             )
-            let packagesForPublic = packages
-            if (limitedPackages) {
-              const sold = await countSoldPackageUnitsForHotel(h._id, packages)
-              packagesForPublic = withPackageRemainingUnits(packages, sold)
-            } else {
-              packagesForPublic = packages.map((pkg) => ({ ...pkg, remainingUnits: null }))
-            }
+            const needsSoldUnits = limitedPackages || roomInventory != null
+            const soldByKey = needsSoldUnits
+              ? await countSoldPackageUnitsForHotel(h._id, packages)
+              : {}
+            const remainingRoomInventory = remainingHotelRoomInventory(
+              roomInventory,
+              totalPackageUnits(soldByKey)
+            )
+
+            const packagesForPublic = needsSoldUnits
+              ? withPackageRemainingUnits(packages, soldByKey, remainingRoomInventory)
+              : packages.map((pkg) => ({ ...pkg, remainingUnits: null }))
 
             const availablePackages = filterAvailablePackages(packagesForPublic)
             if (
               !isHotelPubliclyAvailable({
                 remainingCapacity,
+                remainingRoomInventory,
                 accommodationMode: mode,
                 availablePackages,
                 hadLimitedPackages: limitedPackages,
+                hadRoomInventory: roomInventory != null,
               })
             ) {
               return null
@@ -589,6 +602,8 @@ export class TBookEventService {
               currency: normalizeTBookCurrency(h.currency),
               bookingCapacity,
               remainingCapacity,
+              roomInventory,
+              remainingRoomInventory,
               registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
               pricing: {
                 ...pricing,

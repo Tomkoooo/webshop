@@ -213,15 +213,25 @@ export class TBookBookingService {
 
     if (parsed.hotelId && (quote.accommodationGuests ?? 0) > 0) {
       const hotel = await TBookHotel.findById(oid(parsed.hotelId))
-        .select("pricing bookingCapacity")
+        .select("pricing bookingCapacity roomInventory")
         .lean()
       if (hotel) {
         const pricing = normalizeHotelPricing(hotel.pricing)
-        const { assertPackageInventoryAvailable, assertHotelBookingCapacityAvailable } =
-          await import("../lib/package-inventory")
+        const {
+          assertPackageInventoryAvailable,
+          assertHotelBookingCapacityAvailable,
+          assertHotelRoomInventoryAvailable,
+        } = await import("../lib/package-inventory")
         await assertHotelBookingCapacityAvailable({
           hotelId: parsed.hotelId,
           bookingCapacity: hotel.bookingCapacity,
+          accommodationGuests: quote.accommodationGuests ?? parsed.guests,
+        })
+        await assertHotelRoomInventoryAvailable({
+          hotelId: parsed.hotelId,
+          roomInventory: hotel.roomInventory,
+          packages: pricing.packages ?? [],
+          selections: selections as TBookSelections,
           accommodationGuests: quote.accommodationGuests ?? parsed.guests,
         })
         await assertPackageInventoryAvailable({

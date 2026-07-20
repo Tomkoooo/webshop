@@ -65,6 +65,10 @@ export type TBookPublicHotel = {
   bookingCapacity?: number | null
   /** Remaining hotel-level guest capacity (null = unlimited). */
   remainingCapacity?: number | null
+  /** Shared room/package-unit pool across packages (null = unlimited). */
+  roomInventory?: number | null
+  /** Remaining shared room units (null = unlimited). */
+  remainingRoomInventory?: number | null
   registrationFieldSchema?: TBookPublicAttendeeFieldDef[]
   pricing: TBookHotelPricing
 }
