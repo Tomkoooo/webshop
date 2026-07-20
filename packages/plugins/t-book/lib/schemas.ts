@@ -336,11 +336,17 @@ export const tBookPricingRuleSchema = z.object({
   amountMode: z.enum([
     "fixed",
     "per_person",
+    "per_team",
+    "per_team_member",
     "per_accommodation_guest",
     "percent_accommodation",
     "percent_ticket",
   ]),
 })
+
+export const tBookPublicListingSchema = z.enum(["listed", "link_only"])
+
+export const tBookPublicListingWithDefaultSchema = tBookPublicListingSchema.default("listed")
 
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
@@ -376,6 +382,7 @@ export const eventInputSchema = z.object({
   eligibilityGenderFieldKey: z.string().nullable().optional(),
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
   pricingRules: z.array(tBookPricingRuleSchema).default([]),
+  publicListing: tBookPublicListingWithDefaultSchema,
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -417,6 +424,7 @@ export const eventUpdateSchema = z.object({
   eligibilityGenderFieldKey: z.string().nullable().optional(),
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
   pricingRules: z.array(tBookPricingRuleSchema).optional(),
+  publicListing: tBookPublicListingSchema.optional(),
   status: tBookStatusSchema.optional(),
   sortOrder: z.number().int().optional(),
 })
@@ -432,6 +440,7 @@ export const hotelInputBaseSchema = z.object({
   contactPhone: z.string().optional().default(""),
   gallery: z.array(z.string()).default([]),
   currency: tBookCurrencySchema.optional(),
+  bookingCapacity: z.number().int().min(0).nullable().optional(),
   registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).default([]),
   pricing: tBookHotelPricingSchema,
   status: tBookStatusSchema.default("draft"),
@@ -460,6 +469,7 @@ export const hotelInputUpdateSchema = z.object({
   contactPhone: z.string().optional(),
   gallery: z.array(z.string()).optional(),
   currency: z.string().min(3).max(3).optional(),
+  bookingCapacity: z.number().int().min(0).nullable().optional(),
   registrationFieldSchema: z.array(tBookAttendeeFieldDefSchema).optional(),
   pricing: tBookHotelPricingSchema.optional(),
   status: tBookStatusSchema.optional(),
@@ -470,13 +480,26 @@ export const tBookBillingTypeSchema = z.enum(["personal", "company", "sport"])
 
 export type TBookBillingType = z.infer<typeof tBookBillingTypeSchema>
 
+export const tBookCustomerSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("A valid email is required"),
+  phone: z.string().trim().min(6, "Phone number is required"),
+  note: z.string().max(2000).optional().default(""),
+})
+
+export type TBookCustomerInput = z.infer<typeof tBookCustomerSchema>
+
 export const tBookBillingSchema = z
   .object({
     billingType: tBookBillingTypeSchema.default("personal"),
-    name: z.string().min(1, "Billing name is required"),
-    zip: z.string().min(1, "Postal code is required"),
-    city: z.string().min(1, "City is required"),
-    street: z.string().min(1, "Address is required"),
+    name: z.string().trim().min(1, "Billing name is required"),
+    zip: z.string().trim().min(1, "Postal code is required"),
+    city: z.string().trim().min(1, "City is required"),
+    street: z.string().trim().min(1, "Address is required"),
     countryCode: z.string().default("HU"),
     taxNumber: z.string().optional().default(""),
   })
@@ -536,12 +559,7 @@ export const createBookingSchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
   accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
-  customer: z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("A valid email is required"),
-    phone: z.string().min(6, "Phone number is required"),
-    note: z.string().max(2000).optional().default(""),
-  }),
+  customer: tBookCustomerSchema,
   billing: tBookBillingSchema,
   returnBaseUrl: z.string().url().optional(),
   hotelId: z.string().nullable().optional(),
@@ -553,12 +571,7 @@ export const createBookingSchema = z.object({
 export const createMultiBookingSchema = z.object({
   lodgingMode: z.enum(["combined", "separate"]).default("combined"),
   entries: z.array(multiBookingEntrySchema).min(1).max(20),
-  customer: z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("A valid email is required"),
-    phone: z.string().min(6, "Phone number is required"),
-    note: z.string().max(2000).optional().default(""),
-  }),
+  customer: tBookCustomerSchema,
   billing: tBookBillingSchema,
   returnBaseUrl: z.string().url().optional(),
   hotelId: z.string().nullable().optional(),

@@ -18,6 +18,11 @@ export interface ITBookHotel extends Document {
   gallery: string[]
   /** ISO 4217 currency for hotel pricing (defaults from org on create). */
   currency: string
+  /**
+   * Max accommodation guests across active bookings for this hotel.
+   * Null = unlimited (package/room inventory may still apply).
+   */
+  bookingCapacity: number | null
   /** Extra registration fields collected when this hotel is selected. */
   registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
@@ -155,6 +160,7 @@ const TBookHotelSchema = new Schema<ITBookHotel>(
     contactPhone: { type: String, default: "" },
     gallery: { type: [String], default: [] },
     currency: { type: String, default: "HUF" },
+    bookingCapacity: { type: Number, default: null, min: 0 },
     registrationFieldSchema: { type: [RegistrationFieldDefSchema], default: [] },
     pricing: {
       priceBasis: { type: String, enum: ["net", "gross"], default: "net" },

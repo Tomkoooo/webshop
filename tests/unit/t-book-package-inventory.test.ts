@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { packageUnitsFromSelections } from "../../packages/plugins/t-book/lib/package-inventory"
+import {
+  filterAvailablePackages,
+  isHotelPubliclyAvailable,
+  packageUnitsFromSelections,
+  remainingHotelBookingCapacity,
+} from "../../packages/plugins/t-book/lib/package-inventory"
 import type { TBookPackageDeal } from "../../packages/plugins/t-book/lib/pricing-types"
 
 const packages: TBookPackageDeal[] = [
@@ -22,5 +27,52 @@ describe("packageUnitsFromSelections", () => {
     expect(
       packageUnitsFromSelections({ package_deal: "double" }, packages, 4)
     ).toEqual({ double: 2 })
+  })
+})
+
+describe("hotel booking capacity helpers", () => {
+  it("computes remaining hotel capacity", () => {
+    expect(remainingHotelBookingCapacity(40, 12)).toBe(28)
+    expect(remainingHotelBookingCapacity(10, 10)).toBe(0)
+    expect(remainingHotelBookingCapacity(null, 5)).toBeNull()
+  })
+
+  it("filters sold-out packages from the public list", () => {
+    expect(
+      filterAvailablePackages([
+        { key: "a", remainingUnits: 2 },
+        { key: "b", remainingUnits: 0 },
+        { key: "c", remainingUnits: null },
+      ]).map((p) => p.key)
+    ).toEqual(["a", "c"])
+  })
+
+  it("hides packages-only hotels when all tracked packages are sold out", () => {
+    expect(
+      isHotelPubliclyAvailable({
+        remainingCapacity: 5,
+        accommodationMode: "packages",
+        availablePackages: [],
+        hadLimitedPackages: true,
+      })
+    ).toBe(false)
+
+    expect(
+      isHotelPubliclyAvailable({
+        remainingCapacity: 0,
+        accommodationMode: "both",
+        availablePackages: [{ key: "a" }],
+        hadLimitedPackages: false,
+      })
+    ).toBe(false)
+
+    expect(
+      isHotelPubliclyAvailable({
+        remainingCapacity: null,
+        accommodationMode: "room_nights",
+        availablePackages: [],
+        hadLimitedPackages: false,
+      })
+    ).toBe(true)
   })
 })

@@ -113,6 +113,11 @@ export function GroupEventsAdmin({ groupId }: { groupId: string }) {
                 <div className="flex items-center gap-3 flex-wrap">
                   <p className="font-semibold text-foreground truncate">{event.name}</p>
                   <TBookStatusBadge status={event.status} labels={TBOOK_STATUS_LABELS} />
+                  {event.publicListing === "link_only" ? (
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Csak link
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-xs text-neutral-500 mt-1">
                   {formatEventSchedule(

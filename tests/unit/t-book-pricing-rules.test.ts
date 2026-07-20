@@ -191,4 +191,48 @@ describe("event pricing rules", () => {
     expect(withoutHotel.ticketSubtotalHuf).toBe(0)
     expect(withoutHotel.totalHuf).toBe(100)
   })
+
+  it("applies per-team and per-team-member pricing rules", () => {
+    const withHotel = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      ticketFeeMode: "per_team",
+      ticketPriceBasis: "gross",
+      ticketVatPercent: 0,
+      guests: 2,
+      playersPerTicket: 4,
+      accommodationGuests: 2,
+      nights: 3,
+      accommodation: hotelPricing,
+      selections: { package_deal: "pkg3" },
+      pricingRules: rules([
+        {
+          when: "with_hotel",
+          action: "adjust_total",
+          amount: -100,
+          amountMode: "per_team",
+          label: "Hotel discount per team",
+        },
+      ]),
+    })
+    expect(withHotel.totalHuf).toBe(800) // 2×500 − 2×100
+
+    const withoutHotel = calculateBookingQuote({
+      ticketFeeHuf: 0,
+      ticketFeeMode: "per_team",
+      ticketPriceBasis: "gross",
+      ticketVatPercent: 0,
+      guests: 2,
+      playersPerTicket: 4,
+      pricingRules: rules([
+        {
+          when: "without_hotel",
+          action: "adjust_total",
+          amount: 100,
+          amountMode: "per_team_member",
+          label: "Off-site per player",
+        },
+      ]),
+    })
+    expect(withoutHotel.totalHuf).toBe(800) // 2 teams × 4 players × 100
+  })
 })

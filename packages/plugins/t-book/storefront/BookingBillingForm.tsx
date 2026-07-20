@@ -1,6 +1,10 @@
 "use client"
 
-import type { TBookBillingType } from "../lib/schemas"
+import { z } from "zod"
+import {
+  tBookBillingSchema,
+  type TBookBillingType,
+} from "../lib/schemas"
 
 export type BillingFormState = {
   billingType: TBookBillingType
@@ -11,6 +15,9 @@ export type BillingFormState = {
   countryCode: string
   taxNumber: string
 }
+
+export type BillingFieldKey = "name" | "zip" | "city" | "street" | "taxNumber"
+export type BillingFieldErrors = Partial<Record<BillingFieldKey, string>>
 
 const BILLING_TYPE_LABELS: Record<TBookBillingType, string> = {
   personal: "Personal",
@@ -30,24 +37,55 @@ export function emptyBillingForm(customerName = ""): BillingFormState {
   }
 }
 
-export function isBillingFormValid(billing: BillingFormState): boolean {
-  if (!billing.name.trim() || !billing.zip.trim() || !billing.city.trim() || !billing.street.trim()) {
-    return false
+/** Collect first Zod issue message per top-level field path. */
+export function zodFieldErrors(
+  schema: z.ZodTypeAny,
+  value: unknown
+): Record<string, string> {
+  const parsed = schema.safeParse(value)
+  if (parsed.success) return {}
+  const errors: Record<string, string> = {}
+  for (const issue of parsed.error.issues) {
+    const key = issue.path[0]
+    if (typeof key === "string" && !errors[key]) {
+      errors[key] = issue.message
+    }
   }
-  if (billing.billingType === "company" && !billing.taxNumber.trim()) return false
-  return true
+  return errors
+}
+
+export function validateBillingForm(billing: BillingFormState): BillingFieldErrors {
+  return zodFieldErrors(tBookBillingSchema, billing) as BillingFieldErrors
+}
+
+export function isBillingFormValid(billing: BillingFormState): boolean {
+  return tBookBillingSchema.safeParse(billing).success
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null
+  return (
+    <span id={id} className="block text-xs text-destructive" role="alert">
+      {message}
+    </span>
+  )
 }
 
 export function BookingBillingForm({
   billing,
   onChange,
   inputClassName,
+  errors = {},
 }: {
   billing: BillingFormState
   onChange: (billing: BillingFormState) => void
   inputClassName: string
+  errors?: BillingFieldErrors
 }) {
   const patch = (partial: Partial<BillingFormState>) => onChange({ ...billing, ...partial })
+
+  const fieldClass = (key: BillingFieldKey) =>
+    errors[key] ? `${inputClassName} border-destructive` : inputClassName
 
   return (
     <div className="space-y-4">
@@ -84,59 +122,79 @@ export function BookingBillingForm({
       </fieldset>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 sm:col-span-2">
+        <label className="block space-y-1 sm:col-span-2" htmlFor="billing-name">
           <span className="text-sm font-medium">
             {billing.billingType === "personal" ? "Billing name" : "Organisation / company name"} *
           </span>
           <input
-            className={inputClassName}
+            id="billing-name"
+            className={fieldClass("name")}
             value={billing.name}
             onChange={(e) => patch({ name: e.target.value })}
-            required
+            aria-invalid={errors.name ? true : undefined}
+            aria-describedby={errors.name ? "billing-name-error" : undefined}
+            autoComplete="name"
           />
+          <FieldError id="billing-name-error" message={errors.name} />
         </label>
-        <label className="block space-y-1">
+        <label className="block space-y-1" htmlFor="billing-zip">
           <span className="text-sm font-medium">Postal code *</span>
           <input
-            className={inputClassName}
+            id="billing-zip"
+            className={fieldClass("zip")}
             value={billing.zip}
             onChange={(e) => patch({ zip: e.target.value })}
-            required
+            aria-invalid={errors.zip ? true : undefined}
+            aria-describedby={errors.zip ? "billing-zip-error" : undefined}
+            autoComplete="postal-code"
           />
+          <FieldError id="billing-zip-error" message={errors.zip} />
         </label>
-        <label className="block space-y-1">
+        <label className="block space-y-1" htmlFor="billing-city">
           <span className="text-sm font-medium">City *</span>
           <input
-            className={inputClassName}
+            id="billing-city"
+            className={fieldClass("city")}
             value={billing.city}
             onChange={(e) => patch({ city: e.target.value })}
-            required
+            aria-invalid={errors.city ? true : undefined}
+            aria-describedby={errors.city ? "billing-city-error" : undefined}
+            autoComplete="address-level2"
           />
+          <FieldError id="billing-city-error" message={errors.city} />
         </label>
-        <label className="block space-y-1 sm:col-span-2">
+        <label className="block space-y-1 sm:col-span-2" htmlFor="billing-street">
           <span className="text-sm font-medium">Street address *</span>
           <input
-            className={inputClassName}
+            id="billing-street"
+            className={fieldClass("street")}
             value={billing.street}
             onChange={(e) => patch({ street: e.target.value })}
-            required
+            aria-invalid={errors.street ? true : undefined}
+            aria-describedby={errors.street ? "billing-street-error" : undefined}
+            autoComplete="street-address"
           />
+          <FieldError id="billing-street-error" message={errors.street} />
         </label>
         {billing.billingType === "company" ? (
-          <label className="block space-y-1 sm:col-span-2">
+          <label className="block space-y-1 sm:col-span-2" htmlFor="billing-tax">
             <span className="text-sm font-medium">Tax number *</span>
             <input
-              className={inputClassName}
+              id="billing-tax"
+              className={fieldClass("taxNumber")}
               value={billing.taxNumber}
               onChange={(e) => patch({ taxNumber: e.target.value })}
               placeholder="12345678-1-23"
-              required
+              aria-invalid={errors.taxNumber ? true : undefined}
+              aria-describedby={errors.taxNumber ? "billing-tax-error" : undefined}
             />
+            <FieldError id="billing-tax-error" message={errors.taxNumber} />
           </label>
         ) : billing.billingType === "sport" ? (
-          <label className="block space-y-1 sm:col-span-2">
+          <label className="block space-y-1 sm:col-span-2" htmlFor="billing-tax">
             <span className="text-sm font-medium">Tax / registration number (optional)</span>
             <input
+              id="billing-tax"
               className={inputClassName}
               value={billing.taxNumber}
               onChange={(e) => patch({ taxNumber: e.target.value })}

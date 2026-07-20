@@ -314,6 +314,16 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
             distanceFromVenueKm: { type: ["number", "null"] },
             gallery: { type: "array", items: { type: "string" } },
             currency: { type: "string" },
+            bookingCapacity: {
+              type: ["integer", "null"],
+              description:
+                "Hotel-level max accommodation guests (not per room/package). Null = unlimited.",
+            },
+            remainingCapacity: {
+              type: ["integer", "null"],
+              description:
+                "Remaining hotel-level guest capacity. Null = unlimited. Sold-out hotels are omitted.",
+            },
             registrationFieldSchema: {
               type: "array",
               items: { $ref: "#/components/schemas/AttendeeField" },

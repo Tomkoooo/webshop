@@ -7,6 +7,25 @@ import type {
 import { formatHuf } from "./tbook-public-api"
 import type { TBookSelections } from "./tbook-public-api"
 
+/** Empty value for storefront selects — always include as the first option. */
+export const TBOOK_SELECT_PLACEHOLDER = ""
+
+export function SelectPlaceholderOption({
+  required,
+  optionalLabel = "—",
+  requiredLabel = "Select…",
+}: {
+  required?: boolean
+  optionalLabel?: string
+  requiredLabel?: string
+}) {
+  return (
+    <option value={TBOOK_SELECT_PLACEHOLDER}>
+      {required ? requiredLabel : optionalLabel}
+    </option>
+  )
+}
+
 export function optionVisible(option: TBookPublicOptionDef, selections: TBookSelections): boolean {
   if (!option.dependsOn) return true
   const current = selections[option.dependsOn.key]
@@ -52,10 +71,14 @@ export function BookingOptionField({
         <select
           id={id}
           className={inputClassName}
-          value={String(value ?? "")}
+          value={
+            value != null && value !== "" && String(value) !== TBOOK_SELECT_PLACEHOLDER
+              ? String(value)
+              : TBOOK_SELECT_PLACEHOLDER
+          }
           onChange={(e) => onChange(e.target.value)}
         >
-          {!option.required ? <option value="">—</option> : null}
+          <SelectPlaceholderOption required={option.required} />
           {option.choices?.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
@@ -139,12 +162,16 @@ export function AttendeeFieldInput({
         <select
           id={id}
           className={inputClassName}
-          value={String(value ?? "")}
+          value={
+            value != null && value !== "" && String(value) !== TBOOK_SELECT_PLACEHOLDER
+              ? String(value)
+              : TBOOK_SELECT_PLACEHOLDER
+          }
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
         >
-          {!field.required ? <option value="">—</option> : null}
+          <SelectPlaceholderOption required={field.required} />
           {field.choices?.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}

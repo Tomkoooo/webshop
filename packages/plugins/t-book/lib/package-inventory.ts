@@ -115,3 +115,82 @@ export function withPackageRemainingUnits(
     }
   })
 }
+
+/** Drop sold-out package deals (keep unlimited packages). */
+export function filterAvailablePackages<T extends { remainingUnits?: number | null }>(
+  packages: T[]
+): T[] {
+  return packages.filter((pkg) => pkg.remainingUnits == null || pkg.remainingUnits > 0)
+}
+
+function accommodationGuestsFromBooking(booking: {
+  guests?: number
+  quote?: { accommodationGuests?: number }
+}): number {
+  const quoteGuests = booking.quote?.accommodationGuests
+  if (typeof quoteGuests === "number" && quoteGuests > 0) return quoteGuests
+  if (typeof booking.guests === "number" && booking.guests > 0) return booking.guests
+  return 0
+}
+
+/** Sum of accommodation guests on active bookings for this hotel. */
+export async function countSoldAccommodationGuestsForHotel(
+  hotelId: Types.ObjectId | string
+): Promise<number> {
+  const bookings = await TBookBooking.find({
+    hotelId,
+    status: { $in: [...ACTIVE_STATUSES] },
+  })
+    .select("guests quote.accommodationGuests")
+    .lean()
+
+  return bookings.reduce((sum, booking) => sum + accommodationGuestsFromBooking(booking), 0)
+}
+
+export function remainingHotelBookingCapacity(
+  bookingCapacity: number | null | undefined,
+  soldGuests: number
+): number | null {
+  if (bookingCapacity == null || bookingCapacity < 0) return null
+  return Math.max(0, bookingCapacity - soldGuests)
+}
+
+/** Throws if the hotel-level guest capacity would be exceeded. */
+export async function assertHotelBookingCapacityAvailable(opts: {
+  hotelId: Types.ObjectId | string
+  bookingCapacity: number | null | undefined
+  accommodationGuests: number
+}): Promise<void> {
+  if (opts.bookingCapacity == null || opts.bookingCapacity < 0) return
+  const requested = Math.max(0, opts.accommodationGuests)
+  if (requested <= 0) return
+  const sold = await countSoldAccommodationGuestsForHotel(opts.hotelId)
+  const remaining = remainingHotelBookingCapacity(opts.bookingCapacity, sold)
+  if (remaining == null) return
+  if (requested > remaining) {
+    throw new Error(
+      remaining === 0
+        ? "This hotel is fully booked."
+        : `Only ${remaining} accommodation spot(s) left at this hotel (you need ${requested}).`
+    )
+  }
+}
+
+export function isHotelPubliclyAvailable(opts: {
+  remainingCapacity: number | null
+  accommodationMode: "room_nights" | "packages" | "both"
+  availablePackages: unknown[]
+  /** True when the hotel had at least one package with inventory tracking. */
+  hadLimitedPackages: boolean
+}): boolean {
+  if (opts.remainingCapacity != null && opts.remainingCapacity <= 0) return false
+  if (
+    opts.accommodationMode === "packages" &&
+    opts.hadLimitedPackages &&
+    opts.availablePackages.length === 0
+  ) {
+    return false
+  }
+  return true
+}
+

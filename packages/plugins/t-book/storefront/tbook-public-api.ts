@@ -61,6 +61,10 @@ export type TBookPublicHotel = {
   distanceFromVenueKm: number | null
   gallery: string[]
   currency?: string
+  /** Max accommodation guests for this hotel (null = unlimited). */
+  bookingCapacity?: number | null
+  /** Remaining hotel-level guest capacity (null = unlimited). */
+  remainingCapacity?: number | null
   registrationFieldSchema?: TBookPublicAttendeeFieldDef[]
   pricing: TBookHotelPricing
 }

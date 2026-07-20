@@ -62,6 +62,8 @@ export interface ITBookEvent extends Document {
   eligibilityFormRules: TBookEligibilityRulesConfig | null
   /** Event-level pricing special cases (free entry, hotel discount, off-site surcharge, …). */
   pricingRules: TBookPricingRule[]
+  /** Listed on /jegyek vs bookable only via direct link. */
+  publicListing: "listed" | "link_only"
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -225,6 +227,8 @@ const TBookEventSchema = new Schema<ITBookEvent>(
               enum: [
                 "fixed",
                 "per_person",
+                "per_team",
+                "per_team_member",
                 "per_accommodation_guest",
                 "percent_accommodation",
                 "percent_ticket",
@@ -236,6 +240,11 @@ const TBookEventSchema = new Schema<ITBookEvent>(
         ),
       ],
       default: [],
+    },
+    publicListing: {
+      type: String,
+      enum: ["listed", "link_only"],
+      default: "listed",
     },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },

@@ -19,7 +19,8 @@ import {
   type HotelInput,
   type HotelUpdateInput,
 } from "../lib/schemas"
-import { assignPricingKeys, normalizeHotelPricing } from "../lib/hotel-pricing"
+import { assignPricingKeys, normalizeHotelPricing, resolveAccommodationMode } from "../lib/hotel-pricing"
+import { isEventListedOnPublicSite } from "../lib/event-public-listing"
 import { resolveEventHeroImage } from "../lib/event-hero"
 import { publicEligibilityFromEvent } from "../lib/public-eligibility"
 import { resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
@@ -457,7 +458,9 @@ export class TBookEventService {
     const events = await TBookEvent.find({ groupId, status: "active" })
       .sort({ sortOrder: 1, startDate: 1 })
       .lean()
-    return events.map((e) => ({
+    return events
+      .filter((e) => isEventListedOnPublicSite(e.publicListing))
+      .map((e) => ({
       id: String(e._id),
       name: e.name,
       description: e.description,
@@ -528,14 +531,54 @@ export class TBookEventService {
         ...publicEligibilityFromEvent(event),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
-      hotels: await Promise.all(
-        activeHotels.map(async (h) => {
-          const pricing = normalizeHotelPricing(h.pricing)
-          const packages = pricing.packages ?? []
-          const limited = packages.some(
-            (pkg) => pkg.inventoryUnits != null && pkg.inventoryUnits >= 0
-          )
-          if (!limited) {
+      hotels: (
+        await Promise.all(
+          activeHotels.map(async (h) => {
+            const pricing = normalizeHotelPricing(h.pricing)
+            const packages = pricing.packages ?? []
+            const mode = resolveAccommodationMode(pricing)
+            const bookingCapacity =
+              typeof h.bookingCapacity === "number" && h.bookingCapacity >= 0
+                ? h.bookingCapacity
+                : null
+
+            const {
+              countSoldPackageUnitsForHotel,
+              withPackageRemainingUnits,
+              filterAvailablePackages,
+              countSoldAccommodationGuestsForHotel,
+              remainingHotelBookingCapacity,
+              isHotelPubliclyAvailable,
+            } = await import("../lib/package-inventory")
+
+            const soldGuests = bookingCapacity != null
+              ? await countSoldAccommodationGuestsForHotel(h._id)
+              : 0
+            const remainingCapacity = remainingHotelBookingCapacity(bookingCapacity, soldGuests)
+
+            const limitedPackages = packages.some(
+              (pkg) => pkg.inventoryUnits != null && pkg.inventoryUnits >= 0
+            )
+            let packagesForPublic = packages
+            if (limitedPackages) {
+              const sold = await countSoldPackageUnitsForHotel(h._id, packages)
+              packagesForPublic = withPackageRemainingUnits(packages, sold)
+            } else {
+              packagesForPublic = packages.map((pkg) => ({ ...pkg, remainingUnits: null }))
+            }
+
+            const availablePackages = filterAvailablePackages(packagesForPublic)
+            if (
+              !isHotelPubliclyAvailable({
+                remainingCapacity,
+                accommodationMode: mode,
+                availablePackages,
+                hadLimitedPackages: limitedPackages,
+              })
+            ) {
+              return null
+            }
+
             return {
               id: String(h._id),
               name: h.name,
@@ -544,30 +587,17 @@ export class TBookEventService {
               distanceFromVenueKm: h.distanceFromVenueKm ?? null,
               gallery: h.gallery,
               currency: normalizeTBookCurrency(h.currency),
+              bookingCapacity,
+              remainingCapacity,
               registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
-              pricing,
+              pricing: {
+                ...pricing,
+                packages: availablePackages,
+              },
             }
-          }
-          const { countSoldPackageUnitsForHotel, withPackageRemainingUnits } = await import(
-            "../lib/package-inventory"
-          )
-          const sold = await countSoldPackageUnitsForHotel(h._id, packages)
-          return {
-            id: String(h._id),
-            name: h.name,
-            description: h.description,
-            address: h.address,
-            distanceFromVenueKm: h.distanceFromVenueKm ?? null,
-            gallery: h.gallery,
-            currency: normalizeTBookCurrency(h.currency),
-            registrationFieldSchema: normalizeAttendeeFieldSchema(h.registrationFieldSchema ?? []),
-            pricing: {
-              ...pricing,
-              packages: withPackageRemainingUnits(packages, sold),
-            },
-          }
-        })
-      ),
+          })
+        )
+      ).filter((hotel): hotel is NonNullable<typeof hotel> => hotel != null),
     }
   }
 

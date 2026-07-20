@@ -18,7 +18,7 @@ import {
   type TBookPriceQuote,
   type TBookPublicEvent,
 } from "./tbook-public-api"
-import { selectionOptionValue } from "./booking-fields"
+import { selectionOptionValue, SelectPlaceholderOption, TBOOK_SELECT_PLACEHOLDER } from "./booking-fields"
 
 const STORAGE_KEY = "tbook_test_api_key"
 
@@ -43,8 +43,6 @@ function defaultSelectionsForHotel(hotel: TBookPublicHotel | null): TBookSelecti
     if (option.defaultValue != null) selections[option.key] = option.defaultValue
     else if (option.type === "checkbox") selections[option.key] = false
     else if (option.type === "number") selections[option.key] = option.min ?? 0
-    else if (option.type === "select" && option.choices?.[0])
-      selections[option.key] = option.choices[0].value
     else if (option.type === "multiselect") selections[option.key] = []
   }
   return selections
@@ -75,10 +73,14 @@ function OptionField({
         <select
           id={id}
           className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-          value={String(value ?? "")}
+          value={
+            value != null && value !== "" && String(value) !== TBOOK_SELECT_PLACEHOLDER
+              ? String(value)
+              : TBOOK_SELECT_PLACEHOLDER
+          }
           onChange={(e) => onChange(e.target.value)}
         >
-          {!option.required ? <option value="">—</option> : null}
+          <SelectPlaceholderOption required={option.required} />
           {option.choices?.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
@@ -154,10 +156,14 @@ function AttendeeFieldInput({
         <select
           id={id}
           className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-          value={String(value ?? "")}
+          value={
+            value != null && value !== "" && String(value) !== TBOOK_SELECT_PLACEHOLDER
+              ? String(value)
+              : TBOOK_SELECT_PLACEHOLDER
+          }
           onChange={(e) => onChange(e.target.value)}
         >
-          {!field.required ? <option value="">—</option> : null}
+          <SelectPlaceholderOption required={field.required} />
           {field.choices?.map((choice) => (
             <option key={choice.value} value={choice.value}>
               {choice.label}

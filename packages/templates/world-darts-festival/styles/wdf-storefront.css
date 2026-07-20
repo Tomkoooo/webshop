@@ -1,8 +1,10 @@
 /* World Darts Festival — template-owned storefront chrome (imported by apps/world-darts-festival). */
 
 .wdf-storefront {
-  --wdf-gold-glow: color-mix(in oklab, var(--theme-primary) 35%, transparent);
-  --wdf-accent-glow: color-mix(in oklab, var(--theme-accent) 25%, transparent);
+  /* Soft, low-contrast washes — avoid hard gold “lightning” between stacked sections. */
+  --wdf-gold-glow: color-mix(in oklab, var(--theme-primary) 14%, transparent);
+  --wdf-section-glow: color-mix(in oklab, var(--theme-primary) 8%, transparent);
+  --wdf-accent-glow: color-mix(in oklab, var(--theme-accent) 12%, transparent);
 }
 
 .wdf-storefront .wdf-hero-glow::after {
@@ -15,15 +17,19 @@
   z-index: 2;
 }
 
-/* Soft gold wash on mid-page sections so the page stays lit as you scroll. */
+/* Diffuse section wash — wide, faint, so stacked sections blend instead of spotlighting. */
 .wdf-storefront .wdf-section-glow::before {
   content: "";
   position: absolute;
-  inset: -10% 15% auto 15%;
-  height: min(55%, 280px);
-  background: radial-gradient(ellipse at center, var(--wdf-gold-glow), transparent 72%);
+  inset: -18% 0 auto 0;
+  height: min(70%, 360px);
+  background: radial-gradient(
+    ellipse 95% 70% at 50% 0%,
+    var(--wdf-section-glow),
+    transparent 78%
+  );
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.55;
   z-index: 0;
 }
 

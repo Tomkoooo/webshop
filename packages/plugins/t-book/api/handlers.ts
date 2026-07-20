@@ -87,6 +87,7 @@ function serializeEvent(e: ITBookEvent) {
     eligibilityGenderFieldKey: e.eligibilityGenderFieldKey ?? null,
     eligibilityFormRules: e.eligibilityFormRules ?? null,
     pricingRules: e.pricingRules ?? [],
+    publicListing: e.publicListing === "link_only" ? "link_only" : "listed",
     status: e.status,
     sortOrder: e.sortOrder,
   }
@@ -105,6 +106,7 @@ function serializeHotel(h: ITBookHotel) {
     contactPhone: h.contactPhone,
     gallery: h.gallery,
     currency: h.currency ?? "HUF",
+    bookingCapacity: h.bookingCapacity ?? null,
     registrationFieldSchema: h.registrationFieldSchema ?? [],
     pricing: h.pricing,
     status: h.status,

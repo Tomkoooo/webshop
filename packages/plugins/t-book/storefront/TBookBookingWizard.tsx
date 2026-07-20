@@ -48,8 +48,15 @@ import {
   BookingBillingForm,
   emptyBillingForm,
   isBillingFormValid,
+  validateBillingForm,
   type BillingFormState,
 } from "./BookingBillingForm"
+import {
+  BookingCustomerForm,
+  emptyCustomerForm,
+  isCustomerFormValid,
+  validateCustomerForm,
+} from "./BookingCustomerForm"
 import {
   AttendeeFieldInput,
   BookingOptionField,
@@ -152,8 +159,6 @@ function defaultSelectionsForHotel(
     if (option.defaultValue != null) selections[option.key] = option.defaultValue
     else if (option.type === "checkbox") selections[option.key] = false
     else if (option.type === "number") selections[option.key] = option.min ?? 0
-    else if (option.type === "select" && option.choices?.[0])
-      selections[option.key] = option.choices[0].value
     else if (option.type === "multiselect") selections[option.key] = []
   }
   return selections
@@ -245,8 +250,9 @@ export function TBookBookingWizard({
   const [nights, setNights] = useState(initialEventDetail?.event?.nights ?? 1)
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null)
   const [selections, setSelections] = useState<TBookSelections>({})
-  const [customer, setCustomer] = useState({ name: "", email: "", phone: "", note: "" })
+  const [customer, setCustomer] = useState(() => emptyCustomerForm())
   const [billing, setBilling] = useState<BillingFormState>(() => emptyBillingForm())
+  const [showDetailsErrors, setShowDetailsErrors] = useState(false)
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
   const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
@@ -563,11 +569,18 @@ export function TBookBookingWizard({
 
   const attendeesValid = attendeeFieldIssues.length === 0 && eligibilityIssues.length === 0
 
-  const customerValid =
-    Boolean(customer.name.trim()) &&
-    Boolean(customer.email.trim()) &&
-    Boolean(customer.phone.trim()) &&
-    isBillingFormValid(billing)
+  const customerFieldErrors = useMemo(
+    () => (showDetailsErrors ? validateCustomerForm(customer) : {}),
+    [showDetailsErrors, customer]
+  )
+  const billingFieldErrors = useMemo(
+    () => (showDetailsErrors ? validateBillingForm(billing) : {}),
+    [showDetailsErrors, billing]
+  )
+
+  const detailsSchemaValid = isCustomerFormValid(customer) && isBillingFormValid(billing)
+
+  const customerValid = detailsSchemaValid
 
   const canProceedCurrentStep = canProceedBookingStep({
     step,
@@ -578,7 +591,8 @@ export function TBookBookingWizard({
     accommodationNeed,
     accommodationGuests,
     attendeesValid,
-    customerValid,
+    // Keep Continue enabled on contact/billing so Zod field errors can surface on click.
+    customerValid: step === 5 ? true : customerValid,
     hasQuote: Boolean(quote),
     packagesRequired,
     hasPackageSelection,
@@ -652,6 +666,7 @@ export function TBookBookingWizard({
       return
     }
     if (step === 5) {
+      setShowDetailsErrors(true)
       if (!customerValid) {
         setError("Please complete contact and billing details.")
         return
@@ -1216,43 +1231,26 @@ export function TBookBookingWizard({
 
       {step === 5 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold">{copy.customerHeading}</h2>
-            <p className="text-sm text-muted-foreground">{copy.customerHint}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                className={INPUT}
-                placeholder="Name *"
-                value={customer.name}
-                onChange={(e) => setCustomer((c) => ({ ...c, name: e.target.value }))}
-                required
-              />
-              <input
-                className={INPUT}
-                type="email"
-                placeholder="Email *"
-                value={customer.email}
-                onChange={(e) => setCustomer((c) => ({ ...c, email: e.target.value }))}
-                required
-              />
-              <input
-                className={`${INPUT} sm:col-span-2`}
-                type="tel"
-                placeholder="Phone *"
-                value={customer.phone}
-                onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
-                required
-              />
-              <textarea
-                className={`${INPUT} sm:col-span-2`}
-                placeholder="Note (optional)"
-                rows={2}
-                value={customer.note}
-                onChange={(e) => setCustomer((c) => ({ ...c, note: e.target.value }))}
-              />
-            </div>
-          </div>
-          <BookingBillingForm billing={billing} onChange={setBilling} inputClassName={INPUT} />
+          <BookingCustomerForm
+            customer={customer}
+            onChange={(c) => {
+              setCustomer(c)
+              setError(null)
+            }}
+            inputClassName={INPUT}
+            errors={customerFieldErrors}
+            heading={copy.customerHeading}
+            hint={copy.customerHint}
+          />
+          <BookingBillingForm
+            billing={billing}
+            onChange={(b) => {
+              setBilling(b)
+              setError(null)
+            }}
+            inputClassName={INPUT}
+            errors={billingFieldErrors}
+          />
         </section>
       ) : null}
 

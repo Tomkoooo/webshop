@@ -39,6 +39,8 @@ import {
   PRICING_RULE_WHEN_LABELS,
   type TBookPricingRule,
 } from "../lib/pricing-rules"
+import { buildPrivateTeamHotelPricingPreset } from "../lib/pricing-rule-presets"
+import { publicBookingPath } from "../lib/event-public-listing"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
@@ -96,6 +98,7 @@ type EventDraft = {
   eligibilityGenderFieldKey: string
   eligibilityFormRules: TBookEligibilityRulesConfig
   pricingRules: TBookPricingRule[]
+  publicListing: AdminEvent["publicListing"]
 }
 
 export function EventFormPage({
@@ -149,6 +152,7 @@ export function EventFormPage({
     eligibilityGenderFieldKey: "",
     eligibilityFormRules: { logic: "and", rules: [] },
     pricingRules: [],
+    publicListing: "listed",
   })
 
   useEffect(() => {
@@ -221,6 +225,7 @@ export function EventFormPage({
                 }
               : { logic: "and", rules: [] },
             pricingRules: e.pricingRules ?? [],
+            publicListing: e.publicListing ?? "listed",
           })
         })
       )
@@ -291,6 +296,7 @@ export function EventFormPage({
       eligibilityFormRules:
         draft.eligibilityFormRules.rules.length > 0 ? draft.eligibilityFormRules : null,
       pricingRules: draft.pricingRules,
+      publicListing: draft.publicListing,
       status: draft.status,
     }
     try {
@@ -357,6 +363,31 @@ export function EventFormPage({
                   <option value="archived">Archivált</option>
                 </TBookSelect>
               </TBookField>
+              <TBookField label="Megjelenés a /jegyek listán">
+                <TBookSelect
+                  value={draft.publicListing}
+                  onChange={(e) =>
+                    patch({
+                      publicListing: e.target.value as EventDraft["publicListing"],
+                    })
+                  }
+                >
+                  <option value="listed">Nyilvános lista + közvetlen link</option>
+                  <option value="link_only">Csak közvetlen link (privát)</option>
+                </TBookSelect>
+                <p className="text-xs text-muted-foreground">
+                  Privát események nem jelennek meg a WDF jegyek oldalon, de a foglalási link
+                  továbbra is működik.
+                </p>
+              </TBookField>
+              {isEdit && eventId && draft.publicListing === "link_only" ? (
+                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+                  <p className="font-medium text-foreground">Foglalási link</p>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                    {publicBookingPath(eventId)}
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : null}
           {step === 1 ? (
@@ -483,32 +514,49 @@ export function EventFormPage({
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Ár szabályok (esemény)</h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Pl. ingyenes belépő + szálláscsomag kedvezmény, vagy felár ha nem szervezői
-                      szállást választanak. A szabályok a foglalási árajánlatban jelennek meg.
+                      Pl. ingyenes belépő + szálláscsomag kedvezmény csapatonként, vagy felár
+                      csapattagonként ha nem szervezői szállást választanak.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className={tBookGhostButtonClass}
-                    onClick={() =>
-                      patch({
-                        pricingRules: [
-                          ...draft.pricingRules,
-                          {
-                            id: `pr-${Date.now()}`,
-                            enabled: true,
-                            label: "Új szabály",
-                            when: "without_hotel",
-                            action: "adjust_total",
-                            amount: 100,
-                            amountMode: "per_person",
-                          },
-                        ],
-                      })
-                    }
-                  >
-                    Szabály hozzáadása
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={tBookGhostButtonClass}
+                      onClick={() =>
+                        patch({
+                          publicListing: "link_only",
+                          ticketFeeHuf: 0,
+                          registrationUnit: "team",
+                          ticketFeeMode: "per_team",
+                          pricingRules: buildPrivateTeamHotelPricingPreset(100),
+                        })
+                      }
+                    >
+                      Privát csapat sablon
+                    </button>
+                    <button
+                      type="button"
+                      className={tBookGhostButtonClass}
+                      onClick={() =>
+                        patch({
+                          pricingRules: [
+                            ...draft.pricingRules,
+                            {
+                              id: `pr-${Date.now()}`,
+                              enabled: true,
+                              label: "Új szabály",
+                              when: "without_hotel",
+                              action: "adjust_total",
+                              amount: 100,
+                              amountMode: "per_team_member",
+                            },
+                          ],
+                        })
+                      }
+                    >
+                      Szabály hozzáadása
+                    </button>
+                  </div>
                 </div>
                 {draft.pricingRules.length === 0 ? (
                   <p className="text-xs text-muted-foreground">

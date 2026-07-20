@@ -22,6 +22,8 @@ export type TBookPricingRuleAction =
 export type TBookPricingRuleAmountMode =
   | "fixed"
   | "per_person"
+  | "per_team"
+  | "per_team_member"
   | "per_accommodation_guest"
   | "percent_accommodation"
   | "percent_ticket"
@@ -53,7 +55,9 @@ export const PRICING_RULE_ACTION_LABELS: Record<TBookPricingRuleAction, string> 
 
 export const PRICING_RULE_AMOUNT_MODE_LABELS: Record<TBookPricingRuleAmountMode, string> = {
   fixed: "Fix összeg",
-  per_person: "Résztvevőnként (jegy)",
+  per_person: "Jegyenként (csapat = 1 jegy)",
+  per_team: "Csapatonként",
+  per_team_member: "Csapattagonként (játékos / fő)",
   per_accommodation_guest: "Szállás vendégenként",
   percent_accommodation: "% a szállás részösszegéből",
   percent_ticket: "% a belépő részösszegéből",
@@ -83,6 +87,8 @@ export type PricingRuleContext = {
   hasPackage: boolean
   guests: number
   accommodationGuests: number
+  /** Players per ticket/team — used for per_team_member rules. */
+  playersPerTicket: number
   ticketSubtotalHuf: number
   accommodationSubtotalHuf: number
 }
@@ -106,13 +112,22 @@ export function ruleMatches(rule: TBookPricingRule, ctx: PricingRuleContext): bo
 /** Resolve absolute ticket fee override from matching set_ticket_fee rules (last wins). */
 export function resolveTicketFeeOverride(
   rules: TBookPricingRule[] | null | undefined,
-  ctx: Pick<PricingRuleContext, "hasHotel" | "hasPackage" | "guests" | "accommodationGuests">
+  ctx: Pick<
+    PricingRuleContext,
+    "hasHotel" | "hasPackage" | "guests" | "accommodationGuests" | "playersPerTicket"
+  >
 ): number | null {
   const list = normalizePricingRules(rules)
   let override: number | null = null
+  const baseCtx: PricingRuleContext = {
+    ...ctx,
+    playersPerTicket: ctx.playersPerTicket ?? 1,
+    ticketSubtotalHuf: 0,
+    accommodationSubtotalHuf: 0,
+  }
   for (const rule of list) {
     if (rule.action !== "set_ticket_fee") continue
-    if (!ruleMatches(rule, { ...ctx, ticketSubtotalHuf: 0, accommodationSubtotalHuf: 0 })) continue
+    if (!ruleMatches(rule, baseCtx)) continue
     override = Math.max(0, rule.amount)
   }
   return override
@@ -120,11 +135,16 @@ export function resolveTicketFeeOverride(
 
 function computeRuleAmount(rule: TBookPricingRule, ctx: PricingRuleContext): number {
   const amount = rule.amount
+  const players = Math.max(1, ctx.playersPerTicket ?? 1)
   switch (rule.amountMode) {
     case "fixed":
       return amount
     case "per_person":
       return amount * Math.max(1, ctx.guests)
+    case "per_team":
+      return amount * Math.max(1, ctx.guests)
+    case "per_team_member":
+      return amount * Math.max(1, ctx.guests) * players
     case "per_accommodation_guest":
       return amount * Math.max(1, ctx.accommodationGuests || ctx.guests)
     case "percent_accommodation":

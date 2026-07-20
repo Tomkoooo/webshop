@@ -82,10 +82,13 @@ export type AdminEvent = {
     amountMode:
       | "fixed"
       | "per_person"
+      | "per_team"
+      | "per_team_member"
       | "per_accommodation_guest"
       | "percent_accommodation"
       | "percent_ticket"
   }>
+  publicListing: "listed" | "link_only"
   status: "draft" | "active" | "archived"
   sortOrder: number
 }
@@ -102,6 +105,7 @@ export type AdminHotel = {
   contactPhone: string
   gallery: string[]
   currency: string
+  bookingCapacity: number | null
   registrationFieldSchema: TBookAttendeeFieldDef[]
   pricing: TBookHotelPricing
   status: "draft" | "active" | "archived"

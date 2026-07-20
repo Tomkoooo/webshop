@@ -160,14 +160,11 @@ function PrizeMoneyTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-surface">
+            <tr className="border-b border-primary/25 bg-primary/10">
               {headers.map((header, colIndex) => (
                 <th
                   key={colIndex}
-                  className={cn(
-                    "px-4 py-3 text-left font-semibold",
-                    colIndex === 0 && "text-primary"
-                  )}
+                  className="px-4 py-3 text-left font-semibold text-primary"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <EditableDocText path={`${headersPath}.${colIndex}`} value={header} />
@@ -195,7 +192,7 @@ function PrizeMoneyTable({
                     key={colIndex}
                     className={cn(
                       "px-4 py-3",
-                      colIndex === 0 ? "font-medium text-primary" : "text-muted-foreground"
+                      colIndex === 0 ? "font-medium text-foreground" : "text-muted-foreground"
                     )}
                   >
                     <EditableDocText path={`${rowsPath}.${rowIndex}.${colIndex}`} value={cell} />
@@ -634,7 +631,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               }
             />
           ) : null}
-          <div className="mx-auto max-w-5xl rounded-2xl bg-black px-6 py-8 sm:px-10">
+          <div className="mx-auto max-w-5xl px-2 sm:px-4">
             <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-10">
               {c.sponsors.logos.map((logo, index) => (
                 <div

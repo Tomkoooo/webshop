@@ -63,6 +63,7 @@ type HotelDraft = {
   contactPhone: string
   gallery: string[]
   currency: string
+  bookingCapacity: string
   status: "draft" | "active" | "archived"
   pricing: TBookHotelPricing
 }
@@ -88,6 +89,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
       contactPhone: "",
       gallery: [],
       currency: "HUF",
+      bookingCapacity: "",
       status: "draft",
       pricing: emptyPricing(),
     }
@@ -102,6 +104,7 @@ function hotelToDraft(hotel: AdminHotel | null): HotelDraft {
     contactPhone: hotel.contactPhone,
     gallery: hotel.gallery,
     currency: normalizeTBookCurrency(hotel.currency),
+    bookingCapacity: hotel.bookingCapacity != null ? String(hotel.bookingCapacity) : "",
     status: hotel.status,
     pricing: normalizeHotelPricing(hotel.pricing),
   }
@@ -157,6 +160,9 @@ function HotelEditor({
         ...draft,
         distanceFromVenueKm: draft.distanceFromVenueKm
           ? Number(draft.distanceFromVenueKm)
+          : null,
+        bookingCapacity: draft.bookingCapacity.trim()
+          ? Math.max(0, Number(draft.bookingCapacity) || 0)
           : null,
         eventId: event.id,
       }
@@ -252,6 +258,20 @@ function HotelEditor({
                     onChange={(e) => patch({ distanceFromVenueKm: e.target.value })}
                     placeholder="pl. 2.5"
                   />
+                </TBookField>
+                <TBookField label="Max. foglalható férőhely (hotel)">
+                  <TBookInput
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={draft.bookingCapacity}
+                    onChange={(e) => patch({ bookingCapacity: e.target.value })}
+                    placeholder="pl. 40"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Összes szálláshely-foglaló vendég felső határa ehhez a szálláshoz (nem
+                    szobatípusonként / csomagonként). Üres = korlátlan.
+                  </p>
                 </TBookField>
                 <TBookRichTextField
                   label="Leírás"

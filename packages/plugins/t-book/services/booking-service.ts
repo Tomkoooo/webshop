@@ -37,7 +37,6 @@ import {
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { validateEligibility } from "../lib/eligibility"
-import { assertPackageInventoryAvailable } from "../lib/package-inventory"
 import { normalizeHotelPricing } from "../lib/hotel-pricing"
 
 function oid(id: string): mongoose.Types.ObjectId {
@@ -152,6 +151,7 @@ export class TBookBookingService {
       groupVatPercent: group?.defaultVatPercent ?? 27,
       selections,
       pricingRules: event.pricingRules ?? null,
+      playersPerTicket: event.playersPerTicket ?? 1,
     })
 
     return {
@@ -212,9 +212,18 @@ export class TBookBookingService {
     }
 
     if (parsed.hotelId && (quote.accommodationGuests ?? 0) > 0) {
-      const hotel = await TBookHotel.findById(oid(parsed.hotelId)).select("pricing").lean()
-      if (hotel?.pricing) {
+      const hotel = await TBookHotel.findById(oid(parsed.hotelId))
+        .select("pricing bookingCapacity")
+        .lean()
+      if (hotel) {
         const pricing = normalizeHotelPricing(hotel.pricing)
+        const { assertPackageInventoryAvailable, assertHotelBookingCapacityAvailable } =
+          await import("../lib/package-inventory")
+        await assertHotelBookingCapacityAvailable({
+          hotelId: parsed.hotelId,
+          bookingCapacity: hotel.bookingCapacity,
+          accommodationGuests: quote.accommodationGuests ?? parsed.guests,
+        })
         await assertPackageInventoryAvailable({
           hotelId: parsed.hotelId,
           packages: pricing.packages ?? [],
