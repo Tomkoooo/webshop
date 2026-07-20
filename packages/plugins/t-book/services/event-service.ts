@@ -23,7 +23,10 @@ import { assignPricingKeys, normalizeHotelPricing, resolveAccommodationMode } fr
 import { isEventListedOnPublicSite } from "../lib/event-public-listing"
 import { resolveEventHeroImage } from "../lib/event-hero"
 import { publicEligibilityFromEvent } from "../lib/public-eligibility"
-import { resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
+import {
+  resolveTeamMemberFieldSchema,
+  resolveTicketAttendeeFieldSchema,
+} from "../lib/registration-fields"
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
@@ -33,6 +36,45 @@ function oid(id: string): mongoose.Types.ObjectId {
     throw new Error("Érvénytelen azonosító.")
   }
   return new mongoose.Types.ObjectId(id)
+}
+
+function publicEventFieldSchemas(
+  event: {
+    registrationUnit?: string | null
+    attendeeFieldSchema?: unknown
+    attendeeFieldSchemaMode?: string | null
+    teamMemberFieldSchema?: unknown
+  },
+  group?: { defaultAttendeeFieldSchema?: unknown } | null
+) {
+  const registrationUnit = (event.registrationUnit ?? "person") as "person" | "team"
+  const mode = (event.attendeeFieldSchemaMode ?? "extend") as "extend" | "replace"
+  const groupSchema = group?.defaultAttendeeFieldSchema as
+    | import("../lib/attendee-fields").TBookAttendeeFieldDef[]
+    | undefined
+  const eventTicket = event.attendeeFieldSchema as
+    | import("../lib/attendee-fields").TBookAttendeeFieldDef[]
+    | undefined
+  const eventMembers = event.teamMemberFieldSchema as
+    | import("../lib/attendee-fields").TBookAttendeeFieldDef[]
+    | undefined
+
+  return {
+    registrationUnit,
+    attendeeFieldSchema: resolveTicketAttendeeFieldSchema({
+      registrationUnit,
+      groupSchema,
+      eventSchema: eventTicket,
+      mode,
+    }),
+    teamMemberFieldSchema: resolveTeamMemberFieldSchema({
+      registrationUnit,
+      groupSchema,
+      eventTeamMemberSchema: eventMembers,
+      eventTicketSchema: eventTicket,
+      mode,
+    }),
+  }
 }
 
 async function getOrgDefaultCurrency(organizationId?: string): Promise<string> {
@@ -480,14 +522,15 @@ export class TBookEventService {
       registrationUnit: e.registrationUnit ?? "person",
       playersPerTicket: e.playersPerTicket ?? 1,
       teamMemberLimit: e.teamMemberLimit ?? null,
-      teamMemberFieldSchema: normalizeAttendeeFieldSchema(e.teamMemberFieldSchema ?? []),
+      ...(() => {
+        const fields = publicEventFieldSchemas(e, group)
+        return {
+          teamMemberFieldSchema: fields.teamMemberFieldSchema,
+          attendeeFieldSchema: fields.attendeeFieldSchema,
+        }
+      })(),
       currency: normalizeTBookCurrency(e.currency),
       heroImage: resolveEventHeroImage(e, group),
-      attendeeFieldSchema: resolveEventAttendeeFieldSchema(
-        group?.defaultAttendeeFieldSchema,
-        e.attendeeFieldSchema,
-        e.attendeeFieldSchemaMode ?? "extend"
-      ),
       ...publicEligibilityFromEvent(e),
     }))
   }
@@ -520,14 +563,15 @@ export class TBookEventService {
       registrationUnit: event.registrationUnit ?? "person",
       playersPerTicket: event.playersPerTicket ?? 1,
       teamMemberLimit: event.teamMemberLimit ?? null,
-        teamMemberFieldSchema: normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? []),
+        ...(() => {
+          const fields = publicEventFieldSchemas(event, group)
+          return {
+            teamMemberFieldSchema: fields.teamMemberFieldSchema,
+            attendeeFieldSchema: fields.attendeeFieldSchema,
+          }
+        })(),
         currency: normalizeTBookCurrency(event.currency),
         heroImage: resolveEventHeroImage(event, group),
-        attendeeFieldSchema: resolveEventAttendeeFieldSchema(
-          group?.defaultAttendeeFieldSchema,
-          event.attendeeFieldSchema,
-          event.attendeeFieldSchemaMode ?? "extend"
-        ),
         ...publicEligibilityFromEvent(event),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],

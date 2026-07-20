@@ -87,7 +87,8 @@ export function BookingLegalConsent({
       <span>
         I have read and accept the{" "}
         <DocLink href={termsHref}>Terms and Conditions</DocLink> and the{" "}
-        <DocLink href={gdprHref}>Privacy Policy (GDPR)</DocLink>.
+        <DocLink href={gdprHref}>Privacy Policy (GDPR)</DocLink>. I understand that{" "}
+        <strong className="font-medium">no refunds are available</strong> after payment.
       </span>
     </label>
   )

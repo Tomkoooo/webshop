@@ -25,13 +25,12 @@ import {
   type TBookBookingFilters,
 } from "../lib/booking-query"
 import {
-  normalizeAttendeeFieldSchema,
   normalizeAttendeePayload,
   validateAttendees,
   type TBookAttendeeFieldDef,
 } from "../lib/attendee-fields"
 import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
-import { mergeRegistrationFieldSchemas, resolveEventAttendeeFieldSchema } from "../lib/registration-fields"
+import { mergeRegistrationFieldSchemas, resolveTeamMemberFieldSchema, resolveTicketAttendeeFieldSchema } from "../lib/registration-fields"
 import {
   accommodationGuestCount,
   resolvePlayersPerTicket,
@@ -163,13 +162,21 @@ export class TBookBookingService {
       currency: eventCurrency,
       hotelCurrency,
       registrationFieldSchema: mergeRegistrationFieldSchemas(
-        resolveEventAttendeeFieldSchema(
-          group?.defaultAttendeeFieldSchema,
-          event.attendeeFieldSchema,
-          event.attendeeFieldSchemaMode ?? "extend"
-        ),
+        resolveTicketAttendeeFieldSchema({
+          registrationUnit: event.registrationUnit ?? "person",
+          groupSchema: group?.defaultAttendeeFieldSchema,
+          eventSchema: event.attendeeFieldSchema,
+          mode: event.attendeeFieldSchemaMode ?? "extend",
+        }),
         hotelRegistrationFields
       ),
+      teamMemberFieldSchema: resolveTeamMemberFieldSchema({
+        registrationUnit: event.registrationUnit ?? "person",
+        groupSchema: group?.defaultAttendeeFieldSchema,
+        eventTeamMemberSchema: event.teamMemberFieldSchema,
+        eventTicketSchema: event.attendeeFieldSchema,
+        mode: event.attendeeFieldSchemaMode ?? "extend",
+      }),
     }
   }
 
@@ -182,7 +189,16 @@ export class TBookBookingService {
     opts?: { groupId?: mongoose.Types.ObjectId }
   ): Promise<ITBookBooking> {
     const parsed = createBookingSchema.parse(input)
-    const { event, quote, hotelName, nights, selections, currency, registrationFieldSchema } =
+    const {
+      event,
+      quote,
+      hotelName,
+      nights,
+      selections,
+      currency,
+      registrationFieldSchema,
+      teamMemberFieldSchema,
+    } =
       await TBookBookingService.quote(
       {
         eventId: parsed.eventId,
@@ -244,7 +260,6 @@ export class TBookBookingService {
     }
 
     const registrationUnit = event.registrationUnit ?? "person"
-    const teamMemberFieldSchema = normalizeAttendeeFieldSchema(event.teamMemberFieldSchema ?? [])
     const playersPerTicket = resolvePlayersPerTicket(event)
     const attendeeIssues = validateAttendees(
       registrationFieldSchema,

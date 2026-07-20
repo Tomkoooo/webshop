@@ -296,6 +296,9 @@ function HotelCard({
               {plainTextFromHtml(description)}
             </span>
           ) : null}
+          <span className="pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            No refunds
+          </span>
         </button>
       </article>
       <HotelGalleryModal
@@ -329,6 +332,9 @@ export function AccommodationOptionCards({
           Choose entry only, or add a hotel stay. Entry only is selected by default.
         </p>
       ) : null}
+      <p className="text-xs text-muted-foreground">
+        No refunds are available after payment. By continuing you confirm you understand this.
+      </p>
 
       {!hideEntryOnlyOption ? (
         <button

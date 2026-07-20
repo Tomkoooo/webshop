@@ -58,6 +58,50 @@ export function resolveEventAttendeeFieldSchema(
   return ordered
 }
 
+/**
+ * Team / multi-player member fields.
+ * For team events: prefer explicit team-member schema; if empty, use the group
+ * default form (and event ticket-field overrides) as per-member fields.
+ */
+export function resolveTeamMemberFieldSchema(opts: {
+  registrationUnit?: TBookRegistrationUnit
+  groupSchema?: TBookAttendeeFieldDef[] | null
+  eventTeamMemberSchema?: TBookAttendeeFieldDef[] | null
+  eventTicketSchema?: TBookAttendeeFieldDef[] | null
+  mode?: TBookRegistrationFieldsMode
+}): TBookAttendeeFieldDef[] {
+  const unit = opts.registrationUnit ?? "person"
+  const explicit = normalizeAttendeeFieldSchema(opts.eventTeamMemberSchema)
+  if (explicit.length > 0) {
+    return unit === "team"
+      ? resolveEventAttendeeFieldSchema(opts.groupSchema, explicit, opts.mode ?? "extend")
+      : explicit
+  }
+  if (unit === "team") {
+    return resolveEventAttendeeFieldSchema(
+      opts.groupSchema,
+      opts.eventTicketSchema,
+      opts.mode ?? "extend"
+    )
+  }
+  return []
+}
+
+/** Ticket-level fields shown once per entry. Empty for team events (member form only). */
+export function resolveTicketAttendeeFieldSchema(opts: {
+  registrationUnit?: TBookRegistrationUnit
+  groupSchema?: TBookAttendeeFieldDef[] | null
+  eventSchema?: TBookAttendeeFieldDef[] | null
+  mode?: TBookRegistrationFieldsMode
+}): TBookAttendeeFieldDef[] {
+  if ((opts.registrationUnit ?? "person") === "team") return []
+  return resolveEventAttendeeFieldSchema(
+    opts.groupSchema,
+    opts.eventSchema,
+    opts.mode ?? "extend"
+  )
+}
+
 export type TBookRegistrationUnit = "person" | "team"
 
 export function registrationUnitLabel(unit: TBookRegistrationUnit, count = 1): string {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { BedDouble, Calendar, Users } from "lucide-react"
 import type { TBookPublicPackageDeal } from "./tbook-public-api"
 import { formatHuf } from "./tbook-public-api"
@@ -55,35 +55,48 @@ export function PackageSelectionCards({
   onClearPackage,
 }: Props) {
   const groups = useMemo(() => groupPackagesByNights(packages), [packages])
-  const [selectedNights, setSelectedNights] = useState<number | null>(() => {
-    if (recommendedNights != null && groups.some(([n]) => n === recommendedNights)) {
-      return recommendedNights
+  const nightOptions = useMemo(() => groups.map(([n]) => n), [groups])
+
+  const defaultNights = useMemo(() => {
+    if (recommendedNights != null) {
+      const nearest = nearestAvailableNights(nightOptions, recommendedNights)
+      if (nearest != null) return nearest
     }
     if (packageDealKey) {
       const pkg = packages.find((p) => p.key === packageDealKey)
-      return pkg?.nights ?? groups[0]?.[0] ?? null
+      if (pkg) return pkg.nights
     }
     if (activePackageUnits) {
       const firstKey = Object.keys(activePackageUnits)[0]
       const pkg = packages.find((p) => p.key === firstKey)
-      return pkg?.nights ?? groups[0]?.[0] ?? null
+      if (pkg) return pkg.nights
     }
-    return groups[0]?.[0] ?? null
-  })
+    return nightOptions[0] ?? null
+  }, [recommendedNights, nightOptions, packageDealKey, activePackageUnits, packages])
 
-  // Keep the recommended (or nearest) nights tab selected when packages / recommendation change.
-  useEffect(() => {
-    if (recommendedNights == null) return
-    const nightOptions = groups.map(([n]) => n)
-    const nearest = nearestAvailableNights(nightOptions, recommendedNights)
-    if (nearest != null) setSelectedNights(nearest)
-  }, [recommendedNights, groups])
+  const [userSelectedNights, setUserSelectedNights] = useState<number | null>(null)
+  const selectedNights = userSelectedNights ?? defaultNights
 
   const exactRecommendedAvailable =
     recommendedNights != null && groups.some(([n]) => n === recommendedNights)
 
   const packagesForPeriod =
     selectedNights != null ? packages.filter((p) => p.nights === selectedNights) : packages
+
+  const suggestionsForPeriod = useMemo(() => {
+    if (selectedNights == null) return suggestions
+    return suggestions.filter((s) => {
+      if (s.nights === selectedNights) return true
+      const keys = Object.keys(s.units)
+      return (
+        keys.length > 0 &&
+        keys.every((key) => {
+          const pkg = packages.find((p) => p.key === key)
+          return pkg?.nights === selectedNights
+        })
+      )
+    })
+  }, [suggestions, selectedNights, packages])
 
   const cardClass = (selected: boolean, disabled = false) =>
     `rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
@@ -98,16 +111,27 @@ export function PackageSelectionCards({
     <div className="space-y-5">
       <p className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         Prices below update for <strong className="text-foreground">{accommodationGuests}</strong>{" "}
-        hotel guest{accommodationGuests === 1 ? "" : "s"}.
+        hotel guest{accommodationGuests === 1 ? "" : "s"}
+        {accommodationGuests > 1 ? (
+          <>
+            {" "}
+            — a single room needs {accommodationGuests} rooms, or choose a double/twin mix that
+            covers everyone.
+          </>
+        ) : null}
+        .
+      </p>
+      <p className="text-xs text-muted-foreground">
+        No refunds are available after payment. By continuing you confirm you understand this.
       </p>
 
-      {suggestions.length > 0 ? (
+      {suggestionsForPeriod.length > 0 ? (
         <div className="space-y-2">
           <p className="text-sm font-medium">
             Suggested room mix ({accommodationGuests} guests)
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
-            {suggestions.map((suggestion) => {
+            {suggestionsForPeriod.map((suggestion, index) => {
               const selected =
                 activePackageUnits != null && JSON.stringify(activePackageUnits) === suggestion.id
               const planTotal = Object.entries(suggestion.units).reduce((sum, [key, qty]) => {
@@ -121,7 +145,12 @@ export function PackageSelectionCards({
                   className={cardClass(selected)}
                   onClick={() => onApplyPlan(suggestion.units)}
                 >
-                  <p className="text-sm font-semibold">{suggestion.label}</p>
+                  <p className="text-sm font-semibold">
+                    {suggestion.label}
+                    {index === 0 ? (
+                      <span className="ml-2 text-xs font-medium text-primary">Recommended</span>
+                    ) : null}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {suggestion.totalUnits} room{suggestion.totalUnits === 1 ? "" : "s"} ·{" "}
                     {suggestion.totalCapacity} guest capacity
@@ -172,7 +201,7 @@ export function PackageSelectionCards({
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border text-muted-foreground hover:bg-muted/40"
                 }`}
-                onClick={() => setSelectedNights(nights)}
+                onClick={() => setUserSelectedNights(nights)}
               >
                 {nights} night{nights === 1 ? "" : "s"}
                 {recommendedNights === nights ? " · recommended" : ""}
@@ -230,6 +259,7 @@ export function PackageSelectionCards({
                 <p className="mt-1 text-xs font-medium text-foreground">
                   {unitsNeeded}× room{unitsNeeded === 1 ? "" : "s"} ={" "}
                   {formatHuf(lineTotal, displayCurrency)}
+                  {unitsNeeded > 1 ? ` for ${accommodationGuests} guests` : ""}
                 </p>
                 {remaining != null ? (
                   <p

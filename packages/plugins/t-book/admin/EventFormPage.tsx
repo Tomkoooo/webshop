@@ -751,6 +751,13 @@ export function EventFormPage({
                       ? "Játékos adatok (jegyenként)"
                       : "Csapattagok adatai"}
                   </h3>
+                  {draft.registrationUnit === "team" ? (
+                    <p className="text-xs text-muted-foreground">
+                      Csapat eseménynél a foglalóknak nincs külön „belépő” mezőblokkja — csak a
+                      csapattagok adatait kérjük. Ha ez a lista üres, a csoport alap űrlapja
+                      (csoport beállítások) lesz a csapattag űrlap.
+                    </p>
+                  ) : null}
                   <AttendeeFieldsEditor
                     fields={draft.teamMemberFieldSchema}
                     onChange={(teamMemberFieldSchema) => patch({ teamMemberFieldSchema })}

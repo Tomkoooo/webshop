@@ -1100,7 +1100,7 @@ export function TBookBookingWizard({
                     guests === 1 ? "entry" : "entries"
                   } = ${maxAccommodationGuests} players). `
                 : registrationUnit === "team"
-                  ? `Enter details for each team member (max ${playersPerTicket} per team). `
+                  ? "Enter details for each team member (no separate team-level form). "
                   : ""}
               {copy.attendeesHint}
             </p>

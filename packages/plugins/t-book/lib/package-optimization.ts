@@ -8,6 +8,7 @@ export type PackageCombinationSuggestion = {
   units: PackageUnitPlan
   totalCapacity: number
   totalUnits: number
+  nights: number
 }
 
 function packageCapacity(pkg: TBookPackageDeal): number {
@@ -64,19 +65,12 @@ function planCapacity(units: PackageUnitPlan, packages: TBookPackageDeal[]): num
   )
 }
 
-/**
- * Suggest package combinations that fit the guest count.
- * Returns up to 4 distinct plans (fewest units, all singles, mixed).
- */
-export function suggestPackageCombinations(
+function suggestionsForNightCohort(
   guests: number,
-  packages: TBookPackageDeal[]
+  viable: TBookPackageDeal[]
 ): PackageCombinationSuggestion[] {
-  if (guests < 1 || packages.length === 0) return []
-
-  const viable = packages.filter((p) => packageCapacity(p) > 0)
   if (viable.length === 0) return []
-
+  const nights = viable[0].nights
   const candidates: PackageUnitPlan[] = []
 
   const fewest = greedyPlan(guests, viable, "capacity_desc")
@@ -84,8 +78,7 @@ export function suggestPackageCombinations(
 
   const singles = viable.filter((p) => packageCapacity(p) === 1)
   if (singles.length > 0) {
-    const single = singles[0]
-    candidates.push({ [single.key]: guests })
+    candidates.push({ [singles[0].key]: guests })
   }
 
   const doubles = viable.filter((p) => packageCapacity(p) === 2)
@@ -96,6 +89,7 @@ export function suggestPackageCombinations(
     const remainder = guests % 2
     if (doubleCount > 0) units[dbl.key] = doubleCount
     if (remainder > 0 && singles.length > 0) units[singles[0].key] = remainder
+    else if (remainder > 0) units[dbl.key] = (units[dbl.key] ?? 0) + 1
     if (Object.keys(units).length > 0) candidates.push(units)
   }
 
@@ -118,10 +112,40 @@ export function suggestPackageCombinations(
       units,
       totalCapacity,
       totalUnits,
+      nights,
     })
   }
 
-  return suggestions.sort((a, b) => a.totalUnits - b.totalUnits).slice(0, 4)
+  return suggestions.sort((a, b) => a.totalUnits - b.totalUnits || a.label.localeCompare(b.label))
+}
+
+/**
+ * Suggest package combinations that fit the guest count.
+ * Only mixes packages with the same night count (e.g. 2× single OR 1× double).
+ * Returns up to 4 distinct plans overall.
+ */
+export function suggestPackageCombinations(
+  guests: number,
+  packages: TBookPackageDeal[]
+): PackageCombinationSuggestion[] {
+  if (guests < 1 || packages.length === 0) return []
+
+  const viable = packages.filter((p) => packageCapacity(p) > 0)
+  if (viable.length === 0) return []
+
+  const byNights = new Map<number, TBookPackageDeal[]>()
+  for (const pkg of viable) {
+    const list = byNights.get(pkg.nights) ?? []
+    list.push(pkg)
+    byNights.set(pkg.nights, list)
+  }
+
+  const suggestions: PackageCombinationSuggestion[] = []
+  for (const cohort of byNights.values()) {
+    suggestions.push(...suggestionsForNightCohort(guests, cohort))
+  }
+
+  return suggestions.slice(0, 4)
 }
 
 export function packageUnitsTotalGuests(
