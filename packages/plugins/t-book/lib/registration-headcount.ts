@@ -10,34 +10,55 @@ export type HeadcountEventLike = {
 }
 
 /**
- * Players / hotel guests per ticket.
- * - Explicit `playersPerTicket` (e.g. pair = 2)
- * - Team events: fall back to `teamMemberLimit` when set
- * - Otherwise 1
+ * Fixed players per ticket/entry.
+ * - Explicit `playersPerTicket` > 1 → fixed roster (e.g. pair = 2)
+ * - `playersPerTicket` = 1 (default) → not a fixed multi-player ticket
+ * - Does NOT use `teamMemberLimit` (that is a flexible max for team events)
  */
 export function resolvePlayersPerTicket(event: HeadcountEventLike): number {
   const explicit = event.playersPerTicket
-  if (explicit != null && explicit > 1) {
-    return Math.max(1, Math.min(100, Math.floor(explicit)))
-  }
-  if ((event.registrationUnit ?? "person") === "team" && event.teamMemberLimit != null) {
-    return Math.max(1, Math.min(100, Math.floor(event.teamMemberLimit)))
-  }
-  if (explicit != null && explicit >= 1) {
+  if (explicit != null && Number.isFinite(explicit) && explicit >= 1) {
     return Math.max(1, Math.min(100, Math.floor(explicit)))
   }
   return 1
 }
 
-/** Ticket count × players per ticket — used for hotel/package capacity. */
-export function accommodationGuestCount(ticketCount: number, event: HeadcountEventLike): number {
-  const tickets = Math.max(1, Math.floor(ticketCount || 1))
-  return tickets * resolvePlayersPerTicket(event)
-}
-
-/** Player-level fields are collected per ticket when roster size > 1. */
+/** True when the event requires an exact player count per entry (playersPerTicket > 1). */
 export function usesFixedPlayerRoster(event: HeadcountEventLike): boolean {
   return resolvePlayersPerTicket(event) > 1
+}
+
+/**
+ * Exact roster size when fixed; `null` means flexible team roster
+ * (add/remove members up to `teamMemberLimit`).
+ */
+export function playerRosterSize(event: HeadcountEventLike): number | null {
+  if (usesFixedPlayerRoster(event)) return resolvePlayersPerTicket(event)
+  return null
+}
+
+/** How many empty member slots to create on the booking form. */
+export function initialPlayerMemberCount(event: HeadcountEventLike): number {
+  if (usesFixedPlayerRoster(event)) return resolvePlayersPerTicket(event)
+  if (needsPlayerMemberForms(event)) return 1
+  return 0
+}
+
+/**
+ * Hotel / package planning headcount.
+ * Fixed multi-player tickets use playersPerTicket; flexible teams use teamMemberLimit
+ * as the planning ceiling (guests can lower accommodation headcount on the form).
+ */
+export function accommodationGuestCount(ticketCount: number, event: HeadcountEventLike): number {
+  const tickets = Math.max(1, Math.floor(ticketCount || 1))
+  if (usesFixedPlayerRoster(event)) {
+    return tickets * resolvePlayersPerTicket(event)
+  }
+  if ((event.registrationUnit ?? "person") === "team" && event.teamMemberLimit != null) {
+    const limit = Math.max(1, Math.min(100, Math.floor(event.teamMemberLimit)))
+    return tickets * limit
+  }
+  return tickets
 }
 
 /** Schema for each player slot (members array). */
@@ -53,10 +74,4 @@ export function needsPlayerMemberForms(event: HeadcountEventLike): boolean {
     (event.registrationUnit ?? "person") === "team" &&
     (event.teamMemberFieldSchema?.length ?? 0) > 0
   )
-}
-
-export function playerRosterSize(event: HeadcountEventLike): number | null {
-  if (usesFixedPlayerRoster(event)) return resolvePlayersPerTicket(event)
-  if ((event.registrationUnit ?? "person") === "team") return event.teamMemberLimit ?? null
-  return null
 }

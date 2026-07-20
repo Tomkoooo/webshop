@@ -284,11 +284,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
               minimum: 1,
               maximum: 100,
               description:
-                "Játékosok jegyenként/csapatonként. Szállás headcount = guests × playersPerTicket.",
+                "Fixed players per entry when > 1 (e.g. pair = 2). For team events, 1 means a flexible roster up to teamMemberLimit.",
             },
             teamMemberLimit: {
               type: ["integer", "null"],
-              description: "Csapatonként max. tag (team regisztráció).",
+              description:
+                "Max team members for flexible team rosters (playersPerTicket = 1). Ignored when playersPerTicket > 1.",
             },
             teamMemberFieldSchema: {
               type: "array",

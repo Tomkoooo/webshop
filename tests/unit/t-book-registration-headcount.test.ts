@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest"
 import {
   accommodationGuestCount,
+  initialPlayerMemberCount,
   needsPlayerMemberForms,
+  playerRosterSize,
   resolvePlayersPerTicket,
+  usesFixedPlayerRoster,
 } from "@wse/plugin-t-book/lib/registration-headcount"
+import { validateAttendees } from "@wse/plugin-t-book/lib/attendee-fields"
 import { validateEligibility } from "@wse/plugin-t-book/lib/eligibility"
 
 describe("registration-headcount", () => {
@@ -16,7 +20,7 @@ describe("registration-headcount", () => {
     ).toBe(6)
   })
 
-  it("uses teamMemberLimit as team size for hotel headcount", () => {
+  it("uses teamMemberLimit as hotel planning ceiling when roster is flexible", () => {
     expect(
       accommodationGuestCount(2, {
         registrationUnit: "team",
@@ -24,6 +28,31 @@ describe("registration-headcount", () => {
         playersPerTicket: 1,
       })
     ).toBe(10)
+  })
+
+  it("does not treat teamMemberLimit as a fixed playersPerTicket", () => {
+    const event = {
+      registrationUnit: "team" as const,
+      playersPerTicket: 1,
+      teamMemberLimit: 8,
+      teamMemberFieldSchema: [{ key: "name", label: "Name", type: "text" as const }],
+    }
+    expect(resolvePlayersPerTicket(event)).toBe(1)
+    expect(usesFixedPlayerRoster(event)).toBe(false)
+    expect(playerRosterSize(event)).toBeNull()
+    expect(initialPlayerMemberCount(event)).toBe(1)
+  })
+
+  it("keeps fixed roster when playersPerTicket > 1", () => {
+    const event = {
+      registrationUnit: "team" as const,
+      playersPerTicket: 4,
+      teamMemberLimit: 8,
+      teamMemberFieldSchema: [{ key: "name", label: "Name", type: "text" as const }],
+    }
+    expect(usesFixedPlayerRoster(event)).toBe(true)
+    expect(playerRosterSize(event)).toBe(4)
+    expect(initialPlayerMemberCount(event)).toBe(4)
   })
 
   it("requires player member forms when roster > 1", () => {
@@ -35,6 +64,30 @@ describe("registration-headcount", () => {
       })
     ).toBe(true)
     expect(resolvePlayersPerTicket({ playersPerTicket: 0 })).toBe(1)
+  })
+
+  it("allows flexible team size below the max", () => {
+    const memberSchema = [
+      { key: "name", label: "Name", type: "text" as const, required: true },
+    ]
+    const issues = validateAttendees([], 1, [
+      {
+        fields: {},
+        members: [
+          { fields: { name: "A" } },
+          { fields: { name: "B" } },
+          { fields: { name: "C" } },
+          { fields: { name: "D" } },
+          { fields: { name: "E" } },
+          { fields: { name: "F" } },
+        ],
+      },
+    ], "team", {
+      teamMemberFieldSchema: memberSchema,
+      teamMemberLimit: 8,
+      playersPerTicket: null,
+    })
+    expect(issues).toHaveLength(0)
   })
 })
 

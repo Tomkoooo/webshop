@@ -41,6 +41,7 @@ import {
   needsPlayerMemberForms,
   playerFieldSchema,
   playerRosterSize,
+  initialPlayerMemberCount,
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
@@ -944,7 +945,7 @@ export function TBookMultiBookingWizard({
           if (!res.event) continue
           nextEvents.push({ event: res.event })
           nextGuests[res.event.id] = 1
-          const rosterSize = resolvePlayersPerTicket(res.event)
+          const rosterSize = initialPlayerMemberCount(res.event)
           const withMembers = needsPlayerMemberForms(res.event)
           nextAttendees[res.event.id] = emptyAttendeeRows(1, rosterSize, withMembers)
           const stay = stayForEvents([res.event])
@@ -994,7 +995,7 @@ export function TBookMultiBookingWizard({
           ...prev,
           [event.id]: emptyAttendeeRows(
             guestCount,
-            resolvePlayersPerTicket(event),
+            initialPlayerMemberCount(event),
             needsPlayerMemberForms(event)
           ),
         }
@@ -1633,9 +1634,11 @@ export function TBookMultiBookingWizard({
                           guestCount === 1 ? "entry" : "entries"
                         } = ${maxAcc} players). `
                       : registrationUnit === "team"
-                        ? `Enter details for each team member (max ${playersPerTicket} per team). `
+                        ? `Enter details for each team member${
+                            teamMemberLimit != null ? ` (1–${teamMemberLimit} players)` : ""
+                          }. `
                         : ""}
-                    {copy.attendeesHint}
+                  {copy.attendeesHint}
                   </p>
                 </div>
 

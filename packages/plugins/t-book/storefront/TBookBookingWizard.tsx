@@ -38,6 +38,7 @@ import {
   needsPlayerMemberForms,
   playerFieldSchema,
   playerRosterSize,
+  initialPlayerMemberCount,
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
@@ -188,7 +189,7 @@ function applyEventDetailToWizardState(
     return
   }
   const eventDetail = detail.event
-  const rosterSize = eventDetail ? resolvePlayersPerTicket(eventDetail) : 1
+  const rosterSize = eventDetail ? initialPlayerMemberCount(eventDetail) : 1
   const withMembers = eventDetail ? needsPlayerMemberForms(eventDetail) : false
   setters.setEvent(eventDetail)
   setters.setHotels(detail.hotels)
@@ -412,7 +413,7 @@ export function TBookBookingWizard({
   useEffect(() => {
     if (!event) return
     setAttendees(
-      emptyAttendeeRows(guests, resolvePlayersPerTicket(event), needsPlayerMemberForms(event))
+      emptyAttendeeRows(guests, initialPlayerMemberCount(event), needsPlayerMemberForms(event))
     )
     setQuote(null)
   }, [guests, event, registrationFieldSchema.length])
@@ -1100,7 +1101,9 @@ export function TBookBookingWizard({
                     guests === 1 ? "entry" : "entries"
                   } = ${maxAccommodationGuests} players). `
                 : registrationUnit === "team"
-                  ? "Enter details for each team member (no separate team-level form). "
+                  ? `Enter details for each team member${
+                      teamMemberLimit != null ? ` (1–${teamMemberLimit} players)` : ""
+                    }. `
                   : ""}
               {copy.attendeesHint}
             </p>

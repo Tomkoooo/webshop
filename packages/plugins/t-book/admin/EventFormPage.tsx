@@ -493,7 +493,7 @@ export function EventFormPage({
               <TBookField
                 label={
                   draft.registrationUnit === "team"
-                    ? "Játékosok / csapat (fix létszám)"
+                    ? "Fix játékosszám / csapat (1 = rugalmas)"
                     : "Játékosok / jegy (pl. pár = 2)"
                 }
               >
@@ -505,8 +505,9 @@ export function EventFormPage({
                   onChange={(e) => patch({ playersPerTicket: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ennyi játékos adatot kell megadni jegyenként. A szállás és csomagajánlatok
-                  számítása: jegyek × játékosok (pl. 1 párjegy × 2 = 2 fő szálláshoz).
+                  {draft.registrationUnit === "team"
+                    ? "1 = a csapat létszáma rugalmas (a max. csapattag mezőig). 2 vagy több = pontosan ennyi játékos adat kötelező csapatonként."
+                    : "Ennyi játékos adatot kell megadni jegyenként. A szállás számítása: jegyek × játékosok (pl. 1 párjegy × 2 = 2 fő)."}
                 </p>
               </TBookField>
               <div className="border-t border-border pt-6 space-y-3">
@@ -710,8 +711,8 @@ export function EventFormPage({
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {Number(draft.playersPerTicket) > 1
-                      ? "Fix játékosszám esetén a fenti mező határozza meg a csapattagok számát."
-                      : "Korlátozza, hány tag adható meg csapatonként a foglalási űrlapon."}
+                      ? "Fix játékosszám esetén a fenti mező határozza meg a kötelező csapattagok számát."
+                      : "Rugalmas létszám: a foglaló 1–N tagot adhat meg (N = ez az érték). Pl. max 8 → 6 vagy 8 is elfogadott."}
                   </p>
                 </TBookField>
               ) : null}
