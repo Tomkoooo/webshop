@@ -724,21 +724,31 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
   }
 
   return (
-    <div className="bg-background text-foreground">
-      {sectionLayout.map((entry, index) =>
-        entry.enabled ? (
-          <Reveal
-            key={entry.id}
-            id={entry.id === "prizeMoney" ? undefined : WDF_SECTION_ANCHORS[entry.id]}
-            data-wdf-section={entry.id}
-            variant="up"
-            delayMs={index * 40}
-            className={WDF_SECTION_ANCHORS[entry.id] ? "scroll-mt-24" : undefined}
-          >
-            {sections[entry.id]}
-          </Reveal>
-        ) : null
-      )}
+    <div className="relative overflow-x-clip bg-background text-foreground">
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+        <span className="wdf-side-glow wdf-side-glow--left-1" />
+        <span className="wdf-side-glow wdf-side-glow--right-1" />
+        <span className="wdf-side-glow wdf-side-glow--left-2" />
+        <span className="wdf-side-glow wdf-side-glow--right-2" />
+        <span className="wdf-side-glow wdf-side-glow--left-3" />
+        <span className="wdf-side-glow wdf-side-glow--right-3" />
+      </div>
+      <div className="relative z-[1]">
+        {sectionLayout.map((entry, index) =>
+          entry.enabled ? (
+            <Reveal
+              key={entry.id}
+              id={entry.id === "prizeMoney" ? undefined : WDF_SECTION_ANCHORS[entry.id]}
+              data-wdf-section={entry.id}
+              variant="up"
+              delayMs={index * 40}
+              className={WDF_SECTION_ANCHORS[entry.id] ? "scroll-mt-24" : undefined}
+            >
+              {sections[entry.id]}
+            </Reveal>
+          ) : null
+        )}
+      </div>
     </div>
   )
 }

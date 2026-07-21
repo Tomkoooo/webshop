@@ -33,6 +33,103 @@
   z-index: 0;
 }
 
+/* Page-level gold orbs on the home sides — fixed so they visually cross stacked sections. */
+.wdf-storefront .wdf-side-glow {
+  position: fixed;
+  display: block;
+  width: min(42vw, 480px);
+  height: min(42vw, 480px);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in oklab, var(--theme-primary) 55%, transparent),
+    color-mix(in oklab, var(--theme-primary) 18%, transparent) 40%,
+    transparent 72%
+  );
+  filter: blur(36px);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.wdf-storefront .wdf-side-glow--left-1 {
+  left: -18%;
+  top: 12%;
+}
+
+.wdf-storefront .wdf-side-glow--right-1 {
+  right: -20%;
+  top: 22%;
+  width: min(36vw, 400px);
+  height: min(50vw, 540px);
+  border-radius: 42% 58% 48% 52%;
+  opacity: 0.4;
+}
+
+.wdf-storefront .wdf-side-glow--left-2 {
+  left: -16%;
+  top: auto;
+  bottom: 28%;
+  width: min(34vw, 380px);
+  height: min(46vw, 480px);
+  border-radius: 55% 45% 60% 40%;
+  opacity: 0.42;
+}
+
+.wdf-storefront .wdf-side-glow--right-2 {
+  right: -18%;
+  top: auto;
+  bottom: 18%;
+}
+
+.wdf-storefront .wdf-side-glow--left-3 {
+  left: -22%;
+  top: auto;
+  bottom: -8%;
+  width: min(40vw, 440px);
+  height: min(32vw, 360px);
+  border-radius: 48% 52% 40% 60%;
+  opacity: 0.32;
+}
+
+.wdf-storefront .wdf-side-glow--right-3 {
+  right: -14%;
+  top: 55%;
+  width: min(34vw, 380px);
+  height: min(44vw, 460px);
+  border-radius: 60% 40% 55% 45%;
+  opacity: 0.38;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wdf-storefront .wdf-side-glow--left-1,
+  .wdf-storefront .wdf-side-glow--right-2 {
+    animation: wdf-side-glow-drift 18s ease-in-out infinite alternate;
+  }
+
+  .wdf-storefront .wdf-side-glow--right-1,
+  .wdf-storefront .wdf-side-glow--left-3 {
+    animation: wdf-side-glow-drift 22s ease-in-out infinite alternate-reverse;
+  }
+}
+
+@keyframes wdf-side-glow-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(0, 2.5%, 0) scale(1.05);
+  }
+}
+
+@media (max-width: 640px) {
+  .wdf-storefront .wdf-side-glow {
+    opacity: 0.28;
+    filter: blur(28px);
+  }
+}
+
 .wdf-storefront .wdf-section-divider {
   height: 1px;
   background: linear-gradient(

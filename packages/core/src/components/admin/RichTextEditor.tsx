@@ -583,6 +583,21 @@ const MenuBar = ({
   )
 }
 
+function escapeHtmlPlain(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
+function plainTextToParagraphHtml(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => `<p>${escapeHtmlPlain(line) || "<br>"}</p>`)
+    .join("")
+}
+
 export function RichTextEditor({
   value,
   onChange,
@@ -594,10 +609,11 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   void placeholder
   const isMailEditor = variant === "mail"
+  const editorRef = useRef<Editor | null>(null)
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ hardBreak: {} }),
       Underline,
       TextStyle,
       Color,
@@ -615,6 +631,17 @@ export function RichTextEditor({
       onChange(editor.getHTML())
     },
     editorProps: {
+      handlePaste(_view, event) {
+        const clipboard = event.clipboardData
+        if (!clipboard) return false
+        const htmlPaste = clipboard.getData("text/html")
+        const textPaste = clipboard.getData("text/plain")
+        if (!textPaste.includes("\n")) return false
+        if (htmlPaste && /<(?:p|br|div)\b/i.test(htmlPaste)) return false
+        event.preventDefault()
+        editorRef.current?.commands.insertContent(plainTextToParagraphHtml(textPaste))
+        return true
+      },
       attributes: {
         class: cn(
           "prose prose-invert max-w-none focus:outline-none min-h-[256px] p-6 text-black bg-white ql-editor",
@@ -623,6 +650,10 @@ export function RichTextEditor({
       },
     },
   })
+
+  useEffect(() => {
+    editorRef.current = editor
+  }, [editor])
 
   // Update logic to handle external value changes (like initial load)
   useEffect(() => {

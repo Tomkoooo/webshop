@@ -9,14 +9,16 @@ type CmsRichTextProps = {
   html: string
   tokens?: CmsTokens
   className?: string
+  toolbar?: "full" | "compact" | "none"
 }
 
 /** TipTap-backed rich text field. */
-export function CmsRichText({ path, html, tokens, className }: CmsRichTextProps) {
+export function CmsRichText({ path, html, tokens, className, toolbar }: CmsRichTextProps) {
   return (
     <EditableDocRichText
       path={path}
       html={html}
+      toolbar={toolbar}
       className={cn(cmsTokensToClassName(tokens), className)}
     />
   )

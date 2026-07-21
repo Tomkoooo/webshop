@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Cropper from "react-easy-crop"
 import { Check, RotateCcw, Upload, X, ZoomIn, ZoomOut } from "lucide-react"
-import getCroppedImg from "@wse/core/lib/crop-utils"
+import getCroppedImg, { preferredCropOutput } from "@wse/core/lib/crop-utils"
 import {
   buildAspectPresets,
   defaultFlexiblePresetId,
@@ -137,6 +137,24 @@ export function UploadSheet({
   const cropperKey = `${selectedPresetId}-${cropperAspect}`
 
   const onFileSelected = (file: File) => {
+    const name = file.name.toLowerCase()
+    const isSvg = file.type === "image/svg+xml" || name.endsWith(".svg")
+    // Keep SVGs as vectors — cropping rasterizes and JPEG fills transparency with black.
+    if (isSvg) {
+      void (async () => {
+        setLoading(true)
+        try {
+          await uploadBlob(file, file.name)
+        } catch (err) {
+          console.error(err)
+          window.alert(err instanceof Error ? err.message : "Upload failed")
+        } finally {
+          setLoading(false)
+        }
+      })()
+      return
+    }
+
     setSourceFile(file)
     const reader = new FileReader()
     reader.onload = () => {
@@ -309,9 +327,16 @@ export function UploadSheet({
                 if (!imageSource || !croppedAreaPixels) return
                 setLoading(true)
                 try {
-                  const croppedBlob = await getCroppedImg(imageSource, croppedAreaPixels, rotation)
+                  const output = preferredCropOutput(imageSource)
+                  const croppedBlob = await getCroppedImg(
+                    imageSource,
+                    croppedAreaPixels,
+                    rotation,
+                    undefined,
+                    output.mime
+                  )
                   if (!croppedBlob) return
-                  await uploadBlob(croppedBlob, "edited-image.jpg")
+                  await uploadBlob(croppedBlob, output.filename)
                   resetEditor()
                 } catch (err) {
                   console.error(err)
@@ -357,7 +382,7 @@ export function UploadSheet({
           ref={inputRef}
           id={fileInputId}
           type="file"
-          accept="image/*"
+          accept="image/*,.svg"
           disabled={loading}
           className="hidden"
           onChange={(event) => {

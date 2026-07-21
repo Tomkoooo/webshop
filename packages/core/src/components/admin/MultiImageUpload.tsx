@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Upload, X, GripVertical, Star, StarOff } from "lucide-react"
 import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
-import { Button } from "@wse/core/components/ui/button"
 import { cn } from "@wse/core/lib/utils"
 import { ImageCropper } from "./ImageCropper"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
@@ -27,7 +26,7 @@ export function MultiImageUpload({
 
   useEffect(() => {
     onUpload(images)
-  }, [images])
+  }, [images, onUpload])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -81,7 +80,13 @@ export function MultiImageUpload({
     setUploading(true)
 
     const formData = new FormData()
-    formData.append("file", croppedBlob, "image.jpg")
+    const filename =
+      croppedBlob.type === "image/png"
+        ? "edited-image.png"
+        : croppedBlob.type === "image/jpeg"
+          ? "edited-image.jpg"
+          : "edited-image.png"
+    formData.append("file", croppedBlob, filename)
 
     try {
       const res = await fetch("/api/media", {

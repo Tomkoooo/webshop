@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import Cropper from "react-easy-crop"
 import { Check, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react"
 import { Button } from "@wse/core/components/ui/button"
-import getCroppedImg from "@wse/core/lib/crop-utils"
+import getCroppedImg, { preferredCropOutput } from "@wse/core/lib/crop-utils"
 import {
   buildAspectPresets,
   defaultFlexiblePresetId,
@@ -80,7 +80,14 @@ export function AdminImageCropModal({
     if (!croppedAreaPixels) return
     setApplying(true)
     try {
-      const croppedImage = await getCroppedImg(image, croppedAreaPixels, rotation)
+      const output = preferredCropOutput(image)
+      const croppedImage = await getCroppedImg(
+        image,
+        croppedAreaPixels,
+        rotation,
+        undefined,
+        output.mime
+      )
       if (croppedImage) onCropComplete(croppedImage)
     } catch (e) {
       console.error(e)

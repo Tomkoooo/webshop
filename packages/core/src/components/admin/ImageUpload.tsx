@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@wse/core/components/ui/LoadingSpinner"
 import { ImageCropper } from "./ImageCropper"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
 import { mediaImageSrc } from "@wse/core/lib/images"
+import { preferredCropOutput } from "@wse/core/lib/crop-utils"
 
 interface ImageUploadProps {
   onUpload: (filename: string) => void
@@ -75,14 +76,19 @@ export function ImageUpload({
   const handleCropComplete = async (croppedBlob: Blob) => {
     setIsCropping(false)
 
-    // Preview cropped version locally
     const reader = new FileReader()
     reader.onloadend = () => {
       setPreview(reader.result as string)
     }
     reader.readAsDataURL(croppedBlob)
 
-    await uploadFile(croppedBlob, "image.jpg")
+    const filename =
+      croppedBlob.type === "image/png"
+        ? "edited-image.png"
+        : croppedBlob.type === "image/jpeg"
+          ? "edited-image.jpg"
+          : preferredCropOutput(selectedFile ?? "").filename
+    await uploadFile(croppedBlob, filename)
   }
 
   return (

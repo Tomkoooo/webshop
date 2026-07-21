@@ -9,11 +9,26 @@ import { Label } from "@wse/core/components/ui/label"
 import { RichTextEditor } from "@wse/core/components/admin/RichTextEditor"
 import { toast } from "sonner"
 
+function asRichHtml(value: string | undefined): string {
+  const trimmed = (value || "").trim()
+  if (!trimmed) return "<p></p>"
+  if (/<[a-z][\s\S]*>/i.test(trimmed)) return trimmed
+  return `<p>${trimmed
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")}</p>`
+}
+
 export function ImportantInfoEditorPanel({
   content,
   onSave,
 }: EditorProps<ImportantInfoContent>) {
-  const [draft, setDraft] = useState<ImportantInfoContent>(content)
+  const [draft, setDraft] = useState<ImportantInfoContent>(() => ({
+    ...content,
+    title: asRichHtml(content.title),
+    subtitle: asRichHtml(content.subtitle),
+    body: asRichHtml(content.body),
+  }))
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -36,17 +51,21 @@ export function ImportantInfoEditorPanel({
         <h3 className="text-lg font-semibold">Page content</h3>
         <div className="space-y-2">
           <Label>Title</Label>
-          <Input
-            value={draft.title}
-            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          <RichTextEditor
+            value={draft.title || "<p></p>"}
+            onChange={(html) => setDraft((d) => ({ ...d, title: html }))}
+            editorClassName="min-h-[72px] !p-3"
           />
+          <p className="text-xs text-muted-foreground">
+            Use color and bold for the header. Inline colors override the default heading style.
+          </p>
         </div>
         <div className="space-y-2">
           <Label>Subtitle</Label>
-          <textarea
-            className="min-h-20 w-full rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
-            value={draft.subtitle}
-            onChange={(e) => setDraft((d) => ({ ...d, subtitle: e.target.value }))}
+          <RichTextEditor
+            value={draft.subtitle || "<p></p>"}
+            onChange={(html) => setDraft((d) => ({ ...d, subtitle: html }))}
+            editorClassName="min-h-[96px] !p-3"
           />
         </div>
         <div className="space-y-2">
@@ -57,9 +76,9 @@ export function ImportantInfoEditorPanel({
             editorClassName="min-h-[280px]"
           />
           <p className="text-xs text-muted-foreground">
-            In the visual CMS (
-            <strong>/admin/cms/fontos-informaciok</strong>
-            ) the title, subtitle, and rich text can also be edited on the page.
+            Enter creates a new paragraph; Shift+Enter inserts a line break. Pasted text keeps line
+            breaks. You can also edit on the page at{" "}
+            <strong>/admin/cms/fontos-informaciok</strong>.
           </p>
         </div>
       </section>

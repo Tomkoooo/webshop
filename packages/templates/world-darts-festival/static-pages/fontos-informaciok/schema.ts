@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const importantInfoSchema = z.object({
-  title: z.string().default("Important information"),
+  title: z.string().default("<p>Important information</p>"),
   subtitle: z.string().default(""),
   body: z.string().default("<p></p>"),
   meta: z
