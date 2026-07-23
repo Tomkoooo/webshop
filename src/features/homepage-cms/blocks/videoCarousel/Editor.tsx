@@ -1,10 +1,15 @@
 "use client"
 
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react"
+import { useState } from "react"
+import { ArrowDown, ArrowUp, ClipboardPaste, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { VideoCarouselBlock } from "@/features/homepage-cms/types/block-types"
 import { EditableHeading } from "@/features/homepage-cms/components/primitives/EditableHeading"
-import { parseVideoEmbedUrl } from "@/lib/video-embed"
+import {
+  mergeVideoEmbedItems,
+  parseVideoEmbedBulk,
+  parseVideoEmbedUrl,
+} from "@/lib/video-embed"
 
 type Props = {
   block: VideoCarouselBlock
@@ -13,6 +18,8 @@ type Props = {
 
 export function VideoCarouselBlockEditor({ block, onPatch }: Props) {
   const items = Array.isArray(block.data.items) ? block.data.items : []
+  const [bulkText, setBulkText] = useState("")
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null)
 
   const moveItem = (index: number, offset: -1 | 1) => {
     const nextIndex = index + offset
@@ -22,6 +29,23 @@ export function VideoCarouselBlockEditor({ block, onPatch }: Props) {
     nextItems[index] = nextItems[nextIndex]!
     nextItems[nextIndex] = current!
     onPatch("items", nextItems)
+  }
+
+  const applyBulkPaste = () => {
+    const parsed = parseVideoEmbedBulk(bulkText)
+    if (parsed.length === 0) {
+      setBulkMessage("Nem találtunk YouTube/TikTok linket vagy embed kódot.")
+      return
+    }
+    const next = mergeVideoEmbedItems(items, parsed)
+    const added = next.length - items.length
+    onPatch("items", next)
+    setBulkText("")
+    setBulkMessage(
+      added > 0
+        ? `${added} videó hozzáadva.`
+        : "A beillesztett videók már szerepelnek a listában."
+    )
   }
 
   return (
@@ -34,8 +58,34 @@ export function VideoCarouselBlockEditor({ block, onPatch }: Props) {
           className="text-3xl font-black text-white"
         />
         <p className="text-xs text-neutral-500">
-          YouTube vagy TikTok videó URL-ek — a bolton karusszelként jelennek meg.
+          YouTube/TikTok URL vagy TikTok embed HTML — a bolton karusszelként jelennek meg.
         </p>
+        <div className="space-y-2 border border-white/10 p-3">
+          <p className="text-[10px] uppercase tracking-widest text-neutral-400">Tömeges beillesztés</p>
+          <textarea
+            value={bulkText}
+            onChange={(event) => {
+              setBulkText(event.target.value)
+              setBulkMessage(null)
+            }}
+            rows={5}
+            className="w-full border border-white/20 bg-black px-2 py-2 font-mono text-xs text-white"
+            placeholder="TikTok embed HTML vagy több URL soronként"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-none border-white/20 px-3 text-xs uppercase text-white"
+              onClick={applyBulkPaste}
+              disabled={!bulkText.trim()}
+            >
+              <ClipboardPaste className="mr-2 h-3 w-3" />
+              Beillesztés feldolgozása
+            </Button>
+            {bulkMessage ? <p className="text-xs text-neutral-400">{bulkMessage}</p> : null}
+          </div>
+        </div>
         <div className="space-y-3">
           {items.map((item, index) => {
             const parsed = parseVideoEmbedUrl(item.url)
@@ -51,8 +101,18 @@ export function VideoCarouselBlockEditor({ block, onPatch }: Props) {
                       )
                     )
                   }
+                  onBlur={() => {
+                    if (!item.url.trim() || !parsed.embedUrl) return
+                    if (item.url.trim() === parsed.sourceUrl) return
+                    onPatch(
+                      "items",
+                      items.map((current, idx) =>
+                        idx === index ? { ...current, url: parsed.sourceUrl } : current
+                      )
+                    )
+                  }}
                   className="h-9 w-full border border-white/20 bg-black px-2 text-sm text-white"
-                  placeholder="https://www.youtube.com/watch?v=… vagy TikTok link"
+                  placeholder="URL vagy TikTok embed HTML"
                 />
                 <input
                   value={item.caption ?? ""}
@@ -68,7 +128,7 @@ export function VideoCarouselBlockEditor({ block, onPatch }: Props) {
                   placeholder="Felirat (opcionális)"
                 />
                 {item.url.trim() && !parsed.embedUrl ? (
-                  <p className="text-xs text-rose-400">Nem ismert videó link.</p>
+                  <p className="text-xs text-rose-400">Nem ismert videó link / embed.</p>
                 ) : null}
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="xs" variant="outline" disabled={index === 0} onClick={() => moveItem(index, -1)}>

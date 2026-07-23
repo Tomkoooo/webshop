@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react"
+import { ArrowDown, ArrowUp, ClipboardPaste, Plus, X } from "lucide-react"
 import {
   Carousel,
   CarouselContent,
@@ -13,7 +13,11 @@ import { Button } from "@/components/ui/button"
 import { EditableTextInline } from "@/features/homepage-cms/components/primitives/EditableTextInline"
 import { useCmsEdit } from "@/features/homepage-cms/components/editor/cms-edit-context"
 import { Reveal, REVEAL_STAGGER_MS } from "@/components/motion/css-reveal"
-import { parseVideoEmbedUrl } from "@/lib/video-embed"
+import {
+  mergeVideoEmbedItems,
+  parseVideoEmbedBulk,
+  parseVideoEmbedUrl,
+} from "@/lib/video-embed"
 
 export type VideoCarouselItem = {
   url: string
@@ -27,6 +31,9 @@ type VideoCarouselProps = {
 
 export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
   const cms = useCmsEdit()
+  const [bulkText, setBulkText] = React.useState("")
+  const [bulkMessage, setBulkMessage] = React.useState<string | null>(null)
+
   const visibleItems = items
     .map((item) => ({ ...item, parsed: parseVideoEmbedUrl(item.url) }))
     .filter((item) => item.parsed.embedUrl)
@@ -45,6 +52,23 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
     nextItems[index] = nextItems[nextIndex]!
     nextItems[nextIndex] = current!
     updateItems(nextItems)
+  }
+
+  const applyBulkPaste = () => {
+    const parsed = parseVideoEmbedBulk(bulkText)
+    if (parsed.length === 0) {
+      setBulkMessage("Nem találtunk YouTube/TikTok linket vagy embed kódot.")
+      return
+    }
+    const next = mergeVideoEmbedItems(items, parsed)
+    const added = next.length - items.length
+    updateItems(next)
+    setBulkText("")
+    setBulkMessage(
+      added > 0
+        ? `${added} videó hozzáadva.`
+        : "A beillesztett videók már szerepelnek a listában."
+    )
   }
 
   return (
@@ -72,7 +96,7 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
             ) : null}
             {cms.enabled ? (
               <p className="mt-4 max-w-xl text-sm text-neutral-500">
-                Illeszd be a YouTube vagy TikTok videó linkjét. A bolton egy karusszelben jelennek meg.
+                Illeszd be YouTube/TikTok URL-eket vagy a TikTok „Embed” HTML kódot. Többet egyszerre is be lehet másolni.
               </p>
             ) : null}
           </div>
@@ -91,7 +115,36 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
         </div>
 
         {cms.enabled ? (
-          <div className="mb-10 space-y-3">
+          <div className="mb-10 space-y-4">
+            <div className="space-y-2 border border-border/40 bg-surface/30 p-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                Tömeges beillesztés (URL-ek vagy TikTok embed HTML)
+              </label>
+              <textarea
+                value={bulkText}
+                onChange={(event) => {
+                  setBulkText(event.target.value)
+                  setBulkMessage(null)
+                }}
+                rows={5}
+                placeholder={'Illeszd be a TikTok embed kódot vagy pl.\nhttps://www.tiktok.com/@…/video/…\nhttps://www.youtube.com/watch?v=…'}
+                className="w-full border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-none border-border/60 px-3 text-xs font-black uppercase tracking-widest"
+                  onClick={applyBulkPaste}
+                  disabled={!bulkText.trim()}
+                >
+                  <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
+                  Beillesztés feldolgozása
+                </Button>
+                {bulkMessage ? <p className="text-xs text-muted-foreground">{bulkMessage}</p> : null}
+              </div>
+            </div>
+
             {items.map((item, index) => {
               const parsed = parseVideoEmbedUrl(item.url)
               return (
@@ -108,7 +161,16 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
                         )
                       )
                     }
-                    placeholder="YouTube / TikTok URL"
+                    onBlur={() => {
+                      if (!item.url.trim() || !parsed.embedUrl) return
+                      if (item.url.trim() === parsed.sourceUrl) return
+                      updateItems(
+                        items.map((current, idx) =>
+                          idx === index ? { ...current, url: parsed.sourceUrl } : current
+                        )
+                      )
+                    }}
+                    placeholder="YouTube / TikTok URL vagy embed HTML"
                     className="h-10 border border-border bg-background px-3 text-sm text-foreground"
                   />
                   <input
@@ -153,7 +215,7 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
                   </div>
                   {item.url.trim() && !parsed.embedUrl ? (
                     <p className="text-xs text-rose-400 md:col-span-3">
-                      Nem ismert videó link. YouTube vagy TikTok URL kell.
+                      Nem ismert videó. YouTube/TikTok URL vagy TikTok embed HTML kell.
                     </p>
                   ) : null}
                 </div>
@@ -212,7 +274,7 @@ export function VideoCarousel({ title, items = [] }: VideoCarouselProps) {
         ) : cms.enabled ? (
           <div className="flex min-h-48 items-center justify-center border border-dashed border-border/60 bg-surface/30 p-8 text-center">
             <p className="max-w-sm text-sm text-muted-foreground">
-              Még nincs videó. Add hozzá a YouTube vagy TikTok linkeket a fenti gombbal.
+              Még nincs videó. Illeszd be a TikTok embed kódot tömegesen, vagy add hozzá URL-ként.
             </p>
           </div>
         ) : null}

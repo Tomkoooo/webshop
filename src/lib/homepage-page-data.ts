@@ -12,6 +12,7 @@ import {
 import { getRequestPageContent } from "@/lib/cached-storefront"
 import type { HomepageDepsInternal } from "@/features/homepage-cms/render/homepage-deps"
 import type { ActiveChrome } from "@/lib/active-chrome"
+import { withNagyarcuVideoCarouselFallback } from "@/lib/nagyarcu-video-defaults"
 
 export type HomepagePageData = {
   chrome: ActiveChrome
@@ -33,9 +34,11 @@ export async function getHomepagePageData(): Promise<HomepagePageData> {
   const { template } = chrome
   const homePageDef = template.pages.home
 
-  const content = await timeAsync("homepage.pageContent", () =>
-    getRequestPageContent<HomepageSnapshot>(template.manifest.id, "page:home").catch(
-      () => homePageDef.defaultContent as HomepageSnapshot
+  const content = withNagyarcuVideoCarouselFallback(
+    await timeAsync("homepage.pageContent", () =>
+      getRequestPageContent<HomepageSnapshot>(template.manifest.id, "page:home").catch(
+        () => homePageDef.defaultContent as HomepageSnapshot
+      )
     )
   )
 

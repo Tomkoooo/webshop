@@ -4,6 +4,7 @@ import ShopContent from "../src/models/ShopContent";
 import TemplateContent from "../src/models/TemplateContent";
 import { getDefaultHomepageSnapshot } from "../src/features/homepage-cms/utils/default-snapshot";
 import { nagyarcuPressTestimonialsBlock } from "./seed/lib/nagyarcu-press-quotes";
+import { upsertNagyarcuVideoCarouselBlock } from "../src/lib/nagyarcu-video-defaults";
 import type { HomepageSnapshot } from "../src/features/homepage-cms/types/block-types";
 
 const MONGODB_URI = process.env.SEED_DB_URL || process.env.DATABASE_URL;
@@ -273,7 +274,7 @@ async function seedHomepageTestimonials() {
   const publishedDoc = await ShopContent.findOne({ key: HOMEPAGE_SNAPSHOT_PUBLISHED }).lean();
   const baseSnapshot =
     parseHomepageSnapshot(publishedDoc?.value) ?? getDefaultHomepageSnapshot();
-  const snapshot = upsertTestimonialsBlock(baseSnapshot);
+  const snapshot = upsertNagyarcuVideoCarouselBlock(upsertTestimonialsBlock(baseSnapshot));
   const json = JSON.stringify(snapshot);
   const now = new Date();
 
@@ -301,7 +302,13 @@ async function seedHomepageTestimonials() {
     { upsert: true }
   );
 
-  console.log(`  Homepage CMS: testimonials block seeded (${snapshot.blocks.find((b) => b.type === "testimonials")?.data.items?.length ?? 0} items)`);
+  const videoCount =
+    snapshot.blocks.find((b) => b.type === "videoCarousel")?.data.items?.length ?? 0;
+  const testimonialCount =
+    snapshot.blocks.find((b) => b.type === "testimonials")?.data.items?.length ?? 0;
+  console.log(
+    `  Homepage CMS: testimonials (${testimonialCount}) + video carousel (${videoCount}) seeded`
+  );
 }
 
 async function seed() {

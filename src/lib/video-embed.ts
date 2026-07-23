@@ -3,7 +3,13 @@ export type VideoEmbedProvider = "youtube" | "tiktok" | "unknown"
 export type ParsedVideoEmbed = {
   provider: VideoEmbedProvider
   embedUrl: string | null
+  /** Canonical watch/share URL suitable for CMS storage. */
   sourceUrl: string
+}
+
+export type VideoEmbedItem = {
+  url: string
+  caption?: string
 }
 
 function normalizeUrl(raw: string): string {
@@ -51,8 +57,7 @@ function tiktokIdFromUrl(url: URL): string | null {
   return null
 }
 
-/** Parse a YouTube / TikTok watch or share URL into a safe iframe embed URL. */
-export function parseVideoEmbedUrl(raw: string): ParsedVideoEmbed {
+function parseFromUrlString(raw: string): ParsedVideoEmbed {
   const sourceUrl = normalizeUrl(raw)
   if (!sourceUrl) {
     return { provider: "unknown", embedUrl: null, sourceUrl: "" }
@@ -70,18 +75,134 @@ export function parseVideoEmbedUrl(raw: string): ParsedVideoEmbed {
     return {
       provider: "youtube",
       embedUrl: `https://www.youtube-nocookie.com/embed/${youtubeId}`,
-      sourceUrl,
+      sourceUrl: `https://www.youtube.com/watch?v=${youtubeId}`,
     }
   }
 
   const tiktokId = tiktokIdFromUrl(url)
   if (tiktokId && /^\d+$/.test(tiktokId)) {
+    const cleanPath = sourceUrl.split(/[?#]/)[0] || sourceUrl
+    const keepOriginal = /tiktok\.com\/@[^/]+\/video\//i.test(cleanPath)
     return {
       provider: "tiktok",
       embedUrl: `https://www.tiktok.com/embed/v2/${tiktokId}`,
-      sourceUrl,
+      sourceUrl: keepOriginal ? cleanPath : `https://www.tiktok.com/video/${tiktokId}`,
     }
   }
 
   return { provider: "unknown", embedUrl: null, sourceUrl }
+}
+
+function tiktokFromVideoId(videoId: string): ParsedVideoEmbed {
+  return {
+    provider: "tiktok",
+    embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
+    sourceUrl: `https://www.tiktok.com/video/${videoId}`,
+  }
+}
+
+/**
+ * Pull candidate URLs / TikTok video IDs from free text or TikTok/YouTube embed HTML.
+ * Supports unquoted attributes like `cite=https://…` from TikTok's copy-embed UI.
+ */
+export function extractVideoEmbedCandidates(raw: string): string[] {
+  const text = raw.trim()
+  if (!text) return []
+
+  const found: string[] = []
+  const push = (value: string) => {
+    const cleaned = value.trim().replace(/[),.;]+$/g, "")
+    if (cleaned && !found.includes(cleaned)) found.push(cleaned)
+  }
+
+  // Prefer full cite/href URLs (often include @handle) before bare data-video-id.
+  for (const match of text.matchAll(
+    /(?:cite|href|src)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi
+  )) {
+    const value = match[1] || match[2] || match[3]
+    if (value) push(value)
+  }
+
+  for (const match of text.matchAll(
+    /https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|tiktok\.com)[^\s"'<>]*/gi
+  )) {
+    push(match[0]!)
+  }
+
+  for (const match of text.matchAll(/data-video-id=(?:"([^"]+)"|'([^']+)'|([0-9]+))/gi)) {
+    const id = match[1] || match[2] || match[3]
+    if (id && /^\d+$/.test(id)) push(`https://www.tiktok.com/video/${id}`)
+  }
+
+  // Plain multiline URL list (no HTML)
+  if (!text.includes("<") && found.length === 0) {
+    for (const line of text.split(/\r?\n+/)) {
+      const lineTrim = line.trim()
+      if (lineTrim) push(lineTrim)
+    }
+  }
+
+  return found
+}
+
+/** Parse a YouTube / TikTok URL, share link, or TikTok embed HTML snippet into an iframe embed URL. */
+export function parseVideoEmbedUrl(raw: string): ParsedVideoEmbed {
+  const trimmed = raw.trim()
+  if (!trimmed) {
+    return { provider: "unknown", embedUrl: null, sourceUrl: "" }
+  }
+
+  const direct = parseFromUrlString(trimmed)
+  if (direct.embedUrl) return direct
+
+  const candidates = extractVideoEmbedCandidates(trimmed)
+  for (const candidate of candidates) {
+    const parsed = parseFromUrlString(candidate)
+    if (parsed.embedUrl) return parsed
+  }
+
+  const idOnly = trimmed.match(/^\d{10,}$/)
+  if (idOnly) return tiktokFromVideoId(idOnly[0]!)
+
+  return { provider: "unknown", embedUrl: null, sourceUrl: trimmed }
+}
+
+/** Parse one or many pasted URLs / TikTok embed blocks into CMS video items (deduped). */
+export function parseVideoEmbedBulk(raw: string): VideoEmbedItem[] {
+  const candidates = extractVideoEmbedCandidates(raw)
+  if (candidates.length === 0) {
+    const single = parseVideoEmbedUrl(raw)
+    return single.embedUrl ? [{ url: single.sourceUrl }] : []
+  }
+
+  const items: VideoEmbedItem[] = []
+  const seen = new Set<string>()
+  for (const candidate of candidates) {
+    const parsed = parseVideoEmbedUrl(candidate)
+    if (!parsed.embedUrl) continue
+    if (seen.has(parsed.embedUrl)) continue
+    seen.add(parsed.embedUrl)
+    items.push({ url: parsed.sourceUrl })
+  }
+  return items
+}
+
+/** Merge bulk-parsed videos into an existing list (append, skip duplicates by embed URL). */
+export function mergeVideoEmbedItems(
+  existing: VideoEmbedItem[],
+  incoming: VideoEmbedItem[]
+): VideoEmbedItem[] {
+  const seen = new Set(
+    existing
+      .map((item) => parseVideoEmbedUrl(item.url).embedUrl)
+      .filter((url): url is string => Boolean(url))
+  )
+  const next = [...existing]
+  for (const item of incoming) {
+    const parsed = parseVideoEmbedUrl(item.url)
+    if (!parsed.embedUrl || seen.has(parsed.embedUrl)) continue
+    seen.add(parsed.embedUrl)
+    next.push({ url: parsed.sourceUrl, caption: item.caption })
+  }
+  return next
 }
