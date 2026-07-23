@@ -43,6 +43,7 @@ describe("default-modern homepage testimonials", () => {
     expect(allowed).toEqual([
       "hero",
       "about",
+      "videoCarousel",
       "testimonials",
       "gallery",
       "features",
@@ -59,6 +60,18 @@ describe("default-modern homepage testimonials", () => {
     ]
     const allowed = resolveAllowedHomepageBlockTypes(defaultModern.pages.home)
     const idx = insertionIndexForHomepageBlockType(blocks, "testimonials", allowed)
+    expect(idx).toBe(2)
+    expect(blocks[idx - 1]?.type).toBe("about")
+  })
+
+  it("inserts video carousel directly after about", () => {
+    const blocks = [
+      { id: "hero-1", type: "hero" as const, enabled: true, data: {} },
+      { id: "about-1", type: "about" as const, enabled: true, data: {} },
+      { id: "gallery-1", type: "gallery" as const, enabled: true, data: {} },
+    ]
+    const allowed = resolveAllowedHomepageBlockTypes(defaultModern.pages.home)
+    const idx = insertionIndexForHomepageBlockType(blocks, "videoCarousel", allowed)
     expect(idx).toBe(2)
     expect(blocks[idx - 1]?.type).toBe("about")
   })

@@ -3,6 +3,7 @@ import { z } from "zod"
 export const homepageBlockTypeSchema = z.enum([
   "hero",
   "about",
+  "videoCarousel",
   "features",
   "productGrid",
   "contact",
@@ -139,6 +140,12 @@ const galleryDataSchema = z.object({
   visibility: visibilitySchema,
 })
 
+const videoCarouselDataSchema = z.object({
+  title: z.string(),
+  items: z.array(z.object({ url: z.string(), caption: z.string().optional() })),
+  visibility: visibilitySchema,
+})
+
 const richTextDataSchema = z.object({
   title: z.string(),
   html: z.string(),
@@ -153,6 +160,7 @@ const dividerDataSchema = z.object({
 export const homepageBlockSchema = z.discriminatedUnion("type", [
   z.object({ id: z.string().min(1), type: z.literal("hero"), enabled: z.boolean().default(true), data: heroDataSchema }),
   z.object({ id: z.string().min(1), type: z.literal("about"), enabled: z.boolean().default(true), data: aboutDataSchema }),
+  z.object({ id: z.string().min(1), type: z.literal("videoCarousel"), enabled: z.boolean().default(true), data: videoCarouselDataSchema }),
   z.object({ id: z.string().min(1), type: z.literal("features"), enabled: z.boolean().default(true), data: featuresDataSchema }),
   z.object({ id: z.string().min(1), type: z.literal("productGrid"), enabled: z.boolean().default(true), data: productGridDataSchema }),
   z.object({ id: z.string().min(1), type: z.literal("contact"), enabled: z.boolean().default(true), data: contactDataSchema }),

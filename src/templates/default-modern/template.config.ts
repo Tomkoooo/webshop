@@ -62,7 +62,7 @@ export const defaultModern: TemplateModule = defineTemplate({
       Render: HomeRender,
       EditorPanel: HomeEditorPanel,
       cmsPageKind: "homepage-blocks",
-      allowedBlocks: ["hero", "about", "testimonials", "gallery", "features", "productGrid", "contact"],
+      allowedBlocks: ["hero", "about", "videoCarousel", "testimonials", "gallery", "features", "productGrid", "contact"],
     },
     shop: {
       schema: shopSchema,

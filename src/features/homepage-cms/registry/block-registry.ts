@@ -2,6 +2,7 @@ import type { HomepageBlockType } from "@/features/homepage-cms/types/block-type
 import type { BlockDefinition } from "@/features/homepage-cms/blocks/types"
 import { heroDefinition } from "@/features/homepage-cms/blocks/hero/definition"
 import { aboutDefinition } from "@/features/homepage-cms/blocks/about/definition"
+import { videoCarouselDefinition } from "@/features/homepage-cms/blocks/videoCarousel/definition"
 import { featuresDefinition } from "@/features/homepage-cms/blocks/features/definition"
 import { productGridDefinition } from "@/features/homepage-cms/blocks/productGrid/definition"
 import { contactDefinition } from "@/features/homepage-cms/blocks/contact/definition"
@@ -19,6 +20,7 @@ export { BLOCK_EDITORS, getEditor } from "./block-registry-editors"
 export const BLOCK_DEFINITIONS: { [K in HomepageBlockType]: BlockDefinition<K> } = {
   hero: heroDefinition,
   about: aboutDefinition,
+  videoCarousel: videoCarouselDefinition,
   features: featuresDefinition,
   productGrid: productGridDefinition,
   contact: contactDefinition,

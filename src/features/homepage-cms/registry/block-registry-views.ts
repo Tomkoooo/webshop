@@ -2,6 +2,7 @@ import type { ComponentType } from "react"
 import type { HomepageBlockType } from "@/features/homepage-cms/types/block-types"
 import { HeroBlockView } from "@/features/homepage-cms/blocks/hero/View"
 import { AboutBlockView } from "@/features/homepage-cms/blocks/about/View"
+import { VideoCarouselBlockView } from "@/features/homepage-cms/blocks/videoCarousel/View"
 import { FeaturesBlockView } from "@/features/homepage-cms/blocks/features/View"
 import { ProductGridBlockView } from "@/features/homepage-cms/blocks/productGrid/View"
 import { ContactBlockView } from "@/features/homepage-cms/blocks/contact/View"
@@ -14,6 +15,7 @@ import { DividerBlockView } from "@/features/homepage-cms/blocks/divider/View"
 export const BLOCK_VIEWS: Record<HomepageBlockType, ComponentType<any>> = {
   hero: HeroBlockView,
   about: AboutBlockView,
+  videoCarousel: VideoCarouselBlockView,
   features: FeaturesBlockView,
   productGrid: ProductGridBlockView,
   contact: ContactBlockView,

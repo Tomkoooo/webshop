@@ -456,6 +456,7 @@ export function assertValidStaticPageSlug(slug: string): void {
 const HOMEPAGE_BLOCK_KEYS = new Set([
   "hero",
   "about",
+  "videoCarousel",
   "features",
   "productGrid",
   "contact",

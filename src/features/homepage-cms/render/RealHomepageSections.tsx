@@ -9,6 +9,7 @@ const Hero = dynamic(
 )
 import { Story } from "@/components/sections/Story"
 import { Gallery } from "@/components/sections/Gallery"
+import { VideoCarousel } from "@/components/sections/VideoCarousel"
 import { Shop } from "@/components/sections/Shop"
 import { Features } from "@/components/sections/Features"
 import { Reviews } from "@/components/sections/Reviews"
@@ -124,6 +125,18 @@ export function RealHomepageSections({
             content={isVisible(about, "paragraph") ? about.paragraph : ""}
             accordions={isVisible(about, "accordions") ? about.accordions : []}
             cards={about.cards}
+          />
+        )
+      }
+      case "videoCarousel": {
+        const videos = block.data as {
+          title?: string
+          items?: Array<{ url: string; caption?: string }>
+        }
+        return (
+          <VideoCarousel
+            title={isVisible(videos, "title") ? videos.title : ""}
+            items={isVisible(videos, "items") ? videos.items : []}
           />
         )
       }

@@ -5,6 +5,7 @@ import type { PageDefinition } from "@/templates/types"
 export const ALL_HOMEPAGE_BLOCK_TYPES: HomepageBlockType[] = [
   "hero",
   "about",
+  "videoCarousel",
   "features",
   "productGrid",
   "contact",

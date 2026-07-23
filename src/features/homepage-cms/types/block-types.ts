@@ -1,6 +1,7 @@
 export type HomepageBlockType =
   | "hero"
   | "about"
+  | "videoCarousel"
   | "features"
   | "productGrid"
   | "contact"
@@ -163,6 +164,15 @@ export type GalleryBlock = HomepageBlockBase<
   }
 >
 
+export type VideoCarouselBlock = HomepageBlockBase<
+  "videoCarousel",
+  {
+    title: string
+    items: Array<{ url: string; caption?: string }>
+    visibility?: FieldVisibility
+  }
+>
+
 export type RichTextBlock = HomepageBlockBase<
   "richText",
   {
@@ -183,6 +193,7 @@ export type DividerBlock = HomepageBlockBase<
 export type HomepageBlock =
   | HeroBlock
   | AboutBlock
+  | VideoCarouselBlock
   | FeaturesBlock
   | ProductGridBlock
   | ContactBlock

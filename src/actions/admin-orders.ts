@@ -34,7 +34,7 @@ import {
 import { IOrder } from "@/models/Order"
 import { MediaService } from "@/services/media"
 import { OrderService } from "@/services/order"
-import { formatOrderNumber } from "@/lib/order-number"
+import { formatOrderNumber, formatOrderNumberLabel } from "@/lib/order-number"
 import {
   getOrderParcelProvider,
   orderNeedsParcelLabel,
@@ -316,6 +316,7 @@ async function applyStandardShippingLabelToOrder(
   try {
     const pdfBytes = await buildStandardShippingLabelPdf(
       {
+        orderNumber: formatOrderNumberLabel(order._id),
         billingInfo: order.billingInfo,
         shippingAddress: order.shippingAddress,
       },

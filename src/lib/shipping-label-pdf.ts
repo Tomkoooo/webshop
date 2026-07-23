@@ -24,6 +24,7 @@ async function loadRobotoFont(): Promise<ArrayBuffer> {
 }
 
 export type ShippingLabelOrderSnapshot = {
+  orderNumber?: string
   billingInfo?: { name?: string; email?: string; phone?: string }
   shippingAddress?: {
     name?: string
@@ -101,6 +102,18 @@ export async function buildStandardShippingLabelPdf(
   const contentWidth = page.getWidth() - margin * 2
   const minY = margin
   let y = page.getHeight() - margin
+
+  const orderNumber = order.orderNumber?.trim()
+  if (orderNumber) {
+    page.drawText(orderNumber, {
+      x: margin,
+      y: y - 2,
+      size: 11,
+      font,
+      color: rgb(0.1, 0.1, 0.1),
+    })
+    y -= 16
+  }
 
   y = drawLabel(page, font, "FELADÓ", margin, y, 6)
   const senderLines = [

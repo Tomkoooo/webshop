@@ -53,7 +53,7 @@ export function StandardShippingLabelPanel({
   return (
     <div className="space-y-4">
       <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-        Webshop / házhozszállítás — PDF címke a feladó és címzett adataival
+        Webshop / házhozszállítás — PDF címke a feladó és címzett adataival (6 jegyű rendelésszám a címkén)
       </p>
 
       {standardShippingLabel?.lastError ? (
