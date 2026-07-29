@@ -43,6 +43,8 @@ import { PopupCampaignService } from "@wse/core/services/popup-campaign";
 import { isAdminChromePath } from "@wse/core/lib/admin-chrome-path";
 import { ADMIN_THEME_BOOT_SCRIPT } from "@wse/core/lib/admin-theme";
 import { isShopEnabled } from "@wse/core/lib/features/shop";
+import { getRequestLocale, stripLocalePrefix } from "@wse/core/lib/locale";
+import { getSiteLocaleConfig } from "@wse/core/lib/site-features";
 import { headers } from "next/headers";
 
 function toAbsoluteUrl(value: string, fallbackBase: string): string {
@@ -64,6 +66,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const defaultRobots = { index: seo.robotsIndex, follow: seo.robotsFollow };
   const ogImage = toAbsoluteUrl(seo.ogImage, canonicalBase);
   const twitterImage = toAbsoluteUrl(seo.twitterImage, canonicalBase);
+
+  const localeConfig = getSiteLocaleConfig();
+  let languages: Record<string, string> | undefined;
+  if (localeConfig) {
+    const pathname = (await headers()).get("x-pathname") ?? "/";
+    const stripped = stripLocalePrefix(pathname, localeConfig.supported);
+    const basePath = stripped ? stripped.rest : pathname;
+    languages = {};
+    for (const loc of localeConfig.supported) {
+      const prefixedPath = loc === localeConfig.default ? basePath : `/${loc}${basePath === "/" ? "" : basePath}`;
+      languages[loc] = `${canonicalBase}${prefixedPath}`;
+    }
+  }
 
   return {
     title: seo.siteTitle,
@@ -89,6 +104,7 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: defaultRobots,
     alternates: {
       canonical: canonicalBase,
+      ...(languages ? { languages } : {}),
     },
   };
 }
@@ -98,10 +114,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [seo, activeInfo, previewTemplateId] = await Promise.all([
+  const [seo, activeInfo, previewTemplateId, requestLocale] = await Promise.all([
     getRequestSeoSettings(),
     getRequestActiveTemplateInfo(),
     readPreviewTemplateId(),
+    getRequestLocale(),
   ]);
   const dbActiveTemplate = await getTemplateByIdAsync(activeInfo.templateId);
   const isPreviewingDifferentTemplate =
@@ -121,7 +138,11 @@ export default async function RootLayout({
     : await PopupCampaignService.getActiveForStorefront();
 
   return (
-    <html lang={seo.defaultLocale?.split("_")[0] || "en"} style={themeVars} data-template={dbActiveTemplate.manifest.id}>
+    <html
+      lang={requestLocale !== "en" ? requestLocale : seo.defaultLocale?.split("_")[0] || "en"}
+      style={themeVars}
+      data-template={dbActiveTemplate.manifest.id}
+    >
       <head>
         {adminChrome ? (
           <script dangerouslySetInnerHTML={{ __html: ADMIN_THEME_BOOT_SCRIPT }} />

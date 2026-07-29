@@ -13,7 +13,8 @@
     "./theme/*": "./src/theme/*.ts",
     "./admin": "./src/admin/index.ts",
     "./admin/*": "./src/admin/*.ts",
-    "./contracts": "./src/contracts.ts"
+    "./contracts": "./src/contracts.ts",
+    "./i18n/constants": "./src/i18n/constants.ts"
   },
   "peerDependencies": {
     "react": ">=19",

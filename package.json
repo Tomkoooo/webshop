@@ -26,6 +26,7 @@
     "seed:nagyarcu-testimonials": "npx tsx scripts/seed/nagyarcu-testimonials.ts",
     "seed:nagyarcu-restore": "npx tsx scripts/seed/nagyarcu-restore.ts",
     "seed:nagyarcu-theme": "npx tsx scripts/seed/nagyarcu-theme.ts",
+    "seed:wdf-i18n": "npx tsx scripts/seed/wdf-i18n-seed.ts",
     "auth:reset-oauth": "node scripts/auth/reset-oauth-collections.mjs",
     "cms:inspect": "npx tsx scripts/cms/inspect.ts",
     "cms:apply-import": "npx tsx scripts/cms/apply-import.ts",

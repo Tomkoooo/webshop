@@ -15,8 +15,9 @@ export default async function JegyekPage() {
   if (!enabled) notFound()
 
   const chrome = await getActiveChrome()
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id)
-  const listCopy = await getTBookListContent(chrome.template.manifest.id)
+  const { locale } = chrome
+  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
+  const listCopy = await getTBookListContent(chrome.template.manifest.id, locale)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookServerApiBase()
   const { events, currency, error: eventsError } = await fetchPublicEventsForStorefront(apiKey, apiBase)
@@ -37,12 +38,14 @@ export default async function JegyekPage() {
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
+        locale={locale}
       />
       <main className={tBookMainClassName(templateId)}>
         <div className="mx-auto max-w-5xl">
           <TBookEventList
             apiKey={apiKey}
             variant={tBookListVariant(templateId)}
+            locale={locale}
             copy={{
               pageTitle: listCopy.pageTitle,
               pageIntro: listCopy.pageIntro,
@@ -70,6 +73,7 @@ export default async function JegyekPage() {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
+        locale={locale}
       />
     </>
   )

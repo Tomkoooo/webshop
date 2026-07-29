@@ -5,6 +5,7 @@ import {
   tBookBillingSchema,
   type TBookBillingType,
 } from "../lib/schemas"
+import { tbookT } from "../lib/i18n"
 
 export type BillingFormState = {
   billingType: TBookBillingType
@@ -19,10 +20,10 @@ export type BillingFormState = {
 export type BillingFieldKey = "name" | "zip" | "city" | "street" | "taxNumber"
 export type BillingFieldErrors = Partial<Record<BillingFieldKey, string>>
 
-const BILLING_TYPE_LABELS: Record<TBookBillingType, string> = {
-  personal: "Personal",
-  company: "Company / business",
-  sport: "Sports club / organisation",
+const BILLING_TYPE_KEYS: Record<TBookBillingType, "billingTypePersonal" | "billingTypeCompany" | "billingTypeSport"> = {
+  personal: "billingTypePersonal",
+  company: "billingTypeCompany",
+  sport: "billingTypeSport",
 }
 
 export function emptyBillingForm(customerName = ""): BillingFormState {
@@ -76,11 +77,13 @@ export function BookingBillingForm({
   onChange,
   inputClassName,
   errors = {},
+  locale,
 }: {
   billing: BillingFormState
   onChange: (billing: BillingFormState) => void
   inputClassName: string
   errors?: BillingFieldErrors
+  locale?: string
 }) {
   const patch = (partial: Partial<BillingFormState>) => onChange({ ...billing, ...partial })
 
@@ -90,16 +93,16 @@ export function BookingBillingForm({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold">Billing details</h3>
+        <h3 className="text-sm font-semibold">{tbookT(locale, "billingDetails")}</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Used for the invoice after successful payment.
+          {tbookT(locale, "billingDetailsHint")}
         </p>
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Invoice type</legend>
+        <legend className="text-sm font-medium">{tbookT(locale, "invoiceType")}</legend>
         <div className="flex flex-wrap gap-2">
-          {(Object.keys(BILLING_TYPE_LABELS) as TBookBillingType[]).map((type) => (
+          {(Object.keys(BILLING_TYPE_KEYS) as TBookBillingType[]).map((type) => (
             <label
               key={type}
               className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${
@@ -115,7 +118,7 @@ export function BookingBillingForm({
                 checked={billing.billingType === type}
                 onChange={() => patch({ billingType: type })}
               />
-              {BILLING_TYPE_LABELS[type]}
+              {tbookT(locale, BILLING_TYPE_KEYS[type])}
             </label>
           ))}
         </div>
@@ -124,7 +127,7 @@ export function BookingBillingForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1 sm:col-span-2" htmlFor="billing-name">
           <span className="text-sm font-medium">
-            {billing.billingType === "personal" ? "Billing name" : "Organisation / company name"} *
+            {tbookT(locale, billing.billingType === "personal" ? "billingName" : "organisationName")} *
           </span>
           <input
             id="billing-name"
@@ -138,7 +141,7 @@ export function BookingBillingForm({
           <FieldError id="billing-name-error" message={errors.name} />
         </label>
         <label className="block space-y-1" htmlFor="billing-zip">
-          <span className="text-sm font-medium">Postal code *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "postalCode")}</span>
           <input
             id="billing-zip"
             className={fieldClass("zip")}
@@ -151,7 +154,7 @@ export function BookingBillingForm({
           <FieldError id="billing-zip-error" message={errors.zip} />
         </label>
         <label className="block space-y-1" htmlFor="billing-city">
-          <span className="text-sm font-medium">City *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "cityLabel")}</span>
           <input
             id="billing-city"
             className={fieldClass("city")}
@@ -164,7 +167,7 @@ export function BookingBillingForm({
           <FieldError id="billing-city-error" message={errors.city} />
         </label>
         <label className="block space-y-1 sm:col-span-2" htmlFor="billing-street">
-          <span className="text-sm font-medium">Street address *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "streetAddress")}</span>
           <input
             id="billing-street"
             className={fieldClass("street")}
@@ -178,7 +181,7 @@ export function BookingBillingForm({
         </label>
         {billing.billingType === "company" ? (
           <label className="block space-y-1 sm:col-span-2" htmlFor="billing-tax">
-            <span className="text-sm font-medium">Tax number *</span>
+            <span className="text-sm font-medium">{tbookT(locale, "taxNumberRequired")}</span>
             <input
               id="billing-tax"
               className={fieldClass("taxNumber")}
@@ -192,7 +195,7 @@ export function BookingBillingForm({
           </label>
         ) : billing.billingType === "sport" ? (
           <label className="block space-y-1 sm:col-span-2" htmlFor="billing-tax">
-            <span className="text-sm font-medium">Tax / registration number (optional)</span>
+            <span className="text-sm font-medium">{tbookT(locale, "taxNumberOptional")}</span>
             <input
               id="billing-tax"
               className={inputClassName}

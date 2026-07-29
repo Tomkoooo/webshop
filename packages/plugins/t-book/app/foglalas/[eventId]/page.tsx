@@ -37,8 +37,9 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
   if (!enabled) notFound()
 
   const chrome = await getActiveChrome()
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id)
-  const bookingCopy = await getTBookBookingContent(chrome.template.manifest.id)
+  const { locale } = chrome
+  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
+  const bookingCopy = await getTBookBookingContent(chrome.template.manifest.id, locale)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookServerApiBase()
   const eventDetail = multi
@@ -86,6 +87,7 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
+        locale={locale}
       />
       <main className={tBookMainClassName(templateId)}>
         <div
@@ -95,13 +97,14 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
           )}
         >
           {multi ? (
-            <TBookMultiBookingWizard apiKey={apiKey} eventIds={eventIds} copy={copy} />
+            <TBookMultiBookingWizard apiKey={apiKey} eventIds={eventIds} copy={copy} locale={locale} />
           ) : (
             <TBookBookingWizard
               apiKey={apiKey}
               eventId={eventId}
               initialEventDetail={eventDetail}
               copy={copy}
+              locale={locale}
             />
           )}
         </div>
@@ -118,6 +121,7 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
+        locale={locale}
       />
     </>
   )

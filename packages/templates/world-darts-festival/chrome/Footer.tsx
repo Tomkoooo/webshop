@@ -14,21 +14,65 @@ import type {
 } from "@wse/core/services/footer-settings"
 import type { ChromeProps, SiteContactEntry } from "@wse/sdk/templates/types"
 
-const WDF_DEFAULT_QUICK_LINKS = [
-  { label: "Entries & booking", href: "/jegyek" },
-  { label: "Venue", href: "/#venue" },
-  { label: "Prize money", href: "/#prize-money" },
-  { label: "Contact", href: "/#contact" },
-] as const
+const WDF_DEFAULT_QUICK_LINKS_BY_LOCALE: Record<string, ReadonlyArray<{ label: string; href: string }>> = {
+  en: [
+    { label: "Entries & booking", href: "/jegyek" },
+    { label: "Venue", href: "/#venue" },
+    { label: "Prize money", href: "/#prize-money" },
+    { label: "Contact", href: "/#contact" },
+  ],
+  hu: [
+    { label: "Nevezés és foglalás", href: "/jegyek" },
+    { label: "Helyszín", href: "/#venue" },
+    { label: "Díjazás", href: "/#prize-money" },
+    { label: "Kapcsolat", href: "/#contact" },
+  ],
+}
+
+const FOOTER_STRINGS: Record<string, {
+  contact: string
+  quickLinks: string
+  organizer: string
+  company: string
+  taxNumber: string
+  registeredAddress: string
+  mailingAddress: string
+  openingHours: string
+  copyright: string
+}> = {
+  en: {
+    contact: "Contact",
+    quickLinks: "Quick links",
+    organizer: "Organizer",
+    company: "Company",
+    taxNumber: "Tax number",
+    registeredAddress: "Registered address",
+    mailingAddress: "Mailing address",
+    openingHours: "Opening hours",
+    copyright: "© {year} {brand}. All rights reserved.",
+  },
+  hu: {
+    contact: "Kapcsolat",
+    quickLinks: "Gyors linkek",
+    organizer: "Szervező",
+    company: "Cég",
+    taxNumber: "Adószám",
+    registeredAddress: "Székhely",
+    mailingAddress: "Levelezési cím",
+    openingHours: "Nyitvatartás",
+    copyright: "© {year} {brand}. Minden jog fenntartva.",
+  },
+}
 
 const SHOP_DEFAULT_HREFS = new Set(["#home", "#about", "#shop", "#reviews", "#contact"])
 
-function resolveQuickLinks(settings?: FooterSettings) {
+function resolveQuickLinks(settings: FooterSettings | undefined, locale: string) {
   const links = settings?.quickLinks ?? []
   const looksLikeShopDefaults =
     links.length > 0 && links.every((item) => SHOP_DEFAULT_HREFS.has(item.href))
   if (!links.length || looksLikeShopDefaults) {
-    return WDF_DEFAULT_QUICK_LINKS.map((item) => ({ ...item }))
+    const fallback = WDF_DEFAULT_QUICK_LINKS_BY_LOCALE[locale] ?? WDF_DEFAULT_QUICK_LINKS_BY_LOCALE.en
+    return fallback.map((item) => ({ ...item }))
   }
   return links.filter((item) => item.label.trim())
 }
@@ -97,8 +141,10 @@ export function Footer({
   legalLinks,
   cmsEditable = false,
   onSettingsChange,
+  locale = "en",
 }: FooterProps) {
-  const quickLinks = resolveQuickLinks(footerSettings)
+  const strings = FOOTER_STRINGS[locale] ?? FOOTER_STRINGS.en
+  const quickLinks = resolveQuickLinks(footerSettings, locale)
   const contactEntries = (footerSettings?.contactEntries ?? []).filter(
     (entry) => entry.value.trim()
   )
@@ -113,9 +159,7 @@ export function Footer({
     (item) => item.enabled && item.url?.trim()
   )
 
-  const copyrightText = (
-    footerSettings?.copyrightText?.trim() || "© {year} {brand}. Minden jog fenntartva."
-  )
+  const copyrightText = (footerSettings?.copyrightText?.trim() || strings.copyright)
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName)
 
@@ -155,8 +199,8 @@ export function Footer({
     })
   }
 
-  const contactTitle = footerSettings?.contactTitle?.trim() || "Contact"
-  const quickLinksTitle = footerSettings?.quickLinksTitle?.trim() || "Quick links"
+  const contactTitle = footerSettings?.contactTitle?.trim() || strings.contact
+  const quickLinksTitle = footerSettings?.quickLinksTitle?.trim() || strings.quickLinks
 
   return (
     <footer className="border-t border-border bg-surface text-foreground">
@@ -278,7 +322,7 @@ export function Footer({
               ) : organizer.title?.trim() ? (
                 <p className="font-semibold">{organizer.title}</p>
               ) : (
-                <p className="font-semibold">Organizer</p>
+                <p className="font-semibold">{strings.organizer}</p>
               )}
               {(
                 [
@@ -310,7 +354,7 @@ export function Footer({
                   <p key={key} className="text-muted-foreground">
                     {key === "taxNumber" ? (
                       <>
-                        <span className="text-foreground/80">Tax number: </span>
+                        <span className="text-foreground/80">{strings.taxNumber}: </span>
                         {value}
                       </>
                     ) : (

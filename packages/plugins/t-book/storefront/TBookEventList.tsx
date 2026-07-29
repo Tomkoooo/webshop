@@ -11,6 +11,7 @@ import {
   type TBookPublicEvent,
 } from "./tbook-public-api"
 import { formatEventSchedule } from "../lib/event-schedule"
+import { tbookT } from "../lib/i18n"
 
 export type TBookListVariant = "default" | "wdf"
 
@@ -31,6 +32,7 @@ export function TBookEventList({
   initialError = null,
   currency: currencyProp = "HUF",
   variant = "default",
+  locale,
 }: {
   apiKey: string
   copy: Copy
@@ -39,6 +41,7 @@ export function TBookEventList({
   initialError?: string | null
   currency?: string
   variant?: TBookListVariant
+  locale?: string
 }) {
   const router = useRouter()
   const serverProvided = initialEvents !== undefined
@@ -68,7 +71,7 @@ export function TBookEventList({
     const normalizedKey = apiKey.trim()
     if (!normalizedKey) {
       setLoading(false)
-      setError("The tBook API key is not configured. Add it in the CMS home integration settings.")
+      setError(tbookT(locale, "apiKeyMissing"))
       return
     }
     let cancelled = false
@@ -82,7 +85,7 @@ export function TBookEventList({
           if (res.currency) setCurrency(res.currency)
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load events.")
+        if (!cancelled) setError(err instanceof Error ? err.message : tbookT(locale, "eventsLoadError"))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -90,11 +93,11 @@ export function TBookEventList({
     return () => {
       cancelled = true
     }
-  }, [apiKey, serverProvided])
+  }, [apiKey, serverProvided, locale])
 
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2" aria-busy="true" aria-label="Loading events">
+      <div className="grid gap-4 sm:grid-cols-2" aria-busy="true" aria-label={tbookT(locale, "loadingEvents")}>
         {[1, 2].map((i) => (
           <div key={i} className="h-48 animate-pulse rounded-2xl bg-muted" />
         ))}
@@ -127,9 +130,7 @@ export function TBookEventList({
         <p className="mt-2 text-muted-foreground">{copy.pageIntro}</p>
         {events.length > 1 ? (
           <p className="mt-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-foreground">
-            <strong className="font-semibold">Tip:</strong> tick one or more events below, then continue
-            once to register for all of them together — or use <em>Book this event</em> for a single
-            entry.
+            {tbookT(locale, "multiEventTip")}
           </p>
         ) : null}
       </header>
@@ -182,7 +183,9 @@ export function TBookEventList({
                   } p-2 -m-2`}
                   aria-pressed={isSelected}
                   aria-label={
-                    isSelected ? `Deselect ${event.name}` : `Select ${event.name} for multi-event booking`
+                    isSelected
+                      ? tbookT(locale, "deselectEvent", { name: event.name })
+                      : tbookT(locale, "selectEventForMulti", { name: event.name })
                   }
                 >
                   <span
@@ -198,7 +201,7 @@ export function TBookEventList({
                   <span className="min-w-0 flex-1">
                     <span className="block text-xl font-semibold">{event.name}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {isSelected ? "Selected for booking" : "Tap to include in a multi-event booking"}
+                      {isSelected ? tbookT(locale, "selectedForBooking") : tbookT(locale, "tapToInclude")}
                     </span>
                   </span>
                 </button>
@@ -212,7 +215,8 @@ export function TBookEventList({
                       event.startDate,
                       event.endDate,
                       event.startTime,
-                      event.endTime
+                      event.endTime,
+                      locale
                     )}
                   </span>
                   {event.location.address ? (
@@ -233,7 +237,7 @@ export function TBookEventList({
                       : "mt-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-background px-5 py-2.5 text-sm font-semibold text-foreground hover:border-primary/40"
                   }
                 >
-                  Book this event only
+                  {tbookT(locale, "bookThisEventOnly")}
                 </Link>
               </div>
             </article>
@@ -246,10 +250,13 @@ export function TBookEventList({
           <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                {selectedIds.length} event{selectedIds.length === 1 ? "" : "s"} selected
+                {tbookT(locale, "eventsSelectedCount", {
+                  count: selectedIds.length,
+                  plural: selectedIds.length === 1 ? "" : "s",
+                })}
               </p>
               <p className="text-xs text-muted-foreground">
-                Continue to enter players and choose hotel stays for all selected events.
+                {tbookT(locale, "continueMultiHint")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -258,14 +265,14 @@ export function TBookEventList({
                 className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted"
                 onClick={() => setSelectedIds([])}
               >
-                Clear
+                {tbookT(locale, "clear")}
               </button>
               <button
                 type="button"
                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 onClick={continueWithSelection}
               >
-                Continue with selected
+                {tbookT(locale, "continueWithSelected")}
               </button>
             </div>
           </div>

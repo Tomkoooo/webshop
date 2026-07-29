@@ -12,6 +12,7 @@ import {
 } from "@wse/core/components/ui/dialog"
 import { cn } from "@wse/core/lib/utils"
 import type { TBookPublicHotel } from "./tbook-public-api"
+import { tbookT } from "../lib/i18n"
 
 type Props = {
   hotels: TBookPublicHotel[]
@@ -21,17 +22,18 @@ type Props = {
   onSelectHotel: (hotelId: string) => void
   /** When true, only hotel cards are shown (entry-only already chosen upstream). */
   hideEntryOnlyOption?: boolean
+  locale?: string
 }
 
-function hotelHint(hotel: TBookPublicHotel): string {
+function hotelHint(hotel: TBookPublicHotel, locale?: string): string {
   const parts: string[] = []
   if (hotel.distanceFromVenueKm != null) {
-    parts.push(`${hotel.distanceFromVenueKm} km from venue`)
+    parts.push(tbookT(locale, "kmFromVenue", { km: hotel.distanceFromVenueKm }))
   }
   const mode = hotel.pricing?.accommodationMode
-  if (mode === "packages") parts.push("Package stays")
-  else if (mode === "both") parts.push("Rooms & packages")
-  else parts.push("Per-night rooms")
+  if (mode === "packages") parts.push(tbookT(locale, "packageStays"))
+  else if (mode === "both") parts.push(tbookT(locale, "roomsAndPackages"))
+  else parts.push(tbookT(locale, "perNightRooms"))
   return parts.join(" · ")
 }
 
@@ -88,6 +90,7 @@ function ImageCarousel({
   onIndexChange,
   onExpand,
   compact,
+  locale,
 }: {
   images: string[]
   hotelName: string
@@ -95,6 +98,7 @@ function ImageCarousel({
   onIndexChange: (next: number) => void
   onExpand?: () => void
   compact?: boolean
+  locale?: string
 }) {
   const count = images.length
   const current = images[Math.min(index, Math.max(0, count - 1))] ?? null
@@ -127,7 +131,7 @@ function ImageCarousel({
           <button
             type="button"
             className="absolute left-1 top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-background/85 text-foreground shadow-sm backdrop-blur-sm hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="Previous photo"
+            aria-label={tbookT(locale, "previousPhoto")}
             onClick={(e) => go(-1, e)}
           >
             <ChevronLeft className="size-4" aria-hidden />
@@ -135,7 +139,7 @@ function ImageCarousel({
           <button
             type="button"
             className="absolute right-1 top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-background/85 text-foreground shadow-sm backdrop-blur-sm hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="Next photo"
+            aria-label={tbookT(locale, "nextPhoto")}
             onClick={(e) => go(1, e)}
           >
             <ChevronRight className="size-4" aria-hidden />
@@ -157,7 +161,7 @@ function ImageCarousel({
         <button
           type="button"
           className="absolute right-1.5 top-1.5 z-10 flex size-7 items-center justify-center rounded-full bg-background/85 text-foreground shadow-sm backdrop-blur-sm hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          aria-label={`View larger photos of ${hotelName}`}
+          aria-label={tbookT(locale, "viewLargerPhotosOf", { name: hotelName })}
           onClick={(e) => {
             e.stopPropagation()
             e.preventDefault()
@@ -177,12 +181,14 @@ function HotelGalleryModal({
   hotelName,
   images,
   startIndex,
+  locale,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   hotelName: string
   images: string[]
   startIndex: number
+  locale?: string
 }) {
   const [index, setIndex] = useState(startIndex)
 
@@ -209,8 +215,8 @@ function HotelGalleryModal({
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             {images.length > 0
-              ? `Photo ${Math.min(index, images.length - 1) + 1} of ${images.length}`
-              : "No photos"}
+              ? tbookT(locale, "photoXOfY", { current: Math.min(index, images.length - 1) + 1, total: images.length })
+              : tbookT(locale, "noPhotos")}
           </DialogDescription>
         </div>
         <div className="overflow-hidden rounded-lg border border-border">
@@ -220,6 +226,7 @@ function HotelGalleryModal({
             index={index}
             onIndexChange={setIndex}
             compact={false}
+            locale={locale}
           />
         </div>
       </DialogContent>
@@ -231,10 +238,12 @@ function HotelCard({
   hotel,
   selected,
   onSelect,
+  locale,
 }: {
   hotel: TBookPublicHotel
   selected: boolean
   onSelect: () => void
+  locale?: string
 }) {
   const gallery = (hotel.gallery ?? []).filter(Boolean)
   const [imageIndex, setImageIndex] = useState(0)
@@ -259,6 +268,7 @@ function HotelCard({
           onIndexChange={setImageIndex}
           onExpand={gallery.length > 0 ? () => setLightboxOpen(true) : undefined}
           compact
+          locale={locale}
         />
         <button
           type="button"
@@ -267,7 +277,7 @@ function HotelCard({
           onClick={onSelect}
         >
           <span className="line-clamp-2 text-sm font-semibold leading-snug">{hotel.name}</span>
-          <span className="line-clamp-1 text-xs text-muted-foreground">{hotelHint(hotel)}</span>
+          <span className="line-clamp-1 text-xs text-muted-foreground">{hotelHint(hotel, locale)}</span>
           {badges.length > 0 ? (
             <span className="flex flex-wrap gap-1 pt-0.5">
               {badges.map((badge) => (
@@ -297,7 +307,7 @@ function HotelCard({
             </span>
           ) : null}
           <span className="pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            No refunds
+            {tbookT(locale, "noRefunds")}
           </span>
         </button>
       </article>
@@ -307,6 +317,7 @@ function HotelCard({
         hotelName={hotel.name}
         images={gallery}
         startIndex={imageIndex}
+        locale={locale}
       />
     </>
   )
@@ -319,21 +330,22 @@ export function AccommodationOptionCards({
   onSelectTicketOnly,
   onSelectHotel,
   hideEntryOnlyOption = false,
+  locale,
 }: Props) {
   if (hotels.length === 0) return null
 
   return (
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium">
-        {hideEntryOnlyOption ? "Choose a hotel" : "Accommodation"}
+        {hideEntryOnlyOption ? tbookT(locale, "chooseHotel") : tbookT(locale, "accommodation")}
       </legend>
       {!hideEntryOnlyOption ? (
         <p className="text-xs text-muted-foreground">
-          Choose entry only, or add a hotel stay. Entry only is selected by default.
+          {tbookT(locale, "chooseEntryOnlyHint")}
         </p>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        No refunds are available after payment. By continuing you confirm you understand this.
+        {tbookT(locale, "noRefundsConfirm")}
       </p>
 
       {!hideEntryOnlyOption ? (
@@ -358,9 +370,9 @@ export function AccommodationOptionCards({
               <Ticket className="size-4" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-semibold">Entry only</span>
+              <span className="block text-sm font-semibold">{tbookT(locale, "entryOnly")}</span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Entry fees only — no hotel booking.
+                {tbookT(locale, "entryOnlyFeesHint")}
               </span>
             </span>
           </span>
@@ -374,6 +386,7 @@ export function AccommodationOptionCards({
             hotel={hotel}
             selected={!ticketOnlySelected && selectedHotelId === hotel.id}
             onSelect={() => onSelectHotel(hotel.id)}
+            locale={locale}
           />
         ))}
       </div>

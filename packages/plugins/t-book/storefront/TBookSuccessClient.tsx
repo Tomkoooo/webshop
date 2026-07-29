@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import { CheckCircle2, Download, Loader2, XCircle } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { TBOOK_SAME_ORIGIN_API_BASE } from "../lib/tbook-api-base"
+import { tbookT } from "../lib/i18n"
 
 type Copy = {
   loadingText: string
@@ -43,7 +44,7 @@ function isInvoiceTerminal(status: string | undefined, invoiceReady: boolean | u
   return false
 }
 
-export function TBookSuccessClient({ copy }: { copy: Copy }) {
+export function TBookSuccessClient({ copy, locale }: { copy: Copy; locale?: string }) {
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
   const sessionId = searchParams.get("session_id")
@@ -158,15 +159,15 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
         <XCircle className="mx-auto size-14 text-muted-foreground" aria-hidden />
-        <h1 className="mt-4 text-2xl font-bold">Payment cancelled</h1>
+        <h1 className="mt-4 text-2xl font-bold">{tbookT(locale, "paymentCancelled")}</h1>
         <p className="mt-3 text-muted-foreground">
-          You cancelled the payment. To complete a booking, start the process again.
+          {tbookT(locale, "paymentCancelledBody")}
         </p>
         <Link
           href="/jegyek"
           className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
-          Back to events
+          {tbookT(locale, "backToEvents")}
         </Link>
       </div>
     )
@@ -188,7 +189,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
 
   const body = copy.successBody.replace("{bookingId}", bookingId ?? "—")
   const backHref = returnTo?.trim() || checkout?.returnBaseUrl?.trim() || "/jegyek"
-  const backLabel = backHref.includes("/jegyek") ? "Back to entries" : copy.successCta
+  const backLabel = backHref.includes("/jegyek") ? tbookT(locale, "backToEntries") : copy.successCta
   const showInvoiceDownload = Boolean(checkout?.invoiceReady)
   const showVoucherDownload = Boolean(checkout?.vouchersReady)
 
@@ -201,8 +202,9 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
       ) : null}
       <p className="mt-3 text-muted-foreground">{body}</p>
       <p className="mt-2 text-xs text-muted-foreground">
-        A confirmation email is on its way
-        {showInvoiceDownload ? ". Your invoice PDF is also emailed separately" : ""}.
+        {tbookT(locale, "confirmationEmailNote", {
+          invoiceNote: showInvoiceDownload ? tbookT(locale, "invoiceEmailedSeparately") : "",
+        })}
       </p>
 
       {downloadLinks && (showVoucherDownload || showInvoiceDownload) ? (
@@ -213,7 +215,7 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
             >
               <Download className="size-4" aria-hidden />
-              Download entries (PDF)
+              {tbookT(locale, "downloadEntriesPdf")}
             </a>
           ) : null}
           {showInvoiceDownload ? (
@@ -222,22 +224,22 @@ export function TBookSuccessClient({ copy }: { copy: Copy }) {
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/60"
             >
               <Download className="size-4" aria-hidden />
-              Download invoice (PDF)
+              {tbookT(locale, "downloadInvoicePdf")}
             </a>
           ) : null}
         </div>
       ) : pollingAssets ? (
         <p className="mt-4 inline-flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3.5 animate-spin" aria-hidden />
-          Preparing entries and invoice…
+          {tbookT(locale, "preparingEntriesInvoice")}
         </p>
       ) : (
         <p className="mt-4 text-xs text-muted-foreground">
           {checkout?.invoiceStatus === "failed"
-            ? "Invoice generation failed — please contact support."
+            ? tbookT(locale, "invoiceGenerationFailed")
             : checkout?.invoiceStatus === "none"
-              ? "No invoice was issued for this booking (invoicing is not enabled for this organizer)."
-              : "If downloads do not appear, check your email as well."}
+              ? tbookT(locale, "noInvoiceIssued")
+              : tbookT(locale, "checkEmailForDownloads")}
         </p>
       )}
 

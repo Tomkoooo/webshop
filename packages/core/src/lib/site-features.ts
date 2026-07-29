@@ -14,3 +14,14 @@ export function isMultiTenantAdminEnabled(): boolean {
   const cfg = parseBakedSiteConfig()
   return cfg?.multiTenantAdmin === true
 }
+
+export type SiteLocaleConfig = { supported: string[]; default: string }
+
+/** Optional per-deployment locale config baked into `WSE_SITE_CONFIG_JSON`. `null` = single-locale site (default). */
+export function getSiteLocaleConfig(): SiteLocaleConfig | null {
+  const cfg = parseBakedSiteConfig()
+  const locales = cfg?.locales as Partial<SiteLocaleConfig> | undefined
+  if (!locales || !Array.isArray(locales.supported) || locales.supported.length === 0) return null
+  if (!locales.default || !locales.supported.includes(locales.default)) return null
+  return { supported: locales.supported, default: locales.default }
+}

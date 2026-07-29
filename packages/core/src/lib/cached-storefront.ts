@@ -10,6 +10,7 @@ import { ShopContentService } from "@wse/core/services/shop-content"
 import { CategoryService } from "@wse/core/services/category"
 import { PageContentService } from "@wse/core/services/page-content"
 import { STOREFRONT_CACHE_TAGS } from "@wse/core/lib/storefront-cache-tags"
+import { BASE_CONTENT_LOCALE } from "@wse/sdk/i18n/constants"
 import type { TemplateModule } from "@wse/sdk/templates/types"
 import dbConnect from "@wse/core/lib/db"
 import LegalDocument from "@wse/core/models/LegalDocument"
@@ -28,11 +29,11 @@ export const getCachedBrandingSettings = unstable_cache(
   { revalidate: REVALIDATE_SECONDS, tags: [STOREFRONT_CACHE_TAGS.branding] }
 )
 
-export async function getCachedFooterSettingsForTemplate(template: TemplateModule) {
+export async function getCachedFooterSettingsForTemplate(template: TemplateModule, locale?: string) {
   const templateId = template.manifest.id
   return unstable_cache(
-    async () => FooterSettingsService.getForTemplate(template),
-    ["storefront-footer-settings", templateId],
+    async () => FooterSettingsService.getForTemplate(template, locale),
+    ["storefront-footer-settings", templateId, locale ?? BASE_CONTENT_LOCALE],
     {
       revalidate: REVALIDATE_SECONDS,
       tags: [STOREFRONT_CACHE_TAGS.footer, `footer:${templateId}`],
@@ -88,10 +89,10 @@ export const getCachedCategories = unstable_cache(
   { revalidate: REVALIDATE_SECONDS, tags: [STOREFRONT_CACHE_TAGS.categories] }
 )
 
-export async function getCachedPageContent<T = unknown>(templateId: string, pageKey: string) {
+export async function getCachedPageContent<T = unknown>(templateId: string, pageKey: string, locale?: string) {
   return unstable_cache(
-    async () => PageContentService.get<T>(templateId, pageKey),
-    ["storefront-page-content", templateId, pageKey],
+    async () => PageContentService.get<T>(templateId, pageKey, locale),
+    ["storefront-page-content", templateId, pageKey, locale ?? BASE_CONTENT_LOCALE],
     {
       revalidate: REVALIDATE_SECONDS,
       tags: [

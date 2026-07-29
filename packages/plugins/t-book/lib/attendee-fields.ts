@@ -1,5 +1,6 @@
 import { slugifyHotelKey } from "./hotel-pricing"
 import type { TBookRegistrationUnit } from "./registration-fields"
+import { tbookT } from "./i18n"
 
 export type TBookAttendeeFieldType = "text" | "email" | "phone" | "number" | "date" | "select"
 
@@ -32,7 +33,13 @@ export type TBookBookingTeamMember = {
   fields: Record<string, TBookAttendeeFieldValue>
 }
 
-export type AttendeeValidationIssue = { index: number; fieldKey: string; message: string }
+export type AttendeeValidationIssue = {
+  index: number
+  fieldKey: string
+  message: string
+  /** Set when this issue belongs to a team member row, so callers don't need to parse `message`. */
+  memberIndex?: number
+}
 
 const FIELD_TYPE_LABELS: Record<TBookAttendeeFieldType, string> = {
   text: "Szöveg",
@@ -135,48 +142,49 @@ function fieldLabel(schema: TBookAttendeeFieldDef[], key: string): string {
 
 function validateFieldValue(
   field: TBookAttendeeFieldDef,
-  raw: unknown
+  raw: unknown,
+  locale?: string
 ): string | null {
   if (raw == null || raw === "") {
-    return field.required ? `Required field: ${field.label}` : null
+    return field.required ? tbookT(locale, "requiredField", { label: field.label }) : null
   }
 
   switch (field.type) {
     case "text":
-      if (typeof raw !== "string" || !raw.trim()) return `${field.label}: invalid text`
+      if (typeof raw !== "string" || !raw.trim()) return tbookT(locale, "invalidText", { label: field.label })
       return null
     case "email": {
       if (typeof raw !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())) {
-        return `${field.label}: invalid email`
+        return tbookT(locale, "invalidEmail", { label: field.label })
       }
       return null
     }
     case "phone":
       if (typeof raw !== "string" || raw.trim().length < 6) {
-        return `${field.label}: invalid phone number`
+        return tbookT(locale, "invalidPhone", { label: field.label })
       }
       return null
     case "number": {
       const num = typeof raw === "number" ? raw : Number(raw)
-      if (!Number.isFinite(num)) return `${field.label}: invalid number`
+      if (!Number.isFinite(num)) return tbookT(locale, "invalidNumber", { label: field.label })
       if (field.min != null && num < field.min) {
-        return `${field.label}: minimum ${field.min}`
+        return tbookT(locale, "minimumValue", { label: field.label, min: field.min })
       }
       if (field.max != null && num > field.max) {
-        return `${field.label}: maximum ${field.max}`
+        return tbookT(locale, "maximumValue", { label: field.label, max: field.max })
       }
       return null
     }
     case "date":
       if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        return `${field.label}: invalid date (YYYY-MM-DD)`
+        return tbookT(locale, "invalidDate", { label: field.label })
       }
       return null
     case "select": {
       const value = String(raw)
       const allowed = field.choices?.map((c) => c.value) ?? []
       if (!allowed.includes(value)) {
-        return `${field.label}: invalid choice`
+        return tbookT(locale, "invalidChoice", { label: field.label })
       }
       return null
     }
@@ -195,7 +203,8 @@ export function validateAttendees(
     teamMemberLimit?: number | null
     /** Fixed player count per ticket (overrides flexible roster). */
     playersPerTicket?: number | null
-  }
+  },
+  locale?: string
 ): AttendeeValidationIssue[] {
   const normalized = normalizeAttendeeFieldSchema(schema)
   const memberSchema = normalizeAttendeeFieldSchema(teamOpts?.teamMemberFieldSchema)
@@ -208,13 +217,13 @@ export function validateAttendees(
 
   const issues: AttendeeValidationIssue[] = []
   const rows = attendees ?? []
-  const unitLabel = registrationUnit === "team" ? "team" : "entry"
+  const unitLabel = tbookT(locale, registrationUnit === "team" ? "unitTeam" : "unitEntry")
 
   if (rows.length !== guests) {
     issues.push({
       index: -1,
       fieldKey: "",
-      message: `Details are required for every ${unitLabel} (${guests} total).`,
+      message: tbookT(locale, "detailsRequiredForEvery", { unit: unitLabel, guests }),
     })
     return issues
   }
@@ -225,7 +234,7 @@ export function validateAttendees(
 
   rows.forEach((attendee, index) => {
     for (const field of normalized) {
-      const message = validateFieldValue(field, attendee.fields?.[field.key])
+      const message = validateFieldValue(field, attendee.fields?.[field.key], locale)
       if (message) {
         issues.push({ index, fieldKey: field.key, message })
       }
@@ -240,7 +249,11 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: exactly ${fixedRoster} player details are required.`,
+        message: tbookT(locale, "exactlyPlayersRequired", {
+          ordinal: index + 1,
+          unit: unitLabel,
+          count: fixedRoster,
+        }),
       })
       return
     }
@@ -249,7 +262,7 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: at least one player is required.`,
+        message: tbookT(locale, "atLeastOnePlayerRequired", { ordinal: index + 1, unit: unitLabel }),
       })
       return
     }
@@ -257,18 +270,28 @@ export function validateAttendees(
       issues.push({
         index,
         fieldKey: "",
-        message: `${index + 1}. ${unitLabel}: at most ${memberLimit} players are allowed.`,
+        message: tbookT(locale, "atMostPlayersAllowed", {
+          ordinal: index + 1,
+          unit: unitLabel,
+          limit: memberLimit,
+        }),
       })
     }
 
     members.forEach((member, memberIndex) => {
       for (const field of memberSchema) {
-        const message = validateFieldValue(field, member.fields?.[field.key])
+        const message = validateFieldValue(field, member.fields?.[field.key], locale)
         if (message) {
           issues.push({
             index,
             fieldKey: field.key,
-            message: `${index + 1}. ${unitLabel}, player ${memberIndex + 1}: ${message}`,
+            memberIndex,
+            message: tbookT(locale, "memberFieldError", {
+              ordinal: index + 1,
+              unit: unitLabel,
+              memberOrdinal: memberIndex + 1,
+              message,
+            }),
           })
         }
       }

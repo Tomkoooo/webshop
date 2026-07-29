@@ -4,6 +4,8 @@ import { NextResponse } from "next/server"
 import { isShopAdminPath, isShopEnabled, isShopPublicPath } from "@wse/core/lib/features/shop"
 import { isPluginAdminPath, parsePluginAdminPath } from "@wse/core/lib/features/plugins"
 import { isPluginAllowlistedForDeployment } from "@wse/core/config/deployments-registry"
+import { getSiteLocaleConfig } from "@wse/core/lib/site-features"
+import { LOCALE_HEADER, stripLocalePrefix } from "@wse/core/lib/locale"
 import { isCampOnlyBlockedPath, isCampOnlyStorefront } from "@wse/core/lib/features/camp-storefront"
 import {
   isPressKitPathForDeployment,
@@ -95,6 +97,31 @@ export const storefrontMiddleware = auth(async (req) => {
     const response = nextWithPathname(req)
     response.cookies.delete("wse_template_preview")
     return response
+  }
+
+  /**
+   * Opt-in locale routing: only sites that bake a `locales` config into `WSE_SITE_CONFIG_JSON`
+   * (see `getSiteLocaleConfig`) reach this block. `/hu/...` is rewritten to the existing
+   * `/...` route tree (no new route files anywhere) while the browser URL stays `/hu/...`;
+   * the resolved locale travels downstream via the `x-wse-locale` header. The default locale
+   * keeps its unprefixed URL, so existing links/bookmarks are untouched.
+   */
+  const localeConfig = getSiteLocaleConfig()
+  if (localeConfig) {
+    const match = stripLocalePrefix(pathname, localeConfig.supported)
+    if (match && match.locale !== localeConfig.default) {
+      // Build the rewrite target from the actual incoming Host header rather than
+      // `req.nextUrl.clone()` — in some dev setups `nextUrl`'s origin can pick up an
+      // unrelated canonical URL (e.g. a mismatched AUTH_URL), which turns the rewrite
+      // into an accidental cross-origin proxy fetch instead of an in-process rewrite.
+      const host = req.headers.get("host") ?? req.nextUrl.host
+      const url = new URL(match.rest, `${req.nextUrl.protocol}//${host}`)
+      url.search = req.nextUrl.search
+      const requestHeaders = new Headers(req.headers)
+      requestHeaders.set("x-pathname", pathname)
+      requestHeaders.set(LOCALE_HEADER, match.locale)
+      return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+    }
   }
 
   return nextWithPathname(req)

@@ -10,11 +10,81 @@ import { cn } from "@wse/core/lib/utils"
 import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
 
-const FALLBACK_NAV: ChromeNavItem[] = [
-  { type: "link", label: "Home", href: "/" },
-  { type: "link", label: "Entries", href: "/jegyek" },
-  { type: "link", label: "Contact", href: "/#contact" },
-]
+/** Locale-aware fallback for the ticket CTA when a route (e.g. static pages) has no CMS navCta. */
+const DEFAULT_NAV_CTA_BY_LOCALE: Record<string, ChromeNavCta> = {
+  en: defaultNavCta,
+  hu: {
+    enabled: true,
+    label: "Nevezés",
+    mobileLabel: "Nevezés és foglalás",
+    href: "/jegyek",
+    showIcon: true,
+  },
+}
+
+const FALLBACK_NAV_BY_LOCALE: Record<string, ChromeNavItem[]> = {
+  en: [
+    { type: "link", label: "Home", href: "/" },
+    { type: "link", label: "Entries", href: "/jegyek" },
+    { type: "link", label: "Contact", href: "/#contact" },
+  ],
+  hu: [
+    { type: "link", label: "Főoldal", href: "/" },
+    { type: "link", label: "Nevezés", href: "/jegyek" },
+    { type: "link", label: "Kapcsolat", href: "/#contact" },
+  ],
+}
+
+const NAV_STRINGS: Record<string, {
+  mainNav: string
+  openMenu: string
+  closeMenu: string
+  mobileNav: string
+}> = {
+  en: { mainNav: "Main navigation", openMenu: "Open menu", closeMenu: "Close menu", mobileNav: "Mobile navigation" },
+  hu: { mainNav: "Főmenü", openMenu: "Menü megnyitása", closeMenu: "Menü bezárása", mobileNav: "Mobil menü" },
+}
+
+/** Locales the WDF chrome supports; keep in sync with `manifest.locales` in `template.config.ts`. */
+const WDF_SUPPORTED_LOCALES = ["en", "hu"] as const
+const LOCALE_LABEL: Record<string, string> = { en: "EN", hu: "HU" }
+
+/** Swaps the leading `/<locale>` path segment (adding/removing it as needed) for the language switcher. */
+function localeSwitchHref(pathname: string, fromLocale: string, toLocale: string): string {
+  let rest = pathname
+  for (const locale of WDF_SUPPORTED_LOCALES) {
+    const prefix = `/${locale}`
+    if (pathname === prefix) {
+      rest = "/"
+      break
+    }
+    if (pathname.startsWith(`${prefix}/`)) {
+      rest = pathname.slice(prefix.length)
+      break
+    }
+  }
+  if (toLocale === "en") return rest
+  return rest === "/" ? `/${toLocale}` : `/${toLocale}${rest}`
+}
+
+function LanguageSwitcher({ locale, pathname, className }: { locale: string; pathname: string; className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-1 text-xs font-semibold", className)}>
+      {WDF_SUPPORTED_LOCALES.map((loc, index) => (
+        <span key={loc} className="flex items-center gap-1">
+          {index > 0 ? <span className="text-foreground/40" aria-hidden>/</span> : null}
+          {loc === locale ? (
+            <span className="text-primary">{LOCALE_LABEL[loc]}</span>
+          ) : (
+            <Link href={localeSwitchHref(pathname, locale, loc)} className="text-foreground/70 hover:text-primary">
+              {LOCALE_LABEL[loc]}
+            </Link>
+          )}
+        </span>
+      ))}
+    </div>
+  )
+}
 
 function NavDropdown({
   label,
@@ -179,13 +249,15 @@ export function Navbar({
   cmsChromePreview,
   navItems,
   navCta,
+  locale = "en",
 }: ChromeProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const mobilePanelId = useId()
   const isHome = pathname === "/"
-  const items = navItems?.length ? navItems : FALLBACK_NAV
-  const cta = { ...defaultNavCta, ...navCta }
+  const items = navItems?.length ? navItems : FALLBACK_NAV_BY_LOCALE[locale] ?? FALLBACK_NAV_BY_LOCALE.en
+  const cta = { ...(DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta), ...navCta }
+  const strings = NAV_STRINGS[locale] ?? NAV_STRINGS.en
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -240,7 +312,7 @@ export function Navbar({
           )}
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label={strings.mainNav}>
           {items.map((item) =>
             item.type === "dropdown" ? (
               <NavDropdown
@@ -256,6 +328,7 @@ export function Navbar({
             )
           )}
           <NavCtaButton cta={cta} variant="desktop" className="ml-2" cmsChromePreview={cmsChromePreview} />
+          {!cmsChromePreview ? <LanguageSwitcher locale={locale} pathname={pathname} className="ml-2" /> : null}
         </nav>
 
         <button
@@ -264,7 +337,7 @@ export function Navbar({
             "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border p-2 lg:hidden",
             isHome && !cmsChromePreview ? "border-white/25 bg-black/20 text-foreground" : "border-border"
           )}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-label={mobileOpen ? strings.closeMenu : strings.openMenu}
           aria-expanded={mobileOpen}
           aria-controls={mobilePanelId}
           onClick={() => setMobileOpen((v) => !v)}
@@ -277,13 +350,13 @@ export function Navbar({
         <>
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={strings.closeMenu}
             className="fixed inset-0 top-[57px] z-40 bg-black/50 lg:hidden"
             onClick={closeMobile}
           />
           <nav
             id={mobilePanelId}
-            aria-label="Mobile navigation"
+            aria-label={strings.mobileNav}
             className="relative z-50 max-h-[calc(100dvh-57px)] overflow-y-auto border-t border-border/60 bg-background px-4 py-4 text-foreground lg:hidden"
           >
             <div className="flex flex-col gap-2">
@@ -308,6 +381,7 @@ export function Navbar({
                 cmsChromePreview={cmsChromePreview}
                 onNavigate={closeMobile}
               />
+              <LanguageSwitcher locale={locale} pathname={pathname} className="mt-2 justify-center" />
             </div>
           </nav>
         </>

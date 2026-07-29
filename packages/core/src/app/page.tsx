@@ -13,7 +13,7 @@ export default async function LandingPage() {
     getStorefrontFooterHydrationProps(),
   ])
 
-  const { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch } = chrome
+  const { template, branding, footerSettings, shopEnabled, locale, Navbar, Footer, NavbarSearch } = chrome
   const HomeRender = template.pages.home.Render
   const isMinecraftCamp = template.manifest.id === "minecraft-camp"
   const isWorldDartsFestival = template.manifest.id === "world-darts-festival"
@@ -35,6 +35,7 @@ export default async function LandingPage() {
         venueBadge={mineshowSite?.venueShort}
         navItems={wdfNavItems}
         navCta={wdfNavCta}
+        locale={locale}
       />
 
       <main className="overflow-x-clip">
@@ -53,6 +54,7 @@ export default async function LandingPage() {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
+        locale={locale}
       />
     </div>
   )

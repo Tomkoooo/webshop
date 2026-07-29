@@ -11,9 +11,31 @@ import {
 import { homepageSnapshotSchema } from "@wse/core/features/homepage-cms/types/homepage-schema"
 import type { HomepageSnapshot } from "@wse/core/features/homepage-cms/types/block-types"
 import type { PageDefinition } from "@wse/sdk/templates/types"
+import { BASE_CONTENT_LOCALE } from "@wse/sdk/i18n/constants"
 import { deepMergeRecords } from "@wse/core/lib/deep-merge-records"
 import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
 import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+
+/**
+ * Storage key for a page's content document. The base locale (`BASE_CONTENT_LOCALE`, `"en"`)
+ * is always stored/read as plain `pageKey` — identical to every document written before
+ * multi-locale support existed. Non-base locales get a `pageKey@locale` suffix, so existing
+ * rows and callers that never pass `locale` are completely unaffected.
+ */
+function storageKey(pageKey: string, locale?: string): string {
+  if (!locale || locale === BASE_CONTENT_LOCALE) return pageKey
+  return `${pageKey}@${locale}`
+}
+
+/** Default content to fall back to / deep-merge against for the requested locale. */
+function effectiveDefaultContent<T>(def: PageDefinition<unknown> | null, locale?: string): T | undefined {
+  if (!def) return undefined
+  if (locale && locale !== BASE_CONTENT_LOCALE) {
+    const byLocale = def.defaultContentByLocale as Record<string, T> | undefined
+    if (byLocale && byLocale[locale] !== undefined) return byLocale[locale]
+  }
+  return def.defaultContent as T
+}
 
 function normalizeParsedContentSync<T>(
   templateId: string,
@@ -43,7 +65,8 @@ function parseWithDef<T>(
   raw: string,
   def: PageDefinition<unknown> | null,
   templateId: string,
-  pageKey: string
+  pageKey: string,
+  locale?: string
 ): T {
   if (!def) {
     try {
@@ -54,18 +77,16 @@ function parseWithDef<T>(
       )
     }
   }
+  const defaultForLocale = effectiveDefaultContent<Record<string, unknown>>(def, locale)
   try {
     const parsed = JSON.parse(raw)
     const merged =
-      def && parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? deepMergeRecords(
-            def.defaultContent as Record<string, unknown>,
-            parsed as Record<string, unknown>
-          )
+      defaultForLocale && parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? deepMergeRecords(defaultForLocale, parsed as Record<string, unknown>)
         : parsed
     const data = def.schema.parse(merged) as T
     if (pageKey === "page:home") {
-      const ref = def.defaultContent as HomepageSnapshot
+      const ref = (defaultForLocale ?? def.defaultContent) as HomepageSnapshot
       const homeParsed = homepageSnapshotSchema.safeParse(data)
       const refParsed = homepageSnapshotSchema.safeParse(ref)
       if (homeParsed.success && refParsed.success) {
@@ -82,10 +103,10 @@ function parseWithDef<T>(
     return normalizeParsedContentSync(templateId, pageKey, data, def)
   } catch (error) {
     console.error(
-      `[PageContentService] Failed to parse content for ${templateId}/${pageKey}; falling back to default.`,
+      `[PageContentService] Failed to parse content for ${templateId}/${pageKey}${locale ? `@${locale}` : ""}; falling back to default.`,
       error
     )
-    return normalizeParsedContentSync(templateId, pageKey, def.defaultContent as T, def)
+    return normalizeParsedContentSync(templateId, pageKey, (defaultForLocale ?? def.defaultContent) as T, def)
   }
 }
 
@@ -99,17 +120,18 @@ export class PageContentService {
    * Live storefront content (published snapshot only).
    * Alias: use `get` for backward compatibility.
    */
-  static async getPublished<T = unknown>(templateId: string, pageKey: string): Promise<T> {
-    return this.get<T>(templateId, pageKey)
+  static async getPublished<T = unknown>(templateId: string, pageKey: string, locale?: string): Promise<T> {
+    return this.get<T>(templateId, pageKey, locale)
   }
 
   /** @deprecated Prefer getPublished — behavior is identical. */
-  static async get<T = unknown>(templateId: string, pageKey: string): Promise<T> {
+  static async get<T = unknown>(templateId: string, pageKey: string, locale?: string): Promise<T> {
     await dbConnect()
-    let doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+    const key = storageKey(pageKey, locale)
+    let doc = await TemplateContent.findOne({ templateId, pageKey: key }).lean()
     const def = await findPageDefinitionByTemplateId(templateId, pageKey)
 
-    if (!doc && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
+    if (!doc && !locale && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
       const legacy = await HomepageCmsService.getPublished()
       const parsed = def.schema.safeParse(legacy)
       if (parsed.success) {
@@ -117,15 +139,15 @@ export class PageContentService {
           JSON.stringify(parsed.data) === JSON.stringify(def.defaultContent)
         if (!asDefault) {
           await TemplateContent.findOneAndUpdate(
-            { templateId, pageKey },
+            { templateId, pageKey: key },
             {
               templateId,
-              pageKey,
+              pageKey: key,
               value: JSON.stringify(parsed.data),
             },
             { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
           )
-          doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+          doc = await TemplateContent.findOne({ templateId, pageKey: key }).lean()
         }
       }
     }
@@ -136,21 +158,22 @@ export class PageContentService {
           `No page definition for templateId='${templateId}' pageKey='${pageKey}' and no stored content.`
         )
       }
-      return def.defaultContent as T
+      return effectiveDefaultContent<T>(def, locale) as T
     }
 
-    return parseWithDef<T>(doc.value, def, templateId, pageKey)
+    return parseWithDef<T>(doc.value, def, templateId, pageKey, locale)
   }
 
   /**
    * Editor baseline: draft when present, otherwise published `value`.
    */
-  static async getDraft<T = unknown>(templateId: string, pageKey: string): Promise<T> {
+  static async getDraft<T = unknown>(templateId: string, pageKey: string, locale?: string): Promise<T> {
     await dbConnect()
-    let doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+    const key = storageKey(pageKey, locale)
+    let doc = await TemplateContent.findOne({ templateId, pageKey: key }).lean()
     const def = await findPageDefinitionByTemplateId(templateId, pageKey)
 
-    if (!doc && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
+    if (!doc && !locale && templateId === FALLBACK_TEMPLATE_ID && pageKey === "page:home" && def) {
       const legacy = await HomepageCmsService.getPublished()
       const parsed = def.schema.safeParse(legacy)
       if (parsed.success) {
@@ -158,15 +181,15 @@ export class PageContentService {
           JSON.stringify(parsed.data) === JSON.stringify(def.defaultContent)
         if (!asDefault) {
           await TemplateContent.findOneAndUpdate(
-            { templateId, pageKey },
+            { templateId, pageKey: key },
             {
               templateId,
-              pageKey,
+              pageKey: key,
               value: JSON.stringify(parsed.data),
             },
             { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
           )
-          doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+          doc = await TemplateContent.findOne({ templateId, pageKey: key }).lean()
         }
       }
     }
@@ -177,17 +200,17 @@ export class PageContentService {
           `No page definition for templateId='${templateId}' pageKey='${pageKey}' and no stored content.`
         )
       }
-      return def.defaultContent as T
+      return effectiveDefaultContent<T>(def, locale) as T
     }
 
     const source =
       doc.draftValue && doc.draftValue.trim().length > 0 ? doc.draftValue : doc.value
-    return parseWithDef<T>(source, def, templateId, pageKey)
+    return parseWithDef<T>(source, def, templateId, pageKey, locale)
   }
 
-  static async getMeta(templateId: string, pageKey: string): Promise<TemplateContentMeta> {
+  static async getMeta(templateId: string, pageKey: string, locale?: string): Promise<TemplateContentMeta> {
     await dbConnect()
-    const doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+    const doc = await TemplateContent.findOne({ templateId, pageKey: storageKey(pageKey, locale) }).lean()
     if (!doc) return { hasDraft: false }
     return {
       hasDraft: Boolean(doc.draftValue && doc.draftValue.trim().length > 0),
@@ -195,9 +218,11 @@ export class PageContentService {
     }
   }
 
-  static async hasStoredContent(templateId: string, pageKey: string): Promise<boolean> {
+  static async hasStoredContent(templateId: string, pageKey: string, locale?: string): Promise<boolean> {
     await dbConnect()
-    const doc = await TemplateContent.findOne({ templateId, pageKey }).select({ _id: 1 }).lean()
+    const doc = await TemplateContent.findOne({ templateId, pageKey: storageKey(pageKey, locale) })
+      .select({ _id: 1 })
+      .lean()
     return Boolean(doc)
   }
 
@@ -205,7 +230,8 @@ export class PageContentService {
     templateId: string,
     pageKey: string,
     value: T,
-    updatedBy?: string
+    updatedBy?: string,
+    locale?: string
   ): Promise<T> {
     const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
@@ -214,16 +240,17 @@ export class PageContentService {
       )
     }
     const validated = def.schema.parse(value)
+    const key = storageKey(pageKey, locale)
 
     await dbConnect()
     await TemplateContent.findOneAndUpdate(
-      { templateId, pageKey },
+      { templateId, pageKey: key },
       {
         $set: { draftValue: JSON.stringify(validated), updatedBy },
         $setOnInsert: {
           templateId,
-          pageKey,
-          value: JSON.stringify(def.defaultContent),
+          pageKey: key,
+          value: JSON.stringify(effectiveDefaultContent(def, locale)),
         },
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
@@ -234,7 +261,8 @@ export class PageContentService {
   static async publish<T>(
     templateId: string,
     pageKey: string,
-    publishedBy?: string
+    publishedBy?: string,
+    locale?: string
   ): Promise<T> {
     const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
@@ -242,17 +270,18 @@ export class PageContentService {
         `Cannot publish: no page definition for templateId='${templateId}' pageKey='${pageKey}'.`
       )
     }
+    const key = storageKey(pageKey, locale)
 
     await dbConnect()
-    const doc = await TemplateContent.findOne({ templateId, pageKey }).lean()
+    const doc = await TemplateContent.findOne({ templateId, pageKey: key }).lean()
     if (!doc) {
-      const baseline = def.defaultContent
+      const baseline = effectiveDefaultContent(def, locale)
       await TemplateContent.findOneAndUpdate(
-        { templateId, pageKey },
+        { templateId, pageKey: key },
         {
           $set: {
             templateId,
-            pageKey,
+            pageKey: key,
             value: JSON.stringify(baseline),
             publishedBy,
             publishedAt: new Date(),
@@ -269,7 +298,7 @@ export class PageContentService {
     const validated = def.schema.parse(JSON.parse(raw))
 
     await TemplateContent.findOneAndUpdate(
-      { templateId, pageKey },
+      { templateId, pageKey: key },
       {
         $set: {
           value: JSON.stringify(validated),
@@ -283,10 +312,10 @@ export class PageContentService {
     return validated as T
   }
 
-  static async discardDraft(templateId: string, pageKey: string): Promise<void> {
+  static async discardDraft(templateId: string, pageKey: string, locale?: string): Promise<void> {
     await dbConnect()
     await TemplateContent.findOneAndUpdate(
-      { templateId, pageKey },
+      { templateId, pageKey: storageKey(pageKey, locale) },
       { $unset: { draftValue: 1 } }
     )
   }
@@ -298,7 +327,8 @@ export class PageContentService {
     templateId: string,
     pageKey: string,
     value: T,
-    updatedBy?: string
+    updatedBy?: string,
+    locale?: string
   ): Promise<T> {
     const def = await findPageDefinitionByTemplateId(templateId, pageKey)
     if (!def) {
@@ -310,7 +340,7 @@ export class PageContentService {
 
     await dbConnect()
     await TemplateContent.findOneAndUpdate(
-      { templateId, pageKey },
+      { templateId, pageKey: storageKey(pageKey, locale) },
       {
         $set: {
           value: JSON.stringify(validated),
@@ -335,9 +365,9 @@ export class PageContentService {
     return this.saveDraft(templateId, pageKey, value, updatedBy)
   }
 
-  static async reset(templateId: string, pageKey: string): Promise<void> {
+  static async reset(templateId: string, pageKey: string, locale?: string): Promise<void> {
     await dbConnect()
-    await TemplateContent.deleteOne({ templateId, pageKey })
+    await TemplateContent.deleteOne({ templateId, pageKey: storageKey(pageKey, locale) })
   }
 
   static async listForTemplate(

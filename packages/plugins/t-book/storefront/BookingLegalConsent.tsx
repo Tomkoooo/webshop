@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
+import { tbookT } from "../lib/i18n"
 
 export type LegalDocLink = {
   key: string
@@ -12,6 +13,7 @@ type Props = {
   accepted: boolean
   onAcceptedChange: (accepted: boolean) => void
   id?: string
+  locale?: string
 }
 
 function DocLink({
@@ -46,6 +48,7 @@ export function BookingLegalConsent({
   accepted,
   onAcceptedChange,
   id = "booking-legal-consent",
+  locale,
 }: Props) {
   const [termsHref, setTermsHref] = useState<string | null>(null)
   const [gdprHref, setGdprHref] = useState<string | null>(null)
@@ -85,10 +88,13 @@ export function BookingLegalConsent({
         aria-required
       />
       <span>
-        I have read and accept the{" "}
-        <DocLink href={termsHref}>Terms and Conditions</DocLink> and the{" "}
-        <DocLink href={gdprHref}>Privacy Policy (GDPR)</DocLink>. I understand that{" "}
-        <strong className="font-medium">no refunds are available</strong> after payment.
+        {tbookT(locale, "consentPrefix")}
+        <DocLink href={termsHref}>{tbookT(locale, "termsAndConditions")}</DocLink>
+        {tbookT(locale, "consentAnd")}
+        <DocLink href={gdprHref}>{tbookT(locale, "privacyPolicyGdpr")}</DocLink>
+        {tbookT(locale, "consentSuffix")}
+        <strong className="font-medium">{tbookT(locale, "noRefundsAvailable")}</strong>
+        {tbookT(locale, "consentEnd")}
       </span>
     </label>
   )

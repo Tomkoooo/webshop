@@ -34,8 +34,10 @@ export async function getHomepagePageData(): Promise<HomepagePageData> {
   const homePageDef = template.pages.home
 
   const content = await timeAsync("homepage.pageContent", () =>
-    getRequestPageContent<HomepageSnapshot>(template.manifest.id, "page:home").catch(
-      () => homePageDef.defaultContent as HomepageSnapshot
+    getRequestPageContent<HomepageSnapshot>(template.manifest.id, "page:home", chrome.locale).catch(
+      () =>
+        ((chrome.locale !== "en" && homePageDef.defaultContentByLocale?.[chrome.locale]) ||
+          homePageDef.defaultContent) as HomepageSnapshot
     )
   )
 

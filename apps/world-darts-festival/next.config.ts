@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   env: {
-    WSE_SITE_CONFIG_JSON: "{\"id\":\"world-darts-festival\",\"label\":\"world-darts-festival\",\"templateId\":\"world-darts-festival\",\"plugins\":[\"t-book\"]}",
+    WSE_SITE_CONFIG_JSON: "{\"id\":\"world-darts-festival\",\"label\":\"world-darts-festival\",\"templateId\":\"world-darts-festival\",\"plugins\":[\"t-book\"],\"locales\":{\"supported\":[\"en\",\"hu\"],\"default\":\"en\"}}",
   },
   /* config options here */
   output: "standalone",

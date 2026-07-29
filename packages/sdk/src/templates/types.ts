@@ -61,6 +61,8 @@ export type ChromeProps = {
   navItems?: ChromeNavItem[]
   /** Optional CMS-driven primary nav CTA button (world-darts-festival and similar). */
   navCta?: ChromeNavCta
+  /** Active request locale (e.g. `"en"`, `"hu"`) for templates with `manifest.locales`. Omit/ignore for single-locale templates. */
+  locale?: string
   children?: ReactNode
 }
 
@@ -325,6 +327,13 @@ export type CmsListFieldSpec = {
 export interface PageDefinition<TContent, TDeps extends AnyPageDeps = AnyPageDeps> {
   schema: ZodType<TContent>
   defaultContent: TContent
+  /**
+   * Optional per-locale fallback content, keyed by locale code (e.g. `"hu"`), used when a
+   * template declares `manifest.locales` and no stored document exists yet for that locale.
+   * The base locale (`BASE_CONTENT_LOCALE`, `"en"`) always uses `defaultContent` and never
+   * needs an entry here. Omit entirely for single-locale templates — no effect on them.
+   */
+  defaultContentByLocale?: Record<string, TContent>
   Render: ComponentType<RenderProps<TContent, TDeps>>
   EditorPanel: ComponentType<EditorProps<TContent>>
   /** Array fields managed by the structured sidebar editor (see @wse/cms-bridge CmsListField). */
@@ -392,6 +401,14 @@ export interface TemplateManifest {
   surfaces: TemplateSurfaces
   /** Landing = marketing-first; must not declare shop/pdp in `restyles`. */
   deployment: TemplateDeployment
+  /**
+   * Optional multi-locale support. Omit for single-locale templates — engine behavior is
+   * completely unchanged (no locale routing, no `pageKey@locale` content variants).
+   */
+  locales?: {
+    supported: string[]
+    default: string
+  }
 }
 
 export interface TemplateModule {
@@ -404,6 +421,8 @@ export interface TemplateModule {
   defaultTheme?: ThemeTokens
   /** Template-specific footer baseline; stored overrides use key `footer:<templateId>`. */
   footerDefaults?: FooterSettings
+  /** Optional per-locale footer baseline (keyed by locale, excluding the base `"en"` locale). */
+  footerDefaultsByLocale?: Record<string, FooterSettings>
   chrome: {
     Navbar: ComponentType<ChromeProps>
     Footer: ComponentType<ChromeProps & {
@@ -561,6 +580,17 @@ export function defineTemplate(template: TemplateModule): TemplateModule {
   }
   for (const slug of Object.keys(template.staticPages)) {
     assertValidStaticPageSlug(slug)
+  }
+  if (template.manifest.locales) {
+    const { supported, default: defaultLocale } = template.manifest.locales
+    if (!Array.isArray(supported) || supported.length === 0) {
+      throw new Error(`Template '${template.manifest.id}': manifest.locales.supported must be a non-empty array`)
+    }
+    if (!supported.includes(defaultLocale)) {
+      throw new Error(
+        `Template '${template.manifest.id}': manifest.locales.default ('${defaultLocale}') must be included in manifest.locales.supported`
+      )
+    }
   }
   const deployment = template.manifest.deployment
   if (deployment !== "landing" && deployment !== "commerce") {

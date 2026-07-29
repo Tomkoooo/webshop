@@ -102,24 +102,27 @@ export function resolveTicketAttendeeFieldSchema(opts: {
   )
 }
 
+import { tbookT } from "./i18n"
+
 export type TBookRegistrationUnit = "person" | "team"
 
-export function registrationUnitLabel(unit: TBookRegistrationUnit, count = 1): string {
-  if (unit === "team") return count === 1 ? "team" : "teams"
-  return count === 1 ? "person" : "people"
+export function registrationUnitLabel(unit: TBookRegistrationUnit, count = 1, locale?: string): string {
+  if (unit === "team") return tbookT(locale, count === 1 ? "unitTeamSingular" : "unitTeamPlural")
+  return tbookT(locale, count === 1 ? "unitPersonSingular" : "unitPersonPlural")
 }
 
 export function ticketFeeModeLabel(
   mode: "per_person" | "per_booking" | "per_team",
-  unit: TBookRegistrationUnit = "person"
+  unit: TBookRegistrationUnit = "person",
+  locale?: string
 ): string {
   switch (mode) {
     case "per_booking":
-      return "per booking"
+      return tbookT(locale, "perBooking")
     case "per_team":
-      return "per team"
+      return tbookT(locale, "perTeam")
     case "per_person":
     default:
-      return unit === "team" ? "per team" : "per person / entry"
+      return unit === "team" ? tbookT(locale, "perTeam") : tbookT(locale, "perPersonEntry")
   }
 }

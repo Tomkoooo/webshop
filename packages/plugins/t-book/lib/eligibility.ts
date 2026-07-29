@@ -1,4 +1,5 @@
 import type { TBookAttendeeFieldDef, TBookBookingAttendee } from "./attendee-fields"
+import { tbookT } from "./i18n"
 
 /** Organizer-facing presets. Darts-specific U18/women shortcuts were removed. */
 export type TBookEligibilityPreset = "none" | "custom" | "form_rules"
@@ -403,7 +404,8 @@ export function validateEligibility(
   attendees: TBookBookingAttendee[] | undefined | null,
   ticketFieldSchema: TBookAttendeeFieldDef[],
   playerFieldSchema: TBookAttendeeFieldDef[],
-  fixedRoster: number | null
+  fixedRoster: number | null,
+  locale?: string
 ): EligibilityIssue[] {
   const rules = resolveEligibilityRules(event)
   if (!rules) return []
@@ -424,8 +426,8 @@ export function validateEligibility(
   for (const row of rows) {
     const prefix =
       row.playerIndex != null
-        ? `Entry ${row.ticketIndex + 1}, player ${row.playerIndex + 1}`
-        : `Entry ${row.ticketIndex + 1}`
+        ? tbookT(locale, "entryPrefixPlayer", { ticket: row.ticketIndex + 1, player: row.playerIndex + 1 })
+        : tbookT(locale, "entryPrefix", { ticket: row.ticketIndex + 1 })
 
     if (birthKey && (rules.minAge != null || rules.maxAge != null)) {
       const birth = parseBirthDate(row.fields[birthKey])
@@ -433,7 +435,7 @@ export function validateEligibility(
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: a date of birth is required to check entry rules.`,
+          message: tbookT(locale, "dobRequired", { prefix }),
         })
       } else {
         const age = ageOnDate(birth, referenceDate)
@@ -441,14 +443,14 @@ export function validateEligibility(
           issues.push({
             ticketIndex: row.ticketIndex,
             playerIndex: row.playerIndex,
-            message: `${prefix}: minimum age is ${rules.minAge} (age: ${age}).`,
+            message: tbookT(locale, "minAgeIssue", { prefix, minAge: rules.minAge, age }),
           })
         }
         if (rules.maxAge != null && age > rules.maxAge) {
           issues.push({
             ticketIndex: row.ticketIndex,
             playerIndex: row.playerIndex,
-            message: `${prefix}: maximum age is ${rules.maxAge} (age: ${age}).`,
+            message: tbookT(locale, "maxAgeIssue", { prefix, maxAge: rules.maxAge, age }),
           })
         }
       }
@@ -461,13 +463,16 @@ export function validateEligibility(
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: ${genderDef?.label ?? genderKey} is required for this event.`,
+          message: tbookT(locale, "fieldRequiredForEvent", {
+            prefix,
+            field: genderDef?.label ?? genderKey,
+          }),
         })
       } else if (!fieldValueMatchesAllowed(String(raw), rules.allowedGenders, genderDef)) {
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: the selected value (${raw}) is not allowed for this event.`,
+          message: tbookT(locale, "valueNotAllowed", { prefix, value: String(raw) }),
         })
       }
     }
@@ -487,11 +492,11 @@ export function validateEligibility(
         const detail =
           failed[0]?.rule.message ||
           failed.map((f) => `${f.rule.fieldKey} ${f.rule.op} ${f.rule.value}`).join("; ") ||
-          "form conditions"
+          tbookT(locale, "formConditionsFallback")
         issues.push({
           ticketIndex: row.ticketIndex,
           playerIndex: row.playerIndex,
-          message: `${prefix}: does not meet the entry requirements (${detail}).`,
+          message: tbookT(locale, "doesNotMeetRequirements", { prefix, detail }),
         })
       }
     }

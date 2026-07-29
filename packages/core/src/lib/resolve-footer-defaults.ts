@@ -36,21 +36,27 @@ export const ENGINE_SHOP_FOOTER_DEFAULTS: FooterSettings = {
   paymentMethodsNote: "",
 }
 
-export function resolveFooterDefaults(template: TemplateModule | null | undefined): FooterSettings {
-  if (template?.footerDefaults) {
+export function resolveFooterDefaults(
+  template: TemplateModule | null | undefined,
+  locale?: string
+): FooterSettings {
+  const localeDefaults =
+    locale && locale !== "en" ? template?.footerDefaultsByLocale?.[locale] : undefined
+  const source = localeDefaults ?? template?.footerDefaults
+  if (source) {
     return {
       ...ENGINE_SHOP_FOOTER_DEFAULTS,
-      ...template.footerDefaults,
-      quickLinks: template.footerDefaults.quickLinks?.length
-        ? template.footerDefaults.quickLinks.map((item) => ({ ...item }))
+      ...source,
+      quickLinks: source.quickLinks?.length
+        ? source.quickLinks.map((item) => ({ ...item }))
         : ENGINE_SHOP_FOOTER_DEFAULTS.quickLinks.map((item) => ({ ...item })),
-      socialLinks: template.footerDefaults.socialLinks?.length
-        ? template.footerDefaults.socialLinks.map((item) => ({ ...item }))
+      socialLinks: source.socialLinks?.length
+        ? source.socialLinks.map((item) => ({ ...item }))
         : ENGINE_SHOP_FOOTER_DEFAULTS.socialLinks.map((item) => ({ ...item })),
-      contactEntries: template.footerDefaults.contactEntries?.map((item) => ({ ...item })) ?? [],
+      contactEntries: source.contactEntries?.map((item) => ({ ...item })) ?? [],
       organizerSection: {
         ...ENGINE_SHOP_FOOTER_DEFAULTS.organizerSection!,
-        ...template.footerDefaults.organizerSection,
+        ...source.organizerSection,
       },
     }
   }

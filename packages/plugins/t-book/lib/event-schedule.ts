@@ -11,19 +11,32 @@ export function toTimeInputValue(stored?: string | null): string {
   return normalizeEventTime(stored) ?? ""
 }
 
-export function formatEventDatePart(date: Date | string, locale = "hu-HU"): string {
-  return new Date(date).toLocaleDateString(locale, {
+/**
+ * Map a site UI locale (`en` / `hu`) to a BCP 47 tag for `toLocaleDateString`.
+ * Month/day names follow the visitor language; times stay Budapest wall-clock (`HH:mm`).
+ * When `locale` is omitted, keep Hungarian (admin / PDF callers).
+ */
+export function toBcp47DateLocale(locale?: string, fallback: "hu-HU" | "en-GB" = "hu-HU"): string {
+  if (!locale) return fallback
+  const normalized = locale.trim().toLowerCase().replace("_", "-")
+  if (normalized === "en" || normalized.startsWith("en-")) return "en-GB"
+  if (normalized === "hu" || normalized.startsWith("hu-")) return "hu-HU"
+  return fallback
+}
+
+export function formatEventDatePart(date: Date | string, locale?: string): string {
+  return new Date(date).toLocaleDateString(toBcp47DateLocale(locale), {
     year: "numeric",
     month: "long",
     day: "numeric",
   })
 }
 
-/** Date with optional time, e.g. "2026. július 15., 09:00" */
+/** Date with optional Budapest wall-clock time, e.g. "15 October 2026, 09:00" / "2026. október 15., 09:00" */
 export function formatEventDateTime(
   date: Date | string,
   time: string | null | undefined,
-  locale = "hu-HU"
+  locale?: string
 ): string {
   const datePart = formatEventDatePart(date, locale)
   const normalized = normalizeEventTime(time)
@@ -35,7 +48,7 @@ export function formatEventSchedule(
   endDate: Date | string,
   startTime?: string | null,
   endTime?: string | null,
-  locale = "hu-HU"
+  locale?: string
 ): string {
   return `${formatEventDateTime(startDate, startTime, locale)} – ${formatEventDateTime(endDate, endTime, locale)}`
 }

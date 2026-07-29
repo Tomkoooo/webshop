@@ -2,6 +2,8 @@
  * Pure helpers for the single-event booking wizard — used by the UI and matrix tests.
  */
 
+import { tbookT } from "./i18n"
+
 export type StayChoice = "entry_only" | "hotel" | null
 
 export type HotelStayPhase = "stay_choice" | "pick_hotel" | "configure_rooms"
@@ -14,6 +16,18 @@ export const SINGLE_WIZARD_STEPS = [
   "Your details",
   "Review",
 ] as const
+
+/** Locale-aware display labels for the single-event wizard step indicator. */
+export function singleWizardStepLabels(locale?: string): string[] {
+  return [
+    tbookT(locale, "stepEntries"),
+    tbookT(locale, "stepHotel"),
+    tbookT(locale, "stepRooms"),
+    tbookT(locale, "stepPlayers"),
+    tbookT(locale, "stepYourDetails"),
+    tbookT(locale, "stepReview"),
+  ]
+}
 
 export const SINGLE_WIZARD_TOTAL_STEPS = SINGLE_WIZARD_STEPS.length
 /** Step index (1-based) where Continue becomes “Review quote”. */
@@ -133,26 +147,27 @@ export function buildMultiWizardSteps(input: {
   wantsHotelByEventId: Record<string, boolean | null>
   wantsHotelCombined: boolean | null
   hotelCount: number
+  locale?: string
 }): MultiWizardStepDef[] {
-  const steps: MultiWizardStepDef[] = [{ kind: "entries", label: "Entries" }]
+  const steps: MultiWizardStepDef[] = [{ kind: "entries", label: tbookT(input.locale, "stepEntries") }]
 
   if (input.hotelCount > 0) {
     if (input.lodgingMode === "combined") {
-      steps.push({ kind: "hotel", label: "Hotel", eventId: null })
+      steps.push({ kind: "hotel", label: tbookT(input.locale, "stepHotel"), eventId: null })
       if (input.wantsHotelCombined === true) {
-        steps.push({ kind: "rooms", label: "Rooms", eventId: null })
+        steps.push({ kind: "rooms", label: tbookT(input.locale, "stepRooms"), eventId: null })
       }
     } else {
       for (const event of input.events) {
         steps.push({
           kind: "hotel",
-          label: `Hotel · ${event.name}`,
+          label: tbookT(input.locale, "stepHotelForEvent", { name: event.name }),
           eventId: event.id,
         })
         if (input.wantsHotelByEventId[event.id] === true) {
           steps.push({
             kind: "rooms",
-            label: `Rooms · ${event.name}`,
+            label: tbookT(input.locale, "stepRoomsForEvent", { name: event.name }),
             eventId: event.id,
           })
         }
@@ -160,9 +175,9 @@ export function buildMultiWizardSteps(input: {
     }
   }
 
-  steps.push({ kind: "players", label: "Players" })
-  steps.push({ kind: "details", label: "Your details" })
-  steps.push({ kind: "review", label: "Review" })
+  steps.push({ kind: "players", label: tbookT(input.locale, "stepPlayers") })
+  steps.push({ kind: "details", label: tbookT(input.locale, "stepYourDetails") })
+  steps.push({ kind: "review", label: tbookT(input.locale, "stepReview") })
   return steps
 }
 

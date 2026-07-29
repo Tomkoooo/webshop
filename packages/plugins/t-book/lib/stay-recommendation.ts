@@ -1,4 +1,5 @@
 import type { TBookPackageDeal } from "./pricing-types"
+import { toBcp47DateLocale } from "./event-schedule"
 
 export type StayDateSource = {
   startDate: Date | string
@@ -151,18 +152,19 @@ export function nearestAvailableNights(
   return best
 }
 
-/** Format a short date range for stay recommendation copy. */
-export function formatStayDateRange(start: Date, end: Date, locale = "en-GB"): string {
+/** Format a short date range for stay recommendation copy (month names follow UI locale). */
+export function formatStayDateRange(start: Date, end: Date, locale?: string): string {
+  const tag = toBcp47DateLocale(locale, "en-GB")
   const sameDay =
     start.getFullYear() === end.getFullYear() &&
     start.getMonth() === end.getMonth() &&
     start.getDate() === end.getDate()
-  const startLabel = start.toLocaleDateString(locale, {
+  const startLabel = start.toLocaleDateString(tag, {
     month: "short",
     day: "numeric",
   })
   if (sameDay) return startLabel
-  const endLabel = end.toLocaleDateString(locale, {
+  const endLabel = end.toLocaleDateString(tag, {
     month: "short",
     day: "numeric",
   })

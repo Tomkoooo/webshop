@@ -15,10 +15,11 @@ export type TBookStorefrontConfig = TBookHomeChromeConfig & {
 
 /** Reads tBook API key + CMS nav from published home content (`chrome` block). */
 export async function loadTBookStorefrontConfig(
-  templateId: string
+  templateId: string,
+  locale?: string
 ): Promise<TBookStorefrontConfig> {
   try {
-    const content = await getRequestPageContent(templateId, "page:home")
+    const content = await getRequestPageContent(templateId, "page:home", locale)
     const chrome = extractTBookHomeChrome(content)
     return {
       ...chrome,

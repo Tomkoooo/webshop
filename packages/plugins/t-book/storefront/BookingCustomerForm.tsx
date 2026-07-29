@@ -2,6 +2,7 @@
 
 import { tBookCustomerSchema } from "../lib/schemas"
 import { zodFieldErrors } from "./BookingBillingForm"
+import { tbookT } from "../lib/i18n"
 
 export type CustomerFormState = {
   name: string
@@ -41,6 +42,7 @@ export function BookingCustomerForm({
   errors = {},
   heading,
   hint,
+  locale,
 }: {
   customer: CustomerFormState
   onChange: (customer: CustomerFormState) => void
@@ -48,6 +50,7 @@ export function BookingCustomerForm({
   errors?: CustomerFieldErrors
   heading: string
   hint?: string
+  locale?: string
 }) {
   const patch = (partial: Partial<CustomerFormState>) => onChange({ ...customer, ...partial })
 
@@ -60,7 +63,7 @@ export function BookingCustomerForm({
       {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1" htmlFor="customer-name">
-          <span className="text-sm font-medium">Name *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "nameLabel")}</span>
           <input
             id="customer-name"
             className={fieldClass("name")}
@@ -73,7 +76,7 @@ export function BookingCustomerForm({
           <FieldError id="customer-name-error" message={errors.name} />
         </label>
         <label className="block space-y-1" htmlFor="customer-email">
-          <span className="text-sm font-medium">Email *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "emailLabel")}</span>
           <input
             id="customer-email"
             className={fieldClass("email")}
@@ -87,7 +90,7 @@ export function BookingCustomerForm({
           <FieldError id="customer-email-error" message={errors.email} />
         </label>
         <label className="block space-y-1 sm:col-span-2" htmlFor="customer-phone">
-          <span className="text-sm font-medium">Phone *</span>
+          <span className="text-sm font-medium">{tbookT(locale, "phoneLabel")}</span>
           <input
             id="customer-phone"
             className={fieldClass("phone")}
@@ -101,7 +104,7 @@ export function BookingCustomerForm({
           <FieldError id="customer-phone-error" message={errors.phone} />
         </label>
         <label className="block space-y-1 sm:col-span-2" htmlFor="customer-note">
-          <span className="text-sm font-medium">Note (optional)</span>
+          <span className="text-sm font-medium">{tbookT(locale, "noteLabelOptional")}</span>
           <textarea
             id="customer-note"
             className={errors.note ? `${inputClassName} border-destructive` : inputClassName}

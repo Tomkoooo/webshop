@@ -19,3 +19,24 @@ export const importantInfoDefaultContent: ImportantInfoContent = {
     seoDescription: "Registration rules, playing format, and practical information for competitors.",
   },
 }
+
+/** Hungarian fallback — used only when no `page:fontos-informaciok@hu` document exists yet. */
+export const importantInfoDefaultContentHu: ImportantInfoContent = {
+  title: "<p>Fontos információk</p>",
+  subtitle:
+    "<p>Minden, amit a nevezésről, a szabályokról, a játékformátumról és a helyszíni tudnivalókról tudnod kell.</p>",
+  body: `<h2>Nevezés</h2>
+<p>Minden versenykategóriában online nevezés szükséges. A nevezési díj a jelentkezési határidő után nem visszatéríthető, kivéve, ha a szervező mondja le a rendezvényt.</p>
+<h2>Játékformátum</h2>
+<p>A mérkőzésformátumok a WDF szabályzatát követik. A legszámokat és a táblabeosztást a kategóriád táblázatában találod.</p>
+<h2>Mit hozz magaddal</h2>
+<ul>
+<li>Érvényes fényképes igazolvány</li>
+<li>Saját nyilaid (steel tip)</li>
+<li>Visszaigazoló e-mail vagy foglalási hivatkozás</li>
+</ul>`,
+  meta: {
+    seoTitle: "Fontos információk — World Darts Festival",
+    seoDescription: "Nevezési szabályok, játékformátum és gyakorlati tudnivalók a versenyzők számára.",
+  },
+}

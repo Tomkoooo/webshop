@@ -14,8 +14,9 @@ export default async function FoglalasSikerPage() {
   if (!enabled) notFound()
 
   const chrome = await getActiveChrome()
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id)
-  const successCopy = await getTBookSuccessContent(chrome.template.manifest.id)
+  const { locale } = chrome
+  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
+  const successCopy = await getTBookSuccessContent(chrome.template.manifest.id, locale)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
@@ -33,6 +34,7 @@ export default async function FoglalasSikerPage() {
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
+        locale={locale}
       />
       <main className={tBookMainClassName(templateId)}>
         <Suspense
@@ -41,6 +43,7 @@ export default async function FoglalasSikerPage() {
           }
         >
           <TBookSuccessClient
+            locale={locale}
             copy={{
               loadingText: successCopy.loadingText,
               successTitle: successCopy.successTitle,
@@ -64,6 +67,7 @@ export default async function FoglalasSikerPage() {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
+        locale={locale}
       />
     </>
   )

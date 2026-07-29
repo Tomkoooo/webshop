@@ -5,12 +5,12 @@ import {
 } from "@wse/sdk/templates/types"
 import dynamic from "next/dynamic"
 import { worldDartsFestivalTheme } from "./theme"
-import { wdfFooterDefaults } from "./footer-defaults"
+import { wdfFooterDefaults, wdfFooterDefaultsHu } from "./footer-defaults"
 import { Navbar } from "./chrome/Navbar"
 import { Footer } from "./chrome/Footer"
 
 import { homeSchema } from "./pages/home/schema"
-import { homeDefaultContent } from "./pages/home/defaultContent"
+import { homeDefaultContent, homeDefaultContentHu } from "./pages/home/defaultContent"
 import { HomeRender } from "./pages/home/Render"
 
 import { shopSchema } from "./pages/shop/schema"
@@ -28,8 +28,11 @@ import {
 } from "./pages/tbook/schemas"
 import {
   tBookBookingDefaultContent,
+  tBookBookingDefaultContentHu,
   tBookListDefaultContent,
+  tBookListDefaultContentHu,
   tBookSuccessDefaultContent,
+  tBookSuccessDefaultContentHu,
 } from "./pages/tbook/defaultContent"
 import { TBookListRender } from "./pages/tbook/jegyek/Render"
 import { TBookBookingRender } from "./pages/tbook/foglalas/Render"
@@ -37,7 +40,10 @@ import { TBookSuccessRender } from "./pages/tbook/foglalas-siker/Render"
 import { TBookSurfaceEditorPanel } from "./pages/tbook/EditorPanel"
 
 import { importantInfoSchema } from "./static-pages/fontos-informaciok/schema"
-import { importantInfoDefaultContent } from "./static-pages/fontos-informaciok/defaultContent"
+import {
+  importantInfoDefaultContent,
+  importantInfoDefaultContentHu,
+} from "./static-pages/fontos-informaciok/defaultContent"
 import { ImportantInfoRender } from "./static-pages/fontos-informaciok/Render"
 
 const ImportantInfoEditorPanel = dynamic(() =>
@@ -67,9 +73,11 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     },
     surfaces: DEFAULT_TEMPLATE_SURFACES,
     deployment: "landing",
+    locales: { supported: ["en", "hu"], default: "en" },
   },
   defaultTheme: worldDartsFestivalTheme,
   footerDefaults: wdfFooterDefaults,
+  footerDefaultsByLocale: { hu: wdfFooterDefaultsHu },
   chrome: {
     Navbar,
     Footer,
@@ -78,6 +86,7 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     home: {
       schema: homeSchema,
       defaultContent: homeDefaultContent,
+      defaultContentByLocale: { hu: homeDefaultContentHu },
       Render: HomeRender,
       EditorPanel: HomeEditorPanel,
     },
@@ -98,6 +107,7 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     "fontos-informaciok": {
       schema: importantInfoSchema,
       defaultContent: importantInfoDefaultContent,
+      defaultContentByLocale: { hu: importantInfoDefaultContentHu },
       Render: ImportantInfoRender,
       EditorPanel: ImportantInfoEditorPanel,
     },
@@ -106,18 +116,21 @@ export const worldDartsFestival: TemplateModule = defineTemplate({
     jegyek: {
       schema: tBookListContentSchema,
       defaultContent: tBookListDefaultContent,
+      defaultContentByLocale: { hu: tBookListDefaultContentHu },
       Render: TBookListRender,
       EditorPanel: TBookSurfaceEditorPanel,
     },
     foglalas: {
       schema: tBookBookingContentSchema,
       defaultContent: tBookBookingDefaultContent,
+      defaultContentByLocale: { hu: tBookBookingDefaultContentHu },
       Render: TBookBookingRender,
       EditorPanel: TBookSurfaceEditorPanel,
     },
     foglalasSiker: {
       schema: tBookSuccessContentSchema,
       defaultContent: tBookSuccessDefaultContent,
+      defaultContentByLocale: { hu: tBookSuccessDefaultContentHu },
       Render: TBookSuccessRender,
       EditorPanel: TBookSurfaceEditorPanel,
     },

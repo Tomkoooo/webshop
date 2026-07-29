@@ -7,6 +7,7 @@ import { formatHuf } from "./tbook-public-api"
 import { packageUnitsForGuests } from "../lib/hotel-pricing"
 import type { PackageCombinationSuggestion } from "../lib/package-optimization"
 import { nearestAvailableNights } from "../lib/stay-recommendation"
+import { tbookT } from "../lib/i18n"
 
 type Props = {
   packages: TBookPublicPackageDeal[]
@@ -22,6 +23,7 @@ type Props = {
   onSelectPackage: (key: string, nights: number) => void
   onApplyPlan: (units: Record<string, number>) => void
   onClearPackage: () => void
+  locale?: string
 }
 
 function groupPackagesByNights(packages: TBookPublicPackageDeal[]) {
@@ -34,10 +36,10 @@ function groupPackagesByNights(packages: TBookPublicPackageDeal[]) {
   return [...map.entries()].sort(([a], [b]) => a - b)
 }
 
-function roomKindLabel(pkg: TBookPublicPackageDeal): string {
+function roomKindLabel(pkg: TBookPublicPackageDeal, locale?: string): string {
   const cap = pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1
-  if (cap >= 2) return "Double / twin"
-  return "Single"
+  if (cap >= 2) return tbookT(locale, "doubleTwin")
+  return tbookT(locale, "singleRoom")
 }
 
 export function PackageSelectionCards({
@@ -53,6 +55,7 @@ export function PackageSelectionCards({
   onSelectPackage,
   onApplyPlan,
   onClearPackage,
+  locale,
 }: Props) {
   const groups = useMemo(() => groupPackagesByNights(packages), [packages])
   const nightOptions = useMemo(() => groups.map(([n]) => n), [groups])
@@ -110,25 +113,20 @@ export function PackageSelectionCards({
   return (
     <div className="space-y-5">
       <p className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-        Prices below update for <strong className="text-foreground">{accommodationGuests}</strong>{" "}
-        hotel guest{accommodationGuests === 1 ? "" : "s"}
-        {accommodationGuests > 1 ? (
-          <>
-            {" "}
-            — a single room needs {accommodationGuests} rooms, or choose a double/twin mix that
-            covers everyone.
-          </>
-        ) : null}
-        .
+        {tbookT(locale, "pricesUpdateFor", {
+          guests: accommodationGuests,
+          guestWord: tbookT(locale, accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
+          extra: accommodationGuests > 1 ? tbookT(locale, "roomsNeededHint", { guests: accommodationGuests }) : "",
+        })}
       </p>
       <p className="text-xs text-muted-foreground">
-        No refunds are available after payment. By continuing you confirm you understand this.
+        {tbookT(locale, "noRefundsConfirm")}
       </p>
 
       {suggestionsForPeriod.length > 0 ? (
         <div className="space-y-2">
           <p className="text-sm font-medium">
-            Suggested room mix ({accommodationGuests} guests)
+            {tbookT(locale, "suggestedRoomMix", { guests: accommodationGuests })}
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {suggestionsForPeriod.map((suggestion, index) => {
@@ -148,12 +146,15 @@ export function PackageSelectionCards({
                   <p className="text-sm font-semibold">
                     {suggestion.label}
                     {index === 0 ? (
-                      <span className="ml-2 text-xs font-medium text-primary">Recommended</span>
+                      <span className="ml-2 text-xs font-medium text-primary">{tbookT(locale, "recommended")}</span>
                     ) : null}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {suggestion.totalUnits} room{suggestion.totalUnits === 1 ? "" : "s"} ·{" "}
-                    {suggestion.totalCapacity} guest capacity
+                    {tbookT(locale, "roomsGuestCapacity", {
+                      units: suggestion.totalUnits,
+                      plural: suggestion.totalUnits === 1 ? "" : "s",
+                      capacity: suggestion.totalCapacity,
+                    })}
                   </p>
                   <p className="mt-2 text-sm font-medium text-foreground">
                     {formatHuf(planTotal, displayCurrency)}
@@ -167,17 +168,20 @@ export function PackageSelectionCards({
 
       {recommendedLabel || recommendedNights != null ? (
         <p className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
-          Recommended stay
+          {tbookT(locale, "recommendedStayLabel2")}
           {recommendedNights != null ? (
             <>
-              : <strong>{recommendedNights} night{recommendedNights === 1 ? "" : "s"}</strong>
+              : <strong>{tbookT(locale, "nightsWord", { n: recommendedNights, plural: recommendedNights === 1 ? "" : "s" })}</strong>
             </>
           ) : null}
           {recommendedLabel ? <> ({recommendedLabel})</> : null}
           {!exactRecommendedAvailable && recommendedNights != null && selectedNights != null ? (
             <span className="mt-1 block text-xs text-muted-foreground">
-              No exact {recommendedNights}-night package is available — showing the closest option (
-              {selectedNights} night{selectedNights === 1 ? "" : "s"}).
+              {tbookT(locale, "noExactPackageNote", {
+                nights: recommendedNights,
+                selected: selectedNights,
+                plural: selectedNights === 1 ? "" : "s",
+              })}
             </span>
           ) : null}
         </p>
@@ -187,9 +191,9 @@ export function PackageSelectionCards({
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-2">
             <Calendar className="size-4" aria-hidden />
-            Stay length
+            {tbookT(locale, "stayLength")}
           </p>
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Stay length">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label={tbookT(locale, "stayLength")}>
             {groups.map(([nights]) => (
               <button
                 key={nights}
@@ -203,8 +207,8 @@ export function PackageSelectionCards({
                 }`}
                 onClick={() => setUserSelectedNights(nights)}
               >
-                {nights} night{nights === 1 ? "" : "s"}
-                {recommendedNights === nights ? " · recommended" : ""}
+                {tbookT(locale, "nightsWord", { n: nights, plural: nights === 1 ? "" : "s" })}
+                {recommendedNights === nights ? tbookT(locale, "nightsRecommendedSuffix") : ""}
               </button>
             ))}
           </div>
@@ -214,7 +218,7 @@ export function PackageSelectionCards({
       <div className="space-y-2">
         <p className="text-sm font-medium flex items-center gap-2">
           <BedDouble className="size-4" aria-hidden />
-          {packagesRequired ? "Choose a room package" : "Room package (optional)"}
+          {packagesRequired ? tbookT(locale, "chooseRoomPackage") : tbookT(locale, "roomPackageOptional")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {!packagesRequired ? (
@@ -223,8 +227,8 @@ export function PackageSelectionCards({
               className={cardClass(!packageDealKey && !activePackageUnits)}
               onClick={onClearPackage}
             >
-              <p className="text-sm font-semibold">Per-night rate</p>
-              <p className="mt-1 text-xs text-muted-foreground">No package — nightly pricing</p>
+              <p className="text-sm font-semibold">{tbookT(locale, "perNightRate")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{tbookT(locale, "noPackageNightly")}</p>
             </button>
           ) : null}
           {packagesForPeriod.map((pkg) => {
@@ -249,17 +253,20 @@ export function PackageSelectionCards({
                 <p className="text-sm font-semibold">{pkg.label}</p>
                 <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
                   <Users className="size-3.5" aria-hidden />
-                  {roomKindLabel(pkg)}
-                  {` · up to ${pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1} guest(s)`}
+                  {roomKindLabel(pkg, locale)}
+                  {tbookT(locale, "upToGuests", { max: pkg.maxGuests != null && pkg.maxGuests > 0 ? pkg.maxGuests : 1 })}
                 </p>
                 <p className="mt-2 text-sm font-medium text-foreground">
                   {formatHuf(pkg.priceHuf, displayCurrency)}
-                  {pkg.nights > 1 ? ` / ${pkg.nights} nights` : ""} each
+                  {pkg.nights > 1 ? tbookT(locale, "perNightsSuffix", { nights: pkg.nights }) : ""} {tbookT(locale, "eachSuffix")}
                 </p>
                 <p className="mt-1 text-xs font-medium text-foreground">
-                  {unitsNeeded}× room{unitsNeeded === 1 ? "" : "s"} ={" "}
-                  {formatHuf(lineTotal, displayCurrency)}
-                  {unitsNeeded > 1 ? ` for ${accommodationGuests} guests` : ""}
+                  {tbookT(locale, "roomsTotalEquals", {
+                    units: unitsNeeded,
+                    plural: unitsNeeded === 1 ? "" : "s",
+                    total: formatHuf(lineTotal, displayCurrency),
+                  })}
+                  {unitsNeeded > 1 ? tbookT(locale, "forGuestsSuffix", { guests: accommodationGuests }) : ""}
                 </p>
                 {remaining != null ? (
                   <p
@@ -268,8 +275,8 @@ export function PackageSelectionCards({
                     }`}
                   >
                     {soldOut
-                      ? "Sold out"
-                      : `${remaining} room${remaining === 1 ? "" : "s"} left`}
+                      ? tbookT(locale, "soldOut")
+                      : tbookT(locale, "roomsLeft", { remaining, plural: remaining === 1 ? "" : "s" })}
                   </p>
                 ) : null}
               </button>

@@ -6,6 +6,7 @@ import type {
 } from "./tbook-public-api"
 import { formatHuf } from "./tbook-public-api"
 import type { TBookSelections } from "./tbook-public-api"
+import { tbookT } from "../lib/i18n"
 
 /** Empty value for storefront selects — always include as the first option. */
 export const TBOOK_SELECT_PLACEHOLDER = ""
@@ -13,15 +14,18 @@ export const TBOOK_SELECT_PLACEHOLDER = ""
 export function SelectPlaceholderOption({
   required,
   optionalLabel = "—",
-  requiredLabel = "Select…",
+  requiredLabel,
+  locale,
 }: {
   required?: boolean
   optionalLabel?: string
   requiredLabel?: string
+  locale?: string
 }) {
+  const resolvedRequiredLabel = requiredLabel ?? tbookT(locale, "selectPlaceholder")
   return (
     <option value={TBOOK_SELECT_PLACEHOLDER}>
-      {required ? requiredLabel : optionalLabel}
+      {required ? resolvedRequiredLabel : optionalLabel}
     </option>
   )
 }
@@ -50,12 +54,14 @@ export function BookingOptionField({
   onChange,
   visible,
   inputClassName = "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm",
+  locale,
 }: {
   option: TBookPublicOptionDef
   value: string | number | boolean | string[] | undefined
   onChange: (v: string | number | boolean | string[]) => void
   visible: boolean
   inputClassName?: string
+  locale?: string
 }) {
   if (!visible) return null
 
@@ -78,7 +84,7 @@ export function BookingOptionField({
           }
           onChange={(e) => onChange(e.target.value)}
         >
-          <SelectPlaceholderOption required={option.required} />
+          <SelectPlaceholderOption required={option.required} locale={locale} />
           {option.choices?.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
@@ -134,12 +140,14 @@ export function AttendeeFieldInput({
   onChange,
   error,
   inputClassName = "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm",
+  locale,
 }: {
   field: TBookPublicAttendeeFieldDef
   value: string | number | undefined
   onChange: (value: string | number) => void
   error?: string | null
   inputClassName?: string
+  locale?: string
 }) {
   const id = `attendee-${field.key}`
   const label = (
@@ -171,7 +179,7 @@ export function AttendeeFieldInput({
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
         >
-          <SelectPlaceholderOption required={field.required} />
+          <SelectPlaceholderOption required={field.required} locale={locale} />
           {field.choices?.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
@@ -211,12 +219,14 @@ export function AttendeeFieldInput({
 export function BookingStepIndicator({
   steps,
   current,
+  locale,
 }: {
   steps: string[]
   current: number
+  locale?: string
 }) {
   return (
-    <ol className="flex flex-wrap items-center gap-2 sm:gap-3" aria-label="Booking steps">
+    <ol className="flex flex-wrap items-center gap-2 sm:gap-3" aria-label={tbookT(locale, "bookingStepsAria")}>
       {steps.map((label, index) => {
         const step = index + 1
         const active = step === current

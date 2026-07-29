@@ -6,6 +6,7 @@ import {
 } from "@wse/core/lib/resolve-footer-defaults"
 import FooterSetting from "@wse/core/models/FooterSetting"
 import type { TemplateModule } from "@wse/sdk/templates/types"
+import { BASE_CONTENT_LOCALE } from "@wse/sdk/i18n/constants"
 
 export type FooterSocialLink = {
   platform: "facebook" | "instagram" | "twitter" | "youtube"
@@ -50,8 +51,9 @@ export type FooterSettings = {
 
 const LEGACY_FOOTER_KEY = "footer"
 
-export function footerKeyForTemplate(templateId: string): string {
-  return `footer:${templateId}`
+export function footerKeyForTemplate(templateId: string, locale?: string): string {
+  const base = `footer:${templateId}`
+  return !locale || locale === BASE_CONTENT_LOCALE ? base : `${base}@${locale}`
 }
 
 function normalize(
@@ -164,13 +166,14 @@ export class FooterSettingsService {
   }
 
   /**
-   * Per-template footer row (`footer:<templateId>`).
-   * Migrates customized legacy `footer` once; ignores shop/camp seed leftovers for WDF.
+   * Per-template footer row (`footer:<templateId>`, or `footer:<templateId>@<locale>` for a
+   * non-base locale). Migrates customized legacy `footer` once (base locale only); ignores
+   * shop/camp seed leftovers for WDF.
    */
-  static async getForTemplate(template: TemplateModule): Promise<FooterSettings> {
+  static async getForTemplate(template: TemplateModule, locale?: string): Promise<FooterSettings> {
     const templateId = template.manifest.id
-    const key = footerKeyForTemplate(templateId)
-    const defaults = resolveFooterDefaults(template)
+    const key = footerKeyForTemplate(templateId, locale)
+    const defaults = resolveFooterDefaults(template, locale)
 
     await dbConnect()
     const scoped = (await FooterSetting.findOne({ key }).lean()) as Record<string, unknown> | null
@@ -178,10 +181,13 @@ export class FooterSettingsService {
       return docToSettings(scoped, defaults)
     }
 
-    const legacy = (await FooterSetting.findOne({ key: LEGACY_FOOTER_KEY }).lean()) as Record<
-      string,
-      unknown
-    > | null
+    const isBaseLocale = !locale || locale === BASE_CONTENT_LOCALE
+    const legacy = isBaseLocale
+      ? ((await FooterSetting.findOne({ key: LEGACY_FOOTER_KEY }).lean()) as Record<
+          string,
+          unknown
+        > | null)
+      : null
 
     let seeded: FooterSettings
     if (legacy && shouldMigrateLegacyFooter(templateId, legacy as Partial<FooterSettings>)) {
@@ -196,13 +202,14 @@ export class FooterSettingsService {
 
   static async updateForTemplate(
     template: TemplateModule,
-    input: Partial<FooterSettings>
+    input: Partial<FooterSettings>,
+    locale?: string
   ): Promise<FooterSettings> {
-    const current = await this.getForTemplate(template)
-    const defaults = resolveFooterDefaults(template)
+    const current = await this.getForTemplate(template, locale)
+    const defaults = resolveFooterDefaults(template, locale)
     const normalized = normalize({ ...current, ...input }, defaults)
     await dbConnect()
-    await persistFooter(footerKeyForTemplate(template.manifest.id), normalized)
+    await persistFooter(footerKeyForTemplate(template.manifest.id, locale), normalized)
     return normalized
   }
 

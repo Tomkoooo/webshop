@@ -8,4 +8,6 @@ export const siteConfig = {
   id: "world-darts-festival",
   templateId: "world-darts-festival",
   plugins: ["t-book"] as const,
+  /** Mirrors WSE_SITE_CONFIG_JSON in next.config.ts, which is what's actually read at runtime. */
+  locales: { supported: ["en", "hu"], default: "en" },
 }

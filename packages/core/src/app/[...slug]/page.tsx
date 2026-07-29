@@ -16,14 +16,14 @@ type StaticPageProps = {
 export async function generateMetadata({ params }: StaticPageProps): Promise<Metadata> {
   const { slug } = await params
   const slugStr = slug.join("/")
-  const { template } = await getActiveChrome()
+  const { template, locale } = await getActiveChrome()
   const def = template.staticPages[slugStr]
   if (!def) return {}
   try {
     const [content, shopName] = await Promise.all([
       getRequestPageContent<{
         meta?: { seoTitle?: string; seoDescription?: string }
-      }>(template.manifest.id, `page:${slugStr}`),
+      }>(template.manifest.id, `page:${slugStr}`, locale),
       getStorefrontShopName(),
     ])
     const seoTitle = content?.meta?.seoTitle?.trim()
@@ -40,7 +40,7 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
   const { slug } = await params
   const slugStr = slug.join("/")
   const {
-    chrome: { template, branding, footerSettings, shopEnabled, Navbar, Footer, NavbarSearch },
+    chrome: { template, branding, footerSettings, shopEnabled, locale, Navbar, Footer, NavbarSearch },
     footerHydration,
   } = await timeDevMetric("static.chromeBundle", () => getStorefrontChromeBundle(), {
     category: "page-data",
@@ -57,7 +57,7 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
     "static.dataBundle",
     () =>
       Promise.all([
-        getRequestPageContent(template.manifest.id, `page:${slugStr}`),
+        getRequestPageContent(template.manifest.id, `page:${slugStr}`, locale),
         resolveStorefrontFooterContact(template),
       ]),
     {
@@ -75,6 +75,7 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
         logoSrc={branding.logoNav}
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
+        locale={locale}
       />
       <Render
         content={content}
@@ -99,6 +100,7 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
+        locale={locale}
       />
     </>
   )

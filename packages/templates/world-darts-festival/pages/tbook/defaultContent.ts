@@ -53,3 +53,54 @@ export const tBookSuccessDefaultContent: TBookSuccessContent = {
   errorCta: "Home",
   meta: { seoTitle: "Booking confirmed", seoDescription: "" },
 }
+
+/** Hungarian fallbacks — used only when no `page:jegyek@hu` / `page:tbook-foglalas@hu` / `page:tbook-foglalas-siker@hu` document exists yet. */
+export const tBookListDefaultContentHu: TBookListContent = {
+  pageTitle: "Nevezés és események",
+  pageIntro:
+    "Válassz egy eseményt, add meg a résztvevők adatait, és fizess biztonságosan online. A szállás opcionális.",
+  emptyTitle: "Jelenleg nincs elérhető esemény",
+  emptyBody:
+    "Hamarosan itt jelennek meg az események. Nézz vissza később, vagy vedd fel velünk a kapcsolatot a kapcsolatfelvételi űrlapon.",
+  bookCta: "Foglalás most",
+  perPerson: "/ fő",
+  perBooking: "/ foglalás",
+  meta: { seoTitle: "Nevezés", seoDescription: "" },
+}
+
+export const tBookBookingDefaultContentHu: TBookBookingContent = {
+  stepTicket: "Nevezés és szállás",
+  stepDetails: "Adataid",
+  stepReview: "Fizetés",
+  guestsLabel: "Nevezések száma",
+  hotelLabel: "Szállás",
+  hotelNone: "Csak nevezés (szállás nélkül)",
+  nightsLabel: "Éjszakák száma",
+  roomTypeLabel: "Szobatípus",
+  customerHeading: "Kapcsolattartó",
+  customerHint:
+    "A foglalást és a fizetést intéző személy — vele e-mailben vesszük fel a kapcsolatot.",
+  attendeesHeading: "Résztvevők adatai",
+  attendeesHint: "Kérjük, add meg minden, a foglalásban szereplő résztvevő adatait.",
+  quoteCta: "Áttekintés",
+  payCta: "Tovább a fizetéshez",
+  payLoading: "Átirányítás…",
+  backLabel: "Vissza",
+  nextLabel: "Tovább",
+  reviewHeading: "Összegzés",
+  totalLabel: "Összesen",
+  loadingEvent: "Esemény betöltése…",
+  eventError: "Nem sikerült betölteni ezt az eseményt.",
+  meta: { seoTitle: "Foglalás", seoDescription: "" },
+}
+
+export const tBookSuccessDefaultContentHu: TBookSuccessContent = {
+  loadingText: "Fizetés megerősítése…",
+  successTitle: "Foglalás megerősítve!",
+  successBody: "Köszönjük! Hamarosan érkezik egy visszaigazoló e-mail. Hivatkozás: {bookingId}",
+  successCta: "Vissza a főoldalra",
+  errorBody:
+    "Nem sikerült megerősíteni a fizetést. Ha megterhelték a kártyádat, kérjük, vedd fel velünk a kapcsolatot a kapcsolatfelvételi űrlapon.",
+  errorCta: "Főoldal",
+  meta: { seoTitle: "Foglalás megerősítve", seoDescription: "" },
+}

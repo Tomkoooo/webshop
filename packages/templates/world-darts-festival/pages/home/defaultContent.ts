@@ -152,3 +152,156 @@ export const homeDefaultContent: HomeContent = {
     seoDescription: "Book entries and register for the World Darts Festival in Budapest.",
   },
 }
+
+/** Hungarian fallback — used only when no `page:home@hu` document exists yet. */
+export const homeDefaultContentHu: HomeContent = {
+  chrome: {
+    tbookApiKey: "",
+    navCta: {
+      enabled: true,
+      label: "Nevezés",
+      mobileLabel: "Nevezés és foglalás",
+      href: "/jegyek",
+      showIcon: true,
+    },
+    nav: [
+      { type: "link", label: "Főoldal", href: "/" },
+      {
+        type: "dropdown",
+        label: "Események",
+        items: [
+          { label: "Összes esemény", href: "/jegyek" },
+          { label: "Foglalás most", href: "/jegyek" },
+        ],
+      },
+      { type: "link", label: "Helyszín", href: "/#venue" },
+      { type: "link", label: "Program", href: "/#schedule" },
+      { type: "link", label: "Díjazás", href: "/#prize-money" },
+      { type: "link", label: "Kapcsolat", href: "/#contact" },
+    ],
+  },
+  sectionLayout: DEFAULT_WDF_SECTION_LAYOUT.map((row) => ({ ...row })),
+  hero: {
+    tagline: "World Darts Festival 2025 — Budapest, Magyarország",
+    title: "Üdvözlünk a WDF World Masters versenyen",
+    subtitle:
+      "Csatlakozz hozzánk, és légy tanúja a leendő legendák születésének a darts egyik legrangosabb versenyén — izgalmas mérkőzések, világklasszis tehetségek és felejthetetlen fesztiválhangulat.",
+    heroImage: "/generic-hero.svg",
+    primaryCtaLabel: "Foglalás és nevezés",
+    primaryCtaHref: "/jegyek",
+    secondaryCtaLabel: "Nevezés",
+    secondaryCtaHref: "/jegyek",
+  },
+  festival: {
+    title: "2025 World Darts Festival",
+    body:
+      "A sikeres 2024-es év után Magyarország ismét büszkén ad otthont a World Darts Federation legrangosabb versenyeinek 2025-ben — a World Championship Qualifiernek és a World Mastersnek. Bemutatjuk a World Darts Festivalt — a darts eddig soha nem látott, 9 napos ünnepét!",
+    image: "/generic-hero.svg",
+    ctaLabel: "Nevezés",
+    ctaHref: "/jegyek",
+  },
+  infoCards: [
+    {
+      title: "Fontos információk",
+      body: "Olvasd el a nevezéssel, szabályokkal és a játékformátummal kapcsolatos részletes tudnivalókat. Minden, amit tudnod kell, egy kattintásra van.",
+      ctaLabel: "Tovább olvasom",
+      ctaHref: "/fontos-informaciok",
+    },
+    {
+      title: "Rajta vagy a listán?",
+      body: "Nézd meg a hivatalos nevezési listákat, és győződj meg róla, hogy szerepelsz rajtuk. A feltüntetett dátum mutatja, mikor frissült utoljára a lista.",
+      ctaLabel: "Keresd meg a neved",
+      ctaHref: "/jegyek",
+    },
+  ],
+  venue: {
+    heading: "Helyszín",
+    name: "Gerevich Aladár Nemzeti Sportcsarnok",
+    body:
+      "Budapest szívében található a Gerevich Aladár Nemzeti Sportcsarnok, amely elsőrangú helyszínt biztosít sportolóknak és szurkolóknak egyaránt. A legendás magyar vívóról elnevezett létesítmény számos hazai és nemzetközi rendezvénynek ad otthont.",
+    accessHeading: "Könnyű megközelíthetőség",
+    accessBody:
+      "A városközponthoz közel elhelyezkedő csarnok könnyen megközelíthető tömegközlekedéssel, busszal, villamossal és metróval egyaránt.",
+    mapLabel: "Mutasd a térképen",
+    mapHref: "https://maps.google.com/?q=Gerevich+Aladár+National+Sports+Hall+Budapest",
+    mapEmbedUrl: "",
+    image: "/generic-hero.svg",
+  },
+  schedule: {
+    heading: "Program",
+    days: [
+      {
+        date: "Október 25. — szombat",
+        title: "Hungarian Open",
+        items: ["10:00 — Hungarian Masters — WDF Gold Category", "Férfi · Női · Fiú · Lány"],
+      },
+      {
+        date: "Október 29. — szerda",
+        title: "World Masters",
+        items: ["Csoportkör — Férfi · Női · Para", "WDP World Masters"],
+      },
+      {
+        date: "November 2. — vasárnap",
+        title: "WDF World Championship Qualifier",
+        items: ["Minden kategória"],
+      },
+    ],
+  },
+  fees: {
+    heading: "Nevezési és adminisztrációs díjak",
+    items: [
+      { label: "WDF World Masters felnőtt", price: "€40", badge: "WDF Platinum" },
+      { label: "WDF World Open felnőtt", price: "€35", badge: "WDF Silver" },
+      { label: "Lakeside Qualifier felnőtt", price: "€40", badge: "" },
+      { label: "Diamonds Cup páros felnőtt", price: "€60/pár", badge: "" },
+    ],
+    ctaLabel: "Nevezz most",
+    ctaHref: "/jegyek",
+  },
+  prizeMoney: {
+    heading: "Díjazás",
+    intro: "A World Darts Festival egyes versenyeinek díjtáblázatai.",
+    tables: [
+      {
+        title: "WDF World Masters",
+        subtitle: "Díjazás — €3700",
+        headers: ["Helyezés", "Férfi", "Női", "Para"],
+        rows: [
+          ["Győztes", "€5,000", "€3,500", "€1,500"],
+          ["Döntős", "€2,500", "€1,750", "€750"],
+          ["Elődöntős", "€1,000", "€750", "€350"],
+        ],
+      },
+      {
+        title: "Hungarian Open",
+        subtitle: "",
+        headers: ["Helyezés", "Férfi", "Női"],
+        rows: [
+          ["Győztes", "€2,000", "€1,500"],
+          ["Döntős", "€1,000", "€750"],
+          ["Elődöntős", "€500", "€350"],
+        ],
+      },
+    ],
+  },
+  sponsors: {
+    heading: "Szponzorok és partnerek",
+    logos: [
+      { name: "Partner 1", image: "/placeholder.png" },
+      { name: "Partner 2", image: "/placeholder.png" },
+      { name: "Partner 3", image: "/placeholder.png" },
+    ],
+  },
+  contact: {
+    heading: "Lépj kapcsolatba a szervezővel",
+    body: "Kérdésed van a nevezéssel, a jegyekkel vagy az eseménnyel kapcsolatban? Küldj nekünk üzenetet, és amint tudunk, válaszolunk.",
+    nameLabel: "Név",
+    emailLabel: "E-mail",
+    messageLabel: "Üzenet",
+    sendButtonLabel: "Üzenet küldése",
+  },
+  meta: {
+    seoTitle: "World Darts Festival",
+    seoDescription: "Foglalj nevezést és regisztrálj a budapesti World Darts Festivalra.",
+  },
+}
