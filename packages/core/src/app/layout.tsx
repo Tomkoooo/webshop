@@ -136,6 +136,7 @@ export default async function RootLayout({
   const popupCampaigns = adminChrome
     ? []
     : await PopupCampaignService.getActiveForStorefront();
+  const localeConfig = getSiteLocaleConfig();
 
   return (
     <html
@@ -167,6 +168,9 @@ export default async function RootLayout({
           popupCampaigns={popupCampaigns}
           shopEnabled={isShopEnabled()}
           adminChrome={adminChrome}
+          locale={requestLocale}
+          defaultLocale={localeConfig?.default ?? "en"}
+          localesEnabled={Boolean(localeConfig)}
         >
           {children}
           <Toaster position="bottom-right" />

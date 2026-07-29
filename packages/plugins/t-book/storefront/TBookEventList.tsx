@@ -1,10 +1,9 @@
 "use client"
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Calendar, Check, MapPin, Ticket } from "lucide-react"
 import { mediaImageSrc } from "@wse/core/lib/images"
+import { LocaleLink, useLocaleNavigate } from "@wse/core/lib/locale-navigation"
 import {
   formatHuf,
   listEvents,
@@ -43,7 +42,7 @@ export function TBookEventList({
   variant?: TBookListVariant
   locale?: string
 }) {
-  const router = useRouter()
+  const navigate = useLocaleNavigate()
   const serverProvided = initialEvents !== undefined
   const [events, setEvents] = useState<TBookPublicEvent[]>(initialEvents ?? [])
   const [currency, setCurrency] = useState(currencyProp)
@@ -60,10 +59,10 @@ export function TBookEventList({
   const continueWithSelection = () => {
     if (selectedIds.length === 0) return
     if (selectedIds.length === 1) {
-      router.push(`/foglalas/${selectedIds[0]}`)
+      navigate(`/foglalas/${selectedIds[0]}`)
       return
     }
-    router.push(`/foglalas/${selectedIds[0]}?events=${selectedIds.join(",")}`)
+    navigate(`/foglalas/${selectedIds[0]}?events=${selectedIds.join(",")}`)
   }
 
   useEffect(() => {
@@ -229,7 +228,7 @@ export function TBookEventList({
                 <p className="text-sm font-semibold text-primary">
                   {formatHuf(event.ticketFeeHuf, event.currency ?? currency)} {feeLabel}
                 </p>
-                <Link
+                <LocaleLink
                   href={`/foglalas/${event.id}`}
                   className={
                     variant === "wdf"
@@ -238,7 +237,7 @@ export function TBookEventList({
                   }
                 >
                   {tbookT(locale, "bookThisEventOnly")}
-                </Link>
+                </LocaleLink>
               </div>
             </article>
           )

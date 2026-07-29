@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, BedDouble, Loader2 } from "lucide-react"
 import { StorefrontRichHtml } from "@wse/core/components/common/StorefrontRichHtml"
@@ -1419,9 +1419,9 @@ export function TBookMultiBookingWizard({
     return (
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
         <p className="font-medium text-destructive">{error}</p>
-        <Link href="/jegyek" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
+        <LocaleLink href="/jegyek" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
           ← Back to events
-        </Link>
+        </LocaleLink>
       </div>
     )
   }
@@ -1461,13 +1461,13 @@ export function TBookMultiBookingWizard({
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="space-y-4">
-        <Link
+        <LocaleLink
           href="/jegyek"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
           {tbookT(locale, "backToEvents")}
-        </Link>
+        </LocaleLink>
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">{tbookT(locale, "bookMultipleEvents")}</h1>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">

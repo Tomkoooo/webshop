@@ -1,15 +1,15 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { ChevronDown, Menu, Ticket, X } from "lucide-react"
 import { FallbackImage } from "@wse/core/components/common/FallbackImage"
 import { mediaImageSrc } from "@wse/core/lib/images"
 import { cn } from "@wse/core/lib/utils"
+import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
-import { LOCALE_COOKIE, localizeHref } from "@wse/sdk/i18n/constants"
+import { LOCALE_COOKIE, localeSwitchPath, stripLocalePrefix } from "@wse/sdk/i18n/constants"
 
 /** Locale-aware fallback for the ticket CTA when a route (e.g. static pages) has no CMS navCta. */
 const DEFAULT_NAV_CTA_BY_LOCALE: Record<string, ChromeNavCta> = {
@@ -48,40 +48,26 @@ const NAV_STRINGS: Record<string, {
 
 /** Locales the WDF chrome supports; keep in sync with `manifest.locales` in `template.config.ts`. */
 const WDF_SUPPORTED_LOCALES = ["en", "hu"] as const
+const WDF_DEFAULT_LOCALE = "en"
 const LOCALE_LABEL: Record<string, string> = { en: "EN", hu: "HU" }
-
-/** Swaps the leading `/<locale>` path segment (adding/removing it as needed) for the language switcher. */
-function localeSwitchHref(pathname: string, fromLocale: string, toLocale: string): string {
-  let rest = pathname
-  for (const locale of WDF_SUPPORTED_LOCALES) {
-    const prefix = `/${locale}`
-    if (pathname === prefix) {
-      rest = "/"
-      break
-    }
-    if (pathname.startsWith(`${prefix}/`)) {
-      rest = pathname.slice(prefix.length)
-      break
-    }
-  }
-  if (toLocale === "en") return rest
-  return rest === "/" ? `/${toLocale}` : `/${toLocale}${rest}`
-}
 
 /** 1 year, matching the middleware's `wse_locale` cookie lifetime. */
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-function LanguageSwitcher({ locale, pathname, className }: { locale: string; pathname: string; className?: string }) {
+function LanguageSwitcher({ locale, className }: { locale: string; className?: string }) {
   const switchTo = (toLocale: string) => {
-    // A plain client-side <Link> soft-navigation here can end up reusing the previous
-    // route's cached render (both "/" and "/hu" resolve to the same underlying page after
-    // the middleware rewrite), leaving stale-language content under the new URL until a
-    // second navigation. A hard navigation always re-runs the middleware and re-renders
-    // from scratch, so the switch is correct on the first click. Setting the cookie here
-    // (not just relying on the middleware) also means this explicit choice always wins,
-    // even before the server has a chance to see it.
+    // Soft Next.js navigations collide with middleware rewrites (`/hu` → `/`), so the RSC
+    // cache can leave stale language under the new URL. Always hard-navigate, and force a
+    // reload when the target path equals the current browser path (same-URL assign is a no-op).
+    const pathname = window.location.pathname
+    const search = window.location.search
+    const targetPath = localeSwitchPath(pathname, toLocale, WDF_SUPPORTED_LOCALES, WDF_DEFAULT_LOCALE)
     document.cookie = `${LOCALE_COOKIE}=${toLocale}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; SameSite=Lax`
-    window.location.href = localeSwitchHref(pathname, locale, toLocale)
+    if (pathname === targetPath) {
+      window.location.reload()
+      return
+    }
+    window.location.assign(`${targetPath}${search}`)
   }
 
   return (
@@ -92,16 +78,13 @@ function LanguageSwitcher({ locale, pathname, className }: { locale: string; pat
           {loc === locale ? (
             <span className="text-primary">{LOCALE_LABEL[loc]}</span>
           ) : (
-            <a
-              href={localeSwitchHref(pathname, locale, loc)}
+            <button
+              type="button"
               className="text-foreground/70 hover:text-primary"
-              onClick={(event) => {
-                event.preventDefault()
-                switchTo(loc)
-              }}
+              onClick={() => switchTo(loc)}
             >
               {LOCALE_LABEL[loc]}
-            </a>
+            </button>
           )}
         </span>
       ))}
@@ -166,7 +149,7 @@ function NavDropdown({
             className="min-w-[220px] rounded-lg border border-border bg-background py-2 shadow-xl"
           >
             {items.map((item) => (
-              <Link
+              <LocaleLink
                 key={`${item.href}-${item.label}`}
                 href={item.href}
                 role="menuitem"
@@ -177,7 +160,7 @@ function NavDropdown({
                 className="block min-h-11 px-4 py-2.5 text-sm text-foreground/90 hover:bg-muted hover:text-primary"
               >
                 {item.label}
-              </Link>
+              </LocaleLink>
             ))}
           </div>
         </div>
@@ -212,14 +195,14 @@ function MobileNavGroup({
       {open ? (
         <div id={panelId} role="group" aria-labelledby={`${panelId}-btn`} className="space-y-1 border-t border-border/60 px-2 pb-3 pt-1">
           {item.items.map((link) => (
-            <Link
+            <LocaleLink
               key={`${link.href}-${link.label}`}
               href={link.href}
               onClick={onNavigate}
               className="flex min-h-11 items-center rounded-md px-3 text-sm hover:bg-background hover:text-primary"
             >
               {link.label}
-            </Link>
+            </LocaleLink>
           ))}
         </div>
       ) : null}
@@ -248,7 +231,7 @@ function NavCtaButton({
   const displayLabel = variant === "mobile" ? mobileLabel : label
 
   return (
-    <Link
+    <LocaleLink
       href={href}
       onClick={onNavigate}
       className={cn(
@@ -261,7 +244,7 @@ function NavCtaButton({
     >
       {cta.showIcon ? <Ticket className="size-4" aria-hidden /> : null}
       {displayLabel}
-    </Link>
+    </LocaleLink>
   )
 }
 
@@ -277,26 +260,12 @@ export function Navbar({
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const mobilePanelId = useId()
-  const isHome = pathname === "/"
-  const rawItems = navItems?.length ? navItems : FALLBACK_NAV_BY_LOCALE[locale] ?? FALLBACK_NAV_BY_LOCALE.en
-  const rawCta = { ...(DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta), ...navCta }
+  const stripped = stripLocalePrefix(pathname, WDF_SUPPORTED_LOCALES)
+  const basePath = stripped?.rest ?? pathname
+  const isHome = basePath === "/"
+  const items = navItems?.length ? navItems : FALLBACK_NAV_BY_LOCALE[locale] ?? FALLBACK_NAV_BY_LOCALE.en
+  const cta = { ...(DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta), ...navCta }
   const strings = NAV_STRINGS[locale] ?? NAV_STRINGS.en
-
-  // Internal hrefs (nav items, CTA, "back to" links) are stored/authored without a locale
-  // prefix — localize them at render time so browsing the Hungarian site doesn't silently
-  // drop back to English on the next click.
-  const items: ChromeNavItem[] = rawItems.map((item) =>
-    item.type === "dropdown"
-      ? { ...item, items: item.items.map((link) => ({ ...link, href: localizeHref(link.href, locale) })) }
-      : { ...item, href: localizeHref(item.href, locale) }
-  )
-  const cta: ChromeNavCta = {
-    ...rawCta,
-    href: localizeHref(
-      rawCta.href.trim() || (DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta).href,
-      locale
-    ),
-  }
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -322,7 +291,7 @@ export function Navbar({
   const navLinkClass = (href: string) =>
     cn(
       "inline-flex min-h-10 items-center rounded-md px-2 text-sm font-medium hover:text-primary",
-      pathname === href ? "text-primary" : isHome && !cmsChromePreview ? "text-foreground/90" : "text-foreground/90"
+      basePath === href ? "text-primary" : "text-foreground/90"
     )
 
   return (
@@ -337,7 +306,7 @@ export function Navbar({
         )}
       >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href={localizeHref("/", locale)} className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
+        <LocaleLink href="/" className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
           {logoSrc ? (
             <FallbackImage
               src={mediaImageSrc(logoSrc)}
@@ -349,7 +318,7 @@ export function Navbar({
           ) : (
             <span className="text-sm font-bold uppercase tracking-[0.15em]">{brandName}</span>
           )}
-        </Link>
+        </LocaleLink>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label={strings.mainNav}>
           {items.map((item) =>
@@ -361,13 +330,13 @@ export function Navbar({
                 light={isHome && !cmsChromePreview}
               />
             ) : (
-              <Link key={item.href} href={item.href} className={navLinkClass(item.href)}>
+              <LocaleLink key={item.href} href={item.href} className={navLinkClass(item.href)}>
                 {item.label}
-              </Link>
+              </LocaleLink>
             )
           )}
           <NavCtaButton cta={cta} variant="desktop" className="ml-2" cmsChromePreview={cmsChromePreview} />
-          {!cmsChromePreview ? <LanguageSwitcher locale={locale} pathname={pathname} className="ml-2" /> : null}
+          {!cmsChromePreview ? <LanguageSwitcher locale={locale} className="ml-2" /> : null}
         </nav>
 
         <button
@@ -403,14 +372,14 @@ export function Navbar({
                 item.type === "dropdown" ? (
                   <MobileNavGroup key={item.label} item={item} onNavigate={closeMobile} />
                 ) : (
-                  <Link
+                  <LocaleLink
                     key={item.href}
                     href={item.href}
                     onClick={closeMobile}
                     className="flex min-h-11 items-center rounded-md px-3 text-sm font-medium hover:bg-muted"
                   >
                     {item.label}
-                  </Link>
+                  </LocaleLink>
                 )
               )}
               <NavCtaButton
@@ -420,7 +389,7 @@ export function Navbar({
                 cmsChromePreview={cmsChromePreview}
                 onNavigate={closeMobile}
               />
-              <LanguageSwitcher locale={locale} pathname={pathname} className="mt-2 justify-center" />
+              <LanguageSwitcher locale={locale} className="mt-2 justify-center" />
             </div>
           </nav>
         </>

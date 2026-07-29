@@ -2,38 +2,13 @@
 
 import { useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
-import Link from "next/link"
 import { useCmsEdit } from "@wse/core/features/homepage-cms/components/editor/cms-edit-context"
 import type { HomepageBlock } from "@wse/core/features/homepage-cms/types/block-types"
 import { Button } from "@wse/core/components/ui/button"
 import { cn } from "@wse/core/lib/utils"
-import { resolveCmsHref } from "@wse/core/lib/cms-href"
+import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { CmsLinkEditPanel } from "@wse/core/features/template-cms/primitives/CmsLinkEditPanel"
 import { useCmsFloatingPanel } from "@wse/core/features/template-cms/primitives/useCmsFloatingPanel"
-
-function StorefrontInlineLink({
-  href,
-  className,
-  children,
-}: {
-  href: string
-  className?: string
-  children: ReactNode
-}) {
-  const resolved = resolveCmsHref(href)
-  if (resolved.external) {
-    return (
-      <a href={resolved.href} className={className} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    )
-  }
-  return (
-    <Link href={resolved.href || "#"} className={className}>
-      {children}
-    </Link>
-  )
-}
 
 export function EditableLinkInline({
   blockType,
@@ -82,16 +57,16 @@ export function EditableLinkInline({
   if (!cms.enabled) {
     if (appearance === "link") {
       return (
-        <StorefrontInlineLink href={href || "#"} className={className}>
+        <LocaleLink href={href || "#"} className={className}>
           {label}
           {suffix}
-        </StorefrontInlineLink>
+        </LocaleLink>
       )
     }
     return (
-      <StorefrontInlineLink href={href || "#"} className={className}>
+      <LocaleLink href={href || "#"} className={className}>
         <Button variant={buttonVariant}>{label}</Button>
-      </StorefrontInlineLink>
+      </LocaleLink>
     )
   }
 

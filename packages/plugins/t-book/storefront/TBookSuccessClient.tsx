@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { useEffect, useMemo, useState } from "react"
 import { CheckCircle2, Download, Loader2, XCircle } from "lucide-react"
 import { useSearchParams } from "next/navigation"
@@ -163,12 +163,12 @@ export function TBookSuccessClient({ copy, locale }: { copy: Copy; locale?: stri
         <p className="mt-3 text-muted-foreground">
           {tbookT(locale, "paymentCancelledBody")}
         </p>
-        <Link
+        <LocaleLink
           href="/jegyek"
           className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           {tbookT(locale, "backToEvents")}
-        </Link>
+        </LocaleLink>
       </div>
     )
   }
@@ -177,12 +177,12 @@ export function TBookSuccessClient({ copy, locale }: { copy: Copy; locale?: stri
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
         <p className="text-destructive">{checkout?.error ?? copy.errorBody}</p>
-        <Link
+        <LocaleLink
           href="/"
           className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
         >
           {copy.errorCta}
-        </Link>
+        </LocaleLink>
       </div>
     )
   }
@@ -243,12 +243,12 @@ export function TBookSuccessClient({ copy, locale }: { copy: Copy; locale?: stri
         </p>
       )}
 
-      <Link
+      <LocaleLink
         href={backHref}
         className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
       >
         {backLabel}
-      </Link>
+      </LocaleLink>
     </div>
   )
 }
