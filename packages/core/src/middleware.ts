@@ -6,6 +6,7 @@ import { isPluginAdminPath, parsePluginAdminPath } from "@wse/core/lib/features/
 import { isPluginAllowlistedForDeployment } from "@wse/core/config/deployments-registry"
 import { getSiteLocaleConfig } from "@wse/core/lib/site-features"
 import { LOCALE_HEADER, stripLocalePrefix } from "@wse/core/lib/locale"
+import { LOCALE_COOKIE } from "@wse/sdk/i18n/constants"
 import { isCampOnlyBlockedPath, isCampOnlyStorefront } from "@wse/core/lib/features/camp-storefront"
 import {
   isPressKitPathForDeployment,
@@ -15,10 +16,33 @@ import {
 const { auth } = NextAuth(authConfig)
 const PUBLIC_FILE_REGEX = /\.[^/]+$/
 
+const LOCALE_COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: "lax" as const,
+}
+
 function nextWithPathname(req: Parameters<Parameters<typeof auth>[0]>[0]) {
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set("x-pathname", req.nextUrl.pathname)
   return NextResponse.next({ request: { headers: requestHeaders } })
+}
+
+/**
+ * Builds an absolute same-origin URL from the actual incoming Host header rather than
+ * `req.nextUrl.clone()` — in some dev/deploy setups `nextUrl`'s origin can pick up an
+ * unrelated canonical URL (e.g. a mismatched AUTH_URL), which turns a rewrite or redirect
+ * into an accidental cross-origin hop instead of staying on the real serving origin.
+ */
+function sameOriginUrl(
+  req: Parameters<Parameters<typeof auth>[0]>[0],
+  pathname: string,
+  search?: string
+): URL {
+  const host = req.headers.get("host") ?? req.nextUrl.host
+  const url = new URL(pathname, `${req.nextUrl.protocol}//${host}`)
+  if (search) url.search = search
+  return url
 }
 
 function isConfiguredMaintenanceEnabled(): boolean {
@@ -105,22 +129,58 @@ export const storefrontMiddleware = auth(async (req) => {
    * `/...` route tree (no new route files anywhere) while the browser URL stays `/hu/...`;
    * the resolved locale travels downstream via the `x-wse-locale` header. The default locale
    * keeps its unprefixed URL, so existing links/bookmarks are untouched.
+   *
+   * A `wse_locale` cookie remembers the visitor's last-resolved locale so new tabs, bookmarks,
+   * and typed URLs to the unprefixed site don't reset to the default language: an explicit
+   * URL prefix always wins and re-syncs the cookie; an unprefixed request instead redirects
+   * to the cookie's locale when it differs from the default.
    */
   const localeConfig = getSiteLocaleConfig()
   if (localeConfig) {
     const match = stripLocalePrefix(pathname, localeConfig.supported)
+    // Admin/auth must stay unprefixed and must not rewrite the visitor's language cookie.
+    const skipStorefrontLocale = isAdminPath || pathname.startsWith("/auth")
+
     if (match && match.locale !== localeConfig.default) {
-      // Build the rewrite target from the actual incoming Host header rather than
-      // `req.nextUrl.clone()` — in some dev setups `nextUrl`'s origin can pick up an
-      // unrelated canonical URL (e.g. a mismatched AUTH_URL), which turns the rewrite
-      // into an accidental cross-origin proxy fetch instead of an in-process rewrite.
-      const host = req.headers.get("host") ?? req.nextUrl.host
-      const url = new URL(match.rest, `${req.nextUrl.protocol}//${host}`)
-      url.search = req.nextUrl.search
+      const url = sameOriginUrl(req, match.rest, req.nextUrl.search)
       const requestHeaders = new Headers(req.headers)
       requestHeaders.set("x-pathname", pathname)
       requestHeaders.set(LOCALE_HEADER, match.locale)
-      return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+      const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+      res.cookies.set(LOCALE_COOKIE, match.locale, LOCALE_COOKIE_OPTIONS)
+      return res
+    }
+
+    // `/en/...` when `en` is the default — canonicalize to the unprefixed URL and sync cookie.
+    if (match && match.locale === localeConfig.default) {
+      const target = sameOriginUrl(
+        req,
+        match.rest,
+        req.nextUrl.search
+      )
+      const res = NextResponse.redirect(target)
+      res.cookies.set(LOCALE_COOKIE, localeConfig.default, LOCALE_COOKIE_OPTIONS)
+      return res
+    }
+
+    if (!match && !skipStorefrontLocale) {
+      const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value
+      if (
+        cookieLocale &&
+        cookieLocale !== localeConfig.default &&
+        localeConfig.supported.includes(cookieLocale)
+      ) {
+        const target = sameOriginUrl(
+          req,
+          `/${cookieLocale}${pathname === "/" ? "" : pathname}`,
+          req.nextUrl.search
+        )
+        return NextResponse.redirect(target)
+      }
+
+      const res = nextWithPathname(req)
+      res.cookies.set(LOCALE_COOKIE, localeConfig.default, LOCALE_COOKIE_OPTIONS)
+      return res
     }
   }
 

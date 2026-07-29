@@ -9,6 +9,7 @@ import { mediaImageSrc } from "@wse/core/lib/images"
 import { cn } from "@wse/core/lib/utils"
 import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
+import { LOCALE_COOKIE, localizeHref } from "@wse/sdk/i18n/constants"
 
 /** Locale-aware fallback for the ticket CTA when a route (e.g. static pages) has no CMS navCta. */
 const DEFAULT_NAV_CTA_BY_LOCALE: Record<string, ChromeNavCta> = {
@@ -67,7 +68,22 @@ function localeSwitchHref(pathname: string, fromLocale: string, toLocale: string
   return rest === "/" ? `/${toLocale}` : `/${toLocale}${rest}`
 }
 
+/** 1 year, matching the middleware's `wse_locale` cookie lifetime. */
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+
 function LanguageSwitcher({ locale, pathname, className }: { locale: string; pathname: string; className?: string }) {
+  const switchTo = (toLocale: string) => {
+    // A plain client-side <Link> soft-navigation here can end up reusing the previous
+    // route's cached render (both "/" and "/hu" resolve to the same underlying page after
+    // the middleware rewrite), leaving stale-language content under the new URL until a
+    // second navigation. A hard navigation always re-runs the middleware and re-renders
+    // from scratch, so the switch is correct on the first click. Setting the cookie here
+    // (not just relying on the middleware) also means this explicit choice always wins,
+    // even before the server has a chance to see it.
+    document.cookie = `${LOCALE_COOKIE}=${toLocale}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; SameSite=Lax`
+    window.location.href = localeSwitchHref(pathname, locale, toLocale)
+  }
+
   return (
     <div className={cn("flex items-center gap-1 text-xs font-semibold", className)}>
       {WDF_SUPPORTED_LOCALES.map((loc, index) => (
@@ -76,9 +92,16 @@ function LanguageSwitcher({ locale, pathname, className }: { locale: string; pat
           {loc === locale ? (
             <span className="text-primary">{LOCALE_LABEL[loc]}</span>
           ) : (
-            <Link href={localeSwitchHref(pathname, locale, loc)} className="text-foreground/70 hover:text-primary">
+            <a
+              href={localeSwitchHref(pathname, locale, loc)}
+              className="text-foreground/70 hover:text-primary"
+              onClick={(event) => {
+                event.preventDefault()
+                switchTo(loc)
+              }}
+            >
               {LOCALE_LABEL[loc]}
-            </Link>
+            </a>
           )}
         </span>
       ))}
@@ -255,9 +278,25 @@ export function Navbar({
   const [mobileOpen, setMobileOpen] = useState(false)
   const mobilePanelId = useId()
   const isHome = pathname === "/"
-  const items = navItems?.length ? navItems : FALLBACK_NAV_BY_LOCALE[locale] ?? FALLBACK_NAV_BY_LOCALE.en
-  const cta = { ...(DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta), ...navCta }
+  const rawItems = navItems?.length ? navItems : FALLBACK_NAV_BY_LOCALE[locale] ?? FALLBACK_NAV_BY_LOCALE.en
+  const rawCta = { ...(DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta), ...navCta }
   const strings = NAV_STRINGS[locale] ?? NAV_STRINGS.en
+
+  // Internal hrefs (nav items, CTA, "back to" links) are stored/authored without a locale
+  // prefix — localize them at render time so browsing the Hungarian site doesn't silently
+  // drop back to English on the next click.
+  const items: ChromeNavItem[] = rawItems.map((item) =>
+    item.type === "dropdown"
+      ? { ...item, items: item.items.map((link) => ({ ...link, href: localizeHref(link.href, locale) })) }
+      : { ...item, href: localizeHref(item.href, locale) }
+  )
+  const cta: ChromeNavCta = {
+    ...rawCta,
+    href: localizeHref(
+      rawCta.href.trim() || (DEFAULT_NAV_CTA_BY_LOCALE[locale] ?? defaultNavCta).href,
+      locale
+    ),
+  }
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -298,7 +337,7 @@ export function Navbar({
         )}
       >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
+        <Link href={localizeHref("/", locale)} className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
           {logoSrc ? (
             <FallbackImage
               src={mediaImageSrc(logoSrc)}

@@ -13,6 +13,8 @@ import type {
   FooterOrganizerSection,
 } from "@wse/core/services/footer-settings"
 import type { ChromeProps, SiteContactEntry } from "@wse/sdk/templates/types"
+import { localizeHref } from "@wse/sdk/i18n/constants"
+import { resolveCmsHref } from "@wse/core/lib/cms-href"
 
 const WDF_DEFAULT_QUICK_LINKS_BY_LOCALE: Record<string, ReadonlyArray<{ label: string; href: string }>> = {
   en: [
@@ -408,12 +410,29 @@ export function Footer({
                       />
                     </div>
                   ) : (
-                    <Link
-                      href={item.href}
-                      className="block text-muted-foreground hover:text-primary"
-                    >
-                      {item.label}
-                    </Link>
+                    (() => {
+                      const resolved = resolveCmsHref(localizeHref(item.href, locale))
+                      if (resolved.external) {
+                        return (
+                          <a
+                            href={resolved.href}
+                            className="block text-muted-foreground hover:text-primary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {item.label}
+                          </a>
+                        )
+                      }
+                      return (
+                        <Link
+                          href={resolved.href}
+                          className="block text-muted-foreground hover:text-primary"
+                        >
+                          {item.label}
+                        </Link>
+                      )
+                    })()
                   )}
                 </li>
               ))}
