@@ -9,7 +9,7 @@ import { cn } from "@wse/core/lib/utils"
 import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
-import { LOCALE_COOKIE, localeSwitchPath, stripLocalePrefix } from "@wse/sdk/i18n/constants"
+import { localeSwitchPath, stripLocalePrefix } from "@wse/sdk/i18n/constants"
 
 /** Locale-aware fallback for the ticket CTA when a route (e.g. static pages) has no CMS navCta. */
 const DEFAULT_NAV_CTA_BY_LOCALE: Record<string, ChromeNavCta> = {
@@ -51,23 +51,20 @@ const WDF_SUPPORTED_LOCALES = ["en", "hu"] as const
 const WDF_DEFAULT_LOCALE = "en"
 const LOCALE_LABEL: Record<string, string> = { en: "EN", hu: "HU" }
 
-/** 1 year, matching the middleware's `wse_locale` cookie lifetime. */
-const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-
 function LanguageSwitcher({ locale, className }: { locale: string; className?: string }) {
   const switchTo = (toLocale: string) => {
-    // Soft Next.js navigations collide with middleware rewrites (`/hu` → `/`), so the RSC
-    // cache can leave stale language under the new URL. Always hard-navigate, and force a
-    // reload when the target path equals the current browser path (same-URL assign is a no-op).
+    // Hard navigation only — soft Link + middleware rewrite share one App Router page and
+    // stale RSC payloads. Target path always includes an explicit locale prefix (including
+    // `/en/...` for the default) so middleware can sync `wse_locale` from the URL first.
     const pathname = window.location.pathname
     const search = window.location.search
     const targetPath = localeSwitchPath(pathname, toLocale, WDF_SUPPORTED_LOCALES, WDF_DEFAULT_LOCALE)
-    document.cookie = `${LOCALE_COOKIE}=${toLocale}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; SameSite=Lax`
+    const target = `${targetPath}${search}`
     if (pathname === targetPath) {
       window.location.reload()
       return
     }
-    window.location.assign(`${targetPath}${search}`)
+    window.location.assign(target)
   }
 
   return (

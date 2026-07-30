@@ -45,7 +45,12 @@ export function localizeHref(
 
 /**
  * Builds a locale-switch target from the current browser pathname (may already include
- * a `/hu` prefix). Default locale stays unprefixed.
+ * a `/hu` prefix).
+ *
+ * Non-default locales use `/<locale>/...`. Switching back to the default uses an explicit
+ * `/<default>/...` prefix so middleware can overwrite a stale language cookie and then
+ * canonicalize to the unprefixed URL — navigating straight to `/` while `wse_locale=hu`
+ * still redirects to `/hu` (and behind a TLS proxy that was looping).
  */
 export function localeSwitchPath(
   pathname: string,
@@ -55,6 +60,8 @@ export function localeSwitchPath(
 ): string {
   const stripped = stripLocalePrefix(pathname || "/", supported)
   const rest = stripped?.rest ?? (pathname || "/")
-  if (toLocale === defaultLocale) return rest
+  if (toLocale === defaultLocale) {
+    return rest === "/" ? `/${defaultLocale}` : `/${defaultLocale}${rest}`
+  }
   return rest === "/" ? `/${toLocale}` : `/${toLocale}${rest}`
 }

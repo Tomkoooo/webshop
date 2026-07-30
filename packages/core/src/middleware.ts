@@ -22,26 +22,33 @@ const LOCALE_COOKIE_OPTIONS = {
   sameSite: "lax" as const,
 }
 
-function nextWithPathname(req: Parameters<Parameters<typeof auth>[0]>[0]) {
+type MiddlewareReq = Parameters<Parameters<typeof auth>[0]>[0]
+
+function nextWithPathname(req: MiddlewareReq) {
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set("x-pathname", req.nextUrl.pathname)
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 /**
- * Builds an absolute same-origin URL from the actual incoming Host header rather than
- * `req.nextUrl.clone()` — in some dev/deploy setups `nextUrl`'s origin can pick up an
- * unrelated canonical URL (e.g. a mismatched AUTH_URL), which turns a rewrite or redirect
- * into an accidental cross-origin hop instead of staying on the real serving origin.
+ * Clone the incoming request URL and only change the path/search.
+ * Always prefer `x-forwarded-proto` / `x-forwarded-host` behind nginx-proxy so redirects
+ * stay on the public https origin — using `nextUrl.protocol` alone often yields `http:`
+ * internally, which with a TLS-terminating proxy becomes an infinite redirect loop.
  */
-function sameOriginUrl(
-  req: Parameters<Parameters<typeof auth>[0]>[0],
-  pathname: string,
-  search?: string
-): URL {
-  const host = req.headers.get("host") ?? req.nextUrl.host
-  const url = new URL(pathname, `${req.nextUrl.protocol}//${host}`)
-  if (search) url.search = search
+function rewriteOrRedirectUrl(req: MiddlewareReq, pathname: string): URL {
+  const url = req.nextUrl.clone()
+  url.pathname = pathname
+  url.search = req.nextUrl.search
+
+  const forwardedHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host")
+  if (forwardedHost) {
+    url.host = forwardedHost.split(",")[0]!.trim()
+  }
+  const forwardedProto = req.headers.get("x-forwarded-proto")
+  if (forwardedProto) {
+    url.protocol = `${forwardedProto.split(",")[0]!.trim()}:`
+  }
   return url
 }
 
@@ -142,22 +149,28 @@ export const storefrontMiddleware = auth(async (req) => {
     const skipStorefrontLocale = isAdminPath || pathname.startsWith("/auth")
 
     if (match && match.locale !== localeConfig.default) {
-      const url = sameOriginUrl(req, match.rest, req.nextUrl.search)
+      // Internal rewrite only — keep browser URL as `/hu/...`. Use nextUrl.clone() so we
+      // never emit an absolute http:// rewrite that nginx would bounce to https in a loop.
+      const rewriteUrl = req.nextUrl.clone()
+      rewriteUrl.pathname = match.rest
       const requestHeaders = new Headers(req.headers)
       requestHeaders.set("x-pathname", pathname)
       requestHeaders.set(LOCALE_HEADER, match.locale)
-      const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+      const res = NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
       res.cookies.set(LOCALE_COOKIE, match.locale, LOCALE_COOKIE_OPTIONS)
       return res
     }
 
     // `/en/...` when `en` is the default — canonicalize to the unprefixed URL and sync cookie.
+    // Language switcher uses this path so switching to EN always overwrites a stale `hu` cookie
+    // before the unprefixed URL is served (avoids `/` → `/hu` → `/` loops).
     if (match && match.locale === localeConfig.default) {
-      const target = sameOriginUrl(
-        req,
-        match.rest,
-        req.nextUrl.search
-      )
+      const target = rewriteOrRedirectUrl(req, match.rest)
+      if (target.pathname === pathname) {
+        const res = nextWithPathname(req)
+        res.cookies.set(LOCALE_COOKIE, localeConfig.default, LOCALE_COOKIE_OPTIONS)
+        return res
+      }
       const res = NextResponse.redirect(target)
       res.cookies.set(LOCALE_COOKIE, localeConfig.default, LOCALE_COOKIE_OPTIONS)
       return res
@@ -170,12 +183,12 @@ export const storefrontMiddleware = auth(async (req) => {
         cookieLocale !== localeConfig.default &&
         localeConfig.supported.includes(cookieLocale)
       ) {
-        const target = sameOriginUrl(
-          req,
-          `/${cookieLocale}${pathname === "/" ? "" : pathname}`,
-          req.nextUrl.search
-        )
-        return NextResponse.redirect(target)
+        const prefixed =
+          pathname === "/" ? `/${cookieLocale}` : `/${cookieLocale}${pathname}`
+        // Guard: never redirect to the same path (would loop).
+        if (prefixed !== pathname) {
+          return NextResponse.redirect(rewriteOrRedirectUrl(req, prefixed))
+        }
       }
 
       const res = nextWithPathname(req)

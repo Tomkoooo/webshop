@@ -47,8 +47,9 @@ describe("localeSwitchPath", () => {
   it("switches between default and prefixed locales from any path", () => {
     expect(localeSwitchPath("/", "hu", supported, "en")).toBe("/hu")
     expect(localeSwitchPath("/jegyek", "hu", supported, "en")).toBe("/hu/jegyek")
-    expect(localeSwitchPath("/hu", "en", supported, "en")).toBe("/")
-    expect(localeSwitchPath("/hu/jegyek", "en", supported, "en")).toBe("/jegyek")
+    // Default locale uses an explicit /en prefix so middleware can overwrite a stale cookie
+    expect(localeSwitchPath("/hu", "en", supported, "en")).toBe("/en")
+    expect(localeSwitchPath("/hu/jegyek", "en", supported, "en")).toBe("/en/jegyek")
     expect(localeSwitchPath("/hu/foglalas/x", "hu", supported, "en")).toBe("/hu/foglalas/x")
   })
 })
