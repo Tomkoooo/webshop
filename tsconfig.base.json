@@ -33,6 +33,7 @@
       "@wse/template-keramia-shared/*": ["packages/templates/keramia-shared/*"],
       "@wse/template-eventstructure/*": ["packages/templates/eventstructure/*"],
       "@wse/template-world-darts-festival/*": ["packages/templates/world-darts-festival/*"],
+      "@wse/template-dr-zsanett/*": ["packages/templates/dr-zsanett/*"],
       "@wse/plugin-shop/*": ["packages/plugins/shop/*"],
       "@wse/plugin-camp-booking/*": ["packages/plugins/camp-booking/*"],
       "@wse/plugin-press-kit/*": ["packages/plugins/press-kit/*"],

@@ -1,0 +1,147 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:wght@300;400;500;600;700&display=swap");
+
+:root,
+.dz-root {
+  --dz-font-serif: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --dz-font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+}
+
+.dz-root {
+  scroll-behavior: smooth;
+  font-family: var(--dz-font-sans);
+}
+
+.dz-root .dz-serif,
+.dz-root .font-heading {
+  font-family: var(--dz-font-serif);
+}
+
+/* globals.css unlayered h1–h6 color beats utilities on dark bands */
+.dz-root h1,
+.dz-root h2,
+.dz-root h3,
+.dz-root h4,
+.dz-root h5,
+.dz-root h6 {
+  font-family: var(--dz-font-serif);
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+  font-weight: 500;
+}
+
+.dz-root ::selection {
+  background: color-mix(in oklab, var(--accent) 45%, transparent);
+  color: var(--foreground);
+}
+
+.dz-eyebrow {
+  font-family: var(--dz-font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dz-gold-rule {
+  display: block;
+  width: 2.5rem;
+  height: 1px;
+  background: var(--accent);
+  margin-top: 0.75rem;
+}
+
+.dz-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.75rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--dz-font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dz-btn-primary:hover {
+  opacity: 0.88;
+}
+
+.dz-btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dz-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--foreground);
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--dz-font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dz-btn-ghost:hover {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.dz-btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dz-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  font-family: var(--dz-font-serif);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.dz-reveal {
+  animation: dz-fade-up 0.7s ease both;
+}
+
+.dz-reveal-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.dz-reveal-delay-2 {
+  animation-delay: 0.24s;
+}
+
+@keyframes dz-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dz-reveal,
+  .dz-reveal-delay-1,
+  .dz-reveal-delay-2 {
+    animation: none;
+  }
+}

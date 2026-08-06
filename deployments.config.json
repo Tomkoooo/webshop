@@ -91,6 +91,14 @@
           "currency": "HUF"
         }
       }
+    },
+    {
+      "key": "dr-zsanett",
+      "label": "Dr. Jámbrik Zsanett Ügyvédi Iroda",
+      "allowedTemplates": ["dr-zsanett"],
+      "defaultTemplateId": "dr-zsanett",
+      "enabledPlugins": [],
+      "pluginConfig": {}
     }
   ],
   "hostMap": {

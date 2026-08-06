@@ -1,0 +1,15 @@
+{
+  "name": "@wse/template-dr-zsanett",
+  "version": "1.0.0",
+  "description": "Webshop Engine template package: dr-zsanett — lawyer landing page.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts",
+    "./*.css": "./*.css"
+  },
+  "dependencies": {
+    "@wse/cms-bridge": "*",
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  }
+}

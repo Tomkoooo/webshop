@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF6EE"/>
+      <stop offset="100%" stop-color="#FFE9D6"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#E0532D"/>
+      <stop offset="100%" stop-color="#5B5FFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#heroBg)"/>
+  <rect x="0" y="0" width="600" height="44" fill="#E0532D"/>
+  <rect x="20" y="16" width="80" height="12" rx="3" fill="#FFFFFF"/>
+  <circle cx="540" cy="22" r="5" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="560" cy="22" r="5" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="0" y="44" width="600" height="20" fill="#1B1F3A"/>
+  <text x="20" y="58" font-family="monospace" font-size="9" fill="#FFFFFF" opacity="0.7" letter-spacing="2">FREE SHIPPING  30-DAY RETURNS  INDEPENDENT MAKERS </text>
+
+  <text x="40" y="120" font-family="serif" font-size="42" font-weight="900" fill="#1B1F3A">Goods made</text>
+  <text x="40" y="160" font-family="serif" font-size="42" font-weight="900" fill="url(#accent)">bright</text>
+  <text x="40" y="195" font-family="sans-serif" font-size="11" fill="#7A6A5A">Small-batch products from makers we visit</text>
+  <text x="40" y="210" font-family="sans-serif" font-size="11" fill="#7A6A5A">personally. Fewer drops, longer-lived things.</text>
+
+  <rect x="40" y="232" width="120" height="34" rx="17" fill="#E0532D"/>
+  <text x="100" y="253" font-family="sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SHOP NOW ’</text>
+  <rect x="170" y="232" width="100" height="34" rx="17" fill="#FFFFFF" stroke="#F1D5BB"/>
+  <text x="220" y="253" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1B1F3A" text-anchor="middle">OUR STORY</text>
+
+  <rect x="380" y="90" width="180" height="220" rx="32" fill="#FFFFFF" stroke="#F1D5BB"/>
+  <rect x="396" y="106" width="148" height="160" rx="20" fill="#FFE9D6"/>
+  <circle cx="470" cy="186" r="36" fill="#5B5FFF" opacity="0.25"/>
+  <circle cx="490" cy="170" r="22" fill="#E0532D" opacity="0.35"/>
+  <rect x="396" y="276" width="148" height="22" rx="11" fill="#FFFFFF" stroke="#F1D5BB"/>
+  <text x="412" y="291" font-family="monospace" font-size="8" fill="#5B5FFF" letter-spacing="2">RESTOCKED</text>
+
+  <rect x="40" y="320" width="160" height="50" rx="14" fill="#E0532D"/>
+  <rect x="216" y="320" width="160" height="50" rx="14" fill="#5B5FFF"/>
+  <rect x="392" y="320" width="160" height="50" rx="14" fill="#1B1F3A"/>
+  <text x="120" y="350" font-family="serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Tools</text>
+  <text x="296" y="350" font-family="serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Home</text>
+  <text x="472" y="350" font-family="serif" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Kitchen</text>
+</svg>
