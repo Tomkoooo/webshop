@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
+import { resolveAuthRedirectUrl } from "@wse/core/lib/auth-redirect"
 
 type Role = "ADMIN" | "USER"
 
@@ -11,6 +12,13 @@ export const authConfig = {
     }),
   ],
   callbacks: {
+    /**
+     * Docker sets HOSTNAME=0.0.0.0 for binding; Auth.js can infer that as the redirect
+     * origin after OAuth. Always prefer NEXT_PUBLIC_APP_URL / AUTH_URL.
+     */
+    async redirect({ url, baseUrl }) {
+      return resolveAuthRedirectUrl(url, baseUrl)
+    },
     async session({ session, token }) {
       if (session.user) {
         if (token.sub) {

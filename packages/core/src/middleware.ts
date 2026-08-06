@@ -42,13 +42,39 @@ function rewriteOrRedirectUrl(req: MiddlewareReq, pathname: string): URL {
   url.search = req.nextUrl.search
 
   const forwardedHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host")
-  if (forwardedHost) {
-    url.host = forwardedHost.split(",")[0]!.trim()
+  const hostCandidate = forwardedHost?.split(",")[0]?.trim() ?? ""
+  const hostNameOnly = hostCandidate.split(":")[0] ?? ""
+
+  const unusable =
+    !hostCandidate ||
+    hostNameOnly === "0.0.0.0" ||
+    hostNameOnly === "localhost" ||
+    hostNameOnly === "127.0.0.1"
+
+  if (!unusable) {
+    url.host = hostCandidate
+    const forwardedProto = req.headers.get("x-forwarded-proto")
+    if (forwardedProto) {
+      url.protocol = `${forwardedProto.split(",")[0]!.trim()}:`
+    }
+    return url
   }
-  const forwardedProto = req.headers.get("x-forwarded-proto")
-  if (forwardedProto) {
-    url.protocol = `${forwardedProto.split(",")[0]!.trim()}:`
+
+  // Docker HOSTNAME=0.0.0.0 (or missing forwarded host): fall back to public env URL.
+  for (const key of ["NEXT_PUBLIC_APP_URL", "AUTH_URL", "NEXTAUTH_URL"] as const) {
+    const raw = process.env[key]?.trim()
+    if (!raw) continue
+    try {
+      const pub = new URL(raw)
+      if (pub.hostname === "0.0.0.0") continue
+      url.protocol = pub.protocol
+      url.host = pub.host
+      return url
+    } catch {
+      /* try next */
+    }
   }
+
   return url
 }
 
@@ -86,14 +112,14 @@ export const storefrontMiddleware = auth(async (req) => {
   const maintenanceEnabled = isConfiguredMaintenanceEnabled()
   const isAdminUser = req.auth?.user?.role === "ADMIN"
   if (maintenanceEnabled && !isAdminUser) {
-    return NextResponse.redirect(new URL("/maintenance", req.nextUrl))
+    return NextResponse.redirect(rewriteOrRedirectUrl(req, "/maintenance"))
   }
 
   const isLoggedIn = !!req.auth
   const isAdminPath = pathname.startsWith("/admin")
 
   if (isAdminPath && !isLoggedIn) {
-    const signInUrl = new URL("/auth/admin-login", req.nextUrl)
+    const signInUrl = rewriteOrRedirectUrl(req, "/auth/admin-login")
     signInUrl.searchParams.set("callbackUrl", "/admin")
     return NextResponse.redirect(signInUrl)
   }
