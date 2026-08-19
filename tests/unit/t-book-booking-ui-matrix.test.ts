@@ -6,7 +6,7 @@ import {
 } from "@wse/plugin-t-book/lib/booking-wizard-flow"
 
 /**
- * UI matrix: hotel step = stay choice + hotel pick; rooms step validates headcount.
+ * UI matrix: hotel is step 3, rooms is step 4 (players are collected first).
  */
 type UiCase = {
   id: string
@@ -124,8 +124,8 @@ describe("t-book booking UI matrix", () => {
         hasQuote: false,
       }
 
-      expect(canProceedBookingStep({ ...shared, step: 2 })).toBe(row.canContinueStep2)
-      expect(canProceedBookingStep({ ...shared, step: 3 })).toBe(row.canContinueStep3)
+      expect(canProceedBookingStep({ ...shared, step: 3 })).toBe(row.canContinueStep2)
+      expect(canProceedBookingStep({ ...shared, step: 4 })).toBe(row.canContinueStep3)
     }
   )
 })

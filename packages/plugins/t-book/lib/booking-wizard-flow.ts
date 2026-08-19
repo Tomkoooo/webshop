@@ -10,9 +10,9 @@ export type HotelStayPhase = "stay_choice" | "pick_hotel" | "configure_rooms"
 
 export const SINGLE_WIZARD_STEPS = [
   "Entries",
+  "Players",
   "Hotel",
   "Rooms",
-  "Players",
   "Your details",
   "Review",
 ] as const
@@ -21,9 +21,9 @@ export const SINGLE_WIZARD_STEPS = [
 export function singleWizardStepLabels(locale?: string): string[] {
   return [
     tbookT(locale, "stepEntries"),
+    tbookT(locale, "stepPlayers"),
     tbookT(locale, "stepHotel"),
     tbookT(locale, "stepRooms"),
-    tbookT(locale, "stepPlayers"),
     tbookT(locale, "stepYourDetails"),
     tbookT(locale, "stepReview"),
   ]
@@ -101,11 +101,11 @@ export function canProceedBookingStep(input: {
     case 1:
       return isStep1Valid(input.guests)
     case 2:
-      return isStep2Valid(input)
-    case 3:
-      return isStep3RoomsValid(input)
-    case 4:
       return input.attendeesValid
+    case 3:
+      return isStep2Valid(input)
+    case 4:
+      return isStep3RoomsValid(input)
     case 5:
       return input.customerValid
     case 6:
@@ -117,12 +117,12 @@ export function canProceedBookingStep(input: {
 
 /** Skip the Rooms step when the guest chose entry-only (or there are no hotels). */
 export function nextWizardStep(step: number, wantsHotel: boolean | null, hotelCount: number): number {
-  if (step === 2 && (hotelCount === 0 || wantsHotel !== true)) return 4
+  if (step === 3 && (hotelCount === 0 || wantsHotel !== true)) return 5
   return Math.min(step + 1, SINGLE_WIZARD_TOTAL_STEPS)
 }
 
 export function prevWizardStep(step: number, wantsHotel: boolean | null, hotelCount: number): number {
-  if (step === 4 && (hotelCount === 0 || wantsHotel !== true)) return 2
+  if (step === 5 && (hotelCount === 0 || wantsHotel !== true)) return 3
   return Math.max(step - 1, 1)
 }
 
@@ -149,7 +149,10 @@ export function buildMultiWizardSteps(input: {
   hotelCount: number
   locale?: string
 }): MultiWizardStepDef[] {
-  const steps: MultiWizardStepDef[] = [{ kind: "entries", label: tbookT(input.locale, "stepEntries") }]
+  const steps: MultiWizardStepDef[] = [
+    { kind: "entries", label: tbookT(input.locale, "stepEntries") },
+    { kind: "players", label: tbookT(input.locale, "stepPlayers") },
+  ]
 
   if (input.hotelCount > 0) {
     if (input.lodgingMode === "combined") {
@@ -175,7 +178,6 @@ export function buildMultiWizardSteps(input: {
     }
   }
 
-  steps.push({ kind: "players", label: tbookT(input.locale, "stepPlayers") })
   steps.push({ kind: "details", label: tbookT(input.locale, "stepYourDetails") })
   steps.push({ kind: "review", label: tbookT(input.locale, "stepReview") })
   return steps

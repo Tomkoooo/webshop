@@ -276,17 +276,12 @@ export function TBookBookingWizard({
     () => hotels.find((h) => h.id === selectedHotelId) ?? null,
     [hotels, selectedHotelId]
   )
+  const eventAttendeeSchema = event?.attendeeFieldSchema ?? []
+  const hotelAttendeeSchema =
+    accommodationNeed === "none" ? [] : selectedHotel?.registrationFieldSchema ?? []
   const registrationFieldSchema = useMemo(
-    () =>
-      mergeRegistrationFieldSchemas(
-        event?.attendeeFieldSchema,
-        accommodationNeed === "none" ? undefined : selectedHotel?.registrationFieldSchema
-      ),
-    [
-      event?.attendeeFieldSchema,
-      accommodationNeed,
-      selectedHotel?.registrationFieldSchema,
-    ]
+    () => mergeRegistrationFieldSchemas(eventAttendeeSchema, hotelAttendeeSchema),
+    [eventAttendeeSchema, hotelAttendeeSchema]
   )
   const registrationUnit = event?.registrationUnit ?? "person"
   const playersPerTicket = event ? resolvePlayersPerTicket(event) : 1
@@ -546,7 +541,7 @@ export function TBookBookingWizard({
   const attendeeFieldIssues = useMemo(
     () =>
       validateAttendees(
-        registrationFieldSchema,
+        eventAttendeeSchema,
         guests,
         attendees,
         registrationUnit,
@@ -558,7 +553,7 @@ export function TBookBookingWizard({
         locale
       ),
     [
-      registrationFieldSchema,
+      eventAttendeeSchema,
       guests,
       attendees,
       registrationUnit,
@@ -575,16 +570,32 @@ export function TBookBookingWizard({
         ? validateEligibility(
             event,
             attendees,
-            registrationFieldSchema,
+            eventAttendeeSchema,
             playerFields,
             eligibilityFixedRoster,
             locale
           )
         : [],
-    [event, attendees, registrationFieldSchema, playerFields, eligibilityFixedRoster, locale]
+    [event, attendees, eventAttendeeSchema, playerFields, eligibilityFixedRoster, locale]
+  )
+
+  const hotelAttendeeFieldIssues = useMemo(
+    () =>
+      hotelAttendeeSchema.length > 0
+        ? validateAttendees(
+            hotelAttendeeSchema,
+            guests,
+            attendees,
+            registrationUnit,
+            undefined,
+            locale
+          )
+        : [],
+    [hotelAttendeeSchema, guests, attendees, registrationUnit, locale]
   )
 
   const attendeesValid = attendeeFieldIssues.length === 0 && eligibilityIssues.length === 0
+  const hotelAttendeesValid = hotelAttendeeFieldIssues.length === 0
 
   const customerFieldErrors = useMemo(
     () => (showDetailsErrors ? validateCustomerForm(customer) : {}),
@@ -615,7 +626,7 @@ export function TBookBookingWizard({
     hasPackageSelection,
     roomsRequired: showRooms,
     hasRoomSelection,
-  })
+  }) && (step !== 4 || hotelAttendeesValid)
 
   const patchAttendeeFields = (
     index: number,
@@ -637,6 +648,19 @@ export function TBookBookingWizard({
       return
     }
     if (step === 2) {
+      if (attendeeFieldIssues.length > 0) {
+        setError(tbookT(locale, "completeParticipantDetails"))
+        return
+      }
+      if (eligibilityIssues.length > 0) {
+        setError(eligibilityIssues.map((issue) => issue.message).join(" "))
+        return
+      }
+      setError(null)
+      setStep(nextWizardStep(2, wantsHotel, hotels.length))
+      return
+    }
+    if (step === 3) {
       if (hotels.length > 0 && wantsHotel === null) {
         setError(tbookT(locale, "chooseHotelNeed"))
         return
@@ -646,10 +670,10 @@ export function TBookBookingWizard({
         return
       }
       setError(null)
-      setStep(nextWizardStep(2, wantsHotel, hotels.length))
+      setStep(nextWizardStep(3, wantsHotel, hotels.length))
       return
     }
-    if (step === 3) {
+    if (step === 4) {
       if (accommodationNeed === "none" || !selectedHotelId) {
         setError(tbookT(locale, "chooseWhoNeedsRoom"))
         return
@@ -666,17 +690,8 @@ export function TBookBookingWizard({
         setError(tbookT(locale, "selectRoomType"))
         return
       }
-      setError(null)
-      setStep(nextWizardStep(3, wantsHotel, hotels.length))
-      return
-    }
-    if (step === 4) {
-      if (attendeeFieldIssues.length > 0) {
+      if (hotelAttendeeFieldIssues.length > 0) {
         setError(tbookT(locale, "completeParticipantDetails"))
-        return
-      }
-      if (eligibilityIssues.length > 0) {
-        setError(eligibilityIssues.map((issue) => issue.message).join(" "))
         return
       }
       setError(null)
@@ -792,7 +807,7 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      {step === 2 ? (
+      {step === 3 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           {hotels.length > 0 ? (
             <>
@@ -922,7 +937,7 @@ export function TBookBookingWizard({
         </section>
       ) : null}
 
-      {step === 3 && selectedHotel ? (
+      {step === 4 && selectedHotel ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
             <h2 className="text-lg font-semibold">{tbookT(locale, "chooseYourRoom")}</h2>
@@ -1123,10 +1138,44 @@ export function TBookBookingWizard({
               </div>
             ))
           )}
+
+          {hotelAttendeeSchema.length > 0 ? (
+            <div className="space-y-4 border-t border-border pt-4">
+              <div>
+                <h3 className="text-sm font-semibold">{copy.attendeesHeading}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{copy.attendeesHint}</p>
+              </div>
+              {attendees.map((attendee, index) => (
+                <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                  <p className="text-sm font-semibold">
+                    {index + 1}. {guestUnitLabel}
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {hotelAttendeeSchema.map((field) => (
+                      <AttendeeFieldInput
+                        key={field.key}
+                        field={field}
+                        value={attendee.fields[field.key]}
+                        error={attendeeFieldError(hotelAttendeeFieldIssues, index, field.key)}
+                        onChange={(value) =>
+                          patchAttendeeFields(index, (row) => ({
+                            ...row,
+                            fields: { ...row.fields, [field.key]: value },
+                          }))
+                        }
+                        inputClassName={INPUT}
+                        locale={locale}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {step === 4 ? (
+      {step === 2 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
             <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
@@ -1136,7 +1185,7 @@ export function TBookBookingWizard({
                     playersPerTicket,
                     guests,
                     entryWord: tbookT(locale, guests === 1 ? "unitEntrySingular" : "unitEntryPlural"),
-                    total: maxAccommodationGuests,
+                    total: rosterPlayers,
                   })
                 : registrationUnit === "team"
                   ? tbookT(locale, "attendeesTeamMemberHint", {
@@ -1150,7 +1199,7 @@ export function TBookBookingWizard({
             </p>
           </div>
 
-          {registrationFieldSchema.length > 0 || needsPlayerMembers ? (
+          {eventAttendeeSchema.length > 0 || needsPlayerMembers ? (
             attendees.map((attendee, index) => {
               const entryEligibility = eligibilityIssuesForEntry(eligibilityIssues, index)
               return (
@@ -1158,9 +1207,9 @@ export function TBookBookingWizard({
                   <p className="text-sm font-semibold">
                     {index + 1}. {guestUnitLabel}
                   </p>
-                  {registrationFieldSchema.length > 0 ? (
+                  {eventAttendeeSchema.length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {registrationFieldSchema.map((field) => (
+                      {eventAttendeeSchema.map((field) => (
                         <AttendeeFieldInput
                           key={field.key}
                           field={field}

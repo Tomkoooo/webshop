@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  buildMultiWizardSteps,
   canProceedBookingStep,
   isStep1Valid,
   isStep2Valid,
@@ -7,6 +8,7 @@ import {
   nextWizardStep,
   prevWizardStep,
   resolveHotelStayPhase,
+  SINGLE_WIZARD_STEPS,
 } from "@wse/plugin-t-book/lib/booking-wizard-flow"
 
 describe("resolveHotelStayPhase", () => {
@@ -33,14 +35,53 @@ describe("resolveHotelStayPhase", () => {
   })
 })
 
+describe("wizard step order", () => {
+  it("collects players before hotel so room count can follow the roster", () => {
+    expect(SINGLE_WIZARD_STEPS).toEqual([
+      "Entries",
+      "Players",
+      "Hotel",
+      "Rooms",
+      "Your details",
+      "Review",
+    ])
+  })
+
+  it("places players after entries in the multi-event wizard", () => {
+    const steps = buildMultiWizardSteps({
+      lodgingMode: "separate",
+      events: [
+        { id: "a", name: "Pairs" },
+        { id: "b", name: "Open" },
+      ],
+      wantsHotelByEventId: { a: true, b: false },
+      wantsHotelCombined: null,
+      hotelCount: 2,
+    })
+    expect(steps.map((s) => s.kind)).toEqual([
+      "entries",
+      "players",
+      "hotel",
+      "rooms",
+      "hotel",
+      "details",
+      "review",
+    ])
+  })
+})
+
 describe("wizard step skip helpers", () => {
-  it("skips rooms when entry-only", () => {
-    expect(nextWizardStep(2, false, 2)).toBe(4)
-    expect(prevWizardStep(4, false, 2)).toBe(2)
+  it("collects players before hotel, then skips rooms when entry-only", () => {
+    expect(nextWizardStep(1, false, 2)).toBe(2)
+    expect(nextWizardStep(2, false, 2)).toBe(3)
+    expect(nextWizardStep(3, false, 2)).toBe(5)
+    expect(prevWizardStep(5, false, 2)).toBe(3)
+    expect(prevWizardStep(3, false, 2)).toBe(2)
   })
 
   it("enters rooms when hotel selected", () => {
-    expect(nextWizardStep(2, true, 2)).toBe(3)
+    expect(nextWizardStep(3, true, 2)).toBe(4)
+    expect(prevWizardStep(5, true, 2)).toBe(4)
     expect(prevWizardStep(4, true, 2)).toBe(3)
   })
 })
@@ -66,33 +107,43 @@ describe("booking step validation matrix", () => {
     { id: "s1-zero-guests", patch: { step: 1, guests: 0 }, expected: false },
     { id: "s1-one-guest", patch: { step: 1, guests: 1 }, expected: true },
     {
-      id: "s2-undecided",
-      patch: { step: 2, wantsHotel: null },
+      id: "s2-attendees-bad",
+      patch: { step: 2, attendeesValid: false },
       expected: false,
     },
     {
-      id: "s2-entry-only",
-      patch: { step: 2, wantsHotel: false },
+      id: "s2-attendees-ok",
+      patch: { step: 2, attendeesValid: true },
       expected: true,
     },
     {
-      id: "s2-hotel-no-selection",
-      patch: { step: 2, wantsHotel: true, selectedHotelId: null },
+      id: "s3-undecided",
+      patch: { step: 3, wantsHotel: null },
       expected: false,
     },
     {
-      id: "s2-hotel-selected",
+      id: "s3-entry-only",
+      patch: { step: 3, wantsHotel: false },
+      expected: true,
+    },
+    {
+      id: "s3-hotel-no-selection",
+      patch: { step: 3, wantsHotel: true, selectedHotelId: null },
+      expected: false,
+    },
+    {
+      id: "s3-hotel-selected",
       patch: {
-        step: 2,
+        step: 3,
         wantsHotel: true,
         selectedHotelId: "h1",
       },
       expected: true,
     },
     {
-      id: "s3-rooms-some-zero",
+      id: "s4-rooms-some-zero",
       patch: {
-        step: 3,
+        step: 4,
         wantsHotel: true,
         selectedHotelId: "h1",
         accommodationNeed: "some",
@@ -101,9 +152,9 @@ describe("booking step validation matrix", () => {
       expected: false,
     },
     {
-      id: "s3-rooms-ok",
+      id: "s4-rooms-ok",
       patch: {
-        step: 3,
+        step: 4,
         wantsHotel: true,
         selectedHotelId: "h1",
         accommodationNeed: "all",
@@ -111,8 +162,6 @@ describe("booking step validation matrix", () => {
       },
       expected: true,
     },
-    { id: "s4-attendees-bad", patch: { step: 4, attendeesValid: false }, expected: false },
-    { id: "s4-attendees-ok", patch: { step: 4, attendeesValid: true }, expected: true },
     { id: "s5-customer-bad", patch: { step: 5, customerValid: false }, expected: false },
     { id: "s5-customer-ok", patch: { step: 5, customerValid: true }, expected: true },
     { id: "s6-no-quote", patch: { step: 6, hasQuote: false }, expected: false },

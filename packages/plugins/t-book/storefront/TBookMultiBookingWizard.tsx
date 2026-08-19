@@ -1223,9 +1223,46 @@ export function TBookMultiBookingWizard({
       selectedHotelId: currentHotelLodging.selectedHotelId,
     })
 
+  const roomsHotelFieldGroups = (() => {
+    if (currentStepDef?.kind !== "rooms") return [] as Array<{
+      eventId: string
+      eventName: string
+      schema: NonNullable<TBookPublicEvent["attendeeFieldSchema"]>
+    }>
+    const targets =
+      lodgingMode === "combined"
+        ? events[0]
+          ? [events[0]]
+          : []
+        : events.filter((event) => event.id === currentStepDef.eventId)
+    return targets.flatMap((event) => {
+      const { selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
+      if (effectiveAccommodationNeed === "none" || !selectedHotel) return []
+      const schema = selectedHotel.registrationFieldSchema ?? []
+      if (schema.length === 0) return []
+      return [{ eventId: event.id, eventName: event.name, schema }]
+    })
+  })()
+
+  const roomsHotelFieldsValid = roomsHotelFieldGroups.every((group) => {
+    const event = events.find((e) => e.id === group.eventId)
+    if (!event) return true
+    return (
+      validateAttendees(
+        group.schema,
+        guestsByEvent[event.id] ?? 1,
+        attendeesByEvent[event.id] ?? [],
+        event.registrationUnit ?? "person",
+        undefined,
+        locale
+      ).length === 0
+    )
+  })
+
   const roomsStepValid =
     currentHotelLodging != null &&
-    lodgingRoomsValid(currentHotelLodging, currentHotelMaxAcc, currentHotelRosterGuests)
+    lodgingRoomsValid(currentHotelLodging, currentHotelMaxAcc, currentHotelRosterGuests) &&
+    roomsHotelFieldsValid
 
   const perEventAttendeeIssues = useMemo(() => {
     const result: Record<
@@ -1235,13 +1272,7 @@ export function TBookMultiBookingWizard({
     for (const event of events) {
       const guestCount = guestsByEvent[event.id] ?? 1
       const registrationUnit = event.registrationUnit ?? "person"
-      const { selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
-      const registrationFieldSchema = mergeRegistrationFieldSchemas(
-        event.attendeeFieldSchema,
-        effectiveAccommodationNeed === "none"
-          ? undefined
-          : selectedHotel?.registrationFieldSchema
-      )
+      const registrationFieldSchema = event.attendeeFieldSchema ?? []
       const playerFields = playerFieldSchema(event)
       const playersPerTicket = resolvePlayersPerTicket(event)
       const eligibilityFixedRoster = playersPerTicket > 1 ? playersPerTicket : null
@@ -1269,18 +1300,7 @@ export function TBookMultiBookingWizard({
       result[event.id] = { fieldIssues, eligibilityIssues }
     }
     return result
-    // lodgingForEvent depends on lodging mode/state; list deps explicitly
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    events,
-    guestsByEvent,
-    attendeesByEvent,
-    lodgingMode,
-    combinedLodging,
-    separateLodging,
-    hotels,
-    locale,
-  ])
+  }, [events, guestsByEvent, attendeesByEvent, locale])
 
   const playersValid = events.every((event) => {
     const issues = perEventAttendeeIssues[event.id]
@@ -1699,6 +1719,63 @@ export function TBookMultiBookingWizard({
                   )
                 })()
               ) : null}
+
+              {currentStepDef.kind === "rooms" && roomsHotelFieldGroups.length > 0
+                ? roomsHotelFieldGroups.map((group) => {
+                    const event = events.find((e) => e.id === group.eventId)
+                    if (!event) return null
+                    const guestCount = guestsByEvent[event.id] ?? 1
+                    const guestUnitLabel = registrationUnitLabel(
+                      event.registrationUnit ?? "person",
+                      guestCount,
+                      locale
+                    )
+                    const rows = attendeesByEvent[event.id] ?? []
+                    const hotelIssues = validateAttendees(
+                      group.schema,
+                      guestCount,
+                      rows,
+                      event.registrationUnit ?? "person",
+                      undefined,
+                      locale
+                    )
+                    return (
+                      <div key={group.eventId} className="space-y-4 border-t border-border pt-4">
+                        <div>
+                          <h3 className="text-sm font-semibold">{copy.attendeesHeading}</h3>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {group.eventName} · {copy.attendeesHint}
+                          </p>
+                        </div>
+                        {rows.map((attendee, index) => (
+                          <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                            <p className="text-sm font-semibold">
+                              {index + 1}. {guestUnitLabel}
+                            </p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              {group.schema.map((field) => (
+                                <AttendeeFieldInput
+                                  key={field.key}
+                                  field={field}
+                                  value={attendee.fields[field.key]}
+                                  error={attendeeFieldError(hotelIssues, index, field.key)}
+                                  onChange={(value) =>
+                                    patchAttendeeFields(event.id, index, (row) => ({
+                                      ...row,
+                                      fields: { ...row.fields, [field.key]: value },
+                                    }))
+                                  }
+                                  inputClassName={INPUT}
+                                  locale={locale}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })
+                : null}
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -1722,19 +1799,13 @@ export function TBookMultiBookingWizard({
             const registrationUnit = event.registrationUnit ?? "person"
             const playersPerTicket = resolvePlayersPerTicket(event)
             const guestUnitLabel = registrationUnitLabel(registrationUnit, guestCount, locale)
-            const { selectedHotel, effectiveAccommodationNeed } = lodgingForEvent(event.id)
-            const registrationFieldSchema = mergeRegistrationFieldSchemas(
-              event.attendeeFieldSchema,
-              effectiveAccommodationNeed === "none"
-                ? undefined
-                : selectedHotel?.registrationFieldSchema
-            )
+            const registrationFieldSchema = event.attendeeFieldSchema ?? []
             const needsPlayerMembers = needsPlayerMemberForms(event)
             const playerFields = playerFieldSchema(event)
             const fixedRosterSize = playerRosterSize(event)
             const teamMemberLimit = event.teamMemberLimit ?? null
             const rows = attendeesByEvent[event.id] ?? []
-            const maxAcc = accommodationGuestCount(guestCount, event)
+            const rosterCount = countRosterPlayers(rows, event, guestCount)
             const fieldIssues = perEventAttendeeIssues[event.id]?.fieldIssues ?? []
             const eligibilityIssues = perEventAttendeeIssues[event.id]?.eligibilityIssues ?? []
 
@@ -1751,7 +1822,7 @@ export function TBookMultiBookingWizard({
                           playersPerTicket,
                           guests: guestCount,
                           entryWord: tbookT(locale, guestCount === 1 ? "unitEntrySingular" : "unitEntryPlural"),
-                          total: maxAcc,
+                          total: rosterCount,
                         })
                       : registrationUnit === "team"
                         ? tbookT(locale, "attendeesTeamMemberHint", {
