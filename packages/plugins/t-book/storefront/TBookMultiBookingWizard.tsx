@@ -38,11 +38,13 @@ import {
 } from "../lib/stay-recommendation"
 import {
   accommodationGuestCount,
+  countRosterPlayers,
   needsPlayerMemberForms,
   playerFieldSchema,
   playerRosterSize,
   initialPlayerMemberCount,
   resolvePlayersPerTicket,
+  resolveStayGuestCount,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
 import { BookingLegalConsent } from "./BookingLegalConsent"
@@ -221,12 +223,17 @@ function hotelDisplayCurrency(
   return hotel?.currency ?? fallbackEvent?.currency ?? "HUF"
 }
 
-function resolveAccommodationGuests(lodging: LodgingState, maxGuests: number): number {
-  if (lodging.accommodationNeed === "none") return 0
-  if (lodging.accommodationNeed === "some") {
-    return Math.min(Math.max(1, lodging.accommodationGuestOverride), maxGuests)
-  }
-  return maxGuests
+function resolveAccommodationGuests(
+  lodging: LodgingState,
+  maxGuests: number,
+  rosterGuests: number
+): number {
+  return resolveStayGuestCount({
+    accommodationNeed: lodging.accommodationNeed,
+    override: lodging.accommodationGuestOverride,
+    rosterPlayers: rosterGuests,
+    maxGuests,
+  })
 }
 
 function lodgingHasPackageSelection(selections: TBookSelections): boolean {
@@ -264,6 +271,7 @@ type HotelLodgingPanelProps = {
   lodging: LodgingState
   onLodgingChange: (next: LodgingState) => void
   maxAccommodationGuests: number
+  rosterGuests: number
   recommendedNights: number
   recommendedStayLabel: string | null
   fallbackEvent: TBookPublicEvent
@@ -281,6 +289,7 @@ function HotelLodgingPanel({
   lodging,
   onLodgingChange,
   maxAccommodationGuests,
+  rosterGuests,
   recommendedNights,
   recommendedStayLabel,
   fallbackEvent,
@@ -291,7 +300,17 @@ function HotelLodgingPanel({
   stayEventNames,
   locale,
 }: HotelLodgingPanelProps) {
-  const accommodationGuests = resolveAccommodationGuests(lodging, maxAccommodationGuests)
+  const accommodationGuests = resolveAccommodationGuests(
+    lodging,
+    maxAccommodationGuests,
+    rosterGuests
+  )
+  const lodgingRef = useRef(lodging)
+  lodgingRef.current = lodging
+  const onLodgingChangeRef = useRef(onLodgingChange)
+  onLodgingChangeRef.current = onLodgingChange
+  const onQuoteResetRef = useRef(onQuoteReset)
+  onQuoteResetRef.current = onQuoteReset
   const effectiveHotelId =
     lodging.accommodationNeed === "none" ? null : lodging.selectedHotelId
   const selectedHotel = hotels.find((h) => h.id === effectiveHotelId) ?? null
@@ -366,6 +385,39 @@ function HotelLodgingPanel({
     )
     onQuoteReset()
   }
+
+  useEffect(() => {
+    if (!effectiveHotelId || !selectedHotel || accommodationGuests < 1) return
+    const current = lodgingRef.current
+    const unitsRaw = current.selections[PACKAGE_UNITS_SELECTION_KEY]
+    if (unitsRaw && typeof unitsRaw === "object" && !Array.isArray(unitsRaw)) {
+      const keys = Object.keys(unitsRaw as Record<string, number>)
+      if (keys.length === 1) {
+        const key = keys[0]
+        const pkg = findPackageDeal(selectedHotel.pricing, key)
+        if (!pkg) return
+        const needed = packageUnitsForGuests(pkg, accommodationGuests)
+        if ((unitsRaw as Record<string, number>)[key] === needed) return
+        const next: TBookSelections = {
+          ...current.selections,
+          [PACKAGE_UNITS_SELECTION_KEY]: { [key]: needed },
+        }
+        onLodgingChangeRef.current(patchLodging(current, { selections: next }))
+        onQuoteResetRef.current()
+      }
+      return
+    }
+    const dealKey = String(current.selections[PACKAGE_DEAL_SELECTION_KEY] ?? "")
+    if (!dealKey) return
+    const pkg = findPackageDeal(selectedHotel.pricing, dealKey)
+    if (!pkg) return
+    const needed = packageUnitsForGuests(pkg, accommodationGuests)
+    const next: TBookSelections = { ...current.selections }
+    delete next[PACKAGE_DEAL_SELECTION_KEY]
+    next[PACKAGE_UNITS_SELECTION_KEY] = { [dealKey]: needed }
+    onLodgingChangeRef.current(patchLodging(current, { selections: next }))
+    onQuoteResetRef.current()
+  }, [accommodationGuests, effectiveHotelId, selectedHotel])
 
   return (
     <>
@@ -540,9 +592,9 @@ function HotelLodgingPanel({
                 guests: accommodationGuests,
                 guestWord: tbookT(locale, accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
                 extra:
-                  lodging.accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                  lodging.accommodationNeed === "some" && accommodationGuests < rosterGuests
                     ? tbookT(locale, "entriesWithoutRoomSuffix", {
-                        count: maxAccommodationGuests - accommodationGuests,
+                        count: rosterGuests - accommodationGuests,
                       })
                     : "",
               })}
@@ -562,7 +614,7 @@ function HotelLodgingPanel({
                   onQuoteReset()
                 }}
               >
-                {tbookT(locale, "everyoneCount", { count: maxAccommodationGuests })}
+                {tbookT(locale, "everyoneCount", { count: rosterGuests })}
               </button>
               <button
                 type="button"
@@ -886,9 +938,15 @@ export function TBookMultiBookingWizard({
     (sum, event) => sum + accommodationGuestCount(guestsByEvent[event.id] ?? 1, event),
     0
   )
+  const totalRosterGuests = events.reduce(
+    (sum, event) =>
+      sum + countRosterPlayers(attendeesByEvent[event.id], event, guestsByEvent[event.id] ?? 1),
+    0
+  )
   const combinedAccommodationGuests = resolveAccommodationGuests(
     combinedLodging,
-    totalMaxAccommodationGuests
+    totalMaxAccommodationGuests,
+    totalRosterGuests
   )
   const combinedEffectiveHotelId =
     combinedLodging.accommodationNeed === "none" ? null : combinedLodging.selectedHotelId
@@ -1055,10 +1113,12 @@ export function TBookMultiBookingWizard({
     if (lodgingMode === "combined") {
       const entries: TBookMultiQuoteEntry[] = events.map((event, index) => {
         const guestCount = guestsByEvent[event.id] ?? 1
+        const teamMemberCount = countRosterPlayers(attendeesByEvent[event.id], event, guestCount)
         return {
           eventId: event.id,
           guests: guestCount,
           accommodationGuests: index === 0 ? combinedAccommodationGuests : 0,
+          teamMemberCount,
         }
       })
       return {
@@ -1075,12 +1135,14 @@ export function TBookMultiBookingWizard({
       const guestCount = guestsByEvent[event.id] ?? 1
       const lodging = separateLodging[event.id] ?? emptyLodgingState()
       const maxAcc = accommodationGuestCount(guestCount, event)
-      const accGuests = resolveAccommodationGuests(lodging, maxAcc)
+      const rosterGuests = countRosterPlayers(attendeesByEvent[event.id], event, guestCount)
+      const accGuests = resolveAccommodationGuests(lodging, maxAcc, rosterGuests)
       const hotelId = accGuests > 0 ? lodging.selectedHotelId : null
       return {
         eventId: event.id,
         guests: guestCount,
         accommodationGuests: accGuests,
+        teamMemberCount: rosterGuests,
         hotelId,
         nights: hotelId ? lodging.nights : null,
         selections: hotelId ? lodging.selections : null,
@@ -1101,7 +1163,7 @@ export function TBookMultiBookingWizard({
     resetQuote()
   }
 
-  function lodgingRoomsValid(lodging: LodgingState, maxAcc: number): boolean {
+  function lodgingRoomsValid(lodging: LodgingState, maxAcc: number, rosterGuests: number): boolean {
     const selectedHotel =
       lodging.selectedHotelId != null
         ? hotels.find((h) => h.id === lodging.selectedHotelId) ?? null
@@ -1110,7 +1172,7 @@ export function TBookMultiBookingWizard({
     const packagesRequired = selectedHotel
       ? hotelRequiresPackageSelection(selectedHotel.pricing)
       : false
-    const accGuests = resolveAccommodationGuests(lodging, maxAcc)
+    const accGuests = resolveAccommodationGuests(lodging, maxAcc, rosterGuests)
     return isMultiRoomsStepValid({
       hotelCount: hotels.length,
       wantsHotel: lodging.wantsHotel,
@@ -1141,6 +1203,18 @@ export function TBookMultiBookingWizard({
     return accommodationGuestCount(guestsByEvent[event.id] ?? 1, event)
   })()
 
+  const currentHotelRosterGuests = (() => {
+    if (currentStepDef?.kind !== "hotel" && currentStepDef?.kind !== "rooms") return 0
+    if (currentStepDef.eventId == null) return totalRosterGuests
+    const event = events.find((e) => e.id === currentStepDef.eventId)
+    if (!event) return 1
+    return countRosterPlayers(
+      attendeesByEvent[event.id],
+      event,
+      guestsByEvent[event.id] ?? 1
+    )
+  })()
+
   const hotelStepValid =
     currentHotelLodging != null &&
     isMultiHotelStepValid({
@@ -1150,7 +1224,8 @@ export function TBookMultiBookingWizard({
     })
 
   const roomsStepValid =
-    currentHotelLodging != null && lodgingRoomsValid(currentHotelLodging, currentHotelMaxAcc)
+    currentHotelLodging != null &&
+    lodgingRoomsValid(currentHotelLodging, currentHotelMaxAcc, currentHotelRosterGuests)
 
   const perEventAttendeeIssues = useMemo(() => {
     const result: Record<
@@ -1310,6 +1385,7 @@ export function TBookMultiBookingWizard({
       [eventId]: (prev[eventId] ?? []).map((row, i) => (i === index ? updater(row) : row)),
     }))
     setError(null)
+    resetQuote()
   }
 
   const goNext = async () => {
@@ -1434,6 +1510,7 @@ export function TBookMultiBookingWizard({
     onLodgingChange: (next: LodgingState) => void,
     stayEvents: TBookPublicEvent[],
     maxAcc: number,
+    rosterGuests: number,
     recommendedNights: number,
     recommendedStayLabel: string | null,
     fallbackEvent: TBookPublicEvent,
@@ -1446,6 +1523,7 @@ export function TBookMultiBookingWizard({
       lodging={lodging}
       onLodgingChange={onLodgingChange}
       maxAccommodationGuests={maxAcc}
+      rosterGuests={rosterGuests}
       recommendedNights={recommendedNights}
       recommendedStayLabel={recommendedStayLabel}
       fallbackEvent={fallbackEvent}
@@ -1582,6 +1660,7 @@ export function TBookMultiBookingWizard({
                   (next) => setCombinedLodging((prev) => (prev === next ? prev : next)),
                   events,
                   totalMaxAccommodationGuests,
+                  totalRosterGuests,
                   combinedRecommendedNights,
                   combinedRecommendedStayLabel,
                   events[0],
@@ -1596,6 +1675,11 @@ export function TBookMultiBookingWizard({
                   const stay = stayForEvents([event])
                   const stayLabel = formatStayDateRange(stay.startDate, stay.endDate, locale)
                   const maxAcc = accommodationGuestCount(guestsByEvent[event.id] ?? 1, event)
+                  const rosterGuests = countRosterPlayers(
+                    attendeesByEvent[event.id],
+                    event,
+                    guestsByEvent[event.id] ?? 1
+                  )
                   return renderLodgingPanel(
                     currentStepDef.kind,
                     lodging,
@@ -1607,6 +1691,7 @@ export function TBookMultiBookingWizard({
                     },
                     [event],
                     maxAcc,
+                    rosterGuests,
                     stay.nights,
                     stayLabel,
                     event,
@@ -1840,12 +1925,17 @@ export function TBookMultiBookingWizard({
                   const entryQuote = entryQuotes.find((row) => row.eventId === event.id)
                   const { lodging, selectedHotel, isSharedStay } = lodgingForEvent(event.id)
                   const maxAcc = accommodationGuestCount(guestCount, event)
+                  const rosterGuests = countRosterPlayers(
+                    attendeesByEvent[event.id],
+                    event,
+                    guestCount
+                  )
                   let accGuests = 0
                   if (lodgingMode === "combined") {
                     accGuests =
                       event.id === events[0]?.id ? combinedAccommodationGuests : 0
                   } else {
-                    accGuests = resolveAccommodationGuests(lodging, maxAcc)
+                    accGuests = resolveAccommodationGuests(lodging, maxAcc, rosterGuests)
                   }
 
                   let hotelLabel = tbookT(locale, "entryOnly")

@@ -35,11 +35,13 @@ import {
 } from "../lib/stay-recommendation"
 import {
   accommodationGuestCount,
+  countRosterPlayers,
   needsPlayerMemberForms,
   playerFieldSchema,
   playerRosterSize,
   initialPlayerMemberCount,
   resolvePlayersPerTicket,
+  resolveStayGuestCount,
 } from "../lib/registration-headcount"
 import { AccommodationOptionCards } from "./AccommodationOptionCards"
 import { BookingLegalConsent } from "./BookingLegalConsent"
@@ -294,12 +296,13 @@ export function TBookBookingWizard({
   const guestUnitLabel = registrationUnitLabel(registrationUnit, guests, locale)
   const needsPlayerMembers = event ? needsPlayerMemberForms(event) : false
   const maxAccommodationGuests = event ? accommodationGuestCount(guests, event) : guests
-  const accommodationGuests =
-    accommodationNeed === "none"
-      ? 0
-      : accommodationNeed === "some"
-        ? Math.min(Math.max(1, accommodationGuestOverride), maxAccommodationGuests)
-        : maxAccommodationGuests
+  const rosterPlayers = event ? countRosterPlayers(attendees, event, guests) : guests
+  const accommodationGuests = resolveStayGuestCount({
+    accommodationNeed,
+    override: accommodationGuestOverride,
+    rosterPlayers,
+    maxGuests: maxAccommodationGuests,
+  })
   const effectiveHotelId = accommodationNeed === "none" ? null : selectedHotelId
   const playerFields = event ? playerFieldSchema(event) : teamMemberFieldSchema
   const displayCurrency = hotelDisplayCurrency(
@@ -488,6 +491,7 @@ export function TBookBookingWizard({
           eventId: event.id,
           guests,
           accommodationGuests,
+          teamMemberCount: rosterPlayers,
           hotelId: effectiveHotelId,
           nights: effectiveHotelId ? nights : null,
           selections: effectiveHotelId ? selections : null,
@@ -518,6 +522,7 @@ export function TBookBookingWizard({
           eventId: event.id,
           guests,
           accommodationGuests,
+          teamMemberCount: rosterPlayers,
           customer,
           billing,
           returnBaseUrl:
@@ -617,6 +622,7 @@ export function TBookBookingWizard({
     updater: (row: TBookBookingAttendeePayload) => TBookBookingAttendeePayload
   ) => {
     setAttendees((rows) => rows.map((row, i) => (i === index ? updater(row) : row)))
+    setQuote(null)
     setError(null)
   }
 
@@ -931,9 +937,9 @@ export function TBookBookingWizard({
                 guests: accommodationGuests,
                 guestWord: tbookT(locale, accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
                 extra:
-                  accommodationNeed === "some" && accommodationGuests < maxAccommodationGuests
+                  accommodationNeed === "some" && accommodationGuests < rosterPlayers
                     ? tbookT(locale, "entriesWithoutRoomSuffix", {
-                        count: maxAccommodationGuests - accommodationGuests,
+                        count: rosterPlayers - accommodationGuests,
                       })
                     : "",
               })}
@@ -953,7 +959,7 @@ export function TBookBookingWizard({
                   setQuote(null)
                 }}
               >
-                {tbookT(locale, "everyoneCount", { count: maxAccommodationGuests })}
+                {tbookT(locale, "everyoneCount", { count: rosterPlayers })}
               </button>
               <button
                 type="button"
@@ -1333,7 +1339,7 @@ export function TBookBookingWizard({
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{tbookT(locale, "players")}</dt>
-                  <dd className="font-medium">{maxAccommodationGuests}</dd>
+                  <dd className="font-medium">{rosterPlayers}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{tbookT(locale, "contactLabel")}</dt>

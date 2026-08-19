@@ -419,6 +419,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                       description:
                         "Szállás létszám (lehet kevesebb, mint a belépők). Üres = minden belépő. 0 = nincs szállás.",
                     },
+                    teamMemberCount: {
+                      type: ["integer", "null"],
+                      minimum: 1,
+                      description:
+                        "Tényleges játékoslétszám (rugalmas csapat). Csapattagonkénti ár szabályokhoz. Üres = jegyek × playersPerTicket.",
+                    },
                     hotelId: { type: ["string", "null"] },
                     nights: {
                       type: ["integer", "null"],
@@ -469,6 +475,12 @@ export function buildTBookOpenApiSpec(baseUrl: string) {
                       minimum: 0,
                       description:
                         "Szállás létszám (lehet kevesebb, mint a belépők). Üres = minden belépő. 0 = nincs szállás.",
+                    },
+                    teamMemberCount: {
+                      type: ["integer", "null"],
+                      minimum: 1,
+                      description:
+                        "Tényleges játékoslétszám (rugalmas csapat). Csapattagonkénti ár szabályokhoz.",
                     },
                     customer: {
                       type: "object",

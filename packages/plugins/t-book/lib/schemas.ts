@@ -531,6 +531,8 @@ export const quoteRequestSchema = z.object({
   guests: z.number().int().min(1).max(50),
   /** Hotel headcount; omit for all entries. Use 0 with no hotelId for tickets-only. */
   accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+  /** Total players on the booking (flexible team roster). Used by per_team_member rules. */
+  teamMemberCount: z.number().int().min(1).max(500).nullable().optional(),
   hotelId: z.string().nullable().optional(),
   nights: z.number().int().min(1).max(60).nullable().optional(),
   selections: selectionsSchema.nullable().optional(),
@@ -540,6 +542,7 @@ export const multiBookingEntrySchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
   accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+  teamMemberCount: z.number().int().min(1).max(500).nullable().optional(),
   attendees: z.array(tBookBookingAttendeeSchema).optional().default([]),
   /** Used when lodgingMode is `separate`. */
   hotelId: z.string().nullable().optional(),
@@ -561,6 +564,7 @@ export const createBookingSchema = z.object({
   eventId: z.string().min(1),
   guests: z.number().int().min(1).max(50),
   accommodationGuests: z.number().int().min(0).max(200).nullable().optional(),
+  teamMemberCount: z.number().int().min(1).max(500).nullable().optional(),
   customer: tBookCustomerSchema,
   billing: tBookBillingSchema,
   returnBaseUrl: z.string().url().optional(),

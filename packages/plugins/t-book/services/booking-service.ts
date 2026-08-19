@@ -33,6 +33,7 @@ import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
 import { mergeRegistrationFieldSchemas, resolveTeamMemberFieldSchema, resolveTicketAttendeeFieldSchema } from "../lib/registration-fields"
 import {
   accommodationGuestCount,
+  countRosterPlayers,
   resolvePlayersPerTicket,
 } from "../lib/registration-headcount"
 import { validateEligibility } from "../lib/eligibility"
@@ -90,6 +91,10 @@ export class TBookBookingService {
     const selections: TBookSelections = (parsed.selections ?? {}) as TBookSelections
 
     const maxHotelGuests = accommodationGuestCount(parsed.guests, event)
+    const teamMemberCount = Math.min(
+      maxHotelGuests,
+      Math.max(1, Math.floor(parsed.teamMemberCount ?? countRosterPlayers(null, event, parsed.guests)))
+    )
     let hotelGuests =
       parsed.accommodationGuests == null ? maxHotelGuests : parsed.accommodationGuests
     if (hotelGuests > maxHotelGuests) {
@@ -150,7 +155,8 @@ export class TBookBookingService {
       groupVatPercent: group?.defaultVatPercent ?? 27,
       selections,
       pricingRules: event.pricingRules ?? null,
-      playersPerTicket: event.playersPerTicket ?? 1,
+      playersPerTicket: resolvePlayersPerTicket(event),
+      teamMemberCount,
     })
 
     return {
@@ -189,6 +195,14 @@ export class TBookBookingService {
     opts?: { groupId?: mongoose.Types.ObjectId }
   ): Promise<ITBookBooking> {
     const parsed = createBookingSchema.parse(input)
+    const inferredTeamMemberCount =
+      parsed.attendees && parsed.attendees.length > 0
+        ? countRosterPlayers(
+            parsed.attendees,
+            { registrationUnit: "team", teamMemberLimit: 100 },
+            parsed.guests
+          )
+        : parsed.teamMemberCount ?? undefined
     const {
       event,
       quote,
@@ -204,6 +218,7 @@ export class TBookBookingService {
         eventId: parsed.eventId,
         guests: parsed.guests,
         accommodationGuests: parsed.accommodationGuests,
+        teamMemberCount: inferredTeamMemberCount,
         hotelId: parsed.hotelId,
         nights: parsed.nights,
         selections: parsed.selections,
@@ -375,6 +390,7 @@ export class TBookBookingService {
           eventId: entry.eventId,
           guests: entry.guests,
           accommodationGuests,
+          teamMemberCount: entry.teamMemberCount,
           hotelId,
           nights,
           selections,
@@ -458,6 +474,7 @@ export class TBookBookingService {
           eventId: entry.eventId,
           guests: entry.guests,
           accommodationGuests,
+          teamMemberCount: entry.teamMemberCount,
           customer: parsed.customer,
           billing: parsed.billing,
           returnBaseUrl: parsed.returnBaseUrl,

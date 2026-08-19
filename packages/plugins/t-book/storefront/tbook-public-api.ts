@@ -169,6 +169,7 @@ export function quoteBooking(
     guests: number
     /** Hotel headcount (can be less than ticket×players). Omit = all entries. */
     accommodationGuests?: number | null
+    teamMemberCount?: number | null
     hotelId?: string | null
     nights?: number | null
     selections?: TBookSelections | null
@@ -190,6 +191,7 @@ export type TBookMultiQuoteEntry = {
   eventId: string
   guests: number
   accommodationGuests?: number | null
+  teamMemberCount?: number | null
   hotelId?: string | null
   nights?: number | null
   selections?: TBookSelections | null
@@ -229,6 +231,7 @@ export function createBooking(
     eventId: string
     guests: number
     accommodationGuests?: number | null
+    teamMemberCount?: number | null
     customer: { name: string; email: string; phone: string; note?: string }
     attendees?: TBookBookingAttendeePayload[]
     billing: {

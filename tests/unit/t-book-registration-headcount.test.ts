@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
   accommodationGuestCount,
+  countRosterPlayers,
   initialPlayerMemberCount,
   needsPlayerMemberForms,
   playerRosterSize,
   resolvePlayersPerTicket,
+  resolveStayGuestCount,
   usesFixedPlayerRoster,
 } from "@wse/plugin-t-book/lib/registration-headcount"
 import { validateAttendees } from "@wse/plugin-t-book/lib/attendee-fields"
@@ -28,6 +30,39 @@ describe("registration-headcount", () => {
         playersPerTicket: 1,
       })
     ).toBe(10)
+  })
+
+  it("counts actual flexible team roster instead of the max ceiling", () => {
+    const event = {
+      registrationUnit: "team" as const,
+      playersPerTicket: 1,
+      teamMemberLimit: 8,
+      teamMemberFieldSchema: [{ key: "name", label: "Name", type: "text" as const }],
+    }
+    expect(accommodationGuestCount(1, event)).toBe(8)
+    expect(countRosterPlayers(null, event, 1)).toBe(1)
+    expect(
+      countRosterPlayers(
+        [{ members: [{ fields: { name: "A" } }, { fields: { name: "B" } }] }],
+        event,
+        1
+      )
+    ).toBe(2)
+    expect(
+      resolveStayGuestCount({
+        accommodationNeed: "all",
+        rosterPlayers: 2,
+        maxGuests: 8,
+      })
+    ).toBe(2)
+    expect(
+      resolveStayGuestCount({
+        accommodationNeed: "some",
+        override: 3,
+        rosterPlayers: 2,
+        maxGuests: 8,
+      })
+    ).toBe(3)
   })
 
   it("does not treat teamMemberLimit as a fixed playersPerTicket", () => {

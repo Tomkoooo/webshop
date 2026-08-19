@@ -87,8 +87,10 @@ export type PricingRuleContext = {
   hasPackage: boolean
   guests: number
   accommodationGuests: number
-  /** Players per ticket/team — used for per_team_member rules. */
+  /** Players per ticket/team — used for per_team_member rules when roster is fixed. */
   playersPerTicket: number
+  /** Total players on the booking (flexible team roster). Defaults to guests × playersPerTicket. */
+  teamMemberCount?: number
   ticketSubtotalHuf: number
   accommodationSubtotalHuf: number
 }
@@ -114,7 +116,7 @@ export function resolveTicketFeeOverride(
   rules: TBookPricingRule[] | null | undefined,
   ctx: Pick<
     PricingRuleContext,
-    "hasHotel" | "hasPackage" | "guests" | "accommodationGuests" | "playersPerTicket"
+    "hasHotel" | "hasPackage" | "guests" | "accommodationGuests" | "playersPerTicket" | "teamMemberCount"
   >
 ): number | null {
   const list = normalizePricingRules(rules)
@@ -133,9 +135,16 @@ export function resolveTicketFeeOverride(
   return override
 }
 
+function resolveTeamMemberCount(ctx: PricingRuleContext): number {
+  if (ctx.teamMemberCount != null && Number.isFinite(ctx.teamMemberCount) && ctx.teamMemberCount > 0) {
+    return Math.max(1, Math.floor(ctx.teamMemberCount))
+  }
+  const players = Math.max(1, ctx.playersPerTicket ?? 1)
+  return Math.max(1, ctx.guests) * players
+}
+
 function computeRuleAmount(rule: TBookPricingRule, ctx: PricingRuleContext): number {
   const amount = rule.amount
-  const players = Math.max(1, ctx.playersPerTicket ?? 1)
   switch (rule.amountMode) {
     case "fixed":
       return amount
@@ -144,7 +153,7 @@ function computeRuleAmount(rule: TBookPricingRule, ctx: PricingRuleContext): num
     case "per_team":
       return amount * Math.max(1, ctx.guests)
     case "per_team_member":
-      return amount * Math.max(1, ctx.guests) * players
+      return amount * resolveTeamMemberCount(ctx)
     case "per_accommodation_guest":
       return amount * Math.max(1, ctx.accommodationGuests || ctx.guests)
     case "percent_accommodation":

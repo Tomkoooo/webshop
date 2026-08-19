@@ -178,6 +178,8 @@ export type TBookQuoteInput = {
   selections?: TBookSelections | null
   /** Event-level special pricing rules (discounts, surcharges, free entry override). */
   pricingRules?: import("./pricing-rules").TBookPricingRule[] | null
-  /** Players per team ticket — for per_team_member pricing rules. */
+  /** Players per team ticket — for per_team_member pricing rules when roster is fixed. */
   playersPerTicket?: number
+  /** Total players on the booking (flexible team roster). */
+  teamMemberCount?: number
 }

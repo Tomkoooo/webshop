@@ -45,9 +45,9 @@ export function initialPlayerMemberCount(event: HeadcountEventLike): number {
 }
 
 /**
- * Hotel / package planning headcount.
+ * Maximum hotel / package headcount allowed for this booking.
  * Fixed multi-player tickets use playersPerTicket; flexible teams use teamMemberLimit
- * as the planning ceiling (guests can lower accommodation headcount on the form).
+ * as a ceiling only — billed guests come from `countRosterPlayers`.
  */
 export function accommodationGuestCount(ticketCount: number, event: HeadcountEventLike): number {
   const tickets = Math.max(1, Math.floor(ticketCount || 1))
@@ -59,6 +59,58 @@ export function accommodationGuestCount(ticketCount: number, event: HeadcountEve
     return tickets * limit
   }
   return tickets
+}
+
+export type RosterAttendeeLike = {
+  members?: unknown[] | null
+}
+
+/**
+ * Actual (or currently planned) player count.
+ * Flexible team events use roster slots, never `teamMemberLimit`.
+ * Missing roster falls back to one player per team/entry.
+ */
+export function countRosterPlayers(
+  attendees: RosterAttendeeLike[] | null | undefined,
+  event: HeadcountEventLike,
+  ticketCount: number
+): number {
+  const tickets = Math.max(1, Math.floor(ticketCount || 1))
+  const max = accommodationGuestCount(tickets, event)
+  if (usesFixedPlayerRoster(event)) {
+    return Math.min(tickets * resolvePlayersPerTicket(event), max)
+  }
+
+  if ((event.registrationUnit ?? "person") !== "team") {
+    return Math.min(tickets, max)
+  }
+
+  const rows = attendees ?? []
+  if (rows.length === 0) {
+    return Math.min(tickets * Math.max(1, initialPlayerMemberCount(event) || 1), max)
+  }
+
+  let total = 0
+  for (const row of rows) {
+    const n = Array.isArray(row.members) ? row.members.length : 0
+    total += Math.max(1, n)
+  }
+  return Math.min(Math.max(1, total), max)
+}
+
+/** Hotel headcount for the stay choice: "all" follows the roster, not the ceiling. */
+export function resolveStayGuestCount(input: {
+  accommodationNeed: "all" | "some" | "none"
+  override?: number
+  rosterPlayers: number
+  maxGuests: number
+}): number {
+  if (input.accommodationNeed === "none") return 0
+  const max = Math.max(1, Math.floor(input.maxGuests || 1))
+  if (input.accommodationNeed === "some") {
+    return Math.min(Math.max(1, Math.floor(input.override || 1)), max)
+  }
+  return Math.min(Math.max(1, Math.floor(input.rosterPlayers || 1)), max)
 }
 
 /** Schema for each player slot (members array). */

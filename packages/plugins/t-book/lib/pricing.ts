@@ -357,6 +357,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     guests,
     accommodationGuests: accommodationGuests || guests,
     playersPerTicket: input.playersPerTicket ?? 1,
+    teamMemberCount: input.teamMemberCount,
   })
   const effectiveTicketFee =
     ticketFeeOverride != null ? ticketFeeOverride : Math.max(0, input.ticketFeeHuf)
@@ -527,6 +528,7 @@ export function calculateBookingQuote(input: TBookQuoteInput): TBookPriceQuote {
     guests,
     accommodationGuests: accommodationGuests || guests,
     playersPerTicket: input.playersPerTicket ?? 1,
+    teamMemberCount: input.teamMemberCount,
     ticketSubtotalHuf: ticketSubtotalFinal,
     accommodationSubtotalHuf,
   })
