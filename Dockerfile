@@ -11,6 +11,7 @@ COPY apps/reference/package.json ./apps/reference/
 COPY apps/dr-zsanett/package.json ./apps/dr-zsanett/
 COPY apps/world-darts-festival/package.json ./apps/world-darts-festival/
 COPY apps/eventstructure/package.json ./apps/eventstructure/
+COPY apps/es2/package.json ./apps/es2/
 COPY apps/tbook/package.json ./apps/tbook/
 COPY apps/keramia-implant/package.json ./apps/keramia-implant/
 COPY apps/keramia-fogfeherites/package.json ./apps/keramia-fogfeherites/

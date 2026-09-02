@@ -75,14 +75,14 @@
     {
       "key": "eventstructure",
       "label": "Event Structure",
-      "allowedTemplates": ["eventstructure-v2", "eventstructure"],
-      "defaultTemplateId": "eventstructure-v2",
+      "allowedTemplates": ["eventstructure"],
+      "defaultTemplateId": "eventstructure",
       "enabledPlugins": [],
       "pluginConfig": {}
     },
     {
-      "key": "es",
-      "label": "Event Structure (es)",
+      "key": "es2",
+      "label": "Event Structure v2",
       "allowedTemplates": ["eventstructure-v2"],
       "defaultTemplateId": "eventstructure-v2",
       "enabledPlugins": [],
