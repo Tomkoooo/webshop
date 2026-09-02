@@ -13,6 +13,7 @@
     "@wse/core": "*",
     "@wse/sdk": "*",
     "@wse/template-eventstructure": "*",
+    "@wse/template-eventstructure-v2": "*",
     "@wse/plugin-t-book": "*"
   }
 }

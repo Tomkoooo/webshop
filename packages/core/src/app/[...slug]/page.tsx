@@ -27,9 +27,24 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
       getStorefrontShopName(),
     ])
     const seoTitle = content?.meta?.seoTitle?.trim()
+    const seoDescription = content?.meta?.seoDescription?.trim()
+    const title = seoTitle
+      ? seoTitle.includes("|")
+        ? seoTitle
+        : withStorefrontPageTitle(seoTitle, shopName)
+      : undefined
     return {
-      title: seoTitle ? withStorefrontPageTitle(seoTitle, shopName) : undefined,
-      description: content?.meta?.seoDescription || undefined,
+      title,
+      description: seoDescription || undefined,
+      openGraph: {
+        ...(title ? { title } : {}),
+        ...(seoDescription ? { description: seoDescription } : {}),
+        type: "website",
+      },
+      twitter: {
+        ...(title ? { title } : {}),
+        ...(seoDescription ? { description: seoDescription } : {}),
+      },
     }
   } catch {
     return {}

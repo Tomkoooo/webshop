@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   env: {
-    WSE_SITE_CONFIG_JSON: "{\"id\":\"eventstructure\",\"label\":\"eventstructure\",\"templateId\":\"eventstructure\",\"plugins\":[]}",
+    WSE_SITE_CONFIG_JSON: "{\"id\":\"es\",\"label\":\"Event Structure\",\"templateId\":\"eventstructure-v2\",\"plugins\":[]}",
   },
   /* config options here */
   output: "standalone",
@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   // Keep Mongoose out of Turbopack bundles for API routes (avoids multi-second compiles on /api/media).
   serverExternalPackages: ["mongoose", "mongodb", "handlebars", "nodemailer"],
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",

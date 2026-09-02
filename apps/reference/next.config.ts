@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   // Keep Mongoose out of Turbopack bundles for API routes (avoids multi-second compiles on /api/media).
   serverExternalPackages: ["mongoose", "mongodb", "handlebars", "nodemailer"],
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",

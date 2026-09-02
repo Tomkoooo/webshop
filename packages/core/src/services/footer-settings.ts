@@ -151,8 +151,37 @@ function docToSettings(doc: Record<string, unknown>, defaults: FooterSettings): 
   return normalize(doc as Partial<FooterSettings>, defaults)
 }
 
+async function dropStaleSingletonIndex(): Promise<void> {
+  try {
+    const indexes = await FooterSetting.collection.indexes()
+    if (indexes.some((idx) => idx.name === "singleton_1")) {
+      await FooterSetting.collection.dropIndex("singleton_1")
+    }
+  } catch {
+    // Index may already be gone or collection not ready — ignore.
+  }
+}
+
 async function persistFooter(key: string, settings: FooterSettings): Promise<void> {
-  await FooterSetting.findOneAndUpdate({ key }, { $set: { key, ...settings } }, { upsert: true })
+  try {
+    await FooterSetting.findOneAndUpdate({ key }, { $set: { key, ...settings } }, { upsert: true })
+  } catch (err: unknown) {
+    const code = (err as { code?: number })?.code
+    const keyPattern = (err as { keyPattern?: Record<string, unknown> })?.keyPattern
+    // Legacy unique index on `singleton` (pre key-scoped footers) blocks inserts when
+    // multiple docs have singleton:null. Drop it and retry once.
+    if (code === 11000 && keyPattern && "singleton" in keyPattern) {
+      await dropStaleSingletonIndex()
+      await FooterSetting.findOneAndUpdate({ key }, { $set: { key, ...settings } }, { upsert: true })
+      return
+    }
+    // Concurrent upsert race on `key`: another request already inserted this row.
+    if (code === 11000) {
+      const existing = await FooterSetting.findOne({ key }).lean()
+      if (existing) return
+    }
+    throw err
+  }
 }
 
 export class FooterSettingsService {

@@ -4,8 +4,38 @@ import { extractMineshowSiteConfig } from "@wse/template-minecraft-camp/lib/site
 import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
 import { WDF_STOREFRONT_ROOT_CLASS } from "@wse/template-world-darts-festival/lib/wdf-classes"
 import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import type { Metadata } from "next"
+import { getStorefrontShopName, withStorefrontPageTitle } from "@wse/core/lib/storefront-page-title"
 
 export const revalidate = 60
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const [{ content }, shopName] = await Promise.all([getHomepagePageData(), getStorefrontShopName()])
+    const seoTitle = content.meta?.seoTitle?.trim()
+    const seoDescription = content.meta?.seoDescription?.trim()
+    const title = seoTitle
+      ? seoTitle.includes("|")
+        ? seoTitle
+        : withStorefrontPageTitle(seoTitle, shopName)
+      : undefined
+    return {
+      title,
+      description: seoDescription || undefined,
+      openGraph: {
+        ...(title ? { title } : {}),
+        ...(seoDescription ? { description: seoDescription } : {}),
+        type: "website",
+      },
+      twitter: {
+        ...(title ? { title } : {}),
+        ...(seoDescription ? { description: seoDescription } : {}),
+      },
+    }
+  } catch {
+    return {}
+  }
+}
 
 export default async function LandingPage() {
   const [{ chrome, content, dependencies, footerData }, footerHydration] = await Promise.all([

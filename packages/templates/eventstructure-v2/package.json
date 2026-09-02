@@ -1,0 +1,23 @@
+{
+  "name": "@wse/template-eventstructure-v2",
+  "version": "2.0.0",
+  "description": "Webshop Engine template package: eventstructure-v2.",
+  "type": "module",
+  "exports": {
+    "./*": "./*.ts",
+    "./*.css": "./*.css"
+  },
+  "dependencies": {
+    "@wse/core": "*",
+    "@wse/sdk": "*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomkoooo/webshop.git",
+    "directory": "packages/templates/eventstructure-v2"
+  }
+}
