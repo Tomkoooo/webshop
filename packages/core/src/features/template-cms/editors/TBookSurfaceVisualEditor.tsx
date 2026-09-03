@@ -79,7 +79,6 @@ export function TBookSurfaceVisualEditor({
   void themeResetBaseline
   const router = useRouter()
   const { mod, error: templateLoadError } = useTemplateModule(templateId)
-  const isTBookLanding = Boolean(mod.tBookPages)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -103,6 +102,8 @@ export function TBookSurfaceVisualEditor({
   if (!mod) {
     return <CmsEditorTemplateLoading />
   }
+
+  const isTBookLanding = Boolean(mod.tBookPages)
 
   const tBookKey = TBOOK_PAGE_KEY_MAP[pageKey]
   const def = tBookKey ? mod.tBookPages?.[tBookKey] : undefined

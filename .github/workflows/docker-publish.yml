@@ -5,34 +5,19 @@ on:
     branches:
       - engine-v2
       - main
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: Rebuild every site image in this branch catalog
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  resolve-matrix:
+  test:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set.outputs.matrix }}
-    steps:
-      - id: set
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/engine-v2" ]; then
-            echo 'matrix={"include":[{"site_app":"apps/tbook","site_server":"apps/tbook/server.js","image_tag":"engine-v2"},{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"engine-v2-reference"},{"site_app":"apps/world-darts-festival","site_server":"apps/world-darts-festival/server.js","image_tag":"world-darts-festival"},{"site_app":"apps/sorfeszt","site_server":"apps/sorfeszt/server.js","image_tag":"sorfeszt"},{"site_app":"apps/eventstructure","site_server":"apps/eventstructure/server.js","image_tag":"eventstructure"},{"site_app":"apps/es2","site_server":"apps/es2/server.js","image_tag":"es2"},{"site_app":"apps/dr-zsanett","site_server":"apps/dr-zsanett/server.js","image_tag":"dr-zsanett"}]}' >> "$GITHUB_OUTPUT"
-          else
-            echo 'matrix={"include":[{"site_app":"apps/reference","site_server":"apps/reference/server.js","image_tag":"latest"}]}' >> "$GITHUB_OUTPUT"
-          fi
-
-  build-and-push:
-    needs: resolve-matrix
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.resolve-matrix.outputs.matrix) }}
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,8 +31,56 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Check docker image matrix mapping
+        run: node scripts/ci/resolve-docker-matrix.mjs --self-test
+
+      - name: Typecheck site app (catches core/template TS errors without Docker)
+        run: npx tsc --noEmit -p apps/sorfeszt
+
+      - name: Validate deployments
+        run: npm run deployments:validate
+
       - name: Run env-safe unit tests
         run: npm run test:unit -- --exclude tests/unit/order-and-gls-services.test.ts
+
+  resolve-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+      should_build: ${{ steps.set.outputs.should_build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve images to rebuild
+        id: set
+        run: |
+          FORCE_ARGS=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.force_all }}" = "true" ]; then
+            FORCE_ARGS="--force"
+          fi
+          node scripts/ci/resolve-docker-matrix.mjs \
+            --ref "${{ github.ref }}" \
+            --before "${{ github.event.before }}" \
+            --sha "${{ github.sha }}" \
+            $FORCE_ARGS >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    needs: [test, resolve-matrix]
+    if: needs.resolve-matrix.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.resolve-matrix.outputs.matrix) }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
