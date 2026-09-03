@@ -27,6 +27,34 @@
   color: #3f382e;
 }
 
+/* ── Wave ribbon liquid float animation ─────────────────────────────────── */
+
+@keyframes sorfeszt-wave-float-top {
+  0%   { d: path("M0,52 C180,88 360,12 540,40 C720,68 900,8 1080,44 C1260,80 1350,28 1440,48 L1440,80 L0,80 Z"); }
+  25%  { d: path("M0,40 C180,72 360,24 540,52 C720,80 900,16 1080,38 C1260,60 1350,36 1440,56 L1440,80 L0,80 Z"); }
+  50%  { d: path("M0,60 C180,96 360,8  540,36 C720,64 900,4  1080,50 C1260,96 1350,20 1440,42 L1440,80 L0,80 Z"); }
+  75%  { d: path("M0,44 C180,80 360,20 540,44 C720,68 900,12 1080,48 C1260,84 1350,32 1440,52 L1440,80 L0,80 Z"); }
+  100% { d: path("M0,52 C180,88 360,12 540,40 C720,68 900,8 1080,44 C1260,80 1350,28 1440,48 L1440,80 L0,80 Z"); }
+}
+
+@keyframes sorfeszt-wave-float-bottom {
+  0%   { d: path("M0,0 L1440,0 L1440,28 C1260,64 1080,8 900,40 C720,72 540,12 360,44 C180,76 90,20 0,36 Z"); }
+  25%  { d: path("M0,0 L1440,0 L1440,36 C1260,56 1080,16 900,48 C720,80 540,4  360,36 C180,68 90,28 0,44 Z"); }
+  50%  { d: path("M0,0 L1440,0 L1440,20 C1260,72 1080,4  900,32 C720,60 540,20 360,52 C180,84 90,12 0,28 Z"); }
+  75%  { d: path("M0,0 L1440,0 L1440,32 C1260,60 1080,12 900,44 C720,76 540,8  360,40 C180,72 90,24 0,40 Z"); }
+  100% { d: path("M0,0 L1440,0 L1440,28 C1260,64 1080,8 900,40 C720,72 540,12 360,44 C180,76 90,20 0,36 Z"); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sorfeszt-wave-top-path {
+    animation: sorfeszt-wave-float-top 7s ease-in-out infinite;
+  }
+
+  .sorfeszt-wave-bottom-path {
+    animation: sorfeszt-wave-float-bottom 8.5s ease-in-out infinite;
+  }
+}
+
 .sorfeszt-wave-gold,
 .sorfeszt-wave-gold h1,
 .sorfeszt-wave-gold h2,
@@ -68,124 +96,83 @@
   color: var(--theme-accent-foreground, #fff8ee);
 }
 
+/* ── Beer pint ticket card ─────────────────────────────────────────────── */
+
 .sorfeszt-pint {
-  --sorfeszt-pint-beer: linear-gradient(
-    180deg,
-    var(--sorfeszt-foam) 0 9%,
-    color-mix(in oklab, var(--theme-secondary) 42%, var(--sorfeszt-foam)) 9% 18%,
-    var(--theme-secondary) 18% 72%,
-    color-mix(in oklab, var(--theme-primary) 38%, var(--theme-secondary)) 72% 100%
-  );
   --sorfeszt-pint-rim: var(--theme-primary);
+  --sorfeszt-pint-body-bg: linear-gradient(180deg, #fcebc2 0%, #f3d082 15%, #e0ac49 100%);
   position: relative;
   isolation: isolate;
-  display: flex;
-  align-items: stretch;
   width: min(100%, 22rem);
-  min-height: 36rem;
   margin-inline: auto;
-  padding: 0.35rem 0 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
   color: var(--sorfeszt-ink);
 }
 
+/* Outer wrapper: glass body + handle side by side */
 .sorfeszt-pint-body {
   display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
+  align-items: stretch;
 }
 
-.sorfeszt-pint-foam {
-  position: relative;
-  z-index: 2;
-  height: 3.6rem;
-  flex-shrink: 0;
-  border-radius: 0;
-  clip-path: polygon(
-    0 42%,
-    7% 18%,
-    14% 36%,
-    22% 10%,
-    31% 32%,
-    40% 8%,
-    50% 30%,
-    59% 6%,
-    68% 28%,
-    77% 12%,
-    86% 34%,
-    94% 16%,
-    100% 38%,
-    100% 100%,
-    0 100%
-  );
-  background:
-    radial-gradient(circle at 14% 72%, #fff 0 30%, transparent 32%),
-    radial-gradient(circle at 34% 48%, var(--sorfeszt-foam) 0 34%, transparent 36%),
-    radial-gradient(circle at 54% 70%, #fff 0 28%, transparent 30%),
-    radial-gradient(circle at 72% 44%, var(--sorfeszt-foam) 0 32%, transparent 34%),
-    radial-gradient(circle at 88% 68%, #fff 0 30%, transparent 32%),
-    linear-gradient(
-      180deg,
-      #fff 0%,
-      var(--sorfeszt-foam) 62%,
-      color-mix(in oklab, var(--theme-secondary) 35%, var(--sorfeszt-foam)) 100%
-    );
-}
-
+/* The main glass column */
 .sorfeszt-pint-glass {
   position: relative;
-  z-index: 1;
-  display: flex;
+  z-index: 2;
   flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
+  background: var(--sorfeszt-pint-body-bg);
+  border: 6px solid var(--sorfeszt-pint-rim);
+  border-radius: 12px 12px 24px 24px;
+  box-shadow: 0 12px 24px color-mix(in oklab, var(--theme-primary) 15%, transparent);
   overflow: hidden;
-  border-radius: 0;
-  background: var(--sorfeszt-pint-beer);
-  clip-path: none;
-  box-shadow:
-    inset 0 0 0 5px var(--sorfeszt-pint-rim),
-    inset 18px 0 22px color-mix(in oklab, #fff 22%, transparent),
-    inset -16px 0 20px color-mix(in oklab, var(--theme-primary) 18%, transparent);
 }
 
+/* Subtle left-edge shine */
 .sorfeszt-pint-glass::before {
   content: "";
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 22%;
-  background: linear-gradient(
-    90deg,
-    color-mix(in oklab, var(--sorfeszt-foam) 55%, transparent),
-    transparent 80%
-  );
+  top: 0;
+  left: 12px;
+  width: 12px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.25);
   pointer-events: none;
+  z-index: 3;
 }
 
-.sorfeszt-pint-glass::after {
+/* Foam head */
+.sorfeszt-pint-foam {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  padding: 18px 16px 14px;
+  background-color: #ffffff;
+  border-bottom: 3px solid #ebd39b;
+}
+
+/* Wavy foam bottom */
+.sorfeszt-pint-foam::after {
   content: "";
   position: absolute;
-  top: 0;
-  right: 0;
+  bottom: -10px;
   left: 0;
-  height: 0.45rem;
-  background: color-mix(in oklab, var(--theme-primary) 70%, var(--theme-secondary));
+  width: 100%;
+  height: 10px;
+  background: radial-gradient(circle, #ffffff 60%, transparent 65%);
+  background-size: 16px 20px;
   pointer-events: none;
 }
 
+/* Label/content area inside the glass body */
 .sorfeszt-pint-label {
   position: relative;
   z-index: 1;
   flex: 1;
-  margin: 0.55rem 0.7rem 0.9rem;
-  padding: 0.9rem 0.95rem 1rem;
-  border: 0;
-  border-radius: 0;
-  background: color-mix(in oklab, var(--theme-surface, #fffbf4) 88%, transparent);
-  color: var(--sorfeszt-ink);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px 20px;
 }
 
 .sorfeszt-pint-label h1,
@@ -196,53 +183,75 @@
   color: inherit;
 }
 
+/* Glass foot / base — repurposed as a subtle bottom cap */
 .sorfeszt-pint-foot {
-  height: 1.15rem;
-  margin-top: 0;
-  border-radius: 0;
-  background: var(--theme-primary);
-  box-shadow:
-    inset 0 3px 0 color-mix(in oklab, var(--theme-secondary) 35%, transparent),
-    0 10px 18px color-mix(in oklab, var(--theme-primary) 22%, transparent);
+  display: none; /* no separate foot element needed in new design */
 }
 
+/* Handle on the right */
 .sorfeszt-pint-handle {
-  width: 2.85rem;
   flex-shrink: 0;
-  margin: 7.5rem 0 9.5rem -6px;
-  border: 13px solid var(--theme-primary, #1b2a4a);
-  border-left: 0;
-  border-radius: 0 1.15rem 1.15rem 0;
+  width: 50px;
+  margin: 110px 0 0 -6px;
+  height: 220px;
+  border: 14px solid var(--sorfeszt-pint-rim);
+  border-left: none;
+  border-radius: 0 24px 24px 0;
   background: transparent;
-  box-shadow:
-    inset -4px 0 0 var(--theme-secondary, #c4a35a),
-    6px 10px 16px color-mix(in oklab, var(--theme-primary) 22%, transparent);
+  z-index: 1;
 }
 
+/* VIP variant — richer amber to burgundy */
 .sorfeszt-pint--vip {
-  --sorfeszt-pint-beer: linear-gradient(
-    180deg,
-    var(--sorfeszt-foam) 0 10%,
-    color-mix(in oklab, var(--theme-secondary) 50%, var(--sorfeszt-foam)) 10% 20%,
-    var(--theme-secondary) 20% 52%,
-    color-mix(in oklab, var(--theme-accent) 70%, var(--theme-secondary)) 52% 100%
-  );
   --sorfeszt-pint-rim: var(--theme-accent);
+  --sorfeszt-pint-body-bg: linear-gradient(
+    180deg,
+    #fcebc2 0%,
+    color-mix(in oklab, var(--theme-secondary) 50%, #fcebc2) 20%,
+    var(--theme-secondary) 52%,
+    color-mix(in oklab, var(--theme-accent) 70%, var(--theme-secondary)) 100%
+  );
 }
 
+/* Table variant — deeper navy bottom */
 .sorfeszt-pint--table {
-  --sorfeszt-pint-beer: linear-gradient(
+  --sorfeszt-pint-body-bg: linear-gradient(
     180deg,
-    var(--sorfeszt-foam) 0 10%,
-    color-mix(in oklab, var(--theme-secondary) 45%, var(--sorfeszt-foam)) 10% 20%,
-    var(--theme-secondary) 20% 48%,
-    var(--theme-primary) 48% 100%
+    #fcebc2 0%,
+    color-mix(in oklab, var(--theme-secondary) 45%, #fcebc2) 20%,
+    var(--theme-secondary) 48%,
+    var(--theme-primary) 100%
   );
 }
 
 .sorfeszt-pint--soon {
   filter: grayscale(0.35);
   opacity: 0.82;
+}
+
+/* Bullet-style feature list inside pint label */
+.sorfeszt-pint-label .sorfeszt-pint-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sorfeszt-pint-label .sorfeszt-pint-features li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sorfeszt-ink);
+}
+
+.sorfeszt-pint-label .sorfeszt-pint-features li::before {
+  content: "•";
+  position: absolute;
+  left: 3px;
+  color: var(--sorfeszt-pint-rim);
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .sorfeszt-storefront .sorfeszt-hero-glow::after {
@@ -307,4 +316,18 @@
   background:
     radial-gradient(ellipse 90% 60% at 80% 10%, color-mix(in oklab, var(--theme-secondary) 28%, transparent), transparent 55%),
     linear-gradient(160deg, var(--theme-primary) 0%, #24365e 48%, #152238 100%);
+}
+
+/* Hero headings always light for legibility over any image */
+.sorfeszt-storefront .sorfeszt-hero-glow h1,
+.sorfeszt-storefront .sorfeszt-hero-glow h2 {
+  color: #ffffff;
+  text-shadow:
+    0 2px 12px color-mix(in oklab, var(--theme-primary) 70%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.sorfeszt-storefront .sorfeszt-hero-glow p {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 6px color-mix(in oklab, var(--theme-primary) 55%, transparent);
 }

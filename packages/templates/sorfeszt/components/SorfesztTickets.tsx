@@ -18,11 +18,14 @@ function SorfesztBeerMug({
   kind,
   onSale,
   className,
+  foamSlot,
   children,
 }: {
   kind: "standard" | "vip" | "table"
   onSale: boolean
   className?: string
+  /** Content rendered inside the foam head (badge + title) */
+  foamSlot?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -36,12 +39,13 @@ function SorfesztBeerMug({
     >
       <div className="sorfeszt-pint-body">
         <div className="sorfeszt-pint-glass">
-          <div className="sorfeszt-pint-foam" aria-hidden />
+          <div className="sorfeszt-pint-foam">
+            {foamSlot}
+          </div>
           <div className="sorfeszt-pint-label flex flex-1 flex-col">{children}</div>
         </div>
-        <div className="sorfeszt-pint-foot" aria-hidden />
+        <span className="sorfeszt-pint-handle" aria-hidden />
       </div>
-      <span className="sorfeszt-pint-handle" aria-hidden />
     </article>
   )
 }
@@ -96,40 +100,53 @@ export function SorfesztLiveTickets({
         const onSale = sales === "on_sale"
         const isHtml = /<[a-z][\s\S]*>/i.test(event.description || "")
         return (
-          <SorfesztBeerMug key={event.id} kind={kind} onSale={onSale}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              {kind === "vip" ? "VIP" : kind === "table" ? "Asztal" : "Napijegy"}
-              {sales === "upcoming" ? " · Hamarosan" : sales === "closed" ? " · Lezárva" : " · Kapható"}
-            </p>
-            <h3 className="mt-1 text-lg font-bold text-primary">{event.name}</h3>
-            <p className="mt-1 font-heading text-2xl font-bold text-primary">
+          <SorfesztBeerMug
+            key={event.id}
+            kind={kind}
+            onSale={onSale}
+            foamSlot={
+              <>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#7a6331" }}>
+                  {kind === "vip" ? "VIP" : kind === "table" ? "Asztal" : "Napijegy"}
+                  {sales === "upcoming" ? " · Hamarosan" : sales === "closed" ? " · Lezárva" : " · Kapható"}
+                </p>
+                <h3 className="mt-1 text-lg font-bold text-primary leading-tight">{event.name}</h3>
+              </>
+            }
+          >
+            <p className="font-heading text-3xl font-black text-primary">
               {formatHuf(event.ticketFeeHuf, event.currency ?? "HUF")}
             </p>
-            <p className="mt-2 text-sm text-primary">
+            <p className="mt-2 text-sm font-semibold text-primary border-b pb-3 mb-3" style={{ borderColor: "#c09138" }}>
               {formatEventSchedule(event.startDate, event.endDate, event.startTime, event.endTime, "hu")}
             </p>
             {sales === "upcoming" && event.salesOpensAt ? (
-              <p className="mt-1 text-sm font-semibold text-primary">
+              <p className="mb-3 text-sm font-semibold text-primary">
                 Vásárolható: {formatSalesOpensAt(event.salesOpensAt, "hu")}
               </p>
             ) : null}
             {event.description ? (
               isHtml ? (
-                <StorefrontRichHtml html={event.description} className="mt-3 text-sm text-primary [&_p]:my-1" />
+                <StorefrontRichHtml html={event.description} className="mt-1 text-sm text-primary [&_p]:my-1 [&_li]:list-none [&_li]:pl-4 [&_li:before]:content-['•'] [&_li:before]:absolute [&_li:before]:-left-1" />
               ) : (
-                <p className="mt-3 text-sm text-primary/85">{event.description.replace(/<[^>]+>/g, " ")}</p>
+                <ul className="sorfeszt-pint-features flex-1">
+                  {event.description.replace(/<[^>]+>/g, " ").split(/\n|;/).filter(Boolean).map((item, i) => (
+                    <li key={i}>{item.trim()}</li>
+                  ))}
+                </ul>
               )
             ) : null}
             <div className="mt-auto pt-4">
               {onSale ? (
                 <LocaleLink
                   href={`/foglalas/${event.id}`}
-                  className="inline-flex min-h-11 w-full items-center justify-center bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+                  
                 >
                   Jegyvásárlás
                 </LocaleLink>
               ) : (
-                <span className="inline-flex min-h-11 w-full items-center justify-center border border-primary/20 bg-muted px-4 text-sm font-semibold text-muted-foreground">
+                <span className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-primary/20 bg-muted px-4 text-sm font-semibold text-muted-foreground" >
                   Hamarosan
                 </span>
               )}
@@ -144,14 +161,16 @@ export function SorfesztLiveTickets({
 export function SorfesztCmsBeerCard({
   kind,
   onSale,
+  foamSlot,
   children,
 }: {
   kind: "standard" | "vip" | "table"
   onSale: boolean
+  foamSlot?: ReactNode
   children: ReactNode
 }) {
   return (
-    <SorfesztBeerMug kind={kind} onSale={onSale}>
+    <SorfesztBeerMug kind={kind} onSale={onSale} foamSlot={foamSlot}>
       {children}
     </SorfesztBeerMug>
   )

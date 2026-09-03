@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Beer, CalendarClock, Check, ImageIcon } from "lucide-react"
+import { CalendarClock, ImageIcon } from "lucide-react"
 import { CmsImage } from "@wse/cms-bridge"
 import { ContactInquiryForm } from "@wse/core/components/site-contact/ContactInquiryForm"
 import { EditableDocText } from "@wse/core/features/template-cms/primitives/EditableDocText"
@@ -194,36 +194,39 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
             {c.tickets.cards.map((card, index) => {
               const onSale = ticketOnSale(card.ctaHref, card.badge)
               return (
-                <SorfesztCmsBeerCard key={index} kind={ticketKindFromName(card.name)} onSale={onSale}>
-                  {edit.enabled ? (
-                    <CmsListItemToolbar
-                      onRemove={() =>
-                        edit.setPath(
-                          "tickets.cards",
-                          c.tickets.cards.filter((_, i) => i !== index)
-                        )
-                      }
-                    />
-                  ) : null}
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Beer className="size-5" aria-hidden />
-                    </div>
-                    {card.badge || edit.enabled ? (
-                      <span className="rounded-full bg-secondary px-3 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        <EditableDocText path={`tickets.cards.${index}.badge`} value={card.badge} />
-                      </span>
-                    ) : null}
-                  </div>
-                  <h3 className="text-lg font-bold">
-                    <EditableDocText path={`tickets.cards.${index}.name`} value={card.name} />
-                  </h3>
-                  <p className="mt-1 font-heading text-2xl font-bold text-primary">
+                <SorfesztCmsBeerCard
+                  key={index}
+                  kind={ticketKindFromName(card.name)}
+                  onSale={onSale}
+                  foamSlot={
+                    <>
+                      {edit.enabled ? (
+                        <CmsListItemToolbar
+                          onRemove={() =>
+                            edit.setPath(
+                              "tickets.cards",
+                              c.tickets.cards.filter((_, i) => i !== index)
+                            )
+                          }
+                        />
+                      ) : null}
+                      {card.badge || edit.enabled ? (
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#7a6331" }}>
+                          <EditableDocText path={`tickets.cards.${index}.badge`} value={card.badge} />
+                        </p>
+                      ) : null}
+                      <h3 className="mt-1 text-lg font-bold text-primary leading-tight">
+                        <EditableDocText path={`tickets.cards.${index}.name`} value={card.name} />
+                      </h3>
+                    </>
+                  }
+                >
+                  <p className="font-heading text-3xl font-black text-primary">
                     <EditableDocText path={`tickets.cards.${index}.price`} value={card.price} />
                   </p>
-                  <ul className="mt-4 flex-1 space-y-2">
+                  <ul className="sorfeszt-pint-features mt-4 flex-1">
                     {card.includes.map((item, itemIndex) => (
-                      <li key={itemIndex} className="relative flex items-start gap-2 text-sm">
+                      <li key={itemIndex} className="relative">
                         {edit.enabled ? (
                           <CmsListItemToolbar
                             onRemove={() =>
@@ -234,7 +237,6 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                             }
                           />
                         ) : null}
-                        <Check className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden />
                         <EditableDocText
                           path={`tickets.cards.${index}.includes.${itemIndex}`}
                           value={item}
@@ -260,10 +262,11 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                         hrefPath={`tickets.cards.${index}.ctaHref`}
                         label={card.ctaLabel}
                         href={card.ctaHref || "/jegyek"}
-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:opacity-90 transition-colors"
+                        
                       />
                     ) : (
-                      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground">
+                      <span className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-primary/20 bg-muted px-4 text-sm font-semibold text-muted-foreground" >
                         <EditableDocText
                           path={`tickets.cards.${index}.ctaLabel`}
                           value={card.ctaLabel || "Hamarosan"}
@@ -301,32 +304,38 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                   {c.tickets.cards.map((card, index) => {
                     const onSale = ticketOnSale(card.ctaHref, card.badge)
                     return (
-                      <SorfesztCmsBeerCard key={index} kind={ticketKindFromName(card.name)} onSale={onSale}>
-                        {card.badge ? (
-                          <span className="mb-2 self-end rounded-full bg-secondary px-3 py-0.5 text-xs font-semibold text-secondary-foreground">
-                            {card.badge}
-                          </span>
-                        ) : null}
-                        <h3 className="text-lg font-bold text-primary">{card.name}</h3>
-                        <p className="mt-1 font-heading text-2xl font-bold text-primary">{card.price}</p>
-                        <ul className="mt-4 flex-1 space-y-2">
+                      <SorfesztCmsBeerCard
+                        key={index}
+                        kind={ticketKindFromName(card.name)}
+                        onSale={onSale}
+                        foamSlot={
+                          <>
+                            {card.badge ? (
+                              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#7a6331" }}>
+                                {card.badge}
+                              </p>
+                            ) : null}
+                            <h3 className="mt-1 text-lg font-bold text-primary leading-tight">{card.name}</h3>
+                          </>
+                        }
+                      >
+                        <p className="font-heading text-3xl font-black text-primary">{card.price}</p>
+                        <ul className="sorfeszt-pint-features mt-4 flex-1">
                           {card.includes.map((item) => (
-                            <li key={item} className="flex items-start gap-2 text-sm text-primary">
-                              <Check className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden />
-                              {item}
-                            </li>
+                            <li key={item}>{item}</li>
                           ))}
                         </ul>
                         <div className="mt-5">
                           {onSale ? (
                             <a
                               href={card.ctaHref || "/jegyek"}
-                              className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:opacity-90 transition-colors"
+                              
                             >
                               {card.ctaLabel}
                             </a>
                           ) : (
-                            <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-muted px-4 text-sm font-semibold text-muted-foreground">
+                            <span className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-primary/20 bg-muted px-4 text-sm font-semibold text-muted-foreground" >
                               {card.ctaLabel || "Hamarosan"}
                             </span>
                           )}
