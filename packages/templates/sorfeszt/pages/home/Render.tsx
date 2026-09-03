@@ -25,9 +25,9 @@ function SectionHeading({ children, className }: { children: ReactNode; classNam
 }
 
 const DAY_HEADER: Record<"primary" | "secondary" | "accent", string> = {
-  primary: "bg-primary text-primary-foreground",
-  secondary: "bg-secondary text-secondary-foreground",
-  accent: "bg-accent text-accent-foreground",
+  primary: "sorfeszt-schedule-head sorfeszt-schedule-head--primary",
+  secondary: "sorfeszt-schedule-head sorfeszt-schedule-head--secondary",
+  accent: "sorfeszt-schedule-head sorfeszt-schedule-head--accent",
 }
 
 function ticketOnSale(ctaHref: string, badge: string) {
@@ -383,7 +383,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                   <p className="text-xs font-semibold uppercase tracking-widest opacity-90">
                     <EditableDocText path={`schedule.days.${index}.date`} value={day.date} />
                   </p>
-                  <h3 className="mt-1 font-heading text-2xl font-bold">
+                  <h3 className="mt-1 font-heading text-2xl font-bold text-inherit">
                     <EditableDocText path={`schedule.days.${index}.title`} value={day.title} />
                   </h3>
                   {day.hours || edit.enabled ? (
