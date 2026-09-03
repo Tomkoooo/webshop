@@ -10,6 +10,7 @@ import { LocaleLink } from "@wse/core/lib/locale-navigation"
 import { defaultNavCta } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { ChromeNavCta, ChromeNavItem, ChromeProps } from "@wse/sdk/templates/types"
 import { localeSwitchPath, stripLocalePrefix } from "@wse/sdk/i18n/constants"
+import { WdfTicker } from "./WdfTicker"
 
 /** Locale-aware fallback for the ticket CTA when a route (e.g. static pages) has no CMS navCta. */
 const DEFAULT_NAV_CTA_BY_LOCALE: Record<string, ChromeNavCta> = {
@@ -248,14 +249,17 @@ function NavCtaButton({
 export function Navbar({
   brandName,
   logoSrc,
-  shopEnabled = false,
+  shopEnabled: _shopEnabled = false,
   cmsChromePreview,
   navItems,
   navCta,
+  tickerText = "",
   locale = "en",
 }: ChromeProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [barHeight, setBarHeight] = useState(57)
+  const barRef = useRef<HTMLDivElement>(null)
   const mobilePanelId = useId()
   const stripped = stripLocalePrefix(pathname, WDF_SUPPORTED_LOCALES)
   const basePath = stripped?.rest ?? pathname
@@ -285,6 +289,16 @@ export function Navbar({
     setMobileOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    const el = barRef.current
+    if (!el || typeof ResizeObserver === "undefined") return
+    const sync = () => setBarHeight(Math.round(el.getBoundingClientRect().height))
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [tickerText, cmsChromePreview])
+
   const navLinkClass = (href: string) =>
     cn(
       "inline-flex min-h-10 items-center rounded-md px-2 text-sm font-medium hover:text-primary",
@@ -302,6 +316,7 @@ export function Navbar({
             : "border-border/60 bg-background/95"
         )}
       >
+      <div ref={barRef}>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <LocaleLink href="/" className="flex min-h-11 items-center gap-3" onClick={closeMobile}>
           {logoSrc ? (
@@ -350,19 +365,23 @@ export function Navbar({
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
+      <WdfTicker text={tickerText} />
+      </div>
 
       {mobileOpen ? (
         <>
           <button
             type="button"
             aria-label={strings.closeMenu}
-            className="fixed inset-0 top-[57px] z-40 bg-black/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            style={{ top: barHeight }}
             onClick={closeMobile}
           />
           <nav
             id={mobilePanelId}
             aria-label={strings.mobileNav}
-            className="relative z-50 max-h-[calc(100dvh-57px)] overflow-y-auto border-t border-border/60 bg-background px-4 py-4 text-foreground lg:hidden"
+            className="relative z-50 overflow-y-auto border-t border-border/60 bg-background px-4 py-4 text-foreground lg:hidden"
+            style={{ maxHeight: `calc(100dvh - ${barHeight}px)` }}
           >
             <div className="flex flex-col gap-2">
               {items.map((item) =>
@@ -392,7 +411,7 @@ export function Navbar({
         </>
       ) : null}
     </header>
-      {!cmsChromePreview ? <div className="h-[57px]" aria-hidden /> : null}
+      {!cmsChromePreview ? <div style={{ height: barHeight }} aria-hidden /> : null}
     </>
   )
 }

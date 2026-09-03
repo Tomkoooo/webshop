@@ -708,6 +708,40 @@ html:not([data-admin-theme]) [data-sonner-toaster] [data-sonner-toast] {
   background-color: #0a0a0f;
 }
 
+.admin-storefront-preview.world-darts-festival-preview .wdf-ticker {
+  background-color: #000;
+  color: var(--theme-primary, #d4a017);
+}
+
+.admin-storefront-preview.world-darts-festival-preview .wdf-ticker-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.admin-storefront-preview.sorfeszt-preview {
+  --theme-primary: #1b2a4a;
+  --theme-primary-foreground: #ffffff;
+  --theme-secondary: #c4a35a;
+  --theme-secondary-foreground: #1b2a4a;
+  --theme-accent: #8b1e3f;
+  --theme-accent-foreground: #ffffff;
+  --theme-background: #f7f1e3;
+  --theme-foreground: #1a1a1a;
+  --theme-surface: #fffbf4;
+  --theme-surface-foreground: #1a1a1a;
+  --theme-border: #e2d6c0;
+  --theme-muted: #efe6d4;
+  --theme-muted-foreground: #5c5346;
+  --background: #f7f1e3;
+  --foreground: #1a1a1a;
+  --primary: #1b2a4a;
+  --primary-foreground: #ffffff;
+  --muted-foreground: #5c5346;
+  color: #1a1a1a;
+  background-color: #f7f1e3;
+}
+
 .admin-breadcrumb-scroll {
   scrollbar-width: none;
 }

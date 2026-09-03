@@ -61,6 +61,8 @@ export type ChromeProps = {
   navItems?: ChromeNavItem[]
   /** Optional CMS-driven primary nav CTA button (world-darts-festival and similar). */
   navCta?: ChromeNavCta
+  /** Optional CMS-driven looping announcement strip under the navbar (world-darts-festival). */
+  tickerText?: string
   /** Active request locale (e.g. `"en"`, `"hu"`) for templates with `manifest.locales`. Omit/ignore for single-locale templates. */
   locale?: string
   children?: ReactNode

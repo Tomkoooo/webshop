@@ -6,9 +6,11 @@ Use these guides when changing templates, plugins, deployments, or CMS content.
 | --- | --- |
 | **Deploy / fork / `DEPLOYMENT_KEY` / access matrix** | [docs/deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md](docs/deployment/AI_AGENTS_DEPLOYMENT_GUIDE.md) |
 | **Live deploy inventory (domains, GHCR tags, stacks)** | `deployments.registry.local.md` (gitignored — create locally from team copy) |
+| **Portainer stack (tBook sironic + WDF + Sörfeszt)** | [docs/deployment/stacks/tbook-sironic.example.yml](docs/deployment/stacks/tbook-sironic.example.yml) (secrets: gitignored `portainer.stack.yml`) |
 | **New or edit layout template** | [docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md](docs/templates/AI_AGENTS_TEMPLATE_GUIDE.md) |
 | **New or enable plugin** | [docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md](docs/plugins/AI_AGENTS_PLUGIN_GUIDE.md) (storefront UI: reuse template chrome + `src/lib/plugin-storefront-ui.ts`) |
 | **Import customer copy into CMS** | [docs/cms/AGENT_CONTENT_IMPORT.md](docs/cms/AGENT_CONTENT_IMPORT.md) |
+| **Export SAKKMED standalone (CMS + media + template)** | [docs/export/SAKKMED_STANDALONE_EXPORT.md](docs/export/SAKKMED_STANDALONE_EXPORT.md) |
 | **MongoDB seed scripts (customer DBs)** | [.cursor/rules/safe-database-seeding.mdc](.cursor/rules/safe-database-seeding.mdc) |
 | **Minecraft camp reference project** | [docs/projects/MINECRAFT_CAMP.md](docs/projects/MINECRAFT_CAMP.md) |
 

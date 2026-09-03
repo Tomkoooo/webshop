@@ -357,6 +357,8 @@ export const eventInputSchema = z.object({
   endDate: z.coerce.date(),
   startTime: tBookEventTimeSchema,
   endTime: tBookEventTimeSchema,
+  salesOpensAt: z.coerce.date().nullable().optional(),
+  salesClosesAt: z.coerce.date().nullable().optional(),
   currency: tBookCurrencySchema.optional(),
   ticketFeeHuf: z.number().min(0),
   ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).default("per_person"),
@@ -401,6 +403,8 @@ export const eventUpdateSchema = z.object({
   endTime: z
     .union([z.null(), z.string().regex(TBOOK_TIME_PATTERN, "Érvényes időpont: HH:mm (pl. 09:00)")])
     .optional(),
+  salesOpensAt: z.coerce.date().nullable().optional(),
+  salesClosesAt: z.coerce.date().nullable().optional(),
   currency: z.string().min(3).max(3).optional(),
   ticketFeeHuf: z.number().min(0).optional(),
   ticketFeeMode: z.enum(["per_person", "per_booking", "per_team"]).optional(),

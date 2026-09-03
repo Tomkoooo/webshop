@@ -1,5 +1,8 @@
 export type TBookLocale = "en" | "hu"
 
+/** Festival tickets vs competition entries — same wizard, different nouns. */
+export type TBookCopyTone = "entries" | "tickets"
+
 /**
  * Storefront UI microcopy for the t-book plugin (validation messages, step/field labels)
  * that isn't already sourced from a per-page CMS `copy` object. Keyed strings only — this
@@ -14,6 +17,9 @@ const TBOOK_STRINGS: Record<TBookLocale, Record<string, string>> = {
     "loadingEvents": "Loading events",
     "selectedForBooking": "Selected for booking",
     "tapToInclude": "Tap to include in a multi-event booking",
+    "salesUpcoming": "Not on sale yet",
+    "salesClosed": "Sales closed",
+    "salesOpensAt": "On sale from {when}",
     "priceCalcError": "Could not calculate price",
     "acceptTerms": "Please accept the Terms and Conditions and Privacy Policy to continue.",
     "bookingFailed": "Booking failed",
@@ -220,6 +226,9 @@ const TBOOK_STRINGS: Record<TBookLocale, Record<string, string>> = {
     "loadingEvents": "Események betöltése",
     "selectedForBooking": "Kiválasztva foglalásra",
     "tapToInclude": "Koppints, hogy hozzáadd egy több eseményes foglaláshoz",
+    "salesUpcoming": "Hamarosan kapható",
+    "salesClosed": "Az értékesítés lezárult",
+    "salesOpensAt": "Vásárolható: {when}",
     "priceCalcError": "Nem sikerült kiszámítani az árat",
     "acceptTerms": "A folytatáshoz fogadd el az Általános Szerződési Feltételeket és az Adatvédelmi tájékoztatót.",
     "bookingFailed": "A foglalás sikertelen",
@@ -422,6 +431,64 @@ const TBOOK_STRINGS: Record<TBookLocale, Record<string, string>> = {
   },
 }
 
+const TBOOK_TICKET_STRINGS: Record<TBookLocale, Partial<(typeof TBOOK_STRINGS)["en"]>> = {
+  en: {
+    atLeastOneEntry: "Please enter at least one ticket.",
+    completeParticipantDetails: "Please enter a name and email for every ticket.",
+    numberOfEntries: "How many tickets?",
+    howManyEntriesHint: "Choose how many tickets you need. Each ticket needs a name and email.",
+    entries: "Tickets",
+    entryOnly: "Tickets only",
+    unitEntry: "ticket",
+    unitEntrySingular: "ticket",
+    unitEntryPlural: "tickets",
+    unitPersonSingular: "ticket",
+    unitPersonPlural: "tickets",
+    perPersonEntry: "per ticket",
+    entryPrefix: "Ticket {ticket}",
+    entryPrefixPlayer: "Ticket {ticket}, guest {player}",
+    stepEntries: "Tickets",
+    stepPlayers: "Ticket details",
+    backToEntries: "Back to tickets",
+    backToEvents: "Back to tickets",
+    eventLabel: "Ticket",
+    noPlayerDetailsRequired: "This ticket only needs a name and email.",
+    enterPlayerDetailsPerEvent: "Enter a name and email for each ticket.",
+    noHotelOptions: "Continue to enter a name and email for each ticket.",
+    detailsRequiredForEvery: "A name and email are required for every {unit} ({guests} total).",
+    setHowManyEntriesHint: "Set how many tickets you need for each event.",
+    completeParticipantDetailsPerEvent: "Please enter a name and email for every ticket on every event.",
+  },
+  hu: {
+    atLeastOneEntry: "Adj meg legalább egy jegyet.",
+    completeParticipantDetails: "Töltsd ki minden jegyhez a nevet és az e-mailt.",
+    numberOfEntries: "Hány jegyet vásárolsz?",
+    howManyEntriesHint: "Add meg a jegyek számát. Minden jegyhez név és e-mail kell.",
+    entries: "Jegyek",
+    entryOnly: "Csak jegy",
+    unitEntry: "jegy",
+    unitEntrySingular: "jegy",
+    unitEntryPlural: "jegy",
+    unitPersonSingular: "jegy",
+    unitPersonPlural: "jegy",
+    perPersonEntry: "jegyenként",
+    entryPrefix: "{ticket}. jegy",
+    entryPrefixPlayer: "{ticket}. jegy, {player}. vendég",
+    stepEntries: "Jegyek",
+    stepPlayers: "Jegyadatok",
+    backToEntries: "Vissza a jegyekhez",
+    backToEvents: "Vissza a jegyekhez",
+    eventLabel: "Jegy",
+    noPlayerDetailsRequired: "Ehhez a jegyhez csak név és e-mail kell.",
+    enterPlayerDetailsPerEvent: "Add meg minden jegyhez a nevet és az e-mailt.",
+    noHotelOptions: "Folytasd a jegyek nevével és e-mail címével.",
+    detailsRequiredForEvery: "Minden {unit}hez név és e-mail kell (összesen {guests}).",
+    setHowManyEntriesHint: "Add meg, hány jegyet vásárolsz eseményenként.",
+    atLeastOneEntryPerEvent: "Adj meg legalább egy jegyet minden eseményhez.",
+    completeParticipantDetailsPerEvent: "Töltsd ki minden jegyhez a nevet és az e-mailt minden eseményen.",
+  },
+}
+
 function isTBookLocale(value: string | undefined): value is TBookLocale {
   return value === "en" || value === "hu"
 }
@@ -435,10 +502,12 @@ export function resolveTBookLocale(locale: string | undefined): TBookLocale {
 export function tbookT(
   locale: string | undefined,
   key: keyof (typeof TBOOK_STRINGS)["en"],
-  vars?: Record<string, string | number>
+  vars?: Record<string, string | number>,
+  tone: TBookCopyTone = "entries"
 ): string {
-  const dict = TBOOK_STRINGS[resolveTBookLocale(locale)]
-  let value = dict[key] ?? TBOOK_STRINGS.en[key] ?? key
+  const resolved = resolveTBookLocale(locale)
+  const overlay = tone === "tickets" ? TBOOK_TICKET_STRINGS[resolved] : undefined
+  let value = overlay?.[key] ?? TBOOK_STRINGS[resolved][key] ?? TBOOK_STRINGS.en[key] ?? key
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       value = value.replaceAll(`{${k}}`, String(v))

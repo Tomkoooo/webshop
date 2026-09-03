@@ -11,21 +11,21 @@ import { useSurfaceDocEdit } from "@wse/core/features/template-cms/surface-doc-e
 export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDeps>) {
   const cms = useSurfaceDocEdit()
   return (
-    <main className="bg-background-dark text-white">
-      <section className="border-b border-white/10 pt-32 pb-20">
+    <main className="bg-background-dark text-foreground">
+      <section className="border-b border-border/40 pt-32 pb-20">
         <div className="container mx-auto grid gap-12 px-4 md:grid-cols-2 md:items-center">
           <div className="space-y-6">
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight">
               <EditableDocText path="hero.title" value={content.hero.title} className="uppercase" />
             </h1>
             {(content.hero.subtitle || cms.enabled) && (
-              <p className="max-w-xl text-lg text-neutral-300">
+              <p className="max-w-xl text-lg text-muted-foreground">
                 <EditableDocText path="hero.subtitle" value={content.hero.subtitle} multiline />
               </p>
             )}
           </div>
           {content.hero.image ? (
-            <div className="relative aspect-[4/3] overflow-hidden border border-white/10 bg-black/30">
+            <div className="relative aspect-[4/3] overflow-hidden border border-border/40 bg-black/30">
               <FallbackImage
                 src={content.hero.image}
                 alt={content.hero.title}
@@ -38,13 +38,13 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
       </section>
 
       {(content.story.paragraphs.length > 0 || cms.enabled) ? (
-        <section className="border-b border-white/10 py-20">
+        <section className="border-b border-border/40 py-20">
           <div className="container mx-auto max-w-3xl space-y-6 px-4">
             <h2 className="text-3xl font-black uppercase tracking-tight">
               <EditableDocText path="story.heading" value={content.story.heading} className="uppercase" />
             </h2>
             {content.story.paragraphs.map((paragraph, idx) => (
-              <p key={idx} className="text-neutral-300 leading-relaxed">
+              <p key={idx} className="text-muted-foreground leading-relaxed">
                 <EditableDocText path={`story.paragraphs.${idx}`} value={paragraph} multiline />
               </p>
             ))}
@@ -53,20 +53,20 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
       ) : null}
 
       {(content.highlights.length > 0 || cms.enabled) ? (
-        <section className="border-b border-white/10 py-20">
+        <section className="border-b border-border/40 py-20">
           <div className="container mx-auto grid gap-8 px-4 md:grid-cols-3">
             {(cms.enabled ? [0, 1, 2] : content.highlights.map((_, idx) => idx)).map((idx) => {
               const h = content.highlights[idx] ?? { title: "", body: "" }
               if (!cms.enabled && !(h.title?.trim() || h.body?.trim())) return null
               return (
-                <div key={idx} className="space-y-3 border border-white/10 bg-white/5 p-6">
+                <div key={idx} className="space-y-3 border border-border/40 bg-foreground/5 p-6">
                   <p className="font-mono text-xs text-primary-foreground">
                     0{idx + 1}
                   </p>
                   <p className="text-lg font-black uppercase tracking-tight">
                     <EditableDocText path={`highlights.${idx}.title`} value={h.title} />
                   </p>
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-muted-foreground">
                     <EditableDocText path={`highlights.${idx}.body`} value={h.body} multiline />
                   </p>
                 </div>
@@ -77,7 +77,7 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
       ) : null}
 
       {(content.team.length > 0 || cms.enabled) ? (
-        <section className="border-b border-white/10 py-20">
+        <section className="border-b border-border/40 py-20">
           <div className="container mx-auto px-4">
             <h2 className="mb-10 text-3xl font-black uppercase tracking-tight">A csapat</h2>
             <div className="grid gap-8 md:grid-cols-3 lg:grid-cols-4">
@@ -87,7 +87,7 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
                 return (
                   <div key={idx} className="space-y-3">
                     {member.photo ? (
-                      <div className="relative aspect-square overflow-hidden border border-white/10 bg-black/30">
+                      <div className="relative aspect-square overflow-hidden border border-border/40 bg-black/30">
                         <FallbackImage
                           src={mediaImageSrc(member.photo)}
                           alt={member.name || "Tag"}
@@ -99,7 +99,7 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
                     <p className="text-sm font-black uppercase tracking-widest">
                       <EditableDocText path={`team.${idx}.name`} value={member.name} />
                     </p>
-                    <p className="text-xs text-neutral-500 uppercase tracking-widest">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">
                       <EditableDocText path={`team.${idx}.role`} value={member.role} />
                     </p>
                   </div>
@@ -113,13 +113,13 @@ export function AboutRender({ content }: RenderProps<AboutContent, StaticPageDep
       {(content.cta.label || cms.enabled) ? (
         <section className="py-20 text-center">
           {cms.enabled ? (
-            <div className="inline-flex items-center justify-center bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-white">
+            <div className="inline-flex items-center justify-center bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground">
               <EditableDocText path="cta.label" value={content.cta.label} placeholder="CTA felirat" />
             </div>
           ) : (
             <Link
               href={content.cta.href}
-              className="inline-flex items-center justify-center bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-white"
+              className="inline-flex items-center justify-center bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground"
             >
               {content.cta.label}
             </Link>

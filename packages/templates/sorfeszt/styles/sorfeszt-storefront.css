@@ -1,0 +1,277 @@
+/* Sörfeszt — cream / navy / gold storefront (imported by apps/sorfeszt). */
+
+.sorfeszt-storefront {
+  --sorfeszt-foam: #fff8ee;
+  --sorfeszt-gold-wash: color-mix(in oklab, var(--theme-secondary) 18%, transparent);
+  --sorfeszt-ink: #1b2a4a;
+}
+
+.sorfeszt-pint-grid {
+  display: grid;
+  gap: 3rem 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .sorfeszt-pint-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .sorfeszt-pint-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sorfeszt-storefront .text-muted-foreground {
+  color: #3f382e;
+}
+
+.sorfeszt-wave-gold,
+.sorfeszt-wave-gold h1,
+.sorfeszt-wave-gold h2,
+.sorfeszt-wave-gold p {
+  color: var(--sorfeszt-ink);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.sorfeszt-wave-navy,
+.sorfeszt-wave-navy h1,
+.sorfeszt-wave-navy h2,
+.sorfeszt-wave-navy p {
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.sorfeszt-pint {
+  --sorfeszt-pint-glass: color-mix(in oklab, var(--theme-primary) 55%, #c4a35a);
+  --sorfeszt-pint-beer: linear-gradient(
+    180deg,
+    #fff3d0 0 8%,
+    #f0c14b 8% 16%,
+    #d9a21a 16% 58%,
+    #a56b10 58% 86%,
+    #6d430c 100%
+  );
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: stretch;
+  width: min(100%, 22rem);
+  min-height: 36rem;
+  margin-inline: auto;
+  padding: 0.5rem 0.2rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--sorfeszt-ink);
+}
+
+.sorfeszt-pint-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sorfeszt-pint-foam {
+  position: relative;
+  z-index: 2;
+  height: 4.1rem;
+  flex-shrink: 0;
+  border-radius: 0;
+  clip-path: polygon(
+    0 42%,
+    7% 18%,
+    14% 36%,
+    22% 10%,
+    31% 32%,
+    40% 8%,
+    50% 30%,
+    59% 6%,
+    68% 28%,
+    77% 12%,
+    86% 34%,
+    94% 16%,
+    100% 38%,
+    100% 100%,
+    0 100%
+  );
+  background:
+    radial-gradient(circle at 14% 72%, #fff 0 30%, transparent 32%),
+    radial-gradient(circle at 34% 48%, #fff8ee 0 34%, transparent 36%),
+    radial-gradient(circle at 54% 70%, #fff 0 28%, transparent 30%),
+    radial-gradient(circle at 72% 44%, #fff8ee 0 32%, transparent 34%),
+    radial-gradient(circle at 88% 68%, #fff 0 30%, transparent 32%),
+    linear-gradient(180deg, #fff 0%, #f6e4c4 70%, #e8c98a 100%);
+}
+
+.sorfeszt-pint-glass {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--sorfeszt-pint-beer);
+  clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
+  box-shadow:
+    inset 0 0 0 6px color-mix(in oklab, #fff 42%, transparent),
+    inset -22px 0 26px color-mix(in oklab, #000 14%, transparent);
+}
+
+.sorfeszt-pint-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 16%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, #fff 62%, transparent),
+    color-mix(in oklab, #fff 10%, transparent) 72%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.sorfeszt-pint-glass::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 16%;
+  left: 16%;
+  height: 0.55rem;
+  background: color-mix(in oklab, #fff 36%, transparent);
+  pointer-events: none;
+}
+
+.sorfeszt-pint-label {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  margin: 0.35rem 16% 1.1rem;
+  padding: 0.85rem 0.85rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in oklab, #fffbf4 72%, transparent);
+  color: var(--sorfeszt-ink);
+}
+
+.sorfeszt-pint-foot {
+  height: 2.4rem;
+  margin-top: -1px;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, #9a6418 0%, #5a3810 48%, #2a1a08 100%);
+  box-shadow:
+    inset 0 4px 0 color-mix(in oklab, #fff 24%, transparent),
+    0 12px 20px color-mix(in oklab, var(--theme-primary) 24%, transparent);
+}
+
+.sorfeszt-pint-handle {
+  width: 3.35rem;
+  flex-shrink: 0;
+  margin: 8.25rem 0 10rem -10px;
+  border: 15px solid var(--theme-primary, #1b2a4a);
+  border-left: 0;
+  border-radius: 0 2.7rem 2.7rem 0;
+  background: transparent;
+  box-shadow:
+    inset -5px 0 0 color-mix(in oklab, var(--theme-secondary, #c4a35a) 70%, #fff),
+    6px 10px 16px color-mix(in oklab, var(--theme-primary) 22%, transparent);
+}
+
+.sorfeszt-pint--vip {
+  --sorfeszt-pint-glass: #c4a35a;
+  --sorfeszt-pint-beer: linear-gradient(
+    180deg,
+    #fff4d6 0 10%,
+    #e3b53a 10% 18%,
+    #c4921a 18% 48%,
+    #8b1e3f 48% 100%
+  );
+}
+
+.sorfeszt-pint--table {
+  --sorfeszt-pint-glass: color-mix(in oklab, var(--theme-primary) 70%, #c4a35a);
+  --sorfeszt-pint-beer: linear-gradient(
+    180deg,
+    #fff8ee 0 10%,
+    #e2c16a 10% 20%,
+    #c4a35a 20% 46%,
+    #1b2a4a 46% 100%
+  );
+}
+
+.sorfeszt-pint--soon {
+  filter: grayscale(0.35);
+  opacity: 0.82;
+}
+
+.sorfeszt-storefront .sorfeszt-hero-glow::after {
+  content: "";
+  position: absolute;
+  inset: auto 8% -12% 8%;
+  height: 42%;
+  background: radial-gradient(ellipse at center, var(--sorfeszt-gold-wash), transparent 72%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sorfeszt-storefront .sorfeszt-card-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sorfeszt-storefront .sorfeszt-card-lift:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 14px 32px color-mix(in oklab, var(--theme-primary) 12%, transparent);
+    border-color: color-mix(in oklab, var(--theme-secondary) 45%, var(--theme-border));
+  }
+
+  .sorfeszt-storefront .sorfeszt-pint.sorfeszt-card-lift:hover {
+    box-shadow: none;
+    border-color: transparent;
+  }
+
+  .sorfeszt-storefront .sorfeszt-pint.sorfeszt-card-lift:hover .sorfeszt-pint-foot {
+    box-shadow:
+      inset 0 3px 0 color-mix(in oklab, #fff 22%, transparent),
+      0 16px 28px color-mix(in oklab, var(--theme-primary) 28%, transparent);
+  }
+}
+
+.sorfeszt-tbook-page {
+  position: relative;
+  min-height: 70vh;
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -8%, var(--sorfeszt-gold-wash), transparent 58%),
+    var(--theme-background);
+}
+
+.sorfeszt-tbook-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sorfeszt-storefront article.sorfeszt-event-card {
+  border-color: color-mix(in oklab, var(--theme-border) 70%, var(--theme-secondary));
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--theme-secondary) 10%, transparent), transparent 42%),
+    var(--theme-surface);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--theme-primary) 8%, transparent);
+}
+
+.sorfeszt-storefront article.sorfeszt-event-card:hover {
+  border-color: color-mix(in oklab, var(--theme-secondary) 55%, var(--theme-border));
+}
+
+.sorfeszt-hero-glow {
+  background:
+    radial-gradient(ellipse 90% 60% at 80% 10%, color-mix(in oklab, var(--theme-secondary) 28%, transparent), transparent 55%),
+    linear-gradient(160deg, var(--theme-primary) 0%, #24365e 48%, #152238 100%);
+}

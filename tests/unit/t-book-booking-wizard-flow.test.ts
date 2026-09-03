@@ -9,6 +9,7 @@ import {
   prevWizardStep,
   resolveHotelStayPhase,
   SINGLE_WIZARD_STEPS,
+  singleWizardStepLabels,
 } from "@wse/plugin-t-book/lib/booking-wizard-flow"
 
 describe("resolveHotelStayPhase", () => {
@@ -77,6 +78,20 @@ describe("wizard step skip helpers", () => {
     expect(nextWizardStep(3, false, 2)).toBe(5)
     expect(prevWizardStep(5, false, 2)).toBe(3)
     expect(prevWizardStep(3, false, 2)).toBe(2)
+  })
+
+  it("skips hotel and rooms entirely when the event has no hotels", () => {
+    expect(nextWizardStep(1, null, 0)).toBe(2)
+    expect(nextWizardStep(2, false, 0)).toBe(5)
+    expect(nextWizardStep(5, false, 0)).toBe(6)
+    expect(prevWizardStep(5, false, 0)).toBe(2)
+    expect(prevWizardStep(6, false, 0)).toBe(5)
+    expect(singleWizardStepLabels("en", { hotelCount: 0, tone: "tickets" })).toEqual([
+      "Tickets",
+      "Ticket details",
+      "Your details",
+      "Review",
+    ])
   })
 
   it("enters rooms when hotel selected", () => {

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Copy, Plus, Ticket, X } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Copy, Megaphone, Plus, Ticket, X } from "lucide-react"
+import { Textarea } from "@wse/core/components/ui/textarea"
 import { moveArrayItem } from "@wse/core/features/template-cms/primitives/CmsListItemToolbar"
 import { CmsStructureSidebar } from "@wse/core/features/template-cms/components/CmsStructureSidebar"
 import { Input } from "@wse/core/components/ui/input"
@@ -93,11 +94,14 @@ export function CmsNavChromeSidebar({
   draft,
   setPath,
   readOnly = false,
+  showTicker = false,
 }: {
   draft: Record<string, unknown>
   setPath: (path: string, value: unknown) => void
   /** When true, nav is preview-only (e.g. tBook page editors). */
   readOnly?: boolean
+  /** World Darts Festival looping announcement under the navbar. */
+  showTicker?: boolean
 }) {
   const rawNav = getAtPath(draft, "chrome.nav")
   const navItems = Array.isArray(rawNav) ? (rawNav as NavItemDraft[]) : []
@@ -117,6 +121,9 @@ export function CmsNavChromeSidebar({
     setPath("chrome.navCta", { ...defaultNavCta, ...navCta, [key]: value })
   }
 
+  const rawTicker = getAtPath(draft, "chrome.tickerText")
+  const tickerText = typeof rawTicker === "string" ? rawTicker : ""
+
   const defaultNewLink = (): NavItemDraft => ({ type: "link", label: "", href: "" })
   const defaultNewDropdown = (): NavItemDraft => ({
     type: "dropdown",
@@ -126,6 +133,31 @@ export function CmsNavChromeSidebar({
 
   return (
     <CmsStructureSidebar title="Navigáció">
+      {showTicker && !readOnly ? (
+        <section className="space-y-3 rounded-lg bg-muted/30 p-3">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <Megaphone className="size-4" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">Futószöveg</p>
+              <p className="text-xs text-muted-foreground">
+                Fekete sáv a menü alatt — a szöveg a CMS előnézeten is animálódik
+              </p>
+            </div>
+          </div>
+          <Textarea
+            className="min-h-[72px] text-xs"
+            value={tickerText}
+            placeholder="World Darts Festival 2025 — Budapest  ·  Entries now open"
+            onChange={(e) => setPath("chrome.tickerText", e.target.value)}
+          />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Hagyd üresen, ha el szeretnéd rejteni. A sáv a közzététel után minden oldalon megjelenik.
+          </p>
+        </section>
+      ) : null}
+
       {!readOnly ? (
         <section className="space-y-3 rounded-lg bg-muted/30 p-3">
           <div className="flex items-center gap-2">

@@ -4,7 +4,8 @@
   "description": "Webshop Engine template package: sakkmed.",
   "type": "module",
   "exports": {
-    "./*": "./*.ts"
+    "./*": "./*.ts",
+    "./*.css": "./*.css"
   },
   "dependencies": {
     "@wse/core": "*",

@@ -41,6 +41,8 @@ export type AdminEvent = {
   endDate: string
   startTime: string | null
   endTime: string | null
+  salesOpensAt: string | null
+  salesClosesAt: string | null
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"
   registrationUnit: "person" | "team"

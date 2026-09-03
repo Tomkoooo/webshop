@@ -44,7 +44,7 @@ import { publicBookingPath } from "../lib/event-public-listing"
 import { TBookGroupSubnav } from "./TBookGroupSubnav"
 import { useOrgCurrency } from "./use-org-currency"
 import { normalizeTBookCurrency } from "../lib/currency"
-import { formatEventSchedule, toTimeInputValue } from "../lib/event-schedule"
+import { datetimeLocalToIso, formatEventSchedule, toDatetimeLocalValue, toTimeInputValue } from "../lib/event-schedule"
 import {
   REGISTRATION_FIELDS_MODE_LABELS,
   registrationUnitLabel,
@@ -75,6 +75,8 @@ type EventDraft = {
   endDate: string
   startTime: string
   endTime: string
+  salesOpensAt: string
+  salesClosesAt: string
   ticketFeeHuf: number
   ticketFeeMode: AdminEvent["ticketFeeMode"]
   registrationUnit: AdminEvent["registrationUnit"]
@@ -129,6 +131,8 @@ export function EventFormPage({
     endDate: "",
     startTime: "",
     endTime: "",
+    salesOpensAt: "",
+    salesClosesAt: "",
     ticketFeeHuf: 0,
     ticketFeeMode: "per_person",
     registrationUnit: "person",
@@ -184,6 +188,8 @@ export function EventFormPage({
             endDate: toDateInputValue(e.endDate),
             startTime: toTimeInputValue(e.startTime),
             endTime: toTimeInputValue(e.endTime),
+            salesOpensAt: toDatetimeLocalValue(e.salesOpensAt),
+            salesClosesAt: toDatetimeLocalValue(e.salesClosesAt),
             ticketFeeHuf: e.ticketFeeHuf,
             ticketFeeMode: e.ticketFeeMode,
             registrationUnit: e.registrationUnit ?? "person",
@@ -269,6 +275,8 @@ export function EventFormPage({
       endDate: draft.endDate,
       startTime: draft.startTime.trim() || null,
       endTime: draft.endTime.trim() || null,
+      salesOpensAt: datetimeLocalToIso(draft.salesOpensAt),
+      salesClosesAt: datetimeLocalToIso(draft.salesClosesAt),
       ticketFeeHuf: draft.ticketFeeHuf,
       ticketFeeMode: draft.ticketFeeMode,
       registrationUnit: draft.registrationUnit,
@@ -426,7 +434,27 @@ export function EventFormPage({
               </div>
               <p className="text-xs text-muted-foreground">
                 Az időpontok a kezdő és záró napon értendők (pl. első nap 09:00, utolsó nap 18:00).
+                Ez a fesztiválnap, amikor a vendég jön — nem az értékesítés kezdete.
               </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TBookField label="Értékesítés kezdete (opcionális)">
+                  <TBookInput
+                    type="datetime-local"
+                    value={draft.salesOpensAt}
+                    onChange={(e) => patch({ salesOpensAt: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Üresen: azonnal vásárolható, ha az esemény aktív.
+                  </p>
+                </TBookField>
+                <TBookField label="Értékesítés vége (opcionális)">
+                  <TBookInput
+                    type="datetime-local"
+                    value={draft.salesClosesAt}
+                    onChange={(e) => patch({ salesClosesAt: e.target.value })}
+                  />
+                </TBookField>
+              </div>
               <TBookLocationField
                 value={draft.location}
                 onChange={(location) => patch({ location })}

@@ -26,6 +26,8 @@ export const homeDefaultContent: HomeContent = {
       { type: "link", label: "Prize money", href: "/#prize-money" },
       { type: "link", label: "Contact", href: "/#contact" },
     ],
+    tickerText:
+      "World Darts Festival 2025 — Budapest  ·  Entries now open  ·  World Masters  ·  Lakeside Qualifier",
   },
   sectionLayout: DEFAULT_WDF_SECTION_LAYOUT.map((row) => ({ ...row })),
   hero: {
@@ -179,6 +181,8 @@ export const homeDefaultContentHu: HomeContent = {
       { type: "link", label: "Díjazás", href: "/#prize-money" },
       { type: "link", label: "Kapcsolat", href: "/#contact" },
     ],
+    tickerText:
+      "World Darts Festival 2025 — Budapest  ·  Nevezés folyamatban  ·  World Masters  ·  Lakeside Qualifier",
   },
   sectionLayout: DEFAULT_WDF_SECTION_LAYOUT.map((row) => ({ ...row })),
   hero: {

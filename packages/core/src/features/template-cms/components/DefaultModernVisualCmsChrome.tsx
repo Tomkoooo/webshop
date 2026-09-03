@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { TopBar } from "@wse/core/features/homepage-cms/components/editor/TopBar"
 import { DevicePreview } from "@wse/core/features/homepage-cms/components/editor/DevicePreview"
@@ -63,6 +63,8 @@ export function DefaultModernVisualCmsChrome({
   structureSidebar,
   navItems,
   navCta,
+  tickerText,
+  wrapNavbar,
   renderMain,
 }: {
   templateId: string
@@ -95,6 +97,9 @@ export function DefaultModernVisualCmsChrome({
   structureSidebar?: React.ReactNode
   navItems?: ChromeNavItem[]
   navCta?: ChromeNavCta
+  tickerText?: string
+  /** Wrap the preview navbar (e.g. SurfaceDocEditProvider so chrome fields are click-to-edit). */
+  wrapNavbar?: (navbar: ReactNode) => ReactNode
   renderMain: (ctx: VisualCmsChromeCtx) => React.ReactNode
 }) {
   const router = useRouter()
@@ -154,19 +159,24 @@ export function DefaultModernVisualCmsChrome({
   const FooterCmp = mod.chrome.Footer
   const isMinecraftCamp = templateId === "minecraft-camp"
   const isWorldDartsFestival = templateId === "world-darts-festival"
+  const isSorfeszt = templateId === "sorfeszt"
   const previewSurfaceClass = isMinecraftCamp && minecraftFontVariable
     ? `minecraft-camp-preview minecraft-page-mineshow ${minecraftFontVariable}`
     : isWorldDartsFestival
       ? "world-darts-festival-preview"
-      : ""
+      : isSorfeszt
+        ? "sorfeszt-preview sorfeszt-storefront"
+        : ""
   const previewBgClass = isMinecraftCamp
     ? "bg-[#b8d88a]"
     : isWorldDartsFestival
       ? "bg-[#0A0A0F]"
-      : "bg-background"
+      : isSorfeszt
+        ? "bg-[#F7F1E3]"
+        : "bg-background"
 
-  const wrapLayout = (mode: "edit" | "review", main: React.ReactNode) => (
-    <>
+  const wrapLayout = (mode: "edit" | "review", main: React.ReactNode) => {
+    const navbar = (
       <NavbarCmp
         brandName={branding.brandName}
         logoSrc={branding.logoNav}
@@ -174,7 +184,12 @@ export function DefaultModernVisualCmsChrome({
         cmsChromePreview
         navItems={navItems}
         navCta={navCta}
+        tickerText={tickerText}
       />
+    )
+    return (
+    <>
+      {mode === "edit" && wrapNavbar ? wrapNavbar(navbar) : navbar}
       {/* Shop-style mains use pt-32 for a fixed storefront bar; shrink that under in-flow CMS preview. */}
       <div className="min-h-0 flex-1 overflow-x-hidden [&>main.min-h-screen]:!pt-8">{main}</div>
       <FooterCmp
@@ -202,7 +217,8 @@ export function DefaultModernVisualCmsChrome({
         address={contactAddress}
       />
     </>
-  )
+    )
+  }
 
   const ctxEdit: VisualCmsChromeCtx = {
     mode: "edit",

@@ -59,6 +59,9 @@ export async function fetchPublicEventsForStorefront(
   apiKey: string,
   apiBaseOverride?: string
 ): Promise<TBookPublicEventsResult> {
+  if (!normalizeTBookApiKey(apiKey)) {
+    return { events: [], currency: DEFAULT_TBOOK_CURRENCY, error: null }
+  }
   try {
     const { ok, data } = await tbookServerFetch(apiKey, "/events", apiBaseOverride)
     if (!ok) {

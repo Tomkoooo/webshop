@@ -28,6 +28,10 @@ export interface ITBookEvent extends Document {
   startTime: string | null
   /** Optional end time on the last day (`HH:mm`, 24h). */
   endTime: string | null
+  /** When ticket sales open. Null = immediately when the event is active. */
+  salesOpensAt: Date | null
+  /** When ticket sales close. Null = until the event starts / admin archives it. */
+  salesClosesAt: Date | null
   /** ISO 4217 currency for ticket pricing (defaults from org on create). */
   currency: string
   ticketFeeHuf: number
@@ -86,6 +90,8 @@ const TBookEventSchema = new Schema<ITBookEvent>(
     endDate: { type: Date, required: true },
     startTime: { type: String, default: null },
     endTime: { type: String, default: null },
+    salesOpensAt: { type: Date, default: null },
+    salesClosesAt: { type: Date, default: null },
     currency: { type: String, default: "HUF" },
     ticketFeeHuf: { type: Number, required: true, min: 0 },
     ticketFeeMode: {

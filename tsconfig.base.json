@@ -35,6 +35,7 @@
       "@wse/template-world-darts-festival/*": ["packages/templates/world-darts-festival/*"],
       "@wse/template-dr-zsanett/*": ["packages/templates/dr-zsanett/*"],
       "@wse/template-eventstructure-v2/*": ["packages/templates/eventstructure-v2/*"],
+      "@wse/template-sorfeszt/*": ["packages/templates/sorfeszt/*"],
       "@wse/plugin-shop/*": ["packages/plugins/shop/*"],
       "@wse/plugin-camp-booking/*": ["packages/plugins/camp-booking/*"],
       "@wse/plugin-press-kit/*": ["packages/plugins/press-kit/*"],

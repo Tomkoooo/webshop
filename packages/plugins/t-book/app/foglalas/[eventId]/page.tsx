@@ -9,7 +9,7 @@ import { TBookMultiBookingWizard } from "@wse/plugin-t-book/storefront/TBookMult
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 import { fetchPublicEventDetailForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
-import { tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
+import { tBookMainClassName, isTBookThemedLanding, tBookUiLocale, tBookCopyTone } from "@wse/plugin-t-book/lib/tbook-page-shell"
 import { cn } from "@wse/core/lib/utils"
 
 type Props = {
@@ -38,8 +38,10 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
 
   const chrome = await getActiveChrome()
   const { locale } = chrome
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
-  const bookingCopy = await getTBookBookingContent(chrome.template.manifest.id, locale)
+  const templateId = chrome.template.manifest.id
+  const uiLocale = tBookUiLocale(templateId, locale)
+  const siteConfig = await loadTBookStorefrontConfig(templateId, locale)
+  const bookingCopy = await getTBookBookingContent(templateId, locale)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookServerApiBase()
   const eventDetail = multi
@@ -51,8 +53,8 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
-  const templateId = chrome.template.manifest.id
-  const isWdf = templateId === "world-darts-festival"
+  const copyTone = tBookCopyTone(templateId)
+  const isThemed = isTBookThemedLanding(templateId)
 
   const copy = {
     stepTicket: bookingCopy.stepTicket,
@@ -87,24 +89,35 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
-        locale={locale}
+        tickerText={siteConfig?.tickerText}
+        locale={uiLocale}
       />
       <main className={tBookMainClassName(templateId)}>
         <div
           className={cn(
             "mx-auto max-w-5xl",
-            isWdf && "wdf-booking-panel rounded-2xl p-4 sm:p-6"
+            isThemed &&
+              (templateId === "sorfeszt"
+                ? "rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-6"
+                : "wdf-booking-panel rounded-2xl p-4 sm:p-6")
           )}
         >
           {multi ? (
-            <TBookMultiBookingWizard apiKey={apiKey} eventIds={eventIds} copy={copy} locale={locale} />
+            <TBookMultiBookingWizard
+              apiKey={apiKey}
+              eventIds={eventIds}
+              copy={copy}
+              locale={uiLocale}
+              copyTone={copyTone}
+            />
           ) : (
             <TBookBookingWizard
               apiKey={apiKey}
               eventId={eventId}
               initialEventDetail={eventDetail}
               copy={copy}
-              locale={locale}
+              locale={uiLocale}
+              copyTone={copyTone}
             />
           )}
         </div>
@@ -121,7 +134,7 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
-        locale={locale}
+        locale={uiLocale}
       />
     </>
   )

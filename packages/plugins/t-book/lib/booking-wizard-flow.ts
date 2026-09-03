@@ -2,7 +2,7 @@
  * Pure helpers for the single-event booking wizard — used by the UI and matrix tests.
  */
 
-import { tbookT } from "./i18n"
+import { tbookT, type TBookCopyTone } from "./i18n"
 
 export type StayChoice = "entry_only" | "hotel" | null
 
@@ -18,15 +18,33 @@ export const SINGLE_WIZARD_STEPS = [
 ] as const
 
 /** Locale-aware display labels for the single-event wizard step indicator. */
-export function singleWizardStepLabels(locale?: string): string[] {
-  return [
-    tbookT(locale, "stepEntries"),
-    tbookT(locale, "stepPlayers"),
-    tbookT(locale, "stepHotel"),
-    tbookT(locale, "stepRooms"),
-    tbookT(locale, "stepYourDetails"),
-    tbookT(locale, "stepReview"),
+export function singleWizardStepLabels(
+  locale?: string,
+  opts?: { hotelCount?: number; tone?: TBookCopyTone }
+): string[] {
+  const tone = opts?.tone ?? "entries"
+  const includeHotels = (opts?.hotelCount ?? 1) > 0
+  const labels = [
+    tbookT(locale, "stepEntries", undefined, tone),
+    tbookT(locale, "stepPlayers", undefined, tone),
   ]
+  if (includeHotels) {
+    labels.push(tbookT(locale, "stepHotel", undefined, tone), tbookT(locale, "stepRooms", undefined, tone))
+  }
+  labels.push(
+    tbookT(locale, "stepYourDetails", undefined, tone),
+    tbookT(locale, "stepReview", undefined, tone)
+  )
+  return labels
+}
+
+/** Map internal 1–6 wizard steps onto the visible indicator when hotels are omitted. */
+export function displaySingleWizardStep(step: number, hotelCount: number): number {
+  if (hotelCount > 0) return step
+  if (step <= 2) return step
+  if (step === 5) return 3
+  if (step === 6) return 4
+  return step
 }
 
 export const SINGLE_WIZARD_TOTAL_STEPS = SINGLE_WIZARD_STEPS.length
@@ -115,14 +133,22 @@ export function canProceedBookingStep(input: {
   }
 }
 
-/** Skip the Rooms step when the guest chose entry-only (or there are no hotels). */
+/** Skip hotel/rooms when there is no lodging, or skip rooms when the guest chose tickets only. */
 export function nextWizardStep(step: number, wantsHotel: boolean | null, hotelCount: number): number {
-  if (step === 3 && (hotelCount === 0 || wantsHotel !== true)) return 5
+  if (hotelCount === 0) {
+    if (step === 2 || step === 3 || step === 4) return 5
+    return Math.min(step + 1, SINGLE_WIZARD_TOTAL_STEPS)
+  }
+  if (step === 3 && wantsHotel !== true) return 5
   return Math.min(step + 1, SINGLE_WIZARD_TOTAL_STEPS)
 }
 
 export function prevWizardStep(step: number, wantsHotel: boolean | null, hotelCount: number): number {
-  if (step === 5 && (hotelCount === 0 || wantsHotel !== true)) return 3
+  if (hotelCount === 0) {
+    if (step === 5 || step === 3 || step === 4) return 2
+    return Math.max(step - 1, 1)
+  }
+  if (step === 5 && wantsHotel !== true) return 3
   return Math.max(step - 1, 1)
 }
 
@@ -148,29 +174,31 @@ export function buildMultiWizardSteps(input: {
   wantsHotelCombined: boolean | null
   hotelCount: number
   locale?: string
+  tone?: TBookCopyTone
 }): MultiWizardStepDef[] {
+  const tone = input.tone ?? "entries"
   const steps: MultiWizardStepDef[] = [
-    { kind: "entries", label: tbookT(input.locale, "stepEntries") },
-    { kind: "players", label: tbookT(input.locale, "stepPlayers") },
+    { kind: "entries", label: tbookT(input.locale, "stepEntries", undefined, tone) },
+    { kind: "players", label: tbookT(input.locale, "stepPlayers", undefined, tone) },
   ]
 
   if (input.hotelCount > 0) {
     if (input.lodgingMode === "combined") {
-      steps.push({ kind: "hotel", label: tbookT(input.locale, "stepHotel"), eventId: null })
+      steps.push({ kind: "hotel", label: tbookT(input.locale, "stepHotel", undefined, tone), eventId: null })
       if (input.wantsHotelCombined === true) {
-        steps.push({ kind: "rooms", label: tbookT(input.locale, "stepRooms"), eventId: null })
+        steps.push({ kind: "rooms", label: tbookT(input.locale, "stepRooms", undefined, tone), eventId: null })
       }
     } else {
       for (const event of input.events) {
         steps.push({
           kind: "hotel",
-          label: tbookT(input.locale, "stepHotelForEvent", { name: event.name }),
+          label: tbookT(input.locale, "stepHotelForEvent", { name: event.name }, tone),
           eventId: event.id,
         })
         if (input.wantsHotelByEventId[event.id] === true) {
           steps.push({
             kind: "rooms",
-            label: tbookT(input.locale, "stepRoomsForEvent", { name: event.name }),
+            label: tbookT(input.locale, "stepRoomsForEvent", { name: event.name }, tone),
             eventId: event.id,
           })
         }
@@ -178,8 +206,8 @@ export function buildMultiWizardSteps(input: {
     }
   }
 
-  steps.push({ kind: "details", label: tbookT(input.locale, "stepYourDetails") })
-  steps.push({ kind: "review", label: tbookT(input.locale, "stepReview") })
+  steps.push({ kind: "details", label: tbookT(input.locale, "stepYourDetails", undefined, tone) })
+  steps.push({ kind: "review", label: tbookT(input.locale, "stepReview", undefined, tone) })
   return steps
 }
 

@@ -36,4 +36,19 @@ describe("normalizeWdfHomeContent", () => {
     expect(result.prizeMoney.heading).toBe(homeDefaultContent.prizeMoney.heading)
     expect(result.prizeMoney.tables).toEqual(homeDefaultContent.prizeMoney.tables)
   })
+
+  it("backfills tickerText for older chrome snapshots", () => {
+    const result = normalizeWdfHomeContent(
+      {
+        hero: homeDefaultContent.hero,
+        chrome: {
+          nav: homeDefaultContent.chrome.nav,
+          navCta: homeDefaultContent.chrome.navCta,
+          tbookApiKey: "",
+        },
+      },
+      homeDefaultContent
+    )
+    expect(result.chrome.tickerText).toBe(homeDefaultContent.chrome.tickerText)
+  })
 })

@@ -27,6 +27,6 @@ export async function loadTBookStorefrontConfig(
       navCta: navCtaFromTBookChrome(chrome),
     }
   } catch {
-    return { nav: [], navCta: defaultNavCta, tbookApiKey: "", navItems: [] }
+    return { nav: [], navCta: defaultNavCta, tbookApiKey: "", tickerText: "", navItems: [] }
   }
 }

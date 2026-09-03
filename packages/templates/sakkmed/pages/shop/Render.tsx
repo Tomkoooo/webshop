@@ -49,12 +49,12 @@ export function ShopRender({
           cms.enabled) && (
           <div className="mb-10 max-w-3xl">
             {(content.heading || cms.enabled) && (
-              <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white">
+              <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-foreground">
                 <EditableDocText path="heading" value={content.heading} className="uppercase" />
               </h1>
             )}
             {(content.subheading || cms.enabled) && (
-              <p className="mt-4 text-neutral-400">
+              <p className="mt-4 text-muted-foreground">
                 <EditableDocText path="subheading" value={content.subheading} multiline />
               </p>
             )}
@@ -78,7 +78,7 @@ export function ShopRender({
                   <SheetTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full btn-krausz bg-transparent border-white/20 text-white rounded-none h-14 flex gap-3 text-xs tracking-widest uppercase"
+                      className="w-full btn-krausz bg-transparent border-white/20 text-foreground rounded-none h-14 flex gap-3 text-xs tracking-widest uppercase"
                     >
                       <Filter className="w-4 h-4" />
                       Szűrők megjelenítése
@@ -86,7 +86,7 @@ export function ShopRender({
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="bg-background-dark border-r border-white/10 w-full sm:max-w-md overflow-y-auto"
+                    className="bg-background-dark border-r border-border/40 w-full sm:max-w-md overflow-y-auto"
                   >
                     <div className="mt-12">
                       <ShopFilters categories={categories as never} />
@@ -107,14 +107,14 @@ export function ShopRender({
             <ShopHeader total={total} q={query.q} />
 
             {(products as Array<{ _id: { toString(): string } }>).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-32 border border-white/5 bg-white/5">
-                <p className="text-neutral-500 font-medium italic mb-6">
+              <div className="flex flex-col items-center justify-center py-32 border border-white/5 bg-foreground/5">
+                <p className="text-muted-foreground font-medium italic mb-6">
                   <EditableDocText path="emptyStateMessage" value={content.emptyStateMessage} />
                 </p>
                 <Link href="/shop">
                   <Button
                     variant="outline"
-                    className="btn-krausz border-white/20 text-white rounded-none"
+                    className="btn-krausz border-white/20 text-foreground rounded-none"
                   >
                     MINDEN TERMÉK MUTATÁSA
                   </Button>
@@ -141,8 +141,8 @@ export function ShopRender({
                           className={cn(
                             "w-12 h-12 rounded-none font-black tracking-widest text-xs",
                             p === currentPage
-                              ? "bg-primary border-primary-foreground/35 text-white"
-                              : "bg-background-dark border-white/10 text-neutral-500 hover:text-white"
+                              ? "bg-primary border-primary-foreground/35 text-foreground"
+                              : "bg-background-dark border-border/40 text-muted-foreground hover:text-foreground"
                           )}
                         >
                           {p}

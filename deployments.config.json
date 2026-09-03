@@ -101,6 +101,18 @@
       }
     },
     {
+      "key": "sorfeszt",
+      "label": "Sörfeszt",
+      "allowedTemplates": ["sorfeszt"],
+      "defaultTemplateId": "sorfeszt",
+      "enabledPlugins": ["t-book"],
+      "pluginConfig": {
+        "t-book": {
+          "currency": "HUF"
+        }
+      }
+    },
+    {
       "key": "dr-zsanett",
       "label": "Dr. Jámbrik Zsanett Ügyvédi Iroda",
       "allowedTemplates": ["dr-zsanett"],

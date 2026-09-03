@@ -231,6 +231,24 @@ networks:
 #     -t ghcr.io/your-org/webshop-engine:world-darts-festival .
 #
 # =============================================================================
+# EXAMPLE — v2 site app (sorfeszt)
+# =============================================================================
+# WEBSHOP_IMAGE=ghcr.io/your-org/webshop-engine:sorfeszt
+# WEBSHOP_CONTAINER_NAME=sorfeszt
+# DATABASE_URL=mongodb://.../sorfeszt
+# NEXT_PUBLIC_APP_URL=https://sor.example.com
+# NEXTAUTH_URL=https://sor.example.com
+# AUTH_URL=https://sor.example.com
+# ENABLE_SHOP=false
+# (no DEPLOYMENT_KEY — identity is baked in the image)
+# NEXT_PUBLIC_TBOOK_API_BASE=https://tbook.example.com/api/plugins/t-book
+#
+# Build image (CI tag sorfeszt on engine-v2):
+#   docker build --build-arg SITE_APP=apps/sorfeszt \
+#     --build-arg SITE_APP_SERVER=apps/sorfeszt/server.js \
+#     -t ghcr.io/your-org/webshop-engine:sorfeszt .
+#
+# =============================================================================
 # EXAMPLE — two deployments, ONE database (engine-v2 branch images)
 # =============================================================================
 # Same DATABASE_URL on both containers. Different public URL per host.

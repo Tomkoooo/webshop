@@ -22,7 +22,7 @@ import {
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
 import { adminFieldLabel } from "@wse/core/lib/admin-ui"
-import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome, tickerTextFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { TemplateModule } from "@wse/sdk/templates/types"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
@@ -79,7 +79,7 @@ export function TBookSurfaceVisualEditor({
   void themeResetBaseline
   const router = useRouter()
   const { mod, error: templateLoadError } = useTemplateModule(templateId)
-  const isWdf = templateId === "world-darts-festival"
+  const isTBookLanding = Boolean(mod.tBookPages)
 
   const { draft, setPath, undo, redo, canUndo, canRedo, dirty, markSynced } = useUndoableJsonDocument(
     initialDraft,
@@ -124,9 +124,10 @@ export function TBookSurfaceVisualEditor({
     depth: 0,
   }))
 
-  const homeChrome = isWdf ? extractTBookHomeChrome(initialHomeDraft) : null
+  const homeChrome = isTBookLanding ? extractTBookHomeChrome(initialHomeDraft) : null
   const previewNavItems = homeChrome ? navItemsFromTBookChrome(homeChrome) : undefined
   const previewNavCta = homeChrome ? navCtaFromTBookChrome(homeChrome) : undefined
+  const previewTickerText = homeChrome ? tickerTextFromTBookChrome(homeChrome) : undefined
 
   const meta = (draft as { meta?: { seoTitle?: string; seoDescription?: string } }).meta ?? {
     seoTitle: "",
@@ -136,7 +137,7 @@ export function TBookSurfaceVisualEditor({
   const structureSidebar: ReactNode = (
     <div className="space-y-4">
       <CmsTBookPageSidebar pageKey={pageKey} draft={draft} setPath={setPath} />
-      {isWdf ? <CmsNavChromeSidebar draft={initialHomeDraft} setPath={() => {}} readOnly /> : null}
+      {isTBookLanding ? <CmsNavChromeSidebar draft={initialHomeDraft} setPath={() => {}} readOnly /> : null}
     </div>
   )
 
@@ -162,7 +163,7 @@ export function TBookSurfaceVisualEditor({
             onChange={(e) => setPath("meta.seoDescription", e.target.value)}
           />
         </div>
-        {isWdf ? (
+        {isTBookLanding ? (
           <Link
             href="/admin/cms/home"
             className="inline-flex h-9 items-center rounded-md border border-border/60 bg-background px-3 text-xs font-medium text-foreground hover:bg-muted"
@@ -223,6 +224,7 @@ export function TBookSurfaceVisualEditor({
       structureSidebar={structureSidebar}
       navItems={previewNavItems}
       navCta={previewNavCta}
+      tickerText={previewTickerText}
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

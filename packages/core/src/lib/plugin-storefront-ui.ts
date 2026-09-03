@@ -61,8 +61,25 @@ const MINECRAFT_SURFACE: PluginStorefrontSurface = {
   highlightCard: "minecraft-panel p-4 space-y-2",
 }
 
+const SORFESZT_SURFACE: PluginStorefrontSurface = {
+  pageMain: "min-h-screen bg-background text-foreground",
+  contentShell: "container mx-auto max-w-5xl px-4 sm:px-6",
+  heroTitle: "font-heading text-4xl font-bold tracking-tight md:text-5xl",
+  sectionTitle: "font-heading text-2xl font-bold md:text-3xl",
+  eyebrow: "text-xs font-semibold uppercase tracking-widest text-secondary",
+  gateTitle: "font-heading text-2xl font-bold",
+  gateButton: "h-11 w-full rounded-md font-semibold",
+  highlightCard: "rounded-xl border border-border bg-surface p-5 shadow-sm space-y-2",
+  sectionSpacing: "space-y-16",
+  prose:
+    "prose max-w-none text-foreground prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary",
+  cmsBanner: "border border-dashed border-border bg-muted/40 p-3 rounded-lg",
+  cmsBlockChrome: "mb-3 flex flex-wrap items-center gap-2 border-b border-border pb-2",
+}
+
 export function getPluginStorefrontSurface(templateId: string): PluginStorefrontSurface {
   if (templateId === "atelier-showcase") return ATELIER_SURFACE
   if (templateId === "minecraft-camp") return MINECRAFT_SURFACE
+  if (templateId === "sorfeszt") return SORFESZT_SURFACE
   return DEFAULT_MODERN_SURFACE
 }

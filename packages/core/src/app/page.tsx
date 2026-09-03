@@ -3,7 +3,8 @@ import { getStorefrontFooterHydrationProps } from "@wse/core/lib/storefront-foot
 import { extractMineshowSiteConfig } from "@wse/template-minecraft-camp/lib/site-config"
 import { pressStart2P } from "@wse/template-minecraft-camp/fonts"
 import { WDF_STOREFRONT_ROOT_CLASS } from "@wse/template-world-darts-festival/lib/wdf-classes"
-import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import { SORFESZT_STOREFRONT_ROOT_CLASS } from "@wse/template-sorfeszt/lib/sorfeszt-classes"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome, tickerTextFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { Metadata } from "next"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@wse/core/lib/storefront-page-title"
 
@@ -46,16 +47,23 @@ export default async function LandingPage() {
   const { template, branding, footerSettings, shopEnabled, locale, Navbar, Footer, NavbarSearch } = chrome
   const HomeRender = template.pages.home.Render
   const isMinecraftCamp = template.manifest.id === "minecraft-camp"
-  const isWorldDartsFestival = template.manifest.id === "world-darts-festival"
+  const usesTBookChrome = Boolean(template.tBookPages)
   const mineshowSite = isMinecraftCamp ? extractMineshowSiteConfig(content) : null
-  const wdfChrome = isWorldDartsFestival ? extractTBookHomeChrome(content) : null
-  const wdfNavItems = wdfChrome ? navItemsFromTBookChrome(wdfChrome) : undefined
-  const wdfNavCta = wdfChrome ? navCtaFromTBookChrome(wdfChrome) : undefined
+  const tbookChrome = usesTBookChrome ? extractTBookHomeChrome(content) : null
+  const tbookNavItems = tbookChrome ? navItemsFromTBookChrome(tbookChrome) : undefined
+  const tbookNavCta = tbookChrome ? navCtaFromTBookChrome(tbookChrome) : undefined
+  const tbookTickerText = tbookChrome ? tickerTextFromTBookChrome(tbookChrome) : undefined
   const fontRoot = isMinecraftCamp ? pressStart2P.variable : ""
+  const storefrontRootClass =
+    template.manifest.id === "sorfeszt"
+      ? SORFESZT_STOREFRONT_ROOT_CLASS
+      : template.manifest.id === "world-darts-festival"
+        ? WDF_STOREFRONT_ROOT_CLASS
+        : ""
 
   return (
     <div
-      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-clip ${fontRoot} ${isWorldDartsFestival ? WDF_STOREFRONT_ROOT_CLASS : ""}`}
+      className={`flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-clip ${fontRoot} ${storefrontRootClass}`}
     >
       <Navbar
         brandName={branding.brandName}
@@ -63,8 +71,9 @@ export default async function LandingPage() {
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
         venueBadge={mineshowSite?.venueShort}
-        navItems={wdfNavItems}
-        navCta={wdfNavCta}
+        navItems={tbookNavItems}
+        navCta={tbookNavCta}
+        tickerText={tbookTickerText}
         locale={locale}
       />
 

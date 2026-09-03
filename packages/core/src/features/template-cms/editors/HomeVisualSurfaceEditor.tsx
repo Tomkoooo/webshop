@@ -24,15 +24,15 @@ import {
   publishTemplatePageContent,
 } from "@wse/core/features/template-cms/api/template-page-client-api"
 import { getHomepageRenderDependencies } from "@wse/core/features/homepage-cms/render/homepage-deps"
-import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
+import { extractTBookHomeChrome, navCtaFromTBookChrome, navItemsFromTBookChrome, tickerTextFromTBookChrome } from "@wse/plugin-t-book/lib/storefront-chrome"
 import type { HomePageDeps } from "@wse/sdk/templates/types"
 import { normalizeCampaignContent } from "@wse/template-keramia-shared/lib/normalize-campaign-content"
 import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
-import {
-  WDF_SECTION_LABELS,
-  type WdfHomeSectionId,
-} from "@wse/template-world-darts-festival/lib/wdf-home-sections"
-import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+import { WDF_SECTION_LABELS } from "@wse/template-world-darts-festival/lib/wdf-home-sections"
+import type { HomeContent as WdfHomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+import { normalizeSorfesztHomeContent } from "@wse/template-sorfeszt/lib/normalize-sorfeszt-home-content"
+import { SORFESZT_SECTION_LABELS } from "@wse/template-sorfeszt/lib/sorfeszt-home-sections"
+import type { HomeContent as SorfesztHomeContent } from "@wse/template-sorfeszt/pages/home/schema"
 import type { CampaignPageContent } from "@wse/template-keramia-shared/static-pages/shared/schema"
 import type { FooterSettings } from "@wse/core/services/footer-settings"
 import type { SeoSettings } from "@wse/core/services/seo-settings"
@@ -108,11 +108,19 @@ export function HomeVisualSurfaceEditor({
       ? (mod.pages.home.defaultContent as CampaignPageContent)
       : null
 
+  const isTBookLanding = templateId === "world-darts-festival" || templateId === "sorfeszt"
+
   const normalizeDraft = (value: Record<string, unknown>) => {
     if (templateId === "world-darts-festival") {
       return normalizeWdfHomeContent(
         value,
-        mod.pages.home.defaultContent as HomeContent
+        mod.pages.home.defaultContent as WdfHomeContent
+      ) as Record<string, unknown>
+    }
+    if (templateId === "sorfeszt") {
+      return normalizeSorfesztHomeContent(
+        value,
+        mod.pages.home.defaultContent as SorfesztHomeContent
       ) as Record<string, unknown>
     }
     if (!campaignFallback) return value
@@ -150,18 +158,30 @@ export function HomeVisualSurfaceEditor({
           setPath,
         })
 
-  const wdfChromePanels =
-    templateId === "world-darts-festival"
+  const tbookChromePanels =
+    isTBookLanding
       ? (ctx: {
           footerSettings: FooterSettings
           setFooterSettings: React.Dispatch<React.SetStateAction<FooterSettings>>
         }) => {
-          const normalized = normalizeDraft(draft) as HomeContent
+          const normalized = normalizeDraft(draft)
+          const layout = (normalized as { sectionLayout?: Array<{ id: string; enabled: boolean }> })
+            .sectionLayout ?? []
+          const labels =
+            templateId === "sorfeszt"
+              ? (SORFESZT_SECTION_LABELS as Record<string, string>)
+              : (WDF_SECTION_LABELS as Record<string, string>)
           return [
             {
               id: "nav",
               label: "Navigáció",
-              content: <CmsNavChromeSidebar draft={draft} setPath={setPath} />,
+              content: (
+                <CmsNavChromeSidebar
+                  draft={draft}
+                  setPath={setPath}
+                  showTicker={templateId === "world-darts-festival"}
+                />
+              ),
             },
             {
               id: "footer",
@@ -184,9 +204,9 @@ export function HomeVisualSurfaceEditor({
               id: "sections",
               label: "Szekciók",
               content: (
-                <CmsSectionsSidebar<WdfHomeSectionId>
-                  layout={normalized.sectionLayout}
-                  labels={WDF_SECTION_LABELS}
+                <CmsSectionsSidebar
+                  layout={layout}
+                  labels={labels}
                   onChange={(next) => setPath("sectionLayout", next)}
                 />
               ),
@@ -195,21 +215,23 @@ export function HomeVisualSurfaceEditor({
         }
       : undefined
 
-  const eventNavItems =
-    templateId === "world-darts-festival"
-      ? navItemsFromTBookChrome(extractTBookHomeChrome(draft))
-      : undefined
+  const eventNavItems = isTBookLanding
+    ? navItemsFromTBookChrome(extractTBookHomeChrome(draft))
+    : undefined
 
-  const eventNavCta =
-    templateId === "world-darts-festival"
-      ? navCtaFromTBookChrome(extractTBookHomeChrome(draft))
-      : undefined
+  const eventNavCta = isTBookLanding
+    ? navCtaFromTBookChrome(extractTBookHomeChrome(draft))
+    : undefined
+
+  const eventTickerText = isTBookLanding
+    ? tickerTextFromTBookChrome(extractTBookHomeChrome(draft))
+    : undefined
 
   const toolbar = (
     <CmsEditorSubtoolbar
       title={`Főoldal: ${pageLabel}`}
       description={
-        templateId === "world-darts-festival" ? (
+        isTBookLanding ? (
           <>
             Aktív sablon: <strong>{mod.manifest.name}</strong> — kattintással szerkeszthető szövegek és
             képek. A navigáció, lábléc és szekciók a szerkesztő panelekből érhetők el.
@@ -236,7 +258,7 @@ export function HomeVisualSurfaceEditor({
             onChange={(e) => setPath("meta.seoDescription", e.target.value)}
           />
         </div>
-        {templateId === "world-darts-festival" ? (
+        {isTBookLanding ? (
           <div className="min-w-[280px] flex-1 space-y-1.5">
             <Label className={adminFieldLabel}>tBook API kulcs (tbk_…)</Label>
             <div className="flex flex-wrap gap-2">
@@ -382,11 +404,21 @@ export function HomeVisualSurfaceEditor({
       contactAddress={homepageDeps.company.address}
       footerCategories={categoriesMapped}
       toolbarBelowBranding={toolbar}
-      buildChromePanels={wdfChromePanels}
-      footerCmsEditable={templateId !== "world-darts-festival"}
+      buildChromePanels={tbookChromePanels}
+      footerCmsEditable={!isTBookLanding}
       structureSidebar={structureSidebar}
       navItems={eventNavItems}
       navCta={eventNavCta}
+      tickerText={eventTickerText}
+      wrapNavbar={
+        isTBookLanding
+          ? (navbar) => (
+              <SurfaceDocEditProvider enabled setPath={setPath}>
+                {navbar}
+              </SurfaceDocEditProvider>
+            )
+          : undefined
+      }
       renderMain={(ctx) =>
         ctx.mode === "edit" ? (
           <SurfaceDocEditProvider enabled setPath={setPath}>

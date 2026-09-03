@@ -30,6 +30,7 @@ import {
   type TBookAttendeeFieldDef,
 } from "../lib/attendee-fields"
 import { normalizeTBookCurrency, resolveBookingCurrency } from "../lib/currency"
+import { assertEventOnSale } from "../lib/event-sales"
 import { mergeRegistrationFieldSchemas, resolveTeamMemberFieldSchema, resolveTicketAttendeeFieldSchema } from "../lib/registration-fields"
 import {
   accommodationGuestCount,
@@ -77,6 +78,7 @@ export class TBookBookingService {
     if (opts?.groupId) eventQuery.groupId = opts.groupId
     const event = await TBookEvent.findOne(eventQuery).lean()
     if (!event) throw new Error("Event not found or inactive.")
+    assertEventOnSale(event)
 
     const group = event.groupId
       ? await TBookEventGroup.findById(event.groupId).lean()

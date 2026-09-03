@@ -8,7 +8,7 @@ import { TBookEventList } from "@wse/plugin-t-book/storefront/TBookEventList"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 import { fetchPublicEventsForStorefront } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
-import { tBookListVariant, tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
+import { tBookListVariant, tBookMainClassName, tBookUiLocale } from "@wse/plugin-t-book/lib/tbook-page-shell"
 
 export default async function JegyekPage() {
   const enabled = await PluginService.isEnabled("t-book")
@@ -16,8 +16,10 @@ export default async function JegyekPage() {
 
   const chrome = await getActiveChrome()
   const { locale } = chrome
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
-  const listCopy = await getTBookListContent(chrome.template.manifest.id, locale)
+  const templateId = chrome.template.manifest.id
+  const uiLocale = tBookUiLocale(templateId, locale)
+  const siteConfig = await loadTBookStorefrontConfig(templateId, locale)
+  const listCopy = await getTBookListContent(templateId, locale)
   const apiKey = siteConfig?.tbookApiKey ?? ""
   const apiBase = resolveTBookServerApiBase()
   const { events, currency, error: eventsError } = await fetchPublicEventsForStorefront(apiKey, apiBase)
@@ -27,7 +29,6 @@ export default async function JegyekPage() {
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
-  const templateId = chrome.template.manifest.id
 
   return (
     <>
@@ -38,14 +39,15 @@ export default async function JegyekPage() {
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
-        locale={locale}
+        tickerText={siteConfig?.tickerText}
+        locale={uiLocale}
       />
       <main className={tBookMainClassName(templateId)}>
         <div className="mx-auto max-w-5xl">
           <TBookEventList
             apiKey={apiKey}
             variant={tBookListVariant(templateId)}
-            locale={locale}
+            locale={uiLocale}
             copy={{
               pageTitle: listCopy.pageTitle,
               pageIntro: listCopy.pageIntro,
@@ -73,7 +75,7 @@ export default async function JegyekPage() {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
-        locale={locale}
+        locale={uiLocale}
       />
     </>
   )

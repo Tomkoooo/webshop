@@ -27,6 +27,8 @@ export type TBookPublicEvent = {
   endDate: string
   startTime?: string | null
   endTime?: string | null
+  salesOpensAt?: string | Date | null
+  salesClosesAt?: string | Date | null
   nights: number
   ticketFeeHuf: number
   ticketFeeMode: "per_person" | "per_booking" | "per_team"

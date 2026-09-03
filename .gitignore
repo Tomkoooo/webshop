@@ -66,3 +66,7 @@ next-env.d.ts
 /landing-templates/*
 /landing-templetes
 /landing-templetes/*
+
+# Standalone site exports (large media + generated Next apps)
+/exports/
+scripts/seed/backups/

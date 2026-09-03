@@ -146,7 +146,9 @@ export function CmsSiteSettingsClient({
               <FooterEditor
                 initial={initialFooter}
                 showCampFields={
-                  templateId === "minecraft-camp" || templateId === "world-darts-festival"
+                  templateId === "minecraft-camp" ||
+                  templateId === "world-darts-festival" ||
+                  templateId === "sorfeszt"
                 }
               />
             ) : null}

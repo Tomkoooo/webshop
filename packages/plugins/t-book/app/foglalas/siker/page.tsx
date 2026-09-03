@@ -7,7 +7,7 @@ import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-
 import { getTBookSuccessContent } from "@wse/core/lib/tbook-page-content"
 import { TBookSuccessClient } from "@wse/plugin-t-book/storefront/TBookSuccessClient"
 import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
-import { tBookMainClassName } from "@wse/plugin-t-book/lib/tbook-page-shell"
+import { tBookMainClassName, tBookUiLocale } from "@wse/plugin-t-book/lib/tbook-page-shell"
 
 export default async function FoglalasSikerPage() {
   const enabled = await PluginService.isEnabled("t-book")
@@ -15,15 +15,16 @@ export default async function FoglalasSikerPage() {
 
   const chrome = await getActiveChrome()
   const { locale } = chrome
-  const siteConfig = await loadTBookStorefrontConfig(chrome.template.manifest.id, locale)
-  const successCopy = await getTBookSuccessContent(chrome.template.manifest.id, locale)
+  const templateId = chrome.template.manifest.id
+  const uiLocale = tBookUiLocale(templateId, locale)
+  const siteConfig = await loadTBookStorefrontConfig(templateId, locale)
+  const successCopy = await getTBookSuccessContent(templateId, locale)
 
   const [footerData, footerHydration] = await Promise.all([
     resolveStorefrontFooterContact(chrome.template),
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
-  const templateId = chrome.template.manifest.id
 
   return (
     <>
@@ -34,7 +35,8 @@ export default async function FoglalasSikerPage() {
         NavbarSearch={NavbarSearch}
         navItems={siteConfig?.navItems}
         navCta={siteConfig?.navCta}
-        locale={locale}
+        tickerText={siteConfig?.tickerText}
+        locale={uiLocale}
       />
       <main className={tBookMainClassName(templateId)}>
         <Suspense
@@ -43,7 +45,7 @@ export default async function FoglalasSikerPage() {
           }
         >
           <TBookSuccessClient
-            locale={locale}
+            locale={uiLocale}
             copy={{
               loadingText: successCopy.loadingText,
               successTitle: successCopy.successTitle,
@@ -67,7 +69,7 @@ export default async function FoglalasSikerPage() {
         address={footerData.address}
         newsletterEnabled={footerHydration.newsletterEnabled}
         legalLinks={footerHydration.legalLinks}
-        locale={locale}
+        locale={uiLocale}
       />
     </>
   )

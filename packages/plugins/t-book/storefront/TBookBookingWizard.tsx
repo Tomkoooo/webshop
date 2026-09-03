@@ -10,6 +10,7 @@ import {
   SINGLE_WIZARD_REVIEW_STEP,
   SINGLE_WIZARD_TOTAL_STEPS,
   canProceedBookingStep,
+  displaySingleWizardStep,
   nextWizardStep,
   prevWizardStep,
   singleWizardStepLabels,
@@ -81,7 +82,7 @@ import {
 import { formatEventSchedule } from "../lib/event-schedule"
 import { mergeRegistrationFieldSchemas, registrationUnitLabel } from "../lib/registration-fields"
 import type { TBookPublicEventDetailResult } from "../lib/fetch-public-storefront"
-import { tbookT } from "../lib/i18n"
+import { tbookT, type TBookCopyTone } from "../lib/i18n"
 
 type Copy = {
   stepTicket: string
@@ -230,6 +231,7 @@ export function TBookBookingWizard({
   copy,
   initialEventDetail,
   locale,
+  copyTone = "entries",
 }: {
   apiKey: string
   eventId: string
@@ -237,9 +239,11 @@ export function TBookBookingWizard({
   /** When set, event detail was loaded on the server — same path as /jegyek. */
   initialEventDetail?: TBookPublicEventDetailResult
   locale?: string
+  copyTone?: TBookCopyTone
 }) {
   const serverProvided = initialEventDetail !== undefined
-  const steps = singleWizardStepLabels(locale)
+  const t = (key: Parameters<typeof tbookT>[1], vars?: Parameters<typeof tbookT>[2]) =>
+    tbookT(locale, key, vars, copyTone)
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(!serverProvided)
   const [submitting, setSubmitting] = useState(false)
@@ -247,6 +251,7 @@ export function TBookBookingWizard({
 
   const [event, setEvent] = useState<TBookPublicEvent | null>(initialEventDetail?.event ?? null)
   const [hotels, setHotels] = useState<TBookPublicHotel[]>(initialEventDetail?.hotels ?? [])
+  const steps = singleWizardStepLabels(locale, { hotelCount: hotels.length, tone: copyTone })
 
   const [guests, setGuests] = useState(1)
   /** How many entries need rooms when a hotel is selected: all or a subset. */
@@ -260,7 +265,9 @@ export function TBookBookingWizard({
   const [showDetailsErrors, setShowDetailsErrors] = useState(false)
   const [attendees, setAttendees] = useState<TBookBookingAttendeePayload[]>([])
   const [quote, setQuote] = useState<TBookPriceQuote | null>(null)
-  const [wantsHotel, setWantsHotel] = useState<boolean | null>(null)
+  const [wantsHotel, setWantsHotel] = useState<boolean | null>(
+    () => (initialEventDetail?.hotels?.length === 0 ? false : null)
+  )
   const [acceptedLegal, setAcceptedLegal] = useState(false)
 
   const stayRecommendation = useMemo(
@@ -288,7 +295,10 @@ export function TBookBookingWizard({
   const teamMemberFieldSchema = event?.teamMemberFieldSchema ?? []
   const teamMemberLimit = event?.teamMemberLimit ?? null
   const fixedRosterSize = event ? playerRosterSize(event) : null
-  const guestUnitLabel = registrationUnitLabel(registrationUnit, guests, locale)
+  const guestUnitLabel =
+    copyTone === "tickets"
+      ? t("unitEntrySingular")
+      : registrationUnitLabel(registrationUnit, guests, locale)
   const needsPlayerMembers = event ? needsPlayerMemberForms(event) : false
   const maxAccommodationGuests = event ? accommodationGuestCount(guests, event) : guests
   const rosterPlayers = event ? countRosterPlayers(attendees, event, guests) : guests
@@ -348,6 +358,24 @@ export function TBookBookingWizard({
   }, [selectedHotel, accommodationMode, packageDealKey, nights])
 
   useEffect(() => {
+    if (hotels.length === 0) setWantsHotel(false)
+  }, [hotels.length])
+
+  useEffect(() => {
+    if (copyTone !== "tickets") return
+    const first = attendees[0]?.fields
+    if (!first) return
+    const name = String(first.full_name ?? first.name ?? "").trim()
+    const email = String(first.email ?? "").trim()
+    if (!name && !email) return
+    setCustomer((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : name,
+      email: prev.email.trim() ? prev.email : email,
+    }))
+  }, [attendees, copyTone])
+
+  useEffect(() => {
     if (accommodationNeed !== "some") return
     setAccommodationGuestOverride((prev) =>
       Math.min(Math.max(1, prev), Math.max(1, maxAccommodationGuests))
@@ -385,7 +413,7 @@ export function TBookBookingWizard({
 
   const loadEvent = useCallback(async () => {
     if (!apiKey.trim()) {
-      setError(tbookT(locale, "apiKeyMissing"))
+      setError(t("apiKeyMissing"))
       setLoading(false)
       return
     }
@@ -495,7 +523,7 @@ export function TBookBookingWizard({
       setQuote(res.quote)
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : tbookT(locale, "priceCalcError"))
+      setError(err instanceof Error ? err.message : t("priceCalcError"))
       return false
     } finally {
       setSubmitting(false)
@@ -505,7 +533,7 @@ export function TBookBookingWizard({
   const runBooking = async () => {
     if (!event) return
     if (!acceptedLegal) {
-      setError(tbookT(locale, "acceptTerms"))
+      setError(t("acceptTerms"))
       return
     }
     setSubmitting(true)
@@ -531,7 +559,7 @@ export function TBookBookingWizard({
       )
       window.location.href = res.checkoutUrl
     } catch (err) {
-      setError(err instanceof Error ? err.message : tbookT(locale, "bookingFailed"))
+      setError(err instanceof Error ? err.message : t("bookingFailed"))
       setSubmitting(false)
     }
   }
@@ -640,7 +668,7 @@ export function TBookBookingWizard({
   const goNext = async () => {
     if (step === 1) {
       if (guests < 1) {
-        setError(tbookT(locale, "atLeastOneEntry"))
+        setError(t("atLeastOneEntry"))
         return
       }
       setError(null)
@@ -649,7 +677,7 @@ export function TBookBookingWizard({
     }
     if (step === 2) {
       if (attendeeFieldIssues.length > 0) {
-        setError(tbookT(locale, "completeParticipantDetails"))
+        setError(t("completeParticipantDetails"))
         return
       }
       if (eligibilityIssues.length > 0) {
@@ -662,11 +690,11 @@ export function TBookBookingWizard({
     }
     if (step === 3) {
       if (hotels.length > 0 && wantsHotel === null) {
-        setError(tbookT(locale, "chooseHotelNeed"))
+        setError(t("chooseHotelNeed"))
         return
       }
       if (wantsHotel === true && !selectedHotelId) {
-        setError(tbookT(locale, "completeHotelSelection"))
+        setError(t("completeHotelSelection"))
         return
       }
       setError(null)
@@ -675,23 +703,23 @@ export function TBookBookingWizard({
     }
     if (step === 4) {
       if (accommodationNeed === "none" || !selectedHotelId) {
-        setError(tbookT(locale, "chooseWhoNeedsRoom"))
+        setError(t("chooseWhoNeedsRoom"))
         return
       }
       if (accommodationNeed === "some" && accommodationGuests < 1) {
-        setError(tbookT(locale, "chooseHowManyNeedRoom"))
+        setError(t("chooseHowManyNeedRoom"))
         return
       }
       if (packagesRequired && !hasPackageSelection) {
-        setError(tbookT(locale, "selectPackage"))
+        setError(t("selectPackage"))
         return
       }
       if (showRooms && !hasRoomSelection) {
-        setError(tbookT(locale, "selectRoomType"))
+        setError(t("selectRoomType"))
         return
       }
       if (hotelAttendeeFieldIssues.length > 0) {
-        setError(tbookT(locale, "completeParticipantDetails"))
+        setError(t("completeParticipantDetails"))
         return
       }
       setError(null)
@@ -701,7 +729,7 @@ export function TBookBookingWizard({
     if (step === 5) {
       setShowDetailsErrors(true)
       if (!customerValid) {
-        setError(tbookT(locale, "completeContactBilling"))
+        setError(t("completeContactBilling"))
         return
       }
       setError(null)
@@ -727,7 +755,7 @@ export function TBookBookingWizard({
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
         <p className="font-medium text-destructive">{error}</p>
         <LocaleLink href="/jegyek" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
-          ← {tbookT(locale, "backToEvents")}
+          ← {t("backToEvents")}
         </LocaleLink>
       </div>
     )
@@ -743,7 +771,7 @@ export function TBookBookingWizard({
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          {tbookT(locale, "backToEvents")}
+          {t("backToEvents")}
         </LocaleLink>
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">{event.name}</h1>
@@ -757,7 +785,11 @@ export function TBookBookingWizard({
             )}
           </p>
         </div>
-        <BookingStepIndicator steps={steps} current={step} locale={locale} />
+        <BookingStepIndicator
+          steps={steps}
+          current={displaySingleWizardStep(step, hotels.length)}
+          locale={locale}
+        />
       </header>
 
       {error ? (
@@ -769,17 +801,17 @@ export function TBookBookingWizard({
       {step === 1 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
-            <h2 className="text-lg font-semibold">{tbookT(locale, "numberOfEntries")}</h2>
+            <h2 className="text-lg font-semibold">{t("numberOfEntries")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tbookT(locale, "howManyEntriesHint")}
+              {t("howManyEntriesHint")}
             </p>
           </div>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">
               {registrationUnit === "team"
-                ? tbookT(locale, "numberOfTeams")
+                ? t("numberOfTeams")
                 : playersPerTicket > 1
-                  ? tbookT(locale, "guestsLabelWithPlayers", { label: copy.guestsLabel, count: playersPerTicket })
+                  ? t("guestsLabelWithPlayers", { label: copy.guestsLabel, count: playersPerTicket })
                   : copy.guestsLabel}
             </span>
             <input
@@ -792,36 +824,36 @@ export function TBookBookingWizard({
             />
             <p className="text-xs text-muted-foreground">
               {playersPerTicket > 1
-                ? tbookT(locale, "entriesTimesPlayersTotal", {
+                ? t("entriesTimesPlayersTotal", {
                     guests,
-                    entryWord: tbookT(locale, guests === 1 ? "unitEntrySingular" : "unitEntryPlural"),
+                    entryWord: t(guests === 1 ? "unitEntrySingular" : "unitEntryPlural"),
                     playersPerTicket,
                     total: maxAccommodationGuests,
                   })
-                : tbookT(locale, "peopleTotalSimple", {
+                : t("peopleTotalSimple", {
                     guests,
-                    personWord: tbookT(locale, guests === 1 ? "unitPersonSingular" : "unitPersonPlural"),
+                    personWord: t(guests === 1 ? "unitPersonSingular" : "unitPersonPlural"),
                   })}
             </p>
           </label>
         </section>
       ) : null}
 
-      {step === 3 ? (
+      {step === 3 && hotels.length > 0 ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           {hotels.length > 0 ? (
             <>
               <div>
-                <h2 className="text-lg font-semibold">{tbookT(locale, "accommodation")}</h2>
+                <h2 className="text-lg font-semibold">{t("accommodation")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {tbookT(locale, "accommodationHint")}
+                  {t("accommodationHint")}
                 </p>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold">{tbookT(locale, "needHotel")}</h3>
+                <h3 className="text-sm font-semibold">{t("needHotel")}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {tbookT(locale, "needHotelHint")}
+                  {t("needHotelHint")}
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <button
@@ -836,9 +868,9 @@ export function TBookBookingWizard({
                       setQuote(null)
                     }}
                   >
-                    <span className="block text-sm font-semibold">{tbookT(locale, "noHotelEntryOnly")}</span>
+                    <span className="block text-sm font-semibold">{t("noHotelEntryOnly")}</span>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {tbookT(locale, "entryFeesOnlyHint")}
+                      {t("entryFeesOnlyHint")}
                     </span>
                   </button>
                   <button
@@ -850,9 +882,9 @@ export function TBookBookingWizard({
                       setAccommodationNeed((prev) => (prev === "some" ? "some" : "all"))
                     }}
                   >
-                    <span className="block text-sm font-semibold">{tbookT(locale, "yesNeedHotel")}</span>
+                    <span className="block text-sm font-semibold">{t("yesNeedHotel")}</span>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {tbookT(locale, "hotelNextHint")}
+                      {t("hotelNextHint")}
                     </span>
                   </button>
                 </div>
@@ -885,7 +917,7 @@ export function TBookBookingWizard({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium uppercase tracking-wide text-primary">
-                        {tbookT(locale, "selectedHotelLabel")}
+                        {t("selectedHotelLabel")}
                       </p>
                       <p className="mt-1 text-base font-semibold">{selectedHotel.name}</p>
                       {selectedHotel.address?.trim() ? (
@@ -901,7 +933,7 @@ export function TBookBookingWizard({
                         setQuote(null)
                       }}
                     >
-                      {tbookT(locale, "changeHotel")}
+                      {t("changeHotel")}
                     </button>
                   </div>
                   {selectedHotel.gallery?.[0] ? (
@@ -931,7 +963,7 @@ export function TBookBookingWizard({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              {tbookT(locale, "noHotelOptions")}
+              {t("noHotelOptions")}
             </p>
           )}
         </section>
@@ -940,26 +972,26 @@ export function TBookBookingWizard({
       {step === 4 && selectedHotel ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
-            <h2 className="text-lg font-semibold">{tbookT(locale, "chooseYourRoom")}</h2>
+            <h2 className="text-lg font-semibold">{t("chooseYourRoom")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tbookT(locale, "chooseRoomHint", { hotel: selectedHotel.name })}
+              {t("chooseRoomHint", { hotel: selectedHotel.name })}
             </p>
           </div>
 
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {tbookT(locale, "packagesPricedFor", {
+              {t("packagesPricedFor", {
                 guests: accommodationGuests,
-                guestWord: tbookT(locale, accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
+                guestWord: t(accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
                 extra:
                   accommodationNeed === "some" && accommodationGuests < rosterPlayers
-                    ? tbookT(locale, "entriesWithoutRoomSuffix", {
+                    ? t("entriesWithoutRoomSuffix", {
                         count: rosterPlayers - accommodationGuests,
                       })
                     : "",
               })}
             </p>
-            <p className="text-sm font-medium">{tbookT(locale, "whoNeedsRoom")}</p>
+            <p className="text-sm font-medium">{t("whoNeedsRoom")}</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -974,7 +1006,7 @@ export function TBookBookingWizard({
                   setQuote(null)
                 }}
               >
-                {tbookT(locale, "everyoneCount", { count: rosterPlayers })}
+                {t("everyoneCount", { count: rosterPlayers })}
               </button>
               <button
                 type="button"
@@ -992,13 +1024,13 @@ export function TBookBookingWizard({
                   setQuote(null)
                 }}
               >
-                {tbookT(locale, "somePeopleOnly")}
+                {t("somePeopleOnly")}
               </button>
             </div>
             {accommodationNeed === "some" ? (
               <label className="block max-w-xs space-y-1.5">
                 <span className="text-sm font-medium">
-                  {tbookT(locale, "howManyNeedRoom", { max: maxAccommodationGuests })}
+                  {t("howManyNeedRoom", { max: maxAccommodationGuests })}
                 </span>
                 <input
                   type="number"
@@ -1017,7 +1049,7 @@ export function TBookBookingWizard({
 
           {recommendedStayLabel ? (
             <p className="text-sm text-muted-foreground">
-              {tbookT(locale, "suggestedStay", {
+              {t("suggestedStay", {
                 nights: recommendedNights,
                 plural: recommendedNights === 1 ? "" : "s",
                 label: recommendedStayLabel,
@@ -1059,7 +1091,7 @@ export function TBookBookingWizard({
                       >
                         <span className="block text-sm font-semibold">{room.label}</span>
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {formatHuf(room.baseRateHuf, displayCurrency)} {tbookT(locale, "perPersonPerNight")}
+                          {formatHuf(room.baseRateHuf, displayCurrency)} {t("perPersonPerNight")}
                         </span>
                       </button>
                     )
@@ -1181,17 +1213,17 @@ export function TBookBookingWizard({
             <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {playersPerTicket > 1
-                ? tbookT(locale, "attendeesPlayerFormsHint", {
+                ? t("attendeesPlayerFormsHint", {
                     playersPerTicket,
                     guests,
-                    entryWord: tbookT(locale, guests === 1 ? "unitEntrySingular" : "unitEntryPlural"),
+                    entryWord: t(guests === 1 ? "unitEntrySingular" : "unitEntryPlural"),
                     total: rosterPlayers,
                   })
                 : registrationUnit === "team"
-                  ? tbookT(locale, "attendeesTeamMemberHint", {
+                  ? t("attendeesTeamMemberHint", {
                       limitSuffix:
                         teamMemberLimit != null
-                          ? tbookT(locale, "teamMemberLimitSuffix", { limit: teamMemberLimit })
+                          ? t("teamMemberLimitSuffix", { limit: teamMemberLimit })
                           : "",
                     })
                   : ""}
@@ -1230,12 +1262,12 @@ export function TBookBookingWizard({
                   {needsPlayerMembers ? (
                     <div className="space-y-3 border-t border-border pt-3">
                       <p className="text-sm font-medium">
-                        {registrationUnit === "team" ? tbookT(locale, "teamMembers") : tbookT(locale, "players")}
+                        {registrationUnit === "team" ? t("teamMembers") : t("players")}
                       </p>
                       {(attendee.members ?? []).map((member, memberIndex) => (
                         <div key={memberIndex} className="space-y-2 rounded-lg bg-muted/30 p-3">
                           <p className="text-xs font-semibold text-muted-foreground">
-                            {tbookT(locale, "playerOrdinal", { n: memberIndex + 1 })}
+                            {t("playerOrdinal", { n: memberIndex + 1 })}
                           </p>
                           <div className="grid gap-3 sm:grid-cols-2">
                             {playerFields.map((field) => (
@@ -1277,7 +1309,7 @@ export function TBookBookingWizard({
                                 }))
                               }}
                             >
-                              {tbookT(locale, "removePlayer")}
+                              {t("removePlayer")}
                             </button>
                           ) : null}
                         </div>
@@ -1295,8 +1327,8 @@ export function TBookBookingWizard({
                             }))
                           }}
                         >
-                          {tbookT(locale, "addPlayer")}
-                          {teamMemberLimit != null ? tbookT(locale, "addPlayerMax", { max: teamMemberLimit }) : ""}
+                          {t("addPlayer")}
+                          {teamMemberLimit != null ? t("addPlayerMax", { max: teamMemberLimit }) : ""}
                         </button>
                       ) : null}
                     </div>
@@ -1318,7 +1350,7 @@ export function TBookBookingWizard({
             })
           ) : (
             <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-              {tbookT(locale, "noPlayerDetailsRequired")}
+              {t("noPlayerDetailsRequired")}
             </p>
           )}
         </section>
@@ -1357,41 +1389,45 @@ export function TBookBookingWizard({
           {submitting || !quote ? (
             <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
               <Loader2 className="size-8 animate-spin" aria-hidden />
-              <p className="text-sm">{tbookT(locale, "calculatingTotal")}</p>
+              <p className="text-sm">{t("calculatingTotal")}</p>
             </div>
           ) : (
             <>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{tbookT(locale, "eventLabel")}</dt>
+                  <dt className="text-muted-foreground">{t("eventLabel")}</dt>
                   <dd className="font-medium text-right">{event.name}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">
-                    {registrationUnit === "team" ? tbookT(locale, "teams") : tbookT(locale, "entries")}
+                    {registrationUnit === "team" ? t("teams") : t("entries")}
                   </dt>
                   <dd className="font-medium">
                     {guests} {guestUnitLabel}
                   </dd>
                 </div>
+                {hotels.length > 0 ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{t("hotelLabel")}</dt>
+                    <dd className="font-medium text-right">
+                      {effectiveHotelId && selectedHotel
+                        ? t("hotelSummary", {
+                            hotelName: selectedHotel.name,
+                            guests: accommodationGuests,
+                            guestWord: t(accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
+                          })
+                        : t("entryOnly")}
+                    </dd>
+                  </div>
+                ) : null}
+                {needsPlayerMembers ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{t("players")}</dt>
+                    <dd className="font-medium">{rosterPlayers}</dd>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{tbookT(locale, "hotelLabel")}</dt>
-                  <dd className="font-medium text-right">
-                    {effectiveHotelId && selectedHotel
-                      ? tbookT(locale, "hotelSummary", {
-                          hotelName: selectedHotel.name,
-                          guests: accommodationGuests,
-                          guestWord: tbookT(locale, accommodationGuests === 1 ? "guestSingular" : "guestPlural"),
-                        })
-                      : tbookT(locale, "entryOnly")}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{tbookT(locale, "players")}</dt>
-                  <dd className="font-medium">{rosterPlayers}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">{tbookT(locale, "contactLabel")}</dt>
+                  <dt className="text-muted-foreground">{t("contactLabel")}</dt>
                   <dd className="font-medium text-right">{customer.name}</dd>
                 </div>
               </dl>

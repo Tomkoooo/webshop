@@ -84,7 +84,7 @@ import {
 } from "./tbook-public-api"
 import { formatEventSchedule } from "../lib/event-schedule"
 import { mergeRegistrationFieldSchemas, registrationUnitLabel } from "../lib/registration-fields"
-import { tbookT } from "../lib/i18n"
+import { tbookT, type TBookCopyTone } from "../lib/i18n"
 
 type Copy = {
   stepTicket: string
@@ -848,11 +848,13 @@ export function TBookMultiBookingWizard({
   eventIds,
   copy,
   locale,
+  copyTone = "entries",
 }: {
   apiKey: string
   eventIds: string[]
   copy: Copy
   locale?: string
+  copyTone?: TBookCopyTone
 }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -896,8 +898,9 @@ export function TBookMultiBookingWizard({
         wantsHotelCombined: combinedLodging.wantsHotel,
         hotelCount: hotels.length,
         locale,
+        tone: copyTone,
       }),
-    [lodgingMode, events, wantsHotelByEventId, combinedLodging.wantsHotel, hotels.length, locale]
+    [lodgingMode, events, wantsHotelByEventId, combinedLodging.wantsHotel, hotels.length, locale, copyTone]
   )
 
   const stepRef = useRef(step)
@@ -1413,7 +1416,7 @@ export function TBookMultiBookingWizard({
 
     if (currentStepDef.kind === "entries") {
       if (!step1Valid) {
-        setError(tbookT(locale, "atLeastOneEntryPerEvent"))
+        setError(tbookT(locale, "atLeastOneEntryPerEvent", undefined, copyTone))
         return
       }
       setError(null)
@@ -1477,7 +1480,7 @@ export function TBookMultiBookingWizard({
         if (firstEligibility.length > 0) {
           setError(firstEligibility.join(" "))
         } else {
-          setError(tbookT(locale, "completeParticipantDetailsPerEvent"))
+          setError(tbookT(locale, "completeParticipantDetailsPerEvent", undefined, copyTone))
         }
         return
       }
@@ -1564,7 +1567,7 @@ export function TBookMultiBookingWizard({
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          {tbookT(locale, "backToEvents")}
+          {tbookT(locale, "backToEvents", undefined, copyTone)}
         </LocaleLink>
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">{tbookT(locale, "bookMultipleEvents")}</h1>
@@ -1598,9 +1601,9 @@ export function TBookMultiBookingWizard({
       {currentStepDef?.kind === "entries" ? (
         <section className="space-y-6 rounded-2xl border border-border bg-surface p-6">
           <div>
-            <h2 className="text-lg font-semibold">{tbookT(locale, "numberOfEntries")}</h2>
+            <h2 className="text-lg font-semibold">{tbookT(locale, "numberOfEntries", undefined, copyTone)}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tbookT(locale, "setHowManyEntriesHint")}
+              {tbookT(locale, "setHowManyEntriesHint", undefined, copyTone)}
             </p>
           </div>
 
@@ -1649,13 +1652,23 @@ export function TBookMultiBookingWizard({
                     {playersPerTicket > 1
                       ? tbookT(locale, "entriesTimesPlayersTotal", {
                           guests: guestCount,
-                          entryWord: tbookT(locale, guestCount === 1 ? "unitEntrySingular" : "unitEntryPlural"),
+                          entryWord: tbookT(
+                            locale,
+                            guestCount === 1 ? "unitEntrySingular" : "unitEntryPlural",
+                            undefined,
+                            copyTone
+                          ),
                           playersPerTicket,
                           total: maxAcc,
                         })
                       : tbookT(locale, "peopleTotalSimple", {
                           guests: guestCount,
-                          personWord: tbookT(locale, guestCount === 1 ? "unitPersonSingular" : "unitPersonPlural"),
+                          personWord: tbookT(
+                            locale,
+                            guestCount === 1 ? "unitPersonSingular" : "unitPersonPlural",
+                            undefined,
+                            copyTone
+                          ),
                         })}
                   </p>
                 </label>
@@ -1779,7 +1792,7 @@ export function TBookMultiBookingWizard({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              {tbookT(locale, "noHotelOptions")}
+              {tbookT(locale, "noHotelOptions", undefined, copyTone)}
             </p>
           )}
         </section>
@@ -1790,7 +1803,7 @@ export function TBookMultiBookingWizard({
           <div>
             <h2 className="text-lg font-semibold">{copy.attendeesHeading}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tbookT(locale, "enterPlayerDetailsPerEvent")}
+              {tbookT(locale, "enterPlayerDetailsPerEvent", undefined, copyTone)}
             </p>
           </div>
 
@@ -1821,7 +1834,12 @@ export function TBookMultiBookingWizard({
                       ? tbookT(locale, "attendeesPlayerFormsHint", {
                           playersPerTicket,
                           guests: guestCount,
-                          entryWord: tbookT(locale, guestCount === 1 ? "unitEntrySingular" : "unitEntryPlural"),
+                          entryWord: tbookT(
+                            locale,
+                            guestCount === 1 ? "unitEntrySingular" : "unitEntryPlural",
+                            undefined,
+                            copyTone
+                          ),
                           total: rosterCount,
                         })
                       : registrationUnit === "team"
@@ -1942,7 +1960,7 @@ export function TBookMultiBookingWizard({
                   })
                 ) : (
                   <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                    {tbookT(locale, "noPlayerDetailsRequired")}
+                    {tbookT(locale, "noPlayerDetailsRequired", undefined, copyTone)}
                   </p>
                 )}
               </div>
@@ -2031,7 +2049,7 @@ export function TBookMultiBookingWizard({
                         ) : null}
                       </div>
                       <div className="mt-2 flex justify-between gap-4 text-muted-foreground">
-                        <span>{registrationUnit === "team" ? tbookT(locale, "teams") : tbookT(locale, "entries")}</span>
+                        <span>{registrationUnit === "team" ? tbookT(locale, "teams") : tbookT(locale, "entries", undefined, copyTone)}</span>
                         <span>
                           {guestCount} {guestUnitLabel}
                         </span>

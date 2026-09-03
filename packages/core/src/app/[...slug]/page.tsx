@@ -8,6 +8,7 @@ import { timeDevMetric } from "@wse/core/lib/dev-metrics"
 export const revalidate = 60
 import { resolveStorefrontFooterContact } from "@wse/core/lib/storefront-footer-data"
 import { getStorefrontShopName, withStorefrontPageTitle } from "@wse/core/lib/storefront-page-title"
+import { loadTBookStorefrontConfig } from "@wse/plugin-t-book/lib/load-storefront-config"
 
 type StaticPageProps = {
   params: Promise<{ slug: string[] }>
@@ -68,12 +69,15 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
     notFound()
   }
 
-  const [content, footerData] = await timeDevMetric(
+  const [content, footerData, tbookConfig] = await timeDevMetric(
     "static.dataBundle",
     () =>
       Promise.all([
         getRequestPageContent(template.manifest.id, `page:${slugStr}`, locale),
         resolveStorefrontFooterContact(template),
+        template.tBookPages
+          ? loadTBookStorefrontConfig(template.manifest.id, locale)
+          : Promise.resolve(null),
       ]),
     {
       category: "page-data",
@@ -90,6 +94,9 @@ export default async function StaticTemplatePage({ params }: StaticPageProps) {
         logoSrc={branding.logoNav}
         shopEnabled={shopEnabled}
         NavbarSearch={NavbarSearch}
+        navItems={tbookConfig?.navItems}
+        navCta={tbookConfig?.navCta}
+        tickerText={tbookConfig?.tickerText}
         locale={locale}
       />
       <Render

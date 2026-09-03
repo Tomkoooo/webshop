@@ -36,6 +36,8 @@ export const tBookHomeChromeSchema = z.object({
   nav: z.array(navItemSchema).default([]),
   navCta: navCtaSchema.default(defaultNavCta),
   tbookApiKey: z.string().default(""),
+  /** Looping announcement under the navbar (WDF). Empty hides the strip on the storefront. */
+  tickerText: z.string().default(""),
 })
 
 export type TBookHomeChromeConfig = z.infer<typeof tBookHomeChromeSchema>
@@ -48,7 +50,7 @@ export function extractTBookHomeChrome(content: unknown): TBookHomeChromeConfig 
   )
   return parsed.success
     ? { ...parsed.data, tbookApiKey: normalizeTBookApiKey(parsed.data.tbookApiKey) }
-    : { nav: [], navCta: defaultNavCta, tbookApiKey: "" }
+    : { nav: [], navCta: defaultNavCta, tbookApiKey: "", tickerText: "" }
 }
 
 export function navItemsFromTBookChrome(config: TBookHomeChromeConfig): ChromeNavItem[] {
@@ -61,4 +63,8 @@ export function navItemsFromTBookChrome(config: TBookHomeChromeConfig): ChromeNa
 
 export function navCtaFromTBookChrome(config: TBookHomeChromeConfig): ChromeNavCta {
   return { ...defaultNavCta, ...config.navCta }
+}
+
+export function tickerTextFromTBookChrome(config: TBookHomeChromeConfig): string {
+  return typeof config.tickerText === "string" ? config.tickerText : ""
 }

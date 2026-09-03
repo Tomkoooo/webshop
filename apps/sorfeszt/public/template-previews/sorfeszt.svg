@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice">
+  <rect width="800" height="450" fill="#F7F1E3"/>
+  <rect x="0" y="0" width="800" height="72" fill="#1B2A4A"/>
+  <circle cx="56" cy="36" r="18" fill="#C4A35A"/>
+  <rect x="620" y="24" width="140" height="24" rx="4" fill="#C4A35A"/>
+  <rect x="40" y="110" width="720" height="160" rx="8" fill="#1B2A4A"/>
+  <text x="400" y="180" fill="#C4A35A" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">SÖRFESZT 2026</text>
+  <text x="400" y="220" fill="#FFFBF4" font-family="system-ui,sans-serif" font-size="28" font-weight="700" text-anchor="middle">Sörfesztivál</text>
+  <rect x="40" y="290" width="230" height="120" rx="8" fill="#FFFBF4" stroke="#E2D6C0"/>
+  <rect x="285" y="290" width="230" height="120" rx="8" fill="#1B2A4A"/>
+  <rect x="530" y="290" width="230" height="120" rx="8" fill="#8B1E3F"/>
+  <text x="155" y="360" fill="#1B2A4A" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">Péntek</text>
+  <text x="400" y="360" fill="#C4A35A" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">Szombat</text>
+  <text x="645" y="360" fill="#FFFBF4" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">Vasárnap</text>
+</svg>

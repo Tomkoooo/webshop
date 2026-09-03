@@ -64,6 +64,8 @@ function serializeEvent(e: ITBookEvent) {
     endDate: e.endDate,
     startTime: e.startTime ?? null,
     endTime: e.endTime ?? null,
+    salesOpensAt: e.salesOpensAt ?? null,
+    salesClosesAt: e.salesClosesAt ?? null,
     ticketFeeHuf: e.ticketFeeHuf,
     ticketFeeMode: e.ticketFeeMode,
     registrationUnit: e.registrationUnit ?? "person",

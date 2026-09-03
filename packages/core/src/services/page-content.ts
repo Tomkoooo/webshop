@@ -14,7 +14,9 @@ import type { PageDefinition } from "@wse/sdk/templates/types"
 import { BASE_CONTENT_LOCALE } from "@wse/sdk/i18n/constants"
 import { deepMergeRecords } from "@wse/core/lib/deep-merge-records"
 import { normalizeWdfHomeContent } from "@wse/template-world-darts-festival/lib/normalize-wdf-home-content"
-import type { HomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+import type { HomeContent as WdfHomeContent } from "@wse/template-world-darts-festival/pages/home/schema"
+import { normalizeSorfesztHomeContent } from "@wse/template-sorfeszt/lib/normalize-sorfeszt-home-content"
+import type { HomeContent as SorfesztHomeContent } from "@wse/template-sorfeszt/pages/home/schema"
 
 /**
  * Storage key for a page's content document. The base locale (`BASE_CONTENT_LOCALE`, `"en"`)
@@ -43,8 +45,13 @@ function normalizeParsedContentSync<T>(
   data: T,
   def: PageDefinition<unknown> | null
 ): T {
-  if (templateId === "world-darts-festival" && pageKey === "page:home" && def) {
-    return normalizeWdfHomeContent(data, def.defaultContent as HomeContent) as T
+  if (pageKey === "page:home" && def) {
+    if (templateId === "world-darts-festival") {
+      return normalizeWdfHomeContent(data, def.defaultContent as WdfHomeContent) as T
+    }
+    if (templateId === "sorfeszt") {
+      return normalizeSorfesztHomeContent(data, def.defaultContent as SorfesztHomeContent) as T
+    }
   }
   return data
 }
