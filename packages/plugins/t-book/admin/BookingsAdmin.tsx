@@ -18,6 +18,7 @@ import {
   BOOKING_STATUS_LABELS,
   INVOICE_STATUS_LABELS,
   TBOOK_ADMIN_API,
+  TDARTS_SYNC_STATUS_LABELS,
   VOUCHER_STATUS_LABELS,
   type AdminBookingDetail,
   type AdminBookingRow,
@@ -278,6 +279,54 @@ function VouchersSection({
   )
 }
 
+function TDartsSyncSection({
+  entries,
+  busy,
+  onResync,
+}: {
+  entries: AdminBookingDetail["tdartsSync"]
+  busy: boolean
+  onResync: () => void
+}) {
+  if (entries.length === 0) return null
+  const hasFailures = entries.some((e) => e.status === "failed")
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className={adminSectionTitle}>tDarts szinkron</p>
+          <Button type="button" variant="outline" className="h-8 text-xs" disabled={busy} onClick={onResync}>
+            Újraszinkronizálás
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {entries.map((row) => (
+            <div
+              key={row.participantKey}
+              className="flex flex-col gap-1 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground">Résztvevő #{row.participantKey}</span>
+                <TBookStatusBadge status={row.status} labels={TDARTS_SYNC_STATUS_LABELS} />
+              </div>
+              {row.error ? <p className="text-xs text-destructive">{row.error}</p> : null}
+              {row.playerId ? (
+                <p className="text-xs text-muted-foreground">tDarts player: {row.playerId}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        {hasFailures ? (
+          <p className="text-xs text-muted-foreground">
+            Sikertelen tételeknél nézd meg a hibaüzenetet, javítsd a jegyzett adatokat szükség esetén, majd
+            próbáld újra.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
 function BookingDetailDialog({
   bookingId,
   onClose,
@@ -330,6 +379,25 @@ function BookingDetailDialog({
       onChanged()
       const d = await tBookAdminApi<{ booking: AdminBookingDetail }>(`bookings/${booking.id}`)
       setBooking(d.booking)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Hiba")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resyncTDarts = async () => {
+    if (!booking) return
+    setBusy(true)
+    try {
+      const result = await tBookAdminApi<{ tdartsSync: AdminBookingDetail["tdartsSync"] }>(
+        `bookings/${booking.id}/tdarts-resync`,
+        { method: "POST" }
+      )
+      const failed = result.tdartsSync.filter((e) => e.status === "failed").length
+      if (failed > 0) toast.error(`${failed} résztvevő szinkronizálása sikertelen`)
+      else toast.success("tDarts szinkron frissítve")
+      setBooking({ ...booking, tdartsSync: result.tdartsSync })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Hiba")
     } finally {
@@ -396,6 +464,8 @@ function BookingDetailDialog({
                 customerName={booking.customer.name}
               />
             ) : null}
+
+            <TDartsSyncSection entries={booking.tdartsSync} busy={busy} onResync={() => void resyncTDarts()} />
 
             {Object.keys(booking.selections ?? {}).length > 0 ? (
               <Card>
@@ -531,6 +601,7 @@ export function BookingsAdmin() {
   const [guests, setGuests] = useState(0)
   const [loading, setLoading] = useState(true)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [tdartsBulkBusy, setTdartsBulkBusy] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -578,6 +649,29 @@ export function BookingsAdmin() {
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const exportQuery = useMemo(() => filtersToQuery(filters, 1), [filters])
   const optionValues = facets.find((f) => f.key === filters.optionKey)?.values ?? []
+  const selectedEvent = events.find((ev) => ev.id === filters.eventId) ?? null
+
+  const resyncAllForEvent = async () => {
+    if (!selectedEvent) return
+    setTdartsBulkBusy(true)
+    try {
+      const result = await tBookAdminApi<{
+        total: number
+        synced: number
+        waiting: number
+        failed: number
+        skipped: number
+      }>(`events/${selectedEvent.id}/tdarts-resync-all`, { method: "POST" })
+      toast.success(
+        `${result.total} foglalás átnézve — ${result.synced} szinkronizálva, ${result.waiting} várólistán, ${result.failed} sikertelen, ${result.skipped} kihagyva`
+      )
+      load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Hiba")
+    } finally {
+      setTdartsBulkBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -586,6 +680,17 @@ export function BookingsAdmin() {
         description="Minden foglalás egy helyen — okos szűrők, keresés, export."
         actions={
           <>
+            {selectedEvent?.tdarts.enabled && selectedEvent.tdarts.tournamentCode ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10"
+                disabled={tdartsBulkBusy}
+                onClick={() => void resyncAllForEvent()}
+              >
+                Összes szinkronizálása tDarts-ba
+              </Button>
+            ) : null}
             <Button asChild variant="outline" className="h-10">
             <a
               href={`${TBOOK_ADMIN_API}/bookings/export?format=xlsx&${exportQuery}`}

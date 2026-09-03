@@ -348,6 +348,19 @@ export const tBookPublicListingSchema = z.enum(["listed", "link_only"])
 
 export const tBookPublicListingWithDefaultSchema = tBookPublicListingSchema.default("listed")
 
+/** tDarts tournament codes are short alphanumeric strings (e.g. "ABCD"). */
+export const tBookEventTDartsSchema = z.object({
+  enabled: z.boolean().default(false),
+  tournamentCode: z
+    .string()
+    .trim()
+    .max(16)
+    .transform((v) => (v ? v.toUpperCase() : v))
+    .nullable()
+    .optional()
+    .default(null),
+})
+
 export const eventInputSchema = z.object({
   groupId: z.string().nullable().optional(),
   name: z.string().min(1, "Név kötelező"),
@@ -385,6 +398,8 @@ export const eventInputSchema = z.object({
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
   pricingRules: z.array(tBookPricingRuleSchema).default([]),
   publicListing: tBookPublicListingWithDefaultSchema,
+  tdarts: tBookEventTDartsSchema.default({ enabled: false, tournamentCode: null }),
+  publicEntryList: z.boolean().default(false),
   status: tBookStatusSchema.default("draft"),
   sortOrder: z.number().int().default(0),
 })
@@ -429,6 +444,8 @@ export const eventUpdateSchema = z.object({
   eligibilityFormRules: tBookEligibilityFormRulesSchema,
   pricingRules: z.array(tBookPricingRuleSchema).optional(),
   publicListing: tBookPublicListingSchema.optional(),
+  tdarts: tBookEventTDartsSchema.optional(),
+  publicEntryList: z.boolean().optional(),
   status: tBookStatusSchema.optional(),
   sortOrder: z.number().int().optional(),
 })

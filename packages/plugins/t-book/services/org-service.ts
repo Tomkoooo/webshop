@@ -171,6 +171,14 @@ export class TBookOrgService {
         sellerName?: string
         clearAgentKey?: boolean
       }
+      tdarts?: {
+        enabled?: boolean
+        apiBaseUrl?: string
+        embedClientId?: string
+        partnerClientId?: string
+        partnerClientSecret?: string
+        clearPartnerClientSecret?: boolean
+      }
       emailTemplates?: {
         bookingConfirmation?: { subject: string; body: string } | null
         voucherDelivery?: { subject: string; body: string } | null
@@ -233,6 +241,26 @@ export class TBookOrgService {
       }
     }
 
+    if (patch.tdarts) {
+      if (patch.tdarts.enabled !== undefined) {
+        update["settings.tdarts.enabled"] = Boolean(patch.tdarts.enabled)
+      }
+      if (patch.tdarts.apiBaseUrl !== undefined) {
+        update["settings.tdarts.apiBaseUrl"] = String(patch.tdarts.apiBaseUrl).trim().replace(/\/+$/, "")
+      }
+      if (patch.tdarts.embedClientId !== undefined) {
+        update["settings.tdarts.embedClientId"] = String(patch.tdarts.embedClientId).trim()
+      }
+      if (patch.tdarts.partnerClientId !== undefined) {
+        update["settings.tdarts.partnerClientId"] = String(patch.tdarts.partnerClientId).trim()
+      }
+      if (patch.tdarts.clearPartnerClientSecret) {
+        update["settings.tdarts.partnerClientSecretEnc"] = ""
+      } else if (patch.tdarts.partnerClientSecret?.trim()) {
+        update["settings.tdarts.partnerClientSecretEnc"] = encryptOrgSecret(patch.tdarts.partnerClientSecret)
+      }
+    }
+
     if (patch.emailTemplates) {
       if (patch.emailTemplates.bookingConfirmation !== undefined) {
         update["settings.emailTemplates.bookingConfirmation"] =
@@ -259,10 +287,14 @@ export class TBookOrgService {
     const stripe = org.settings?.stripe
     const smtp = org.settings?.smtp
     const szamlazz = org.settings?.szamlazz
+    const tdarts = org.settings?.tdarts
     const defaults = buildTBookEmailTemplateSeeds(org.name)
     const szKeyStored = String(szamlazz?.agentKeyEnc ?? "").trim()
     const szKeyPlain = decryptOrgSecret(szKeyStored)
     const szKeyMasked = maskSecret(szKeyStored)
+    const tdKeyStored = String(tdarts?.partnerClientSecretEnc ?? "").trim()
+    const tdKeyPlain = decryptOrgSecret(tdKeyStored)
+    const tdKeyMasked = maskSecret(tdKeyStored)
 
     return {
       id: String(org._id),
@@ -292,6 +324,16 @@ export class TBookOrgService {
             ...szKeyMasked,
             /** Ciphertext in DB but current AUTH_SECRET / TBOOK_ORG_SECRETS_KEY cannot read it. */
             needsResave: Boolean(szKeyStored && !szKeyPlain && orgSecretLooksEncrypted(szKeyStored)),
+          },
+        },
+        tdarts: {
+          enabled: Boolean(tdarts?.enabled),
+          apiBaseUrl: tdarts?.apiBaseUrl || "",
+          embedClientId: tdarts?.embedClientId || "",
+          partnerClientId: tdarts?.partnerClientId || "",
+          partnerClientSecret: {
+            ...tdKeyMasked,
+            needsResave: Boolean(tdKeyStored && !tdKeyPlain && orgSecretLooksEncrypted(tdKeyStored)),
           },
         },
         emailTemplates: {

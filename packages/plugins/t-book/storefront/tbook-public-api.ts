@@ -47,6 +47,17 @@ export type TBookPublicEvent = {
   eligibilityBirthDateFieldKey?: string | null
   eligibilityGenderFieldKey?: string | null
   eligibilityFormRules?: TBookEligibilityRulesConfig | null
+  /** Present when the org has linked this event to a live tDarts tournament. */
+  tdarts?: TBookPublicTDartsInfo | null
+  /** When true (and no tDarts link), the event has a public read-only entry list. */
+  publicEntryList?: boolean
+}
+
+/** Browser-safe pointer to tDarts' embed API — no secret (origin-allowlisted). */
+export type TBookPublicTDartsInfo = {
+  tournamentCode: string
+  apiBaseUrl: string
+  embedClientId: string
 }
 
 export type TBookPublicOptionDef = TBookOptionDef

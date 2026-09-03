@@ -91,6 +91,8 @@ export type AdminEvent = {
       | "percent_ticket"
   }>
   publicListing: "listed" | "link_only"
+  tdarts: { enabled: boolean; tournamentCode: string | null }
+  publicEntryList: boolean
   status: "draft" | "active" | "archived"
   sortOrder: number
 }
@@ -135,6 +137,16 @@ export type AdminBookingRow = {
   createdAt: string
 }
 
+export type AdminTDartsSyncEntry = {
+  participantKey: string
+  status: "pending" | "synced" | "waiting" | "failed" | "skipped"
+  tournamentCode: string
+  playerId: string | null
+  rosterStatus: "applied" | "waiting" | null
+  error: string | null
+  syncedAt: string | null
+}
+
 export type AdminBookingDetail = AdminBookingRow & {
   eventId: string
   hotelId: string | null
@@ -149,6 +161,7 @@ export type AdminBookingDetail = AdminBookingRow & {
   quote: TBookPriceQuote
   stripeSessionId: string | null
   invoiceError: string | null
+  tdartsSync: AdminTDartsSyncEntry[]
 }
 
 export type AdminDashboardStats = {
@@ -212,6 +225,14 @@ export const VOUCHER_STATUS_LABELS: Record<string, string> = {
   active: "Aktív",
   checked_in: "Beléptetve",
   void: "Érvénytelen",
+}
+
+export const TDARTS_SYNC_STATUS_LABELS: Record<string, string> = {
+  pending: "Függőben",
+  synced: "Szinkronizálva",
+  waiting: "Várólistán (tDarts)",
+  failed: "Sikertelen",
+  skipped: "Kihagyva",
 }
 
 export const VOUCHER_SCAN_RESULT_LABELS: Record<string, string> = {

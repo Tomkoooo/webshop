@@ -229,9 +229,9 @@ export function TBookStatusBadge({
   labels: Record<string, string>
 }) {
   const tone =
-    status === "paid" || status === "confirmed" || status === "issued" || status === "active"
+    status === "paid" || status === "confirmed" || status === "issued" || status === "active" || status === "synced"
       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
-      : status === "pending" || status === "checkout_started" || status === "draft"
+      : status === "pending" || status === "checkout_started" || status === "draft" || status === "waiting"
         ? "border-amber-500/30 bg-amber-500/10 text-amber-900"
         : status === "cancelled" || status === "expired" || status === "failed"
           ? "border-rose-500/30 bg-rose-500/10 text-rose-800"

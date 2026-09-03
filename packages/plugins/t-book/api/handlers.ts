@@ -90,6 +90,8 @@ function serializeEvent(e: ITBookEvent) {
     eligibilityFormRules: e.eligibilityFormRules ?? null,
     pricingRules: e.pricingRules ?? [],
     publicListing: e.publicListing === "link_only" ? "link_only" : "listed",
+    tdarts: { enabled: Boolean(e.tdarts?.enabled), tournamentCode: e.tdarts?.tournamentCode ?? null },
+    publicEntryList: Boolean(e.publicEntryList),
     status: e.status,
     sortOrder: e.sortOrder,
   }
@@ -276,6 +278,13 @@ export async function handleTBookApi(context: PluginApiContext): Promise<Respons
       const detail = await TBookEventService.getPublicEventDetail(groupId, path[1])
       if (!detail) return json({ error: "Event not found" }, 404, request)
       return json({ ok: true, ...detail }, 200, request)
+    }
+
+    if (segment === "events" && path[1] && path[2] === "entry-list" && method === "GET" && path.length === 3) {
+      const { groupId } = await requireApiKeyGroup(request)
+      const list = await TBookEventService.getPublicEntryList(groupId, path[1])
+      if (!list) return json({ error: "Entry list not available" }, 404, request)
+      return json({ ok: true, ...list }, 200, request)
     }
 
     if (segment === "quote" && method === "POST" && path.length === 1) {
@@ -513,6 +522,19 @@ async function handleTBookAdminApi(
     return json({ ok: true })
   }
 
+  if (segment === "events" && path[1] && path[2] === "tdarts-resync-all" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("booking:manage")
+    const orgId = orgIdFromAuth(authResult)
+    const event = await TBookEventService.getEvent(path[1], orgId)
+    if (!event) return json({ error: "Event not found" }, 404)
+    if (!event.tdarts?.enabled || !event.tdarts.tournamentCode) {
+      return json({ error: "Ehhez az eseményhez nincs tDarts torna beállítva." }, 400)
+    }
+    const { syncAllPaidBookingsForEvent } = await import("../services/tdarts-sync-service")
+    const summary = await syncAllPaidBookingsForEvent(path[1])
+    return json({ ok: true, ...summary })
+  }
+
   if (segment === "groups" && path[1] && path[2] === "hotels" && method === "GET") {
     const authResult = await resolveTBookAdminAuth("hotel:read")
     const orgId = orgIdFromAuth(authResult)
@@ -688,9 +710,21 @@ async function handleTBookAdminApi(
         invoiceStatus: booking.invoiceStatus,
         invoiceId: booking.invoiceId,
         invoiceError: booking.invoiceError,
+        tdartsSync: booking.tdartsSync ?? [],
         createdAt: booking.createdAt,
       },
     })
+  }
+
+  if (segment === "bookings" && path[1] && path[2] === "tdarts-resync" && method === "POST") {
+    const authResult = await resolveTBookAdminAuth("booking:manage")
+    const orgId = orgIdFromAuth(authResult)
+    const existing = await TBookBookingService.getBookingAdmin(path[1], orgId)
+    if (!existing) return json({ error: "Foglalás nem található" }, 404)
+    const { syncBookingToTDarts } = await import("../services/tdarts-sync-service")
+    await syncBookingToTDarts(path[1])
+    const refreshed = await TBookBookingService.getBookingAdmin(path[1], orgId)
+    return json({ ok: true, tdartsSync: refreshed?.tdartsSync ?? [] })
   }
 
   if (segment === "bookings" && path[1] && path[2] === "status" && method === "POST") {

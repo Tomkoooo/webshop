@@ -63,6 +63,7 @@ describe("tBook upstream proxy helpers", () => {
   it("proxies public storefront routes only", () => {
     expect(shouldProxyPublicTBookRoute("events", ["events"], "GET")).toBe(true)
     expect(shouldProxyPublicTBookRoute("events", ["events", "abc"], "GET")).toBe(true)
+    expect(shouldProxyPublicTBookRoute("events", ["events", "abc", "entry-list"], "GET")).toBe(true)
     expect(shouldProxyPublicTBookRoute("quote", ["quote"], "POST")).toBe(true)
     expect(shouldProxyPublicTBookRoute("bookings", ["bookings"], "POST")).toBe(true)
     expect(shouldProxyPublicTBookRoute("bookings", ["bookings", "status"], "GET")).toBe(true)

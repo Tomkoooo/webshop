@@ -364,6 +364,11 @@ export class TBookCheckoutService {
     void issueBookingInvoice(booking._id.toString()).catch((error) => {
       console.error("[t-book] invoice issue failed", booking._id.toString(), error)
     })
+
+    const { syncBookingToTDarts } = await import("./tdarts-sync-service")
+    void syncBookingToTDarts(booking._id.toString()).catch((error) => {
+      console.error("[t-book] tDarts sync failed", booking._id.toString(), error)
+    })
   }
 
   static async expireBooking(bookingId: string) {

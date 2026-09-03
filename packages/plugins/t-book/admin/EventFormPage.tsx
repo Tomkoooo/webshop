@@ -64,6 +64,7 @@ const STEPS = [
   { id: "pricing", title: "Jegyár" },
   { id: "attendees", title: "Résztvevői adatok" },
   { id: "content", title: "Tartalom" },
+  { id: "tdarts", title: "tDarts szinkron" },
 ]
 
 type EventDraft = {
@@ -101,6 +102,9 @@ type EventDraft = {
   eligibilityFormRules: TBookEligibilityRulesConfig
   pricingRules: TBookPricingRule[]
   publicListing: AdminEvent["publicListing"]
+  tdartsEnabled: boolean
+  tdartsTournamentCode: string
+  publicEntryList: boolean
 }
 
 export function EventFormPage({
@@ -157,6 +161,9 @@ export function EventFormPage({
     eligibilityFormRules: { logic: "and", rules: [] },
     pricingRules: [],
     publicListing: "listed",
+    tdartsEnabled: false,
+    tdartsTournamentCode: "",
+    publicEntryList: false,
   })
 
   useEffect(() => {
@@ -232,6 +239,9 @@ export function EventFormPage({
               : { logic: "and", rules: [] },
             pricingRules: e.pricingRules ?? [],
             publicListing: e.publicListing ?? "listed",
+            tdartsEnabled: e.tdarts?.enabled ?? false,
+            tdartsTournamentCode: e.tdarts?.tournamentCode ?? "",
+            publicEntryList: e.publicEntryList ?? false,
           })
         })
       )
@@ -305,6 +315,11 @@ export function EventFormPage({
         draft.eligibilityFormRules.rules.length > 0 ? draft.eligibilityFormRules : null,
       pricingRules: draft.pricingRules,
       publicListing: draft.publicListing,
+      tdarts: {
+        enabled: draft.tdartsEnabled,
+        tournamentCode: draft.tdartsTournamentCode.trim() || null,
+      },
+      publicEntryList: draft.publicEntryList,
       status: draft.status,
     }
     try {
@@ -917,6 +932,62 @@ export function EventFormPage({
                     : groupVoucherHeaderImage.trim()
                       ? "Ha üres, a csoport alapértelmezett jegy fejléc képe kerül a PDF tetejére."
                       : "Ha üres és a csoportnál sincs beállítva, a borítókép kerül a PDF tetejére."}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {step === 5 ? (
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={draft.tdartsEnabled}
+                  onChange={(e) => patch({ tdartsEnabled: e.target.checked })}
+                  className="rounded border-border"
+                />
+                Ez az esemény egy tDarts tornára szóló belépő
+              </label>
+              {draft.tdartsEnabled ? (
+                <TBookField label="tDarts torna kód">
+                  <TBookInput
+                    value={draft.tdartsTournamentCode}
+                    onChange={(e) =>
+                      patch({ tdartsTournamentCode: e.target.value.toUpperCase() })
+                    }
+                    placeholder="ABCD"
+                  />
+                </TBookField>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                Fizetett foglalás után minden résztvevő automatikusan bekerül ennek a tornának a
+                tDarts nevezési listájába (vagy várólistára, ha betelt), és az esemény oldalán
+                megjelenik egy élő követés link. A szervezet tDarts API kulcsait a Szervezet
+                beállítások → tDarts fülön kell megadni.
+              </p>
+              {draft.registrationUnit === "team" &&
+              draft.teamMemberLimit.trim() !== "" &&
+              Number(draft.teamMemberLimit) > 2 ? (
+                <p className="text-xs text-amber-700">
+                  3+ fős csapat esemény — a tDarts partner API nem tud csapat-keretet
+                  szinkronizálni, ezért a fenti kapcsoló hatástalan marad ennél az eseménynél.
+                  Használd helyette a lenti nyilvános nevezési listát.
+                </p>
+              ) : null}
+              <div className="border-t border-border pt-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={draft.publicEntryList}
+                    onChange={(e) => patch({ publicEntryList: e.target.checked })}
+                    className="rounded border-border"
+                  />
+                  Nyilvános nevezési lista megjelenítése (csapat/résztvevő nevek — kapcsolattartási
+                  adatok nélkül)
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Csapat eseményeknél (pl. 3+ fős keretek), ahol nincs tDarts torna szinkronizálva,
+                  ez egyszerű, csak-olvasható listát jelenít meg a jelentkezett csapatokról az
+                  esemény élő oldalán.
                 </p>
               </div>
             </div>

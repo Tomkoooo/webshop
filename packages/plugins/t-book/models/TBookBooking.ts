@@ -23,6 +23,19 @@ export type TBookCustomer = {
 
 export type TBookBillingType = "personal" | "company" | "sport"
 
+export type TBookTDartsSyncStatus = "pending" | "synced" | "waiting" | "failed" | "skipped"
+
+/** One row per enrolled participant (attendee index, or `attendeeIndex:memberIndex` for teams). */
+export type TBookTDartsSyncEntry = {
+  participantKey: string
+  status: TBookTDartsSyncStatus
+  tournamentCode: string
+  playerId: string | null
+  rosterStatus: "applied" | "waiting" | null
+  error: string | null
+  syncedAt: Date | null
+}
+
 export type TBookBillingInfo = {
   billingType: TBookBillingType
   name: string
@@ -73,6 +86,8 @@ export interface ITBookBooking extends Document {
   /** Storefront origin for post-payment redirect (e.g. WDF site). */
   checkoutReturnBaseUrl: string | null
   expiresAt: Date | null
+  /** Per-participant tDarts partner-enroll sync results (see afterBookingPaid). */
+  tdartsSync: TBookTDartsSyncEntry[]
   createdAt: Date
   updatedAt: Date
 }
@@ -155,6 +170,23 @@ const BookingTeamMemberSchema = new Schema(
   { _id: false }
 )
 
+const TDartsSyncEntrySchema = new Schema(
+  {
+    participantKey: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["pending", "synced", "waiting", "failed", "skipped"],
+      default: "pending",
+    },
+    tournamentCode: { type: String, required: true },
+    playerId: { type: String, default: null },
+    rosterStatus: { type: String, enum: ["applied", "waiting", null], default: null },
+    error: { type: String, default: null },
+    syncedAt: { type: Date, default: null },
+  },
+  { _id: false }
+)
+
 const BookingAttendeeSchema = new Schema(
   {
     fields: { type: Schema.Types.Mixed, default: {} },
@@ -206,6 +238,7 @@ const TBookBookingSchema = new Schema<ITBookBooking>(
     invoiceEmailSentAt: { type: Date, default: null },
     checkoutReturnBaseUrl: { type: String, default: null },
     expiresAt: { type: Date, default: null },
+    tdartsSync: { type: [TDartsSyncEntrySchema], default: [] },
   },
   { timestamps: true }
 )

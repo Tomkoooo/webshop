@@ -68,6 +68,25 @@ export interface ITBookEvent extends Document {
   pricingRules: TBookPricingRule[]
   /** Listed on /jegyek vs bookable only via direct link. */
   publicListing: "listed" | "link_only"
+  /**
+   * Link to the tDarts tournament this event sells entries for. When enabled,
+   * paid bookings are enrolled on tDarts (partner API) and the public site can
+   * show a live tournament view (embed API). Org must have tdarts credentials
+   * configured (see TBookOrganization.settings.tdarts).
+   */
+  tdarts: {
+    enabled: boolean
+    /** tDarts tournament code, e.g. "ABCD". */
+    tournamentCode: string | null
+  }
+  /**
+   * Show a read-only public entry list (team/participant names only — no
+   * contact info) on the event's live page. Intended for team tournaments
+   * with more than 2 roster slots (e.g. a league squad), which are not
+   * auto-synced to tDarts (see `tdarts-sync-service.ts`) — this is the
+   * fallback way to show who's entered without a tDarts tournament link.
+   */
+  publicEntryList: boolean
   status: TBookStatus
   sortOrder: number
   createdAt: Date
@@ -252,6 +271,17 @@ const TBookEventSchema = new Schema<ITBookEvent>(
       enum: ["listed", "link_only"],
       default: "listed",
     },
+    tdarts: {
+      type: new Schema(
+        {
+          enabled: { type: Boolean, default: false },
+          tournamentCode: { type: String, default: null },
+        },
+        { _id: false }
+      ),
+      default: () => ({ enabled: false, tournamentCode: null }),
+    },
+    publicEntryList: { type: Boolean, default: false },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft", index: true },
     sortOrder: { type: Number, default: 0 },
   },

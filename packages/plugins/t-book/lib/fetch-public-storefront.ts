@@ -24,6 +24,14 @@ export type TBookPublicEventDetailResult = {
   error: string | null
 }
 
+export type TBookPublicEntryListTeam = { label: string; members: string[] }
+
+export type TBookPublicEntryListResult = {
+  eventName: string | null
+  teams: TBookPublicEntryListTeam[]
+  error: string | null
+}
+
 async function tbookServerFetch(
   apiKey: string,
   path: string,
@@ -113,6 +121,31 @@ export async function fetchPublicEventDetailForStorefront(
       hotels: [],
       groupBookingOptions: [],
       error: err instanceof Error ? err.message : "Nem sikerült betölteni az eseményt.",
+    }
+  }
+}
+
+/** Server-side public entry list for team events without a tDarts link (see `event-service.getPublicEntryList`). */
+export async function fetchPublicEntryListForStorefront(
+  apiKey: string,
+  eventId: string,
+  apiBaseOverride?: string
+): Promise<TBookPublicEntryListResult> {
+  try {
+    const { ok, data } = await tbookServerFetch(apiKey, `/events/${eventId}/entry-list`, apiBaseOverride)
+    if (!ok) {
+      return { eventName: null, teams: [], error: String(data.error ?? "Entry list not available") }
+    }
+    return {
+      eventName: (data.eventName as string | undefined) ?? null,
+      teams: (data.teams as TBookPublicEntryListTeam[] | undefined) ?? [],
+      error: null,
+    }
+  } catch (err) {
+    return {
+      eventName: null,
+      teams: [],
+      error: err instanceof Error ? err.message : "Nem sikerült betölteni a nevezési listát.",
     }
   }
 }

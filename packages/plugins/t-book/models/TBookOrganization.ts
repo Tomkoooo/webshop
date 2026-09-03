@@ -42,6 +42,22 @@ export type TBookOrgEmailTemplates = {
   invoiceSent?: TBookOrgEmailTemplateOverride | null
 }
 
+/**
+ * Partner credentials for tDarts' `@tdarts/api` service (embed read + partner
+ * enroll). See docs/api/partner-embed-and-enroll.md in tdarts_torunament.
+ * `embedClientId` is browser-safe (no secret — origin allowlist only);
+ * `partnerClientSecretEnc` signs server-to-server enroll calls and must
+ * never reach the client.
+ */
+export type TBookOrgTDartsSettings = {
+  enabled: boolean
+  apiBaseUrl: string
+  embedClientId: string
+  partnerClientId: string
+  /** AES-encrypted HMAC secret for partner.enroll calls. */
+  partnerClientSecretEnc: string
+}
+
 export interface ITBookOrganizationSettings {
   currency: string
   stripe?: TBookOrgStripeSettings
@@ -49,6 +65,7 @@ export interface ITBookOrganizationSettings {
   szamlazz?: TBookOrgSzamlazzSettings
   emailTemplates?: TBookOrgEmailTemplates
   voucherPdfLayout?: VoucherPdfLayout
+  tdarts?: TBookOrgTDartsSettings
 }
 
 export interface ITBookOrganization extends Document {
@@ -95,6 +112,17 @@ const SzamlazzSettingsSchema = new Schema(
   { _id: false }
 )
 
+const TDartsSettingsSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    apiBaseUrl: { type: String, default: "" },
+    embedClientId: { type: String, default: "" },
+    partnerClientId: { type: String, default: "" },
+    partnerClientSecretEnc: { type: String, default: "" },
+  },
+  { _id: false }
+)
+
 const EmailTemplateOverrideSchema = new Schema(
   {
     subject: { type: String, default: "" },
@@ -119,6 +147,7 @@ const TBookOrganizationSchema = new Schema<ITBookOrganization>(
         invoiceSent: { type: EmailTemplateOverrideSchema, default: undefined },
       },
       voucherPdfLayout: { type: Schema.Types.Mixed, default: undefined },
+      tdarts: { type: TDartsSettingsSchema, default: undefined },
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },

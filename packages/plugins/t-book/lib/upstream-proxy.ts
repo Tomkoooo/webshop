@@ -16,6 +16,7 @@ export function shouldProxyPublicTBookRoute(
   if (segment === "events" && method === "GET" && (path.length === 1 || path.length === 2)) {
     return true
   }
+  if (segment === "events" && path[1] && path[2] === "entry-list" && method === "GET") return true
   if (segment === "quote" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && method === "POST" && path.length === 1) return true
   if (segment === "bookings" && path[1] === "status" && method === "GET") return true

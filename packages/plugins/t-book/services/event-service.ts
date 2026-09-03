@@ -30,6 +30,7 @@ import {
 import { normalizeAttendeeFieldSchema } from "../lib/attendee-fields"
 import { apiKeyHint, generateApiKey, hashApiKey } from "../lib/api-key"
 import { DEFAULT_TBOOK_CURRENCY, normalizeTBookCurrency } from "../lib/currency"
+import { resolveTDartsEmbedConfig } from "../lib/tdarts-client"
 
 function oid(id: string): mongoose.Types.ObjectId {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -74,6 +75,19 @@ function publicEventFieldSchemas(
       eventTicketSchema: eventTicket,
       mode,
     }),
+  }
+}
+
+/** Browser-safe tDarts embed pointer (tournament code + public client id) — no secret. */
+function publicTDartsInfo(
+  event: { tdarts?: { enabled: boolean; tournamentCode: string | null } },
+  embed: ReturnType<typeof resolveTDartsEmbedConfig>
+): { tournamentCode: string; apiBaseUrl: string; embedClientId: string } | null {
+  if (!embed || !event.tdarts?.enabled || !event.tdarts.tournamentCode) return null
+  return {
+    tournamentCode: event.tdarts.tournamentCode,
+    apiBaseUrl: embed.apiBaseUrl,
+    embedClientId: embed.embedClientId,
   }
 }
 
@@ -495,8 +509,12 @@ export class TBookEventService {
   static async listPublicEventsForGroup(groupId: mongoose.Types.ObjectId) {
     await dbConnect()
     const group = await TBookEventGroup.findById(groupId)
-      .select("defaultHeroImage defaultAttendeeFieldSchema")
+      .select("defaultHeroImage defaultAttendeeFieldSchema organizationId")
       .lean()
+    const org = group?.organizationId
+      ? await TBookOrganization.findById(group.organizationId).select("settings.tdarts").lean()
+      : null
+    const embedConfig = resolveTDartsEmbedConfig(org)
     const events = await TBookEvent.find({ groupId, status: "active" })
       .sort({ sortOrder: 1, startDate: 1 })
       .lean()
@@ -533,6 +551,8 @@ export class TBookEventService {
       })(),
       currency: normalizeTBookCurrency(e.currency),
       heroImage: resolveEventHeroImage(e, group),
+      tdarts: publicTDartsInfo(e, embedConfig),
+      publicEntryList: Boolean(e.publicEntryList),
       ...publicEligibilityFromEvent(e),
     }))
   }
@@ -542,6 +562,10 @@ export class TBookEventService {
     const event = await TBookEvent.findOne({ _id: oid(eventId), groupId, status: "active" }).lean()
     if (!event) return null
     const group = await TBookEventGroup.findById(groupId).lean()
+    const org = group?.organizationId
+      ? await TBookOrganization.findById(group.organizationId).select("settings.tdarts").lean()
+      : null
+    const embedConfig = resolveTDartsEmbedConfig(org)
     const hotels = await TBookEventService.listHotelsForGroup(String(groupId))
     const activeHotels = hotels.filter((h) => h.status === "active")
     return {
@@ -576,6 +600,8 @@ export class TBookEventService {
         })(),
         currency: normalizeTBookCurrency(event.currency),
         heroImage: resolveEventHeroImage(event, group),
+        tdarts: publicTDartsInfo(event, embedConfig),
+        publicEntryList: Boolean(event.publicEntryList),
         ...publicEligibilityFromEvent(event),
       },
       groupBookingOptions: group?.defaultBookingOptions ?? [],
@@ -662,6 +688,49 @@ export class TBookEventService {
         )
       ).filter((hotel): hotel is NonNullable<typeof hotel> => hotel != null),
     }
+  }
+
+  /**
+   * Read-only public entry list for team events that are NOT linked to a
+   * tDarts tournament (large rosters, e.g. a league squad — see
+   * `tdarts-sync-service.ts` for why tDarts sync is skipped for those).
+   * Display-safe only: team/member display names, never contact info.
+   */
+  static async getPublicEntryList(groupId: mongoose.Types.ObjectId, eventId: string) {
+    await dbConnect()
+    const event = await TBookEvent.findOne({ _id: oid(eventId), groupId, status: "active" }).lean()
+    if (!event || !event.publicEntryList) return null
+
+    const bookings = await TBookBooking.find({
+      eventId: oid(eventId),
+      status: { $in: ["paid", "confirmed"] },
+    })
+      .select("attendees attendeeFieldSchema teamMemberFieldSchema customer")
+      .lean()
+
+    const firstFieldValue = (
+      schema: { key: string }[] | undefined,
+      fields: Record<string, unknown> | undefined
+    ): string | null => {
+      const key = schema?.[0]?.key
+      if (!key || !fields) return null
+      const raw = fields[key]
+      return raw != null && String(raw).trim() ? String(raw).trim() : null
+    }
+
+    const teams = bookings.flatMap((booking, bi) =>
+      (booking.attendees ?? []).map((attendee, ai) => ({
+        label:
+          firstFieldValue(booking.attendeeFieldSchema, attendee.fields) ??
+          booking.customer?.name ??
+          `Csapat #${bi * (booking.attendees?.length ?? 1) + ai + 1}`,
+        members: (attendee.members ?? [])
+          .map((m) => firstFieldValue(booking.teamMemberFieldSchema, m.fields))
+          .filter((name): name is string => Boolean(name)),
+      }))
+    )
+
+    return { eventName: event.name, teams }
   }
 
   // ---- Dashboard ----------------------------------------------------------

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { PluginService } from "@wse/core/services/plugin"
 import { getActiveChrome } from "@wse/core/lib/active-chrome"
@@ -102,6 +103,21 @@ export default async function FoglalasEventPage({ params, searchParams }: Props)
                 : "wdf-booking-panel rounded-2xl p-4 sm:p-6")
           )}
         >
+          {!multi && eventDetail?.event?.tdarts ? (
+            <Link
+              href={`/verseny/${eventId}`}
+              className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
+            >
+              🔴 Élő eredmények követése
+            </Link>
+          ) : !multi && eventDetail?.event?.publicEntryList ? (
+            <Link
+              href={`/verseny/${eventId}`}
+              className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
+            >
+              Nevezett csapatok
+            </Link>
+          ) : null}
           {multi ? (
             <TBookMultiBookingWizard
               apiKey={apiKey}

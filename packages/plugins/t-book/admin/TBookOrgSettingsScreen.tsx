@@ -37,6 +37,13 @@ type OrgSettingsPayload = {
       sellerName: string
       agentKey: Masked
     }
+    tdarts: {
+      enabled: boolean
+      apiBaseUrl: string
+      embedClientId: string
+      partnerClientId: string
+      partnerClientSecret: Masked
+    }
     emailTemplates: {
       bookingConfirmation: { subject: string; body: string }
       voucherDelivery: { subject: string; body: string }
@@ -45,7 +52,7 @@ type OrgSettingsPayload = {
   }
 }
 
-type Tab = "general" | "stripe" | "smtp" | "szamlazz" | "emails"
+type Tab = "general" | "stripe" | "smtp" | "szamlazz" | "tdarts" | "emails"
 
 export function TBookOrgSettingsScreen() {
   const [loading, setLoading] = useState(true)
@@ -78,6 +85,14 @@ export function TBookOrgSettingsScreen() {
   const [szAgentNeedsResave, setSzAgentNeedsResave] = useState(false)
   const [szSeller, setSzSeller] = useState("")
 
+  const [tdEnabled, setTdEnabled] = useState(false)
+  const [tdApiBaseUrl, setTdApiBaseUrl] = useState("")
+  const [tdEmbedClientId, setTdEmbedClientId] = useState("")
+  const [tdPartnerClientId, setTdPartnerClientId] = useState("")
+  const [tdPartnerClientSecret, setTdPartnerClientSecret] = useState("")
+  const [tdPartnerClientSecretHint, setTdPartnerClientSecretHint] = useState("")
+  const [tdPartnerClientSecretNeedsResave, setTdPartnerClientSecretNeedsResave] = useState(false)
+
   const [bookingSubject, setBookingSubject] = useState("")
   const [bookingBody, setBookingBody] = useState("")
   const [voucherSubject, setVoucherSubject] = useState("")
@@ -107,6 +122,12 @@ export function TBookOrgSettingsScreen() {
         setSzAgentHint(s.szamlazz?.agentKey?.hint || "")
         setSzAgentNeedsResave(Boolean(s.szamlazz?.agentKey?.needsResave))
         setSzSeller(s.szamlazz?.sellerName || "")
+        setTdEnabled(s.tdarts?.enabled ?? false)
+        setTdApiBaseUrl(s.tdarts?.apiBaseUrl || "")
+        setTdEmbedClientId(s.tdarts?.embedClientId || "")
+        setTdPartnerClientId(s.tdarts?.partnerClientId || "")
+        setTdPartnerClientSecretHint(s.tdarts?.partnerClientSecret?.hint || "")
+        setTdPartnerClientSecretNeedsResave(Boolean(s.tdarts?.partnerClientSecret?.needsResave))
         setBookingSubject(s.emailTemplates?.bookingConfirmation?.subject || "")
         setBookingBody(s.emailTemplates?.bookingConfirmation?.body || "")
         setVoucherSubject(s.emailTemplates?.voucherDelivery?.subject || "")
@@ -145,6 +166,13 @@ export function TBookOrgSettingsScreen() {
           sellerName: szSeller,
           ...(szAgent.trim() ? { agentKey: szAgent.trim() } : {}),
         },
+        tdarts: {
+          enabled: tdEnabled,
+          apiBaseUrl: tdApiBaseUrl,
+          embedClientId: tdEmbedClientId,
+          partnerClientId: tdPartnerClientId,
+          ...(tdPartnerClientSecret.trim() ? { partnerClientSecret: tdPartnerClientSecret.trim() } : {}),
+        },
         emailTemplates: {
           bookingConfirmation: { subject: bookingSubject, body: bookingBody },
           voucherDelivery: { subject: voucherSubject, body: voucherBody },
@@ -156,6 +184,8 @@ export function TBookOrgSettingsScreen() {
       setSmtpPass("")
       setSzAgent("")
       setSzAgentNeedsResave(false)
+      setTdPartnerClientSecret("")
+      setTdPartnerClientSecretNeedsResave(false)
       setOk("Mentve.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hiba")
@@ -177,6 +207,7 @@ export function TBookOrgSettingsScreen() {
     { id: "stripe", label: "Stripe" },
     { id: "smtp", label: "SMTP / e-mail" },
     { id: "szamlazz", label: "Számlázz.hu" },
+    { id: "tdarts", label: "tDarts" },
     { id: "emails", label: "E-mail sablonok" },
   ]
 
@@ -339,6 +370,70 @@ export function TBookOrgSettingsScreen() {
           <p className="text-muted-foreground text-sm">
             A fizetés kártyás (Stripe), ezért banki átutalási adatok nem kellenek. Az ÁFA a jegy és a
             szállás ÁFA-beállításából kerül a számlára (esemény / hotel), nem innen.
+          </p>
+        </div>
+      ) : null}
+
+      {tab === "tdarts" ? (
+        <div className="grid max-w-xl gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={tdEnabled} onCheckedChange={(v) => setTdEnabled(v === true)} />
+            tDarts torna szinkron engedélyezve
+          </label>
+          <div className="grid gap-2">
+            <Label>tDarts API URL</Label>
+            <Input
+              value={tdApiBaseUrl}
+              onChange={(e) => setTdApiBaseUrl(e.target.value)}
+              placeholder="https://api.tdarts.hu"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Embed client ID</Label>
+            <Input
+              value={tdEmbedClientId}
+              onChange={(e) => setTdEmbedClientId(e.target.value)}
+              placeholder="wdf-embed"
+            />
+            <p className="text-muted-foreground text-sm">
+              Nem titkos — a böngésző ezzel kéri le közvetlenül api.tdarts.hu-ról az élő torna
+              adatokat (bracket, élő meccsek, nevezettek). A tDarts oldalon az origin allowlistben
+              szerepelnie kell ennek a webhelynek.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label>Partner client ID</Label>
+            <Input
+              value={tdPartnerClientId}
+              onChange={(e) => setTdPartnerClientId(e.target.value)}
+              placeholder="tbook-engine"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>
+              Partner client secret{" "}
+              {tdPartnerClientSecretHint
+                ? `(beállítva: ${tdPartnerClientSecretHint})`
+                : tdPartnerClientSecretNeedsResave
+                  ? "(titkosított kulcs olvashatatlan — írd be újra)"
+                  : ""}
+            </Label>
+            <Input
+              type="password"
+              value={tdPartnerClientSecret}
+              onChange={(e) => setTdPartnerClientSecret(e.target.value)}
+              autoComplete="new-password"
+              placeholder={tdPartnerClientSecretNeedsResave ? "Secret újra megadása kötelező" : undefined}
+            />
+            <p className="text-muted-foreground text-sm">
+              Ezzel írja alá tbook a fizetett foglalások automatikus nevezését (HMAC). Csak a
+              szerver használja, a böngészőbe soha nem kerül ki. Ugyanannak a kulcsnak kell szerepelnie
+              a tDarts <code className="text-xs">API_CLIENTS_JSON</code> beállításában.
+            </p>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            A tornát az eseménynél kell összekötni: Esemény szerkesztése → tDarts szinkron lépés, add
+            meg a tDarts torna kódját.
           </p>
         </div>
       ) : null}
