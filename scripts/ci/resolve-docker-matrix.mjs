@@ -22,7 +22,6 @@ export const ENGINE_V2_IMAGES = [
   },
   { site_app: "apps/sorfeszt", site_server: "apps/sorfeszt/server.js", image_tag: "sorfeszt" },
   { site_app: "apps/eventstructure", site_server: "apps/eventstructure/server.js", image_tag: "eventstructure" },
-  { site_app: "apps/es2", site_server: "apps/es2/server.js", image_tag: "es2" },
   { site_app: "apps/dr-zsanett", site_server: "apps/dr-zsanett/server.js", image_tag: "dr-zsanett" },
 ]
 
@@ -54,6 +53,8 @@ const IGNORED_PREFIXES = [
   "README.md",
   ".gitignore",
   "portainer.stack.yml",
+  // Deploy catalog edits are validated in the test job; they need not rebuild every site image.
+  "deployments.config.json",
 ]
 
 function catalogForRef(ref) {
@@ -220,13 +221,16 @@ function selfTest() {
     assert(tbookPlugin.includes(needed), `t-book plugin should rebuild ${needed}`)
   }
   assert(!tbookPlugin.includes("dr-zsanett"), "t-book plugin should not rebuild dr-zsanett")
-  assert(!tbookPlugin.includes("es2"), "t-book plugin should not rebuild es2")
 
   const core = tags(["packages/core/src/features/template-cms/editors/TBookSurfaceVisualEditor.tsx"])
   assert(core.length === ENGINE_V2_IMAGES.length, "core rebuilds all")
 
   const mixed = tags(["packages/templates/sorfeszt/theme.ts", "packages/core/src/index.ts"])
   assert(mixed.length === ENGINE_V2_IMAGES.length, "core + template still rebuilds all")
+
+  assert(tags(["deployments.config.json"]).length === 0, "deployments catalog alone skips images")
+  assert(!ENGINE_V2_IMAGES.some((row) => row.image_tag === "es2"), "es2 removed from catalog")
+  assert(!ENGINE_V2_IMAGES.some((row) => row.site_app.includes("sakkmed")), "sakkmed not in GHCR catalog")
 
   console.error("resolve-docker-matrix self-test ok")
 }

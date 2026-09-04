@@ -12,7 +12,6 @@ COPY apps/sorfeszt/package.json ./apps/sorfeszt/
 COPY apps/dr-zsanett/package.json ./apps/dr-zsanett/
 COPY apps/world-darts-festival/package.json ./apps/world-darts-festival/
 COPY apps/eventstructure/package.json ./apps/eventstructure/
-COPY apps/es2/package.json ./apps/es2/
 COPY apps/tbook/package.json ./apps/tbook/
 COPY apps/keramia-implant/package.json ./apps/keramia-implant/
 COPY apps/keramia-fogfeherites/package.json ./apps/keramia-fogfeherites/
@@ -20,7 +19,6 @@ COPY apps/nagyarcu-shop/package.json ./apps/nagyarcu-shop/
 COPY apps/minecraft-camp/package.json ./apps/minecraft-camp/
 COPY apps/erdweg/package.json ./apps/erdweg/
 COPY apps/cabinova/package.json ./apps/cabinova/
-COPY apps/sakkmed/package.json ./apps/sakkmed/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/core/package.json ./packages/core/
 COPY packages/admin/package.json ./packages/admin/

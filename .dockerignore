@@ -1,0 +1,17 @@
+# Keep Docker build context lean (faster CI uploads + less COPY . noise).
+.git
+.github
+.cursor
+.claude
+**/node_modules
+**/.next
+**/dist
+uploads
+exports
+scripts/seed/backups
+*.log
+.env
+.env.*
+!.env.example
+portainer.stack.yml
+deployments.registry.local.md

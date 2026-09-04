@@ -18,7 +18,6 @@ const templateLoaders: Record<string, () => Promise<TemplateModule>> = {
     import("@wse/template-world-darts-festival/template.config").then((m) => m.worldDartsFestival),
   "atelier-showcase": () => import("@wse/template-atelier-showcase/template.config").then((m) => m.atelierShowcase),
   "minecraft-camp": () => import("@wse/template-minecraft-camp/template.config").then((m) => m.minecraftCamp),
-  sakkmed: () => import("@wse/template-sakkmed/template.config").then((m) => m.sakkmed),
   erdweg: () => import("@wse/template-erdweg/template.config").then((m) => m.erdweg),
   cabinova: () => import("@wse/template-cabinova/template.config").then((m) => m.cabinova),
   "keramia-fogfeherites": () =>

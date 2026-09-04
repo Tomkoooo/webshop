@@ -81,12 +81,6 @@ export const ADMIN_GUIDE_SECTIONS: GuideSectionDef[] = [
     visibility: { scope: "always", templateIds: ["minecraft-camp"] },
   },
   {
-    id: "template-sakkmed",
-    title: "SAKKMED sablon",
-    file: "sections/templates/sakkmed.md",
-    visibility: { scope: "always", templateIds: ["sakkmed"] },
-  },
-  {
     id: "plugin-camp-booking",
     title: "Tábor foglalás plugin",
     file: "sections/plugins/camp-booking.md",

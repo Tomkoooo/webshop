@@ -17,7 +17,6 @@ const TEMPLATE_SECTION_IDS: Record<string, string> = {
   "atelier-showcase": "template-atelier-showcase",
   cabinova: "template-cabinova",
   "minecraft-camp": "template-minecraft-camp",
-  sakkmed: "template-sakkmed",
 }
 
 export default async function AdminSugoPage() {

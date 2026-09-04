@@ -100,14 +100,16 @@
 
 .sorfeszt-pint {
   --sorfeszt-pint-rim: var(--theme-primary);
-  --sorfeszt-pint-body-bg: linear-gradient(180deg, #fcebc2 0%, #f3d082 15%, #e0ac49 100%);
+  /* Flat fill — no gradient so dark body copy stays readable */
+  --sorfeszt-pint-body-bg: #f5e2a6;
+  --sorfeszt-pint-ink: #1a1a1a;
   --sorfeszt-pint-handle-w: 2.5rem;
   position: relative;
   isolation: isolate;
   width: min(100%, 22rem);
   max-width: 100%;
   margin-inline: auto;
-  color: var(--sorfeszt-ink);
+  color: var(--sorfeszt-pint-ink);
   /* Avoid overflow from the handle; glass + handle share the card width */
   box-sizing: border-box;
 }
@@ -185,8 +187,16 @@
 .sorfeszt-pint-label h2,
 .sorfeszt-pint-label h3,
 .sorfeszt-pint-label h4,
-.sorfeszt-pint-label p {
-  color: inherit;
+.sorfeszt-pint-label p,
+.sorfeszt-pint-label li,
+.sorfeszt-pint-label span {
+  color: var(--sorfeszt-pint-ink);
+}
+
+/* Keep purchase CTAs high-contrast on the primary fill */
+.sorfeszt-pint-label a.bg-primary,
+.sorfeszt-pint-label a[class*="bg-primary"] {
+  color: var(--theme-primary-foreground, #fff8ee);
 }
 
 /* Glass foot / base — repurposed as a subtle bottom cap */
@@ -222,27 +232,15 @@
   }
 }
 
-/* VIP variant — richer amber to burgundy */
+/* VIP / table: same flat pale amber body, distinct rim only */
 .sorfeszt-pint--vip {
   --sorfeszt-pint-rim: var(--theme-accent);
-  --sorfeszt-pint-body-bg: linear-gradient(
-    180deg,
-    #fcebc2 0%,
-    color-mix(in oklab, var(--theme-secondary) 50%, #fcebc2) 20%,
-    var(--theme-secondary) 52%,
-    color-mix(in oklab, var(--theme-accent) 70%, var(--theme-secondary)) 100%
-  );
+  --sorfeszt-pint-body-bg: #f7e6b4;
 }
 
-/* Table variant — deeper navy bottom */
 .sorfeszt-pint--table {
-  --sorfeszt-pint-body-bg: linear-gradient(
-    180deg,
-    #fcebc2 0%,
-    color-mix(in oklab, var(--theme-secondary) 45%, #fcebc2) 20%,
-    var(--theme-secondary) 48%,
-    var(--theme-primary) 100%
-  );
+  --sorfeszt-pint-rim: var(--theme-primary);
+  --sorfeszt-pint-body-bg: #f3df9e;
 }
 
 .sorfeszt-pint--soon {
@@ -383,9 +381,24 @@
 }
 
 .sorfeszt-beer-card {
-  border: 1px solid color-mix(in oklab, var(--theme-border) 70%, var(--theme-secondary));
-  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  background: #fffbf4;
   border-radius: 0.75rem;
+  color: #1a1a1a;
+}
+
+.sorfeszt-beer-card h3,
+.sorfeszt-beer-card p {
+  color: #1a1a1a;
+}
+
+.sorfeszt-beer-card .text-primary,
+.sorfeszt-beer-card .text-muted-foreground {
+  color: #1a1a1a;
+}
+
+.sorfeszt-beer-card .text-secondary {
+  color: #5c5346;
 }
 
 .sorfeszt-day-tabs {

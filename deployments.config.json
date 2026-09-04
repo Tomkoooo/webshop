@@ -27,14 +27,6 @@
       }
     },
     {
-      "key": "sakkmed",
-      "label": "SAKKMED rendezvénytechnika",
-      "allowedTemplates": ["sakkmed"],
-      "defaultTemplateId": "sakkmed",
-      "enabledPlugins": [],
-      "pluginConfig": {}
-    },
-    {
       "key": "nagyarcu-shop",
       "label": "Nagy Árcu Shop",
       "allowedTemplates": ["default-modern", "atelier-showcase"],
@@ -77,14 +69,6 @@
       "label": "Event Structure",
       "allowedTemplates": ["eventstructure"],
       "defaultTemplateId": "eventstructure",
-      "enabledPlugins": [],
-      "pluginConfig": {}
-    },
-    {
-      "key": "es2",
-      "label": "Event Structure v2",
-      "allowedTemplates": ["eventstructure-v2"],
-      "defaultTemplateId": "eventstructure-v2",
       "enabledPlugins": [],
       "pluginConfig": {}
     },

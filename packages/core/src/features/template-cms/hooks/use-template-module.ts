@@ -15,7 +15,7 @@ export type TemplateModuleState = {
 }
 
 /**
- * Client-side template lookup. Lazy templates (e.g. sakkmed) are not in the sync
+ * Client-side template lookup. Lazy templates are not in the sync
  * registry until `loadTemplateModule` runs — use this instead of `getTemplateById` alone.
  */
 export function useTemplateModule(templateId: string): TemplateModuleState {
