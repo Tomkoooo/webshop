@@ -1,3 +1,5 @@
+import { eventDateKey } from "./event-schedule"
+
 export type EventSalesFields = {
   salesOpensAt?: Date | string | null
   salesClosesAt?: Date | string | null
@@ -62,4 +64,56 @@ export function sortPublicTicketEvents<
     if (kindDiff !== 0) return kindDiff
     return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
   })
+}
+
+/** Storefront listings: only tickets currently purchasable (hides earlybird/normál off-window SKUs). */
+export function filterOnSaleTicketEvents<T extends EventSalesFields>(
+  events: T[],
+  now = new Date()
+): T[] {
+  return events.filter((event) => getEventSalesState(event, now) === "on_sale")
+}
+
+function isEarlybirdName(name: string): boolean {
+  return /early\s*bird|earlybird/i.test(name)
+}
+
+function isNormalWindowName(name: string): boolean {
+  return /normál|normal|regular/i.test(name)
+}
+
+/**
+ * After filtering to on_sale: if an earlybird SKU is live for the same day + kind,
+ * hide the overlapping “normál” SKU so both windows never show together.
+ */
+export function preferEarlybirdOverNormal<
+  T extends {
+    name: string
+    startDate: string | Date
+  },
+>(events: T[]): T[] {
+  const earlybirdKeys = new Set<string>()
+  for (const event of events) {
+    if (!isEarlybirdName(event.name)) continue
+    const day = eventDateKey(event.startDate)
+    earlybirdKeys.add(`${day}:${classifyTicketKind(event.name)}`)
+  }
+  if (earlybirdKeys.size === 0) return events
+  return events.filter((event) => {
+    if (!isNormalWindowName(event.name)) return true
+    const day = eventDateKey(event.startDate)
+    return !earlybirdKeys.has(`${day}:${classifyTicketKind(event.name)}`)
+  })
+}
+
+/** Sörfeszt storefront: on-sale only, and earlybird wins over normál for the same day/kind. */
+export function filterSorfesztAvailableTickets<
+  T extends {
+    name: string
+    startDate: string | Date
+    salesOpensAt?: Date | string | null
+    salesClosesAt?: Date | string | null
+  },
+>(events: T[], now = new Date()): T[] {
+  return preferEarlybirdOverNormal(filterOnSaleTicketEvents(events, now))
 }

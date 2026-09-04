@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { LayoutPanelLeft, Menu, PanelBottom } from "lucide-react"
+import { LayoutList, LayoutPanelLeft, Menu, PanelBottom } from "lucide-react"
 import { Button } from "@wse/core/components/ui/button"
 import { DevicePreview } from "@wse/core/features/homepage-cms/components/editor/DevicePreview"
 import { cn } from "@wse/core/lib/utils"
@@ -17,6 +17,7 @@ const defaultIcons: Record<string, ReactNode> = {
   nav: <Menu className="size-3.5" aria-hidden />,
   footer: <PanelBottom className="size-3.5" aria-hidden />,
   sections: <LayoutPanelLeft className="size-3.5" aria-hidden />,
+  lists: <LayoutList className="size-3.5" aria-hidden />,
 }
 
 /**
@@ -34,7 +35,10 @@ export function CmsChromePanelLayout({
   children: ReactNode
   className?: string
 }) {
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
+  const [openIds, setOpenIds] = useState<Set<string>>(() => {
+    // Open section visibility panel by default so hide/show is easy to find.
+    return panels.some((p) => p.id === "sections") ? new Set(["sections"]) : new Set()
+  })
 
   if (!panels.length) {
     return <div className={className}>{children}</div>
@@ -89,7 +93,9 @@ export function CmsChromePanelLayout({
 
       {openPanels.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Nyisd meg a fenti gombokkal a navigáció, lábléc vagy szekció szerkesztőt.
+          Nyisd meg a fenti gombokkal a navigáció, lábléc vagy szekció szerkesztőt. A{" "}
+          <strong>Szekciók</strong> panelben kapcsolhatod ki/be a galériát, kapcsolatot és a többi
+          blokkot.
         </p>
       ) : null}
     </div>

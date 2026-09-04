@@ -69,3 +69,43 @@ export function formatEventSchedule(
 ): string {
   return `${formatEventDateTime(startDate, startTime, locale)} – ${formatEventDateTime(endDate, endTime, locale)}`
 }
+
+/** Calendar-day key (`YYYY-MM-DD`, Europe/Budapest wall-clock) for grouping events by date. */
+export function eventDateKey(date: Date | string): string {
+  const d = new Date(date)
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Budapest" }).format(d)
+}
+
+/** "Today" / "Tomorrow" / full localized date — mirrors tDarts' own search date-group headers. */
+export function formatDateGroupHeading(dateKey: string, locale?: string): string {
+  const todayKey = eventDateKey(new Date())
+  const tomorrowKey = eventDateKey(new Date(Date.now() + 86_400_000))
+  const hu = (locale ?? "hu").startsWith("hu")
+  if (dateKey === todayKey) return hu ? "Ma" : "Today"
+  if (dateKey === tomorrowKey) return hu ? "Holnap" : "Tomorrow"
+  const [y, m, d] = dateKey.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(toBcp47DateLocale(locale), {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  })
+}
+
+/** Groups items into date-key buckets, sorted ascending by date. */
+export function groupByEventDate<T>(
+  items: T[],
+  getDate: (item: T) => Date | string
+): { dateKey: string; items: T[] }[] {
+  const buckets = new Map<string, T[]>()
+  for (const item of items) {
+    const key = eventDateKey(getDate(item))
+    const bucket = buckets.get(key)
+    if (bucket) bucket.push(item)
+    else buckets.set(key, [item])
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateKey, groupItems]) => ({ dateKey, items: groupItems }))
+}

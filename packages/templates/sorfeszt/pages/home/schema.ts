@@ -51,6 +51,13 @@ const galleryItemSchema = z.object({
   caption: z.string().default(""),
 })
 
+const beerCardSchema = z.object({
+  image: z.string().default(""),
+  name: z.string(),
+  brewery: z.string().default(""),
+  description: z.string().default(""),
+})
+
 export const homeSchema = z.object({
   chrome: tBookHomeChromeSchema,
   sectionLayout: z.array(sorfesztSectionLayoutEntrySchema).default(DEFAULT_SORFESZT_SECTION_LAYOUT),
@@ -86,7 +93,9 @@ export const homeSchema = z.object({
     .default({ beforeTickets: "", afterBeers: "" }),
   beers: z.object({
     heading: z.string(),
-    body: z.string(),
+    body: z.string().default(""),
+    emptyLabel: z.string().default("Hamarosan"),
+    cards: z.array(beerCardSchema).default([]),
   }),
   schedule: z.object({
     heading: z.string(),

@@ -101,24 +101,30 @@
 .sorfeszt-pint {
   --sorfeszt-pint-rim: var(--theme-primary);
   --sorfeszt-pint-body-bg: linear-gradient(180deg, #fcebc2 0%, #f3d082 15%, #e0ac49 100%);
+  --sorfeszt-pint-handle-w: 2.5rem;
   position: relative;
   isolation: isolate;
   width: min(100%, 22rem);
+  max-width: 100%;
   margin-inline: auto;
   color: var(--sorfeszt-ink);
+  /* Avoid overflow from the handle; glass + handle share the card width */
+  box-sizing: border-box;
 }
 
 /* Outer wrapper: glass body + handle side by side */
 .sorfeszt-pint-body {
   display: flex;
   align-items: stretch;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* The main glass column */
 .sorfeszt-pint-glass {
   position: relative;
   z-index: 2;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -188,17 +194,32 @@
   display: none; /* no separate foot element needed in new design */
 }
 
-/* Handle on the right */
+/* Handle on the right — reserved inside the card width (no horizontal overflow) */
 .sorfeszt-pint-handle {
-  flex-shrink: 0;
-  width: 50px;
+  flex: 0 0 var(--sorfeszt-pint-handle-w);
+  width: var(--sorfeszt-pint-handle-w);
   margin: 110px 0 0 -6px;
-  height: 220px;
-  border: 14px solid var(--sorfeszt-pint-rim);
+  height: min(220px, 45%);
+  min-height: 140px;
+  border: 12px solid var(--sorfeszt-pint-rim);
   border-left: none;
   border-radius: 0 24px 24px 0;
   background: transparent;
   z-index: 1;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .sorfeszt-pint {
+    --sorfeszt-pint-handle-w: 3rem;
+  }
+
+  .sorfeszt-pint-handle {
+    border-width: 14px;
+    border-left: none;
+    height: 220px;
+    min-height: 220px;
+  }
 }
 
 /* VIP variant — richer amber to burgundy */
@@ -229,29 +250,35 @@
   opacity: 0.82;
 }
 
-/* Bullet-style feature list inside pint label */
-.sorfeszt-pint-label .sorfeszt-pint-features {
+/* Bullet-style feature list inside pint label — flex, not absolute (avoids pint-edge bullets) */
+.sorfeszt-pint-label .sorfeszt-pint-features,
+.sorfeszt-pint-label .storefront-rich-html ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sorfeszt-pint-label .sorfeszt-pint-features li {
-  position: relative;
-  padding-left: 18px;
+.sorfeszt-pint-label .sorfeszt-pint-features li,
+.sorfeszt-pint-label .storefront-rich-html li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   margin-bottom: 6px;
+  padding-left: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--sorfeszt-ink);
+  position: static;
 }
 
-.sorfeszt-pint-label .sorfeszt-pint-features li::before {
+.sorfeszt-pint-label .sorfeszt-pint-features li::before,
+.sorfeszt-pint-label .storefront-rich-html li::before {
   content: "•";
-  position: absolute;
-  left: 3px;
+  position: static;
+  flex-shrink: 0;
   color: var(--sorfeszt-pint-rim);
   font-size: 1.1rem;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .sorfeszt-storefront .sorfeszt-hero-glow::after {
@@ -268,7 +295,11 @@
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+/*
+ * Only lift on real hover pointers. iOS sticky :hover + transform inside
+ * overflow-x-clip parents can make tickets disappear after tap.
+ */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .sorfeszt-storefront .sorfeszt-card-lift:hover {
     transform: translate3d(0, -4px, 0);
     box-shadow: 0 14px 32px color-mix(in oklab, var(--theme-primary) 12%, transparent);
@@ -330,4 +361,40 @@
 .sorfeszt-storefront .sorfeszt-hero-glow p {
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 6px color-mix(in oklab, var(--theme-primary) 55%, transparent);
+}
+
+/* ── Beer catalog cards ────────────────────────────────────────────────── */
+
+.sorfeszt-beer-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .sorfeszt-beer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .sorfeszt-beer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sorfeszt-beer-card {
+  border: 1px solid color-mix(in oklab, var(--theme-border) 70%, var(--theme-secondary));
+  background: var(--theme-surface);
+  border-radius: 0.75rem;
+}
+
+.sorfeszt-day-tabs {
+  border-color: color-mix(in oklab, var(--theme-border) 60%, var(--theme-secondary));
+  background: color-mix(in oklab, var(--theme-muted) 70%, transparent);
+}
+
+.sorfeszt-day-tabs [data-slot="tabs-trigger"][data-state="active"] {
+  background: var(--theme-primary);
+  color: var(--theme-primary-foreground, #fff8ee);
+  box-shadow: none;
 }

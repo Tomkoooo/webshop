@@ -95,6 +95,18 @@ export const sorfeszt: TemplateModule = defineTemplate({
           ],
         },
         {
+          path: "beers.cards",
+          label: "Sörök",
+          titleKey: "name",
+          maxItems: 48,
+          fields: [
+            { key: "image", label: "Kép", type: "image" },
+            { key: "name", label: "Név" },
+            { key: "brewery", label: "Főzde" },
+            { key: "description", label: "Leírás" },
+          ],
+        },
+        {
           path: "schedule.days",
           label: "Programnapok",
           titleKey: "title",

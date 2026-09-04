@@ -301,8 +301,10 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               apiKey={c.chrome.tbookApiKey ?? ""}
               fallback={
                 <div className="sorfeszt-pint-grid">
-                  {c.tickets.cards.map((card, index) => {
-                    const onSale = ticketOnSale(card.ctaHref, card.badge)
+                  {c.tickets.cards
+                    .filter((card) => ticketOnSale(card.ctaHref, card.badge))
+                    .map((card, index) => {
+                    const onSale = true
                     return (
                       <SorfesztCmsBeerCard
                         key={index}
@@ -326,19 +328,12 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
                           ))}
                         </ul>
                         <div className="mt-5">
-                          {onSale ? (
-                            <a
-                              href={card.ctaHref || "/jegyek"}
-                              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:opacity-90 transition-colors"
-                              
-                            >
-                              {card.ctaLabel}
-                            </a>
-                          ) : (
-                            <span className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-primary/20 bg-muted px-4 text-sm font-semibold text-muted-foreground" >
-                              {card.ctaLabel || "Hamarosan"}
-                            </span>
-                          )}
+                          <a
+                            href={card.ctaHref || "/jegyek"}
+                            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:opacity-90 transition-colors"
+                          >
+                            {card.ctaLabel}
+                          </a>
                         </div>
                       </SorfesztCmsBeerCard>
                     )
@@ -352,13 +347,96 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
     ),
     beers: (
       <section className="border-y border-border/60 bg-muted/40 py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <SectionHeading className="mb-4">
-            <EditableDocText path="beers.heading" value={c.beers.heading} />
-          </SectionHeading>
-          <p className="font-heading text-2xl font-semibold text-primary sm:text-3xl">
-            <EditableDocText path="beers.body" value={c.beers.body} multiline />
-          </p>
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+            <SectionHeading className="mb-3">
+              <EditableDocText path="beers.heading" value={c.beers.heading} />
+            </SectionHeading>
+            {c.beers.body || edit.enabled ? (
+              <p className="text-muted-foreground">
+                <EditableDocText path="beers.body" value={c.beers.body} multiline />
+              </p>
+            ) : null}
+          </div>
+          {(c.beers.cards?.length ?? 0) === 0 && !edit.enabled ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background/60 px-6 py-16 text-center">
+              <p className="font-heading text-2xl font-semibold text-primary sm:text-3xl">
+                <EditableDocText path="beers.emptyLabel" value={c.beers.emptyLabel ?? "Hamarosan"} />
+              </p>
+            </div>
+          ) : (
+            <div className="sorfeszt-beer-grid">
+              {(c.beers.cards ?? []).map((card, index) => (
+                <article key={index} className="sorfeszt-beer-card relative overflow-hidden">
+                  {edit.enabled ? (
+                    <CmsListItemToolbar
+                      onRemove={() =>
+                        edit.setPath(
+                          "beers.cards",
+                          (c.beers.cards ?? []).filter((_, i) => i !== index)
+                        )
+                      }
+                    />
+                  ) : null}
+                  <CmsImage
+                    path={`beers.cards.${index}.image`}
+                    src={card.image}
+                    alt={card.name || "Sör"}
+                    className="aspect-[4/5] w-full bg-muted"
+                    imageClassName="size-full object-cover"
+                    width={640}
+                    height={800}
+                    usageLabel="Sör kép"
+                  />
+                  <div className="space-y-1 px-4 py-4">
+                    {card.brewery || edit.enabled ? (
+                      <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+                        <EditableDocText path={`beers.cards.${index}.brewery`} value={card.brewery} />
+                      </p>
+                    ) : null}
+                    <h3 className="font-heading text-xl font-bold text-primary">
+                      <EditableDocText path={`beers.cards.${index}.name`} value={card.name} />
+                    </h3>
+                    {card.description || edit.enabled ? (
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        <EditableDocText
+                          path={`beers.cards.${index}.description`}
+                          value={card.description}
+                          multiline
+                        />
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {edit.enabled ? (
+            <div className="mt-6 text-center">
+              {(c.beers.cards?.length ?? 0) === 0 ? (
+                <p className="mb-3 font-heading text-lg font-semibold text-primary">
+                  <EditableDocText path="beers.emptyLabel" value={c.beers.emptyLabel ?? "Hamarosan"} />
+                  <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                    (üres lista — a látogatóknak ezt mutatjuk)
+                  </span>
+                </p>
+              ) : null}
+              <CmsListAddButton
+                label="Sörkártya hozzáadása"
+                onClick={() =>
+                  edit.setPath("beers.cards", [
+                    ...(c.beers.cards ?? []),
+                    {
+                      image: "/placeholder.png",
+                      name: "Új sör",
+                      brewery: "",
+                      description: "",
+                    },
+                  ])
+                }
+              />
+            </div>
+          ) : null}
         </div>
       </section>
     ),
@@ -628,7 +706,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
   }
 
   return (
-    <div className="relative overflow-x-clip bg-background text-foreground">
+    <div className="relative overflow-x-hidden bg-background text-foreground">
       <div className="relative z-[1]">
         {sectionLayout.flatMap((entry, index) => {
           if (!entry.enabled) return []
@@ -638,6 +716,7 @@ export function HomeRender({ content, deps }: RenderProps<HomeContent, HomePageD
               id={SORFESZT_SECTION_ANCHORS[entry.id]}
               variant="up"
               delayMs={index * 30}
+              margin="0px 0px -40px 0px"
               className={SORFESZT_SECTION_ANCHORS[entry.id] ? "scroll-mt-24" : undefined}
             >
               {sections[entry.id]}

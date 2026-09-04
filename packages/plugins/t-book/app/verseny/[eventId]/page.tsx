@@ -81,6 +81,7 @@ export default async function TDartsTournamentPage({ params }: Props) {
               tournamentCode={event.tdarts.tournamentCode}
               apiBaseUrl={event.tdarts.apiBaseUrl}
               embedClientId={event.tdarts.embedClientId}
+              locale={uiLocale}
             />
           ) : (
             <TBookTeamEntryList teams={entryList?.teams ?? []} />

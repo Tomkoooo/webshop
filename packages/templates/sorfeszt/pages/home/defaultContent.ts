@@ -102,7 +102,9 @@ export const homeDefaultContent: HomeContent = {
   },
   beers: {
     heading: "Sörök",
-    body: "Hamarosan",
+    body: "A fesztiválon megkóstolható sörök — a lista folyamatosan bővül.",
+    emptyLabel: "Hamarosan",
+    cards: [],
   },
   schedule: {
     heading: "Programok",

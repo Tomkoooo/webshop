@@ -150,7 +150,7 @@ export function HomeVisualSurfaceEditor({
   }
 
   const structureSidebar =
-    templateId === "world-darts-festival"
+    templateId === "world-darts-festival" || templateId === "sorfeszt"
       ? null
       : buildListFieldsSidebar({
           specs: mod.pages.home.listFields,
@@ -171,7 +171,7 @@ export function HomeVisualSurfaceEditor({
             templateId === "sorfeszt"
               ? (SORFESZT_SECTION_LABELS as Record<string, string>)
               : (WDF_SECTION_LABELS as Record<string, string>)
-          return [
+          const panels = [
             {
               id: "nav",
               label: "Navigáció",
@@ -212,6 +212,21 @@ export function HomeVisualSurfaceEditor({
               ),
             },
           ]
+          if (templateId === "sorfeszt" && mod.pages.home.listFields?.length) {
+            const listsSidebar = buildListFieldsSidebar({
+              specs: mod.pages.home.listFields,
+              draft,
+              setPath,
+            })
+            if (listsSidebar) {
+              panels.push({
+                id: "lists",
+                label: "Listák",
+                content: <>{listsSidebar}</>,
+              })
+            }
+          }
+          return panels
         }
       : undefined
 
@@ -234,7 +249,8 @@ export function HomeVisualSurfaceEditor({
         isTBookLanding ? (
           <>
             Aktív sablon: <strong>{mod.manifest.name}</strong> — kattintással szerkeszthető szövegek és
-            képek. A navigáció, lábléc és szekciók a szerkesztő panelekből érhetők el.
+            képek. Blokkok elrejtése/megjelenítése: nyisd meg a <strong>Szekciók</strong> szerkesztő
+            panelt (fent).
           </>
         ) : (
           "Kattintással szerkeszthető szövegek és képek."
