@@ -13,10 +13,20 @@ import {
 } from "@wse/plugin-t-book/lib/fetch-public-storefront"
 import { resolveTBookServerApiBase } from "@wse/plugin-t-book/lib/tbook-api-base"
 import { tBookMainClassName, tBookUiLocale } from "@wse/plugin-t-book/lib/tbook-page-shell"
+import { getEventSalesState } from "@wse/plugin-t-book/lib/event-sales"
 
 type Props = {
   params: Promise<{ eventId: string }>
 }
+
+const BACK_LABEL_HU = "← Versenyek"
+const BACK_LABEL_EN = "← Tournaments"
+const REGISTER_CTA_HU = "Jelentkezés erre a versenyre"
+const REGISTER_CTA_EN = "Register for this event"
+const SALES_CLOSED_HU = "A jelentkezés lezárult"
+const SALES_CLOSED_EN = "Registration closed"
+const SALES_UPCOMING_HU = "A jelentkezés hamarosan nyílik"
+const SALES_UPCOMING_EN = "Registration opens soon"
 
 /**
  * Read-only live event page for an event linked to a tDarts tournament, or
@@ -56,6 +66,9 @@ export default async function TDartsTournamentPage({ params }: Props) {
     getStorefrontFooterHydrationProps(),
   ])
   const { branding, footerSettings, Navbar, Footer, NavbarSearch } = chrome
+  const isHu = uiLocale?.startsWith("hu")
+  const salesState = getEventSalesState(event)
+  const registerHref = `/foglalas/${eventId}`
 
   return (
     <>
@@ -72,8 +85,8 @@ export default async function TDartsTournamentPage({ params }: Props) {
       <main className={tBookMainClassName(templateId)}>
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
           <p className="mb-4 text-sm text-muted-foreground">
-            <Link href={`/foglalas/${eventId}`} className="underline underline-offset-2">
-              ← {event.name}
+            <Link href="/versenyek" className="underline underline-offset-2">
+              {isHu ? BACK_LABEL_HU : BACK_LABEL_EN}
             </Link>
           </p>
           {event.tdarts ? (
@@ -82,9 +95,31 @@ export default async function TDartsTournamentPage({ params }: Props) {
               apiBaseUrl={event.tdarts.apiBaseUrl}
               embedClientId={event.tdarts.embedClientId}
               locale={uiLocale}
+              registerHref={registerHref}
+              registerSalesState={salesState}
             />
           ) : (
-            <TBookTeamEntryList teams={entryList?.teams ?? []} />
+            <div className="space-y-4">
+              <TBookTeamEntryList teams={entryList?.teams ?? []} />
+              {salesState === "on_sale" ? (
+                <Link
+                  href={registerHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  {isHu ? REGISTER_CTA_HU : REGISTER_CTA_EN}
+                </Link>
+              ) : (
+                <span className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-muted px-5 py-2.5 text-sm font-medium text-muted-foreground">
+                  {salesState === "closed"
+                    ? isHu
+                      ? SALES_CLOSED_HU
+                      : SALES_CLOSED_EN
+                    : isHu
+                      ? SALES_UPCOMING_HU
+                      : SALES_UPCOMING_EN}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </main>
